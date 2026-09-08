@@ -73,6 +73,7 @@ export default async function Home() {
       <div className="flex w-full max-w-[320px] flex-col gap-2.5">
         {user ? (
           <>
+            <NavLink href="/posts/new" label="新規投稿" />
             <NavLink href="/account" label="アカウント" />
             {isAdmin && <NavLink href="/admin" label="管理者ダッシュボード" />}
           </>
