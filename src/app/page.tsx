@@ -77,7 +77,10 @@ export default async function Home() {
             {isAdmin && <NavLink href="/admin" label="管理者ダッシュボード" />}
           </>
         ) : (
-          <NavLink href="/login" label="ログイン" />
+          <>
+            <NavLink href="/signup" label="アカウントを作成" />
+            <NavLink href="/login" label="ログイン" />
+          </>
         )}
       </div>
 

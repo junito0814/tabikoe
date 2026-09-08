@@ -1,14 +1,26 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { safeRedirectPath } from "@/lib/safe-redirect";
 import { ErrorNotice } from "@/components/notices/ErrorNotice";
 import { ERROR_MESSAGES } from "@/components/notices/error-messages";
-import { outfit, lora } from "../fonts";
+import { outfit, lora } from "@/app/fonts";
 
 const MAIN = "#C4703F";
+
+/**
+ * F-AC-01 Task3（SC-01 ログイン画面）/ Task7（SC-20 アカウント新規作成画面）
+ * 出典: docs/tasks/account/signup-login/03-login-screen-ui.md
+ *       docs/tasks/account/signup-login/07-consent-flow.md
+ *
+ * 2画面はロゴ・OAuth呼び出し・redirect_toの引き継ぎが共通で、
+ * 違いは同意欄の有無と文言・遷移先だけのため、mode で切り替える1コンポーネントにしている。
+ * 同意欄はSC-20にのみ表示する（要件定義書3.2.1、v2.8）。
+ */
+export type AuthMode = "login" | "signup";
 
 function GoogleIcon() {
     return (
@@ -50,25 +62,34 @@ function AppLogoIcon() {
     );
 }
 
-export default function LoginForm() {
+export default function AuthScreen({ mode }: { mode: AuthMode }) {
+    const isSignup = mode === "signup";
     const searchParams = useSearchParams();
     const supabase = createClient();
     const [isLoading, setIsLoading] = useState(false);
     const [agreed, setAgreed] = useState(false);
     const [localError, setLocalError] = useState(false);
+
     const errorParam = searchParams.get("error");
     const hasConsentError = errorParam === "consent_required";
-    const hasError = localError || errorParam === "1" || hasConsentError;
+    const hasAccountNotFound = errorParam === "account_not_found";
+    const hasError = localError || errorParam === "1" || hasConsentError || hasAccountNotFound;
 
-    const handleLogin = async () => {
-        if (!agreed || isLoading) return;
+    // SC-01は同意欄を持たないため、常に押下できる
+    const canSubmit = (!isSignup || agreed) && !isLoading;
+
+    const handleSubmit = async () => {
+        if (!canSubmit) return;
         setIsLoading(true);
         setLocalError(false);
 
         const redirectTo = safeRedirectPath(searchParams.get("redirect_to"));
         const callbackUrl = new URL("/api/auth/callback", window.location.origin);
         callbackUrl.searchParams.set("redirect_to", redirectTo);
-        callbackUrl.searchParams.set("consent", agreed ? "1" : "0");
+        callbackUrl.searchParams.set("mode", mode);
+        if (isSignup) {
+            callbackUrl.searchParams.set("consent", agreed ? "1" : "0");
+        }
 
         const { error } = await supabase.auth.signInWithOAuth({
             provider: "google",
@@ -85,6 +106,12 @@ export default function LoginForm() {
             setIsLoading(false);
         }
     };
+
+    const errorMessage = hasAccountNotFound
+        ? "アカウントが見つかりません。新規登録してください"
+        : hasConsentError
+            ? "利用規約と個人情報保護方針への同意が必要です"
+            : ERROR_MESSAGES.oauthFailure;
 
     return (
         <div
@@ -108,61 +135,70 @@ export default function LoginForm() {
                     次の旅のヒントに
                 </p>
 
-                <label className="mb-5 flex w-full cursor-pointer items-start gap-2.5">
-                    {/* 実際のcheckboxを視覚的に隠して置くことで、キーボード操作（Tab→Space）と
-                        スクリーンリーダー対応を担保する（要件定義書7.7） */}
-                    <input
-                        type="checkbox"
-                        checked={agreed}
-                        onChange={(event) => setAgreed(event.target.checked)}
-                        className="peer sr-only"
-                    />
-                    <span
-                        aria-hidden
-                        className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-[6px] border-[1.5px] transition-colors peer-focus-visible:ring-2 peer-focus-visible:ring-[#C4703F] peer-focus-visible:ring-offset-2 ${agreed ? "bg-[#C4703F] border-[#C4703F]" : "border-[#E8E1D8] bg-transparent"
-                            }`}
-                    >
-                        {agreed && (
-                            <svg width="11" height="11" viewBox="0 0 12 12" fill="none">
-                                <path d="M2 6l3 3 5-5" stroke="#fff" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-                            </svg>
-                        )}
-                    </span>
-                    <span className="select-none text-[13px] leading-[1.65] text-[#3D3A35]">
-                        <span className="font-medium text-[#C4703F]">利用規約</span>
-                        {" と "}
-                        <span className="font-medium text-[#C4703F]">個人情報保護方針</span>
-                        {" に同意する"}
-                    </span>
-                </label>
+                {isSignup && (
+                    <label className="mb-5 flex w-full cursor-pointer items-start gap-2.5">
+                        {/* 実際のcheckboxを視覚的に隠して置くことで、キーボード操作（Tab→Space）と
+                            スクリーンリーダー対応を担保する（要件定義書7.7） */}
+                        <input
+                            type="checkbox"
+                            checked={agreed}
+                            onChange={(event) => setAgreed(event.target.checked)}
+                            className="peer sr-only"
+                        />
+                        <span
+                            aria-hidden
+                            className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-[6px] border-[1.5px] transition-colors peer-focus-visible:ring-2 peer-focus-visible:ring-[#C4703F] peer-focus-visible:ring-offset-2 ${agreed ? "bg-[#C4703F] border-[#C4703F]" : "border-[#E8E1D8] bg-transparent"
+                                }`}
+                        >
+                            {agreed && (
+                                <svg width="11" height="11" viewBox="0 0 12 12" fill="none">
+                                    <path d="M2 6l3 3 5-5" stroke="#fff" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+                                </svg>
+                            )}
+                        </span>
+                        <span className="select-none text-[13px] leading-[1.65] text-[#3D3A35]">
+                            <span className="font-medium text-[#C4703F]">利用規約</span>
+                            {" と "}
+                            <span className="font-medium text-[#C4703F]">個人情報保護方針</span>
+                            {" に同意する"}
+                        </span>
+                    </label>
+                )}
 
                 <button
                     type="button"
-                    onClick={handleLogin}
-                    disabled={!agreed || isLoading}
+                    onClick={handleSubmit}
+                    disabled={!canSubmit}
                     className="flex h-[52px] w-full items-center justify-center gap-3 rounded-[10px] border border-[#E8E1D8] bg-white transition-opacity disabled:cursor-not-allowed disabled:opacity-45 enabled:cursor-pointer enabled:shadow-[0_2px_16px_rgba(61,58,53,0.1)]"
                 >
                     <GoogleIcon />
                     <span className="text-[15px] font-semibold tracking-[0.2px] text-[#3D3A35]">
-                        {isLoading ? "リダイレクト中..." : "Googleでログイン"}
+                        {isLoading
+                            ? "リダイレクト中..."
+                            : isSignup
+                                ? "Googleでアカウントを作成"
+                                : "Googleでログイン"}
                     </span>
                 </button>
 
-                {hasError && (
-                    <ErrorNotice
-                        className="mt-3 w-full"
-                        message={
-                            hasConsentError
-                                ? "利用規約とプライバシーポリシーへの同意が必要です"
-                                : ERROR_MESSAGES.oauthFailure
-                        }
-                    />
-                )}
+                {hasError && <ErrorNotice className="mt-3 w-full" message={errorMessage} />}
 
-                <p className="mt-8 text-center text-[11px] leading-[1.7] tracking-[0.2px] text-[#9C9488]">
-                    初めての方はログインすると
-                    <br />
-                    自動的にアカウントが作成されます
+                <p className="mt-8 text-center text-[13px] leading-[1.7] text-[#9C9488]">
+                    {isSignup ? (
+                        <>
+                            すでにアカウントをお持ちの方は{" "}
+                            <Link href="/login" className="font-medium text-[#C4703F] underline underline-offset-2">
+                                ログイン
+                            </Link>
+                        </>
+                    ) : (
+                        <>
+                            アカウントをお持ちでない方は{" "}
+                            <Link href="/signup" className="font-medium text-[#C4703F] underline underline-offset-2">
+                                新規登録
+                            </Link>
+                        </>
+                    )}
                 </p>
             </div>
         </div>
