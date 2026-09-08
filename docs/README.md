@@ -11,6 +11,7 @@ docs/
 ├── rule.md                ドキュメント規約
 ├── README.md              このファイル
 ├── development-order.md   全32ストーリーの開発順序（テーブル・コンポーネント依存に基づく）
+├── development-process.md タスク→Issue→実装→PRの進め方（ブランチ運用・コミット規約含む）
 ├── user-stories/          機能ごとのユーザーストーリー（受入条件つき）
 │   ├── account/           F-AC アカウント管理
 │   ├── posts/             F-PO 投稿
