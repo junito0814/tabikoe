@@ -1,5 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { requireUserOrRedirect } from "@/lib/auth/require-user-or-redirect";
+import { ErrorNotice } from "@/components/notices/ErrorNotice";
+import { ERROR_MESSAGES } from "@/components/notices/error-messages";
 import DisplayNameForm from "./display-name-form";
 import AvatarUploadForm from "./avatar-upload-form";
 import LogoutButton from "./logout-button";
@@ -17,11 +19,19 @@ export default async function AccountPage() {
   const supabase = await createClient();
   const user = await requireUserOrRedirect(supabase, "/account");
 
-  const { data: profile } = await supabase
+  const { data: profile, error: profileError } = await supabase
     .from("users")
     .select("display_name, avatar_url, is_admin")
     .eq("id", user.id)
     .single();
+
+  if (profileError) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-[#FBF6F0] px-6">
+        <ErrorNotice message={ERROR_MESSAGES.dbLoadFailure} retryable className="w-full max-w-[360px]" />
+      </div>
+    );
+  }
 
   return (
     <div className="flex min-h-screen flex-col items-center gap-8 bg-[#FBF6F0] px-6 py-16">

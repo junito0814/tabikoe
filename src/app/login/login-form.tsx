@@ -4,6 +4,8 @@ import { useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { safeRedirectPath } from "@/lib/safe-redirect";
+import { ErrorNotice } from "@/components/notices/ErrorNotice";
+import { ERROR_MESSAGES } from "@/components/notices/error-messages";
 import { outfit, lora } from "./fonts";
 
 const MAIN = "#C4703F";
@@ -138,18 +140,14 @@ export default function LoginForm() {
                 </button>
 
                 {hasError && (
-                    <div className="mt-3 flex w-full items-center gap-2 rounded-lg border border-[#C4703F]/25 bg-[#C4703F]/[0.08] px-3.5 py-2.5">
-                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" className="shrink-0">
-                            <circle cx="12" cy="12" r="9" stroke="#C4703F" strokeWidth="1.8" />
-                            <line x1="12" y1="8" x2="12" y2="13" stroke="#C4703F" strokeWidth="1.8" strokeLinecap="round" />
-                            <circle cx="12" cy="16.5" r="1" fill="#C4703F" />
-                        </svg>
-                        <span className="text-[13px] leading-[1.5] text-[#C4703F]">
-                            {hasConsentError
+                    <ErrorNotice
+                        className="mt-3 w-full"
+                        message={
+                            hasConsentError
                                 ? "利用規約とプライバシーポリシーへの同意が必要です"
-                                : "ログインに失敗しました。もう一度お試しください"}
-                        </span>
-                    </div>
+                                : ERROR_MESSAGES.oauthFailure
+                        }
+                    />
                 )}
 
                 <p className="mt-8 text-center text-[11px] leading-[1.7] tracking-[0.2px] text-[#9C9488]">
