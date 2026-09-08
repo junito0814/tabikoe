@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { TripTitleInput } from "@/components/trips/TripTitleInput";
 import { SpotAutocompleteInput } from "@/components/spots/SpotAutocompleteInput";
 import { UploadNotice } from "@/components/notices/UploadNotice";
+import { DeletePostButton } from "./DeletePostButton";
 import { ErrorNotice } from "@/components/notices/ErrorNotice";
 import { fetchWithAuthRedirect, UnauthorizedError } from "@/lib/api/fetch-with-auth-redirect";
 import { graphemeLength } from "@/lib/text/grapheme-length";
@@ -53,6 +54,7 @@ export interface PostFormInitialValues {
   visibility: PostVisibility;
   photos: ExistingPhoto[];
 }
+
 function StarRating({ value, onChange }: { value: number; onChange: (value: number) => void }) {
   return (
     <div className="flex gap-1" role="radiogroup" aria-label="星評価">
@@ -427,6 +429,12 @@ export default function PostForm({ initialPost }: { initialPost?: PostFormInitia
               ? "更新する"
               : "投稿する"}
         </button>
+
+        {initialPost && (
+          <div className="flex justify-center border-t border-[#E8E1D8] pt-5">
+            <DeletePostButton postId={initialPost.postId} />
+          </div>
+        )}
       </div>
     </div>
   );

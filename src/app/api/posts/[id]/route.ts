@@ -4,6 +4,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { getAuthenticatedUser } from "@/lib/auth/get-authenticated-user";
 import { resolveTripId, TripTitleValidationError } from "@/lib/trips/resolve-trip";
 import { validatePostInput } from "@/lib/posts/validate-post-input";
+import { removeStorageObjects } from "@/lib/posts/photos";
 
 /**
  * F-PO-02 Task1: 投稿編集
@@ -103,4 +104,69 @@ export async function PATCH(
   }
 
   return NextResponse.json({ postId: id });
+}
+
+/**
+ * F-PO-03 Task1: 投稿削除（カスケード削除）
+ * 出典: docs/tasks/posts/post-delete/01-post-delete-handler.md
+ *
+ * 投稿者本人のみ削除できる（共同アルバムのオーナーであっても他人の投稿は削除不可、3.3.3）。
+ * コメント・いいね・post_photosは posts への外部キーが on delete cascade のため、
+ * posts の1回のDELETEと同一トランザクションで消える。
+ * trips（旅行／アルバム）自体は削除しない。投稿が0件になったアルバムを
+ * 一覧に出さない扱いは、一覧側の取得条件で行う（3.3.3、Task2）。
+ */
+export async function DELETE(
+  _request: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const { id } = await params;
+  const supabase = await createClient();
+  const user = await getAuthenticatedUser(supabase);
+
+  if (!user) {
+    return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+  }
+
+  const admin = createAdminClient();
+
+  const { data: post, error: fetchError } = await admin
+    .from("posts")
+    .select("id, user_id")
+    .eq("id", id)
+    .maybeSingle();
+
+  if (fetchError) {
+    return NextResponse.json({ error: "fetch_failed" }, { status: 500 });
+  }
+  if (!post) {
+    return NextResponse.json({ error: "not_found" }, { status: 404 });
+  }
+  if (post.user_id !== user.id) {
+    return NextResponse.json({ error: "forbidden" }, { status: 403 });
+  }
+
+  // カスケードでpost_photosの行が消えるため、実ファイルのパスは削除前に控える
+  const { data: photos } = await admin
+    .from("post_photos")
+    .select("storage_url")
+    .eq("post_id", id);
+
+  const { error: deleteError } = await admin
+    .from("posts")
+    .delete()
+    .eq("id", id)
+    .eq("user_id", user.id);
+
+  if (deleteError) {
+    return NextResponse.json({ error: "delete_failed" }, { status: 500 });
+  }
+
+  // Storageの削除に失敗しても投稿は消えている。孤立ファイルが残るだけなのでエラーにしない
+  await removeStorageObjects(
+    admin,
+    (photos ?? []).map((photo) => photo.storage_url)
+  );
+
+  return NextResponse.json({ ok: true });
 }
