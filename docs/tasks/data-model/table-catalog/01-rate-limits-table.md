@@ -13,10 +13,13 @@
 
 - カラム：`id`, `subject`（`user_id`またはIPアドレス）, `action_type`, `window_start`, `count`
 - `(subject, action_type, window_start)`に一意制約またはインデックスを設定し、参照・更新を高速化する
+- 判定処理をDB関数として実装する場合は、**`anon`・`authenticated`から実行できないようEXECUTE権限を絞る**（`revoke execute ... from public, anon, authenticated` の上で`service_role`にのみ付与する）
+  - Supabaseは`public`スキーマの関数をPostgRESTのRPCとして公開し、PostgreSQLは新規関数に既定でPUBLICへEXECUTEを付与する。絞らないと、ブラウザに配布されるpublishable（anon）キーだけで任意の`subject`（他人のIPアドレス）のカウンタを加算でき、狙ったユーザーをログイン不能にできてしまう
 
 ## 成果物
 
 - マイグレーションファイル
+- 判定関数のEXECUTE権限設定（DB関数として実装する場合）
 
 ## テスト要件
 

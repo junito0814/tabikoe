@@ -30,7 +30,16 @@
 
 - `supabase/migrations/` にタイムスタンプ接頭辞（`YYYYMMDDHHMMSS_<内容>.sql`）でファイルを追加する。既存ファイルより新しい日時にする。
 - ファイル冒頭のコメントに、出典タスクファイルのパスを記載する（例：`-- 出典: docs/tasks/account/signup-login/02-users-table-migration.md`）。
+- `create policy` はガードが無いと再実行でエラーになるため、必ず直前に `drop policy if exists ... ;` を書く（テーブル・インデックスは `if not exists`、関数は `create or replace` で冪等になる）。
 - 本セッション時点ではSupabase CLI・ローカル環境が未整備のため、**マイグレーションは実際には未適用・未検証**。適用・検証は別途対応する。
+
+### セキュリティ確認項目（Phase 0/1の監査で実際に穴が見つかった箇所）
+
+Supabaseは`public`スキーマのテーブル・関数をPostgRESTのAPIとしてそのまま公開し、ブラウザに配布されるpublishable（anon）キーで到達できる。RLSポリシーを書いただけでは以下は塞げないため、マイグレーション作成時に毎回確認する。
+
+- **`security definer`関数を追加したら、EXECUTE権限を絞ったか**。既定ではPUBLICにEXECUTEが付くため、`revoke execute ... from public, anon, authenticated` の上で`service_role`にのみ付与する。絞り忘れると、RLSを回避する関数を誰でも任意の引数で実行できる。
+- **本人が更新してはいけない列を、列単位のGRANTで守ったか**。RLSは行単位の制御しかできないため、`is_admin`のような権限に関わる列は`revoke update`＋`grant update (許可する列)`で限定する。
+- **アクセス制御をアプリ側（Route Handlers・Proxy）にしか書いていないものは無いか**。同じ操作がPostgREST経由で直接呼べないかを確認する。
 
 ## 6. コミット・PR
 

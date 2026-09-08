@@ -17,6 +17,8 @@
   - いいね（likes）、「行きたい」保存（wishlist）、ブロック情報（blocks、自分が設定した／された双方）、IdP連携情報を削除する
   - 投稿（posts）・コメント（comments）はレコードを削除せず残す（投稿者表示は`users.display_name`の更新を通じて自動的に匿名化される）
 - 認証済みユーザー本人のみ、自分自身を退会させられる
+- 退会処理をDB関数（SECURITY DEFINER）として実装する場合は、**`anon`・`authenticated`から実行できないようEXECUTE権限を`service_role`のみに絞る**
+  - Supabaseは`public`スキーマの関数をPostgRESTのRPCとして公開し、PostgreSQLは新規関数に既定でPUBLICへEXECUTEを付与する。絞らないと、ブラウザに配布されるpublishable（anon）キーだけで`POST /rest/v1/rpc/<関数名>`に任意のユーザーIDを渡せてしまい、他人のアカウントを匿名化・データ削除できてしまう（「本人のみ」の制限がRoute Handlers側にしか無く迂回される）
 
 ## 成果物
 
