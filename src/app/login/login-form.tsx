@@ -6,7 +6,7 @@ import { createClient } from "@/lib/supabase/client";
 import { safeRedirectPath } from "@/lib/safe-redirect";
 import { ErrorNotice } from "@/components/notices/ErrorNotice";
 import { ERROR_MESSAGES } from "@/components/notices/error-messages";
-import { outfit, lora } from "./fonts";
+import { outfit, lora } from "../fonts";
 
 const MAIN = "#C4703F";
 
