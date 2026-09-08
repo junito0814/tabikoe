@@ -38,7 +38,12 @@ function NavLink({ href, label }: { href: string; label: string }) {
   );
 }
 
-export default async function Home() {
+export default async function Home({
+  searchParams,
+}: {
+  searchParams: Promise<{ posted?: string }>;
+}) {
+  const { posted } = await searchParams;
   const supabase = await createClient();
   const {
     data: { user },
@@ -70,9 +75,16 @@ export default async function Home() {
         </p>
       </div>
 
+      {posted === "1" && (
+        <p className="w-full max-w-[320px] rounded-lg border border-[#3D7A5C]/25 bg-[#3D7A5C]/[0.08] px-3.5 py-2.5 text-center text-[13px] text-[#3D7A5C]">
+          投稿しました
+        </p>
+      )}
+
       <div className="flex w-full max-w-[320px] flex-col gap-2.5">
         {user ? (
           <>
+            <NavLink href="/posts/new" label="新規投稿" />
             <NavLink href="/account" label="アカウント" />
             {isAdmin && <NavLink href="/admin" label="管理者ダッシュボード" />}
           </>
