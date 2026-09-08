@@ -11,7 +11,7 @@
 | 3 | [ログイン画面UI（SC-01）](03-login-screen-ui.md) | 1 |
 | 4 | [OAuthコールバック Route Handler](04-oauth-callback-handler.md) | 1, 2 |
 | 5 | [初回ログイン時のユーザーレコード作成ロジック](05-initial-user-record-creation.md) | 4 |
-| 7 | [利用規約・プライバシーポリシー同意フロー](07-consent-flow.md) | 4, 5 |
+| 7 | [アカウント新規作成画面（SC-20）と同意フロー](07-consent-flow.md) | 4, 5 |
 | 8 | [ログイン試行のレート制限](08-login-rate-limiting.md) | 2, 4 |
 | 9 | [受入テスト（E2E）](09-acceptance-e2e.md) | 1, 2, 3, 4, 5, 7, 8すべて |
 
