@@ -52,7 +52,14 @@ export async function POST(request: Request) {
   // スポットは全ユーザー共有のマスタのため、書き込みはService Role Key経由で行う
   const admin = createAdminClient();
 
-  const nearby = await findNearbySpots(admin, lat, lng, DUPLICATE_SPOT_RADIUS_METERS);
+  let nearby;
+  try {
+    nearby = await findNearbySpots(admin, lat, lng, DUPLICATE_SPOT_RADIUS_METERS);
+  } catch {
+    // 重複判定ができない状態で登録を通すと重複スポットが増えるため、ここでは中断する
+    return NextResponse.json({ error: "nearby_lookup_failed" }, { status: 503 });
+  }
+
   if (nearby.length > 0) {
     return NextResponse.json(
       { error: "duplicate_spot", existingSpot: nearby[0] },
