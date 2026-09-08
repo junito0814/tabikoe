@@ -9,9 +9,7 @@ const MAIN = "#C4703F";
  * F-AC-05 Task4: 退会確認ダイアログUI
  * 出典: docs/tasks/account/account-deletion/04-deletion-confirmation-dialog-ui.md
  *
- * プロフィール編集画面（SC-07, F-AC-04）はまだ実装されていないため、
- * 暫定的にこのコンポーネントを ../account/page.tsx から呼び出している。
- * SC-07実装時はそちらへ移設する。
+ * プロフィール編集画面（SC-07）である ../account/page.tsx から呼び出す。
  */
 export default function DeleteAccountDialog({ isAdmin }: { isAdmin: boolean }) {
   const router = useRouter();
