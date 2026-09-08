@@ -23,13 +23,22 @@ export async function GET(request: Request) {
     const admin = createAdminClient();
 
     // F-AC-01 Task8: コード交換の前に判定し、レート制限中はSupabase Authへの呼び出し自体を避ける
-    const allowed = await isWithinRateLimit(
-        admin,
-        getClientIp(request),
-        "login",
-        LOGIN_RATE_LIMIT_WINDOW_SECONDS,
-        LOGIN_RATE_LIMIT_MAX_ATTEMPTS
-    );
+    let allowed: boolean;
+    try {
+        allowed = await isWithinRateLimit(
+            admin,
+            getClientIp(request),
+            "login",
+            LOGIN_RATE_LIMIT_WINDOW_SECONDS,
+            LOGIN_RATE_LIMIT_MAX_ATTEMPTS
+        );
+    } catch {
+        // レート制限の判定自体が失敗した場合（DB障害・マイグレーション未適用等）は、
+        // セキュリティ機構を黙って無効化せずログインを中断する。
+        // この後のユーザーレコード作成にも同じDBが必要なため、どのみち完了できない。
+        return NextResponse.redirect(`${origin}/login?error=1`);
+    }
+
     if (!allowed) {
         // このエンドポイントはGoogleからのリダイレクト先であり、
         // 自前のログイン画面へ組み込まれたUIコンポーネントからの呼び出しではないため、
