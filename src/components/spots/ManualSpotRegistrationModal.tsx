@@ -40,6 +40,7 @@ export function ManualSpotRegistrationModal({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [duplicateSpot, setDuplicateSpot] = useState<NearbySpot | null>(null);
+  const [mapInitFailed, setMapInitFailed] = useState(false);
 
   const moveToCurrentLocation = useCallback(() => {
     if (!navigator.geolocation) return;
@@ -56,12 +57,21 @@ export function ManualSpotRegistrationModal({
       return;
     }
 
-    mapRef.current = new google.maps.Map(mapContainerRef.current, {
-      center: FALLBACK_CENTER,
-      zoom: DEFAULT_ZOOM,
-      disableDefaultUI: true,
-      gestureHandling: "greedy",
-    });
+    try {
+      mapRef.current = new google.maps.Map(mapContainerRef.current, {
+        center: FALLBACK_CENTER,
+        zoom: DEFAULT_ZOOM,
+        disableDefaultUI: true,
+        gestureHandling: "greedy",
+      });
+    } catch (error) {
+      // 地図の生成自体に失敗した場合、何も描画されないまま無言になるのを避ける。
+      // 失敗は一度きりで再レンダー後は上の早期returnに入るため、連鎖レンダーにはならない。
+      console.error("Failed to initialise Google Map", error);
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setMapInitFailed(true);
+      return;
+    }
 
     // 現在地を初期表示にする（取得できない場合はFALLBACK_CENTERのまま）
     moveToCurrentLocation();
@@ -132,13 +142,18 @@ export function ManualSpotRegistrationModal({
         </label>
 
         <div className="relative h-[260px] w-full overflow-hidden rounded-[10px] bg-[#E8E1D8]">
-          {mapsState === "error" ? (
+          {mapsState === "error" || mapInitFailed ? (
             <div className="flex h-full items-center justify-center p-4">
               <ErrorNotice message={ERROR_MESSAGES.mapLoadFailure} />
             </div>
           ) : (
             <>
               <div ref={mapContainerRef} className="h-full w-full" />
+              {mapsState === "loading" && (
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <span className="text-[12px] text-[#9C9488]">地図を読み込んでいます…</span>
+                </div>
+              )}
               {/* 中央固定ピン。地図側を動かして位置を合わせる */}
               <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
                 <svg width="32" height="40" viewBox="0 0 32 40" aria-hidden>
