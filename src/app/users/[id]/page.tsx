@@ -1,5 +1,7 @@
 import { notFound } from "next/navigation";
+import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { requireUserOrRedirect } from "@/lib/auth/require-user-or-redirect";
 import { DEFAULT_AVATAR_URL } from "@/lib/users/constants";
 
 /**
@@ -20,6 +22,12 @@ export default async function UserProfilePage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
+
+  // 要件定義書3.5.4: 未ログイン状態でトップページ以外へ直接アクセスした場合は
+  // ログイン画面へ誘導し、ログイン完了後に元の遷移先へ戻す
+  const supabase = await createClient();
+  await requireUserOrRedirect(supabase, `/users/${id}`);
+
   const admin = createAdminClient();
   const { data: profile } = await admin
     .from("users")
@@ -36,7 +44,7 @@ export default async function UserProfilePage({
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
         src={profile.avatar_url ?? DEFAULT_AVATAR_URL}
-        alt=""
+        alt={`${profile.display_name ?? "ユーザー"}のアイコン画像`}
         className="h-24 w-24 rounded-full object-cover"
       />
       <p className="text-[15px] font-semibold text-[#3D3A35]">

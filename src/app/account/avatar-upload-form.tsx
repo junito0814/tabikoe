@@ -71,7 +71,7 @@ export default function AvatarUploadForm({ initialAvatarUrl }: { initialAvatarUr
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
         src={previewUrl}
-        alt=""
+        alt={selectedFile ? "選択したアイコン画像のプレビュー" : "現在のアイコン画像"}
         className="h-20 w-20 rounded-full border border-[#E8E1D8] object-cover"
       />
       <label className="cursor-pointer text-[12px] font-medium text-[#C4703F] underline underline-offset-2">

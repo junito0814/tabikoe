@@ -22,12 +22,18 @@ alter table public.users enable row level security;
 -- 本人のみ自分の行をSELECT/UPDATEできる。
 -- Service Role Key（Route Handlers）はRLSを回避して全行にアクセスできるため、
 -- 初回レコード作成（Task5）や管理者による操作はここにポリシーを追加しない。
+--
+-- 注意: RLSは行単位の制御しかできず、これだけでは本人が自分のis_adminを
+-- trueに更新できてしまう。更新可能な列の制限は20260908000008_harden_privileges.sqlの
+-- 列単位GRANTで行っている。
+drop policy if exists "users_select_own" on public.users;
 create policy "users_select_own"
   on public.users
   for select
   to authenticated
   using (auth.uid() = id);
 
+drop policy if exists "users_update_own" on public.users;
 create policy "users_update_own"
   on public.users
   for update

@@ -4,6 +4,8 @@ import { useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { safeRedirectPath } from "@/lib/safe-redirect";
+import { ErrorNotice } from "@/components/notices/ErrorNotice";
+import { ERROR_MESSAGES } from "@/components/notices/error-messages";
 import { outfit, lora } from "./fonts";
 
 const MAIN = "#C4703F";
@@ -72,6 +74,9 @@ export default function LoginForm() {
             provider: "google",
             options: {
                 redirectTo: callbackUrl.toString(),
+                // F-AC-01 Task1: 取得スコープを最小限に絞る
+                // （取得情報はIdPのユーザー識別子・表示名・アイコンURL・メールアドレスのみ）
+                scopes: "openid profile email",
             },
         });
 
@@ -104,11 +109,17 @@ export default function LoginForm() {
                 </p>
 
                 <label className="mb-5 flex w-full cursor-pointer items-start gap-2.5">
+                    {/* 実際のcheckboxを視覚的に隠して置くことで、キーボード操作（Tab→Space）と
+                        スクリーンリーダー対応を担保する（要件定義書7.7） */}
+                    <input
+                        type="checkbox"
+                        checked={agreed}
+                        onChange={(event) => setAgreed(event.target.checked)}
+                        className="peer sr-only"
+                    />
                     <span
-                        role="checkbox"
-                        aria-checked={agreed}
-                        onClick={() => setAgreed((v) => !v)}
-                        className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-[6px] border-[1.5px] transition-colors ${agreed ? "bg-[#C4703F] border-[#C4703F]" : "border-[#E8E1D8] bg-transparent"
+                        aria-hidden
+                        className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-[6px] border-[1.5px] transition-colors peer-focus-visible:ring-2 peer-focus-visible:ring-[#C4703F] peer-focus-visible:ring-offset-2 ${agreed ? "bg-[#C4703F] border-[#C4703F]" : "border-[#E8E1D8] bg-transparent"
                             }`}
                     >
                         {agreed && (
@@ -138,18 +149,14 @@ export default function LoginForm() {
                 </button>
 
                 {hasError && (
-                    <div className="mt-3 flex w-full items-center gap-2 rounded-lg border border-[#C4703F]/25 bg-[#C4703F]/[0.08] px-3.5 py-2.5">
-                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" className="shrink-0">
-                            <circle cx="12" cy="12" r="9" stroke="#C4703F" strokeWidth="1.8" />
-                            <line x1="12" y1="8" x2="12" y2="13" stroke="#C4703F" strokeWidth="1.8" strokeLinecap="round" />
-                            <circle cx="12" cy="16.5" r="1" fill="#C4703F" />
-                        </svg>
-                        <span className="text-[13px] leading-[1.5] text-[#C4703F]">
-                            {hasConsentError
+                    <ErrorNotice
+                        className="mt-3 w-full"
+                        message={
+                            hasConsentError
                                 ? "利用規約とプライバシーポリシーへの同意が必要です"
-                                : "ログインに失敗しました。もう一度お試しください"}
-                        </span>
-                    </div>
+                                : ERROR_MESSAGES.oauthFailure
+                        }
+                    />
                 )}
 
                 <p className="mt-8 text-center text-[11px] leading-[1.7] tracking-[0.2px] text-[#9C9488]">

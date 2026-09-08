@@ -15,6 +15,7 @@ create table if not exists public.album_members (
 
 alter table public.album_members enable row level security;
 
+drop policy if exists "album_members_select_own" on public.album_members;
 create policy "album_members_select_own"
   on public.album_members
   for select
