@@ -2,6 +2,7 @@ import { MapPin } from "@/components/pins/MapPin";
 import { MediaGrid, type MediaItem } from "@/components/media/MediaGrid";
 import { ErrorNotice } from "@/components/notices/ErrorNotice";
 import { UploadNotice } from "@/components/notices/UploadNotice";
+import TripTitlePreview from "./trip-title-preview";
 
 /**
  * 【一時的な開発用ページ】Phase 0（共通UIコンポーネント）の目視確認用。
@@ -66,6 +67,10 @@ export default function ComponentPreviewPage() {
           <ErrorNotice message="地図を読み込めませんでした" />
           <ErrorNotice message="データを読み込めませんでした。時間をおいて再度お試しください" retryable />
         </div>
+      </Section>
+
+      <Section title="trip-title: TripTitleInput（候補はサンプルデータ）">
+        <TripTitlePreview />
       </Section>
 
       <Section title="upload-notice: UploadNotice">
