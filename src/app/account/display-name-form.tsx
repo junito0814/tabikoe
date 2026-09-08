@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { graphemeLength } from "@/lib/text/grapheme-length";
+import { fetchWithAuthRedirect, UnauthorizedError } from "@/lib/api/fetch-with-auth-redirect";
 
 const MAX_LENGTH = 200;
 
@@ -23,13 +24,14 @@ export default function DisplayNameForm({ initialDisplayName }: { initialDisplay
     setMessage(null);
 
     try {
-      const response = await fetch("/api/users/me", {
+      const response = await fetchWithAuthRedirect("/api/users/me", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ displayName: value }),
       });
       setMessage(response.ok ? "保存しました" : "保存に失敗しました");
-    } catch {
+    } catch (error) {
+      if (error instanceof UnauthorizedError) return;
       setMessage("保存に失敗しました");
     } finally {
       setIsSaving(false);

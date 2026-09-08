@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { getAuthenticatedUser } from "@/lib/auth/get-authenticated-user";
 import { graphemeLength } from "@/lib/text/grapheme-length";
 
 const MAX_DISPLAY_NAME_LENGTH = 200;
@@ -10,12 +11,9 @@ const MAX_DISPLAY_NAME_LENGTH = 200;
  */
 export async function PATCH(request: Request) {
   const supabase = await createClient();
-  const {
-    data: { user },
-    error: userError,
-  } = await supabase.auth.getUser();
+  const user = await getAuthenticatedUser(supabase);
 
-  if (userError || !user) {
+  if (!user) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
 

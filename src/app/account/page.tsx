@@ -1,5 +1,5 @@
-import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { requireUserOrRedirect } from "@/lib/auth/require-user-or-redirect";
 import DisplayNameForm from "./display-name-form";
 import AvatarUploadForm from "./avatar-upload-form";
 import LogoutButton from "./logout-button";
@@ -15,13 +15,7 @@ import DeleteAccountDialog from "./delete-account-dialog";
  */
 export default async function AccountPage() {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
-    redirect("/login");
-  }
+  const user = await requireUserOrRedirect(supabase, "/account");
 
   const { data: profile } = await supabase
     .from("users")

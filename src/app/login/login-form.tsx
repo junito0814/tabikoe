@@ -54,7 +54,9 @@ export default function LoginForm() {
     const [isLoading, setIsLoading] = useState(false);
     const [agreed, setAgreed] = useState(false);
     const [localError, setLocalError] = useState(false);
-    const hasError = localError || searchParams.get("error") === "1";
+    const errorParam = searchParams.get("error");
+    const hasConsentError = errorParam === "consent_required";
+    const hasError = localError || errorParam === "1" || hasConsentError;
 
     const handleLogin = async () => {
         if (!agreed || isLoading) return;
@@ -64,6 +66,7 @@ export default function LoginForm() {
         const redirectTo = safeRedirectPath(searchParams.get("redirect_to"));
         const callbackUrl = new URL("/api/auth/callback", window.location.origin);
         callbackUrl.searchParams.set("redirect_to", redirectTo);
+        callbackUrl.searchParams.set("consent", agreed ? "1" : "0");
 
         const { error } = await supabase.auth.signInWithOAuth({
             provider: "google",
@@ -142,7 +145,9 @@ export default function LoginForm() {
                             <circle cx="12" cy="16.5" r="1" fill="#C4703F" />
                         </svg>
                         <span className="text-[13px] leading-[1.5] text-[#C4703F]">
-                            ログインに失敗しました。もう一度お試しください
+                            {hasConsentError
+                                ? "利用規約とプライバシーポリシーへの同意が必要です"
+                                : "ログインに失敗しました。もう一度お試しください"}
                         </span>
                     </div>
                 )}
