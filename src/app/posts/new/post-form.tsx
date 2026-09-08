@@ -167,7 +167,10 @@ export default function PostForm() {
         return;
       }
 
-      router.push("/");
+      // 投稿後の遷移先は要件定義書に定義がない。本来の遷移先になりうる
+      // 投稿詳細（SC-05）・マイページ（SC-06）が未実装のため、
+      // 暫定でトップページへ戻し、完了したことだけを伝える。
+      router.push("/?posted=1");
       router.refresh();
     } catch (error) {
       if (error instanceof UnauthorizedError) return;
