@@ -2,6 +2,7 @@
 
 import { useState, type ChangeEvent } from "react";
 import { DEFAULT_AVATAR_URL } from "@/lib/users/constants";
+import { fetchWithAuthRedirect, UnauthorizedError } from "@/lib/api/fetch-with-auth-redirect";
 
 const MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024;
 const ALLOWED_TYPES = ["image/jpeg", "image/png"];
@@ -44,7 +45,7 @@ export default function AvatarUploadForm({ initialAvatarUrl }: { initialAvatarUr
     try {
       const formData = new FormData();
       formData.append("avatar", selectedFile);
-      const response = await fetch("/api/users/me/avatar", {
+      const response = await fetchWithAuthRedirect("/api/users/me/avatar", {
         method: "POST",
         body: formData,
       });
@@ -57,7 +58,8 @@ export default function AvatarUploadForm({ initialAvatarUrl }: { initialAvatarUr
       const data = (await response.json()) as { avatarUrl: string };
       setPreviewUrl(data.avatarUrl);
       setSelectedFile(null);
-    } catch {
+    } catch (error) {
+      if (error instanceof UnauthorizedError) return;
       setWarning("アップロードに失敗しました");
     } finally {
       setIsUploading(false);

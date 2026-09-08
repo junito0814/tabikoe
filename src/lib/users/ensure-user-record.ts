@@ -30,6 +30,9 @@ export async function ensureUserRecord(admin: SupabaseClient, user: User): Promi
             email: user.email ?? "",
             display_name: displayName,
             avatar_url: avatarUrl,
+            // ignoreDuplicates:trueのため、既存レコードがある場合はconsented_atも上書きされない
+            // （F-AC-01 Task7：同意日時は初回サインアップ時のみ記録する）
+            consented_at: new Date().toISOString(),
         },
         { onConflict: "id", ignoreDuplicates: true }
     );
