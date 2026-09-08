@@ -17,6 +17,9 @@ export class ImageValidationError extends Error {}
 export interface ProcessedImageUpload {
   originalUrl: string;
   resizedUrl: string;
+  /** バケット内のパス。呼び出し元が古いファイルを整理する用途に使う。 */
+  originalPath: string;
+  resizedPath: string;
 }
 
 export async function processAndUploadImage(
@@ -80,8 +83,16 @@ export async function processAndUploadImage(
     throw resizedError;
   }
 
+  // パスは固定のため、上書きしてもURLが変わらずブラウザキャッシュで古い画像が表示される。
+  // バージョンクエリを付けて新しい画像を確実に反映させる。
+  const version = Date.now().toString();
+  const withVersion = (path: string) =>
+    `${admin.storage.from(bucket).getPublicUrl(path).data.publicUrl}?v=${version}`;
+
   return {
-    originalUrl: admin.storage.from(bucket).getPublicUrl(originalPath).data.publicUrl,
-    resizedUrl: admin.storage.from(bucket).getPublicUrl(resizedPath).data.publicUrl,
+    originalUrl: withVersion(originalPath),
+    resizedUrl: withVersion(resizedPath),
+    originalPath,
+    resizedPath,
   };
 }

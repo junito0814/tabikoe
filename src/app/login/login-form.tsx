@@ -74,6 +74,9 @@ export default function LoginForm() {
             provider: "google",
             options: {
                 redirectTo: callbackUrl.toString(),
+                // F-AC-01 Task1: 取得スコープを最小限に絞る
+                // （取得情報はIdPのユーザー識別子・表示名・アイコンURL・メールアドレスのみ）
+                scopes: "openid profile email",
             },
         });
 
@@ -106,11 +109,17 @@ export default function LoginForm() {
                 </p>
 
                 <label className="mb-5 flex w-full cursor-pointer items-start gap-2.5">
+                    {/* 実際のcheckboxを視覚的に隠して置くことで、キーボード操作（Tab→Space）と
+                        スクリーンリーダー対応を担保する（要件定義書7.7） */}
+                    <input
+                        type="checkbox"
+                        checked={agreed}
+                        onChange={(event) => setAgreed(event.target.checked)}
+                        className="peer sr-only"
+                    />
                     <span
-                        role="checkbox"
-                        aria-checked={agreed}
-                        onClick={() => setAgreed((v) => !v)}
-                        className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-[6px] border-[1.5px] transition-colors ${agreed ? "bg-[#C4703F] border-[#C4703F]" : "border-[#E8E1D8] bg-transparent"
+                        aria-hidden
+                        className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-[6px] border-[1.5px] transition-colors peer-focus-visible:ring-2 peer-focus-visible:ring-[#C4703F] peer-focus-visible:ring-offset-2 ${agreed ? "bg-[#C4703F] border-[#C4703F]" : "border-[#E8E1D8] bg-transparent"
                             }`}
                     >
                         {agreed && (

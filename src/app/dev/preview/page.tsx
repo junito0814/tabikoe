@@ -17,6 +17,7 @@ function makeItems(count: number, withVideo = false): MediaItem[] {
     id: String(i),
     mediaType: withVideo && i === 0 ? "video" : "photo",
     thumbnailUrl: SAMPLE_PHOTO,
+    alt: withVideo && i === 0 ? `サンプル動画${i + 1}` : `サンプル写真${i + 1}`,
     videoUrl: withVideo && i === 0 ? "https://example.com/sample.mp4" : undefined,
   }));
 }

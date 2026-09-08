@@ -15,6 +15,8 @@ export interface MediaItem {
   id: string;
   mediaType: "photo" | "video";
   thumbnailUrl: string;
+  /** 代替テキスト（要件定義書7.7：画像・動画サムネイルにalt属性を設定する） */
+  alt: string;
   videoUrl?: string;
 }
 
@@ -35,6 +37,7 @@ function MediaCell({
         src={item.videoUrl}
         controls
         autoPlay
+        aria-label={item.alt}
         className={`h-full w-full object-cover ${className ?? ""}`}
       />
     );
@@ -47,7 +50,7 @@ function MediaCell({
       className={`relative block h-full w-full overflow-hidden bg-[#E8E1D8] ${className ?? ""}`}
     >
       {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src={item.thumbnailUrl} alt="" className="h-full w-full object-cover" />
+      <img src={item.thumbnailUrl} alt={item.alt} className="h-full w-full object-cover" />
 
       {item.mediaType === "video" && (
         <span className="absolute inset-0 flex items-center justify-center">

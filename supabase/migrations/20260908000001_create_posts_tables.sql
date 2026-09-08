@@ -50,6 +50,7 @@ alter table public.spots enable row level security;
 alter table public.posts enable row level security;
 alter table public.post_photos enable row level security;
 
+drop policy if exists "trips_owner_all" on public.trips;
 create policy "trips_owner_all"
   on public.trips
   for all
@@ -59,18 +60,21 @@ create policy "trips_owner_all"
 
 -- spotsはどのユーザーの投稿からも参照される共有マスタのため、閲覧のみ全ユーザーに許可する。
 -- 作成・更新はRoute Handlers（Service Role Key）経由で行う想定（F-MP系ストーリーの対象）。
+drop policy if exists "spots_select_all" on public.spots;
 create policy "spots_select_all"
   on public.spots
   for select
   to authenticated
   using (true);
 
+drop policy if exists "posts_select_visible" on public.posts;
 create policy "posts_select_visible"
   on public.posts
   for select
   to authenticated
   using (visibility = 'public' or auth.uid() = user_id);
 
+drop policy if exists "posts_owner_write" on public.posts;
 create policy "posts_owner_write"
   on public.posts
   for all
@@ -78,6 +82,7 @@ create policy "posts_owner_write"
   using (auth.uid() = user_id)
   with check (auth.uid() = user_id);
 
+drop policy if exists "post_photos_select_visible" on public.post_photos;
 create policy "post_photos_select_visible"
   on public.post_photos
   for select
@@ -90,6 +95,7 @@ create policy "post_photos_select_visible"
     )
   );
 
+drop policy if exists "post_photos_owner_write" on public.post_photos;
 create policy "post_photos_owner_write"
   on public.post_photos
   for all

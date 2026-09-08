@@ -41,6 +41,7 @@ alter table public.likes enable row level security;
 alter table public.wishlist enable row level security;
 alter table public.blocks enable row level security;
 
+drop policy if exists "comments_select_visible_post" on public.comments;
 create policy "comments_select_visible_post"
   on public.comments
   for select
@@ -53,6 +54,7 @@ create policy "comments_select_visible_post"
     )
   );
 
+drop policy if exists "comments_owner_write" on public.comments;
 create policy "comments_owner_write"
   on public.comments
   for all
@@ -60,6 +62,7 @@ create policy "comments_owner_write"
   using (auth.uid() = user_id)
   with check (auth.uid() = user_id);
 
+drop policy if exists "likes_owner_all" on public.likes;
 create policy "likes_owner_all"
   on public.likes
   for all
@@ -67,6 +70,7 @@ create policy "likes_owner_all"
   using (auth.uid() = user_id)
   with check (auth.uid() = user_id);
 
+drop policy if exists "wishlist_owner_all" on public.wishlist;
 create policy "wishlist_owner_all"
   on public.wishlist
   for all
@@ -74,6 +78,7 @@ create policy "wishlist_owner_all"
   using (auth.uid() = user_id)
   with check (auth.uid() = user_id);
 
+drop policy if exists "blocks_owner_all" on public.blocks;
 create policy "blocks_owner_all"
   on public.blocks
   for all
