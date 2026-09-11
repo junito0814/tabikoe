@@ -22,9 +22,27 @@
 
 ## 4. 実装時の確認事項
 
-- `npx tsc --noEmit` / `npm run build` / `npx eslint src` を実装のたびに実行し、エラーがないことを確認する。
+- `npx tsc --noEmit` / `npm run build` / `npx eslint src` / `npm test` を実装のたびに実行し、エラーがないことを確認する。
 - Next.jsのバージョンアップに伴う非推奨化・破壊的変更は`node_modules/next/dist/docs/`を確認し、警告が出た規約変更（例：`middleware.ts`→`proxy.ts`）には追従する（[AGENTS.md](../AGENTS.md)参照）。
 - 新しいnpm依存を追加した際は`npm audit`を実行し、既知の脆弱性があれば修正済みバージョンへ上げる。
+
+### テスト
+
+[rule.md](rule.md)の「test rule」は単体・結合・E2Eの3区分で、各タスクファイルの「テスト要件」もこの区分で書かれている。現時点で整備済みなのは**単体テストのみ**。
+
+| 区分 | 状況 | 実行方法 |
+|---|---|---|
+| 単体テスト | 整備済み（Vitest + React Testing Library、`jsdom`） | `npm test`（`npm run test:watch`で監視） |
+| 結合テスト | 未整備。Supabaseを実際に叩くため**ローカルSupabase（CLI + Docker）**が必要 | — |
+| E2Eテスト | 未整備。Playwright等のブラウザ環境が必要。画面が揃うPhase 5〜6以降で導入を判断する | — |
+
+単体テストの書き方:
+
+- テストファイルは対象と同じディレクトリに `<対象>.test.ts(x)` で置く（`vitest.config.mts`の`include`が`src/**/*.test.{ts,tsx}`）。
+- ファイル冒頭のコメントに、**どのタスクファイルの「単体テスト」要件に対応するか**を出典として書く。テスト名はその要件の文言に寄せる（例：「200文字超過時に保存ボタンが無効化される」）。これで「タスクの完了条件を満たしたか」がテストファイルから追える。
+- Supabase・`fetch`・`next/navigation`・`next/font`など外部に依存する箇所は`vi.mock`で差し替える。コンポーネントが取得関数を prop で受け取る形（`fetchSuggestions`・`searchSpots`等）にしてあるものは、モックを注入して検証する。
+- **Route Handler・`async` Server Component は単体テストの対象外**（Vitestが非同期Server Componentを扱えない。Next.js同梱ドキュメントもE2Eを推奨）。これらのロジックは、純粋関数（`validatePostInput`・`resolveTripId`の正規化部分等）に切り出してからテストする。
+- 新しいタスクを実装するときは、タスクファイルの「単体テスト」に列挙された項目を、同じPRでテストとして書く。テスト要件が未実施のままの場合は、PRの Test plan にその旨を明記し `Closes` にしない（6章参照）。
 
 ## 5. DBマイグレーション
 
@@ -48,8 +66,9 @@ Supabaseは`public`スキーマのテーブル・関数をPostgRESTのAPIとし�
 - `Closes`は、そのタスクファイルの「実装内容」「成果物」が実装されたIssueにのみ使う。「テスト要件」（単体／結合／E2E）が未実施の場合はその旨をPR本文に明記し、安易に`Closes`しない。
 - **注意（実際にハマった落とし穴）**：`Closes #12, #13, #16` のようにキーワードを1回だけ書いてカンマ区切りで複数Issueを並べても、GitHubは**先頭の1件しかクローズ用参照として認識しない**（`gh pr view <PR番号> --json closingIssuesReferences`で実際に確認できる）。複数Issueをまとめて閉じたい場合は、Issueごとに`Closes #12`, `Closes #13`, `Closes #16` とキーワードを繰り返すか、マージ後に`gh issue close <番号>`で個別にクローズする。
 
-## 7. 既知のギャップ（2026-09-08時点）
+## 7. 既知のギャップ（2026-09-11時点）
 
-- **自動テストフレームワーク未導入**。各タスクファイルが定義する単体・結合・E2Eテストはコード化されていない。
-- **Supabase CLI・ローカル環境未構築**。マイグレーション・RPC関数は実環境で未検証。
-- 上記2点はいずれも今後のIssue／PRで解消する。着手する場合は本ファイルを更新すること。
+- **結合テスト・E2Eテストが未整備**。単体テスト（Vitest）は導入済みで、Phase 0〜2の既存ロジック・コンポーネントの単体テスト要件はコード化した。結合テストにはローカルSupabase、E2EにはPlaywright等が必要で、いずれも未導入。
+- **Supabase CLI未導入**。本番のSupabaseプロジェクトへのマイグレーションは、結合したSQLファイルをダッシュボードのSQL Editorに貼る手順で適用している（`supabase db push`で自動化できていない）。
+- **動画アップロード（ffmpeg）未対応**。要件定義書9章#5「Vercel上での動作検証」が未了のため、投稿の写真パスのみ実装している。
+- 上記はいずれも今後のIssue／PRで解消する。着手する場合は本ファイルを更新すること。
