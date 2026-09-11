@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { requireUserOrRedirect } from "@/lib/auth/require-user-or-redirect";
 import { ErrorNotice } from "@/components/notices/ErrorNotice";
@@ -39,6 +40,16 @@ export default async function AccountPage() {
 
       <AvatarUploadForm initialAvatarUrl={profile?.avatar_url ?? null} />
       <DisplayNameForm initialDisplayName={profile?.display_name ?? ""} />
+
+      {/* menu-bar Task3: 管理画面への導線はメニューバーには置かず、is_adminユーザーにだけここで出す（4.2、3.10.1） */}
+      {profile?.is_admin && (
+        <Link
+          href="/admin"
+          className="flex h-11 w-full max-w-[360px] items-center justify-center rounded-[10px] border border-[#E8E1D8] bg-white text-[14px] font-semibold text-[#3D3A35]"
+        >
+          管理者ダッシュボード
+        </Link>
+      )}
 
       <div className="flex w-full max-w-[360px] flex-col items-center gap-4 border-t border-[#E8E1D8] pt-6">
         <LogoutButton />
