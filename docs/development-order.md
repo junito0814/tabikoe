@@ -1,136 +1,165 @@
 # 開発順序
 
-`docs/user-stories/`・`docs/tasks/`配下の全32ストーリーを、テーブル依存関係（どのテーブルをどのストーリーが定義し、どのストーリーが参照するか）と共通コンポーネントの再利用関係（どのストーリーが先に部品を作り、どのストーリーがそれを組み込むか）に基づいて開発順に並べたものです。各ストーリーの`00-index.md`に記載された「依存」欄を根拠としています。
+`docs/user-stories/`・`docs/tasks/`配下の全ストーリーを、テーブル依存関係と共通コンポーネントの再利用関係に基づいて開発順に並べたもの。各ストーリーの`00-index.md`に記載された「依存」欄を根拠としている。
 
-**読み方**：フェーズは上から順に着手する。同一フェーズ内のストーリーは基本的に並行着手可能（例外は各フェーズの note に明記）。フェーズをまたぐ依存は「なぜこの順番か」に記載の根拠に従うこと。タスク単位の詳細な依存関係は各ストーリーの`00-index.md`を参照。
+**2026-09-11 改訂**：当初の計画順（Phase 0 → 1 → 2 → …）に対し、実際の実装は Phase 1 から着手し、前提となるテーブルを後続Phaseから先取りする形で進んだ。本ファイルは**実際に実装した順**に並べ直し、各ストーリーの実装状況を併記する。Phase番号は他ドキュメント・Issue・PRから参照されているため**識別子として維持**し、並び順だけを変えている（番号順＝実装順ではない）。
+
+**読み方**：上から順が実装順。「状態」列の凡例は以下。
+
+| 表記 | 意味 |
+|---|---|
+| ✅ 実装済み | 実装内容・成果物が揃い、mainにマージ済み。E2Eタスクは除く（テスト基盤の節を参照） |
+| 🔶 一部実装 | 一部タスクが後続Phaseの画面・機能を待っている |
+| 🔷 PR中 | 実装済みだが未マージ |
+| ⬜ 未着手 | — |
 
 ```mermaid
 flowchart TD
-    P0["Phase 0\n共通UIコンポーネント"] --> P1["Phase 1\n認証・アカウント基盤"]
-    P1 --> P2["Phase 2\n投稿の中核"]
-    P2 --> P3["Phase 3\n共有テーブルの補完"]
-    P3 --> P4["Phase 4\n横断基盤の土台"]
-    P4 --> P5["Phase 5\n地図・検索"]
-    P4 --> P6["Phase 6\n閲覧・交流"]
-    P5 --> P7["Phase 7\n記録・振り返り"]
+    P1["Phase 1\n認証・アカウント基盤\n✅"] --> P0["Phase 0\n共通UIコンポーネント\n✅"]
+    P0 --> P2["Phase 2\n投稿の中核\n🔷"]
+    P2 --> P3["Phase 3\n共有テーブルの補完\n🔷"]
+    P3 --> P4["Phase 4\n横断基盤の土台\n🔶"]
+    P4 --> P5["Phase 5\n地図・検索\n⬜"]
+    P4 --> P6["Phase 6\n閲覧・交流\n⬜"]
+    P5 --> P7["Phase 7\n記録・振り返り\n⬜"]
     P6 --> P7
-    P4 --> P7
-    P7 --> P8["Phase 8\n管理者機能"]
-    P6 --> P9["Phase 9\n通知一覧の最終統合"]
+    P7 --> P8["Phase 8\n管理者機能\n🔶"]
+    P6 --> P9["Phase 9\n通知一覧の最終統合\n⬜"]
     P8 --> P9
 ```
 
-## Phase 0 — 共通UIコンポーネント基盤
+---
 
-他のどのストーリーにも依存しない土台。先に作ることで、後続の各画面が車輪の再発明をしなくて済む。
+## Phase 1 — 認証・アカウント基盤 ✅
 
-| # | ストーリー | ドキュメント |
+全機能がログイン必須（3.5.4）のため最初に着手した。計画では Phase 0 の後だったが、F-AC-01〜04 のタスクは shared-ui のコンポーネントに依存していなかったため、先に進めて問題なかった。
+
+| # | ストーリー | 状態 | 備考 |
+|---|---|---|---|
+| 1 | F-AC-01 サインアップ・ログイン | ✅ | Task1（OAuthプロバイダ設定）はGoogle Cloud側の作業。**v2.8でSC-20（新規作成画面）を分離**し、同意欄はそちらへ移動 |
+| 2 | F-AC-02 セッション管理 | ✅ | `src/proxy.ts`で全ルートのセッション検証・自動リフレッシュ。30日失効の閾値はSupabase側の設定 |
+| 3 | F-AC-03 ログアウト | ✅ | |
+| 4 | F-AC-04 プロフィール編集 | ✅ | 画像処理共通モジュール（`src/lib/image/process-upload.ts`）をここで実装し、Phase 2 の投稿写真が再利用 |
+
+**この時点で先取りしたもの**（依存を満たすため、後続Phaseから引き上げた）：
+
+- Phase 3 の `trips`・`spots`・`posts`・`post_photos`・`album_members`・`notifications`・`comments`・`likes`・`wishlist`・`blocks`・`rate_limits`
+- Phase 4 の **F-AC-05 退会**（全タスク実装済み）
+- Phase 8 の **F-AD-01 Task1**（管理画面の`is_admin`判定）と **F-AD-02 管理者ダッシュボード**
+
+これらは最初に依頼された Issue #1〜#10（F-AD-02・F-AC-05）を動かすために必要だったもの。
+
+**Phase 0/1 完了後の監査**で、RLSだけでは防げない権限昇格2件（`deactivate_user`の公開実行、`is_admin`の自己更新）が見つかり修正した。詳細は要件定義書v2.7の5.3および[design-principles](user-stories/data-model/design-principles.md)。
+
+## Phase 0 — 共通UIコンポーネント基盤 ✅
+
+| # | ストーリー | 状態 | 備考 |
+|---|---|---|---|
+| 1 | ピンの表示ルール | ✅ | `MapPin`/`PinIcon`。地図への組み込みは Phase 5・7 |
+| 2 | 共通エラー表示 | ✅ | `ErrorNotice`。4箇所の障害表示は Phase 2 の spot-selection で残り2箇所が入り完了 |
+| 3 | 写真・動画レイアウト | ✅ | `MediaGrid`。表示画面（SC-04/05/13）への組み込みは Phase 5・6 |
+| 4 | 投稿時の注意喚起表示 | ✅ | `UploadNotice`。Phase 2 の SC-03 に組み込み済み |
+
+計画では「他のどのストーリーにも依存しない土台」としていたが、実際には upload-notice の組み込み先（SC-03）が Phase 2、error-display の障害表示先が Phase 2/5 にあり、**Phase 0 単独では完了できないタスクが含まれていた**。いずれも Phase 2 の実装で完了した。
+
+## Phase 2 — 投稿の中核 🔷
+
+ストーリーの順序を計画から変更した。計画は post-creation を先頭に置いていたが、その理由（`posts`テーブルの定義）は Phase 1 で先取り済みだった。投稿フォーム（SC-03）は旅行タイトル入力とスポット入力を内包するため、**部品を先に作る順**に並べ直した。
+
+| # | ストーリー | 状態 | 備考 |
+|---|---|---|---|
+| 1 | F-PO-01 旅行タイトル仕様 | ✅ | Task5（表示範囲の制御）は対象画面が Phase 5〜7 のため保留 |
+| 2 | F-PO-01 スポット指定仕様 | ✅ | Google Maps ローダー（`use-google-maps.ts`）をここで新設。Phase 5・7 が再利用する |
+| 3 | F-PO-01 投稿作成 | ✅ | **動画は未対応**（下記）。Task3 の入力検証は post-edit（PR #233）で `validatePostInput` として共通化 |
+| 4 | F-PO-02 投稿編集 | 🔷 | PR #233 |
+| 5 | F-PO-03 投稿削除 | 🔷 | PR #234（#233の上に積んでいる）。Task2（投稿0件アルバム非表示）は Phase 7、Task3（バッジ回帰テスト）は Phase 4 とテスト基盤を待つ |
+
+**動画対応（post-creation Task4 の半分）は見送り**。要件定義書9章#5「ffmpegのVercelサーバーレス関数上での動作検証」が実装着手前の未決定事項のまま。写真のみで先行している。
+
+## Phase 3 — 共有テーブルの補完 🔷
+
+7タスク中4テーブルは Phase 1 で先取り済み。残りをここで実装。
+
+| # | ストーリー | 状態 | 備考 |
+|---|---|---|---|
+| 1 | データテーブル一覧の整合性確保 | 🔷 | Task4（badges）・Task6（operation_logs）は本PR。Task7（回帰確認）は結合テストのためローカルSupabase待ち |
+
+`operation_logs` への書き込み呼び出しは「各機能ストーリー側のタスク」とされているが、**どの機能ストーリーのタスクファイルにも含まれていない**（タスク分割の抜け）。組み込み先：ログイン成否・投稿の作成/編集/削除・コメント・通報・アカウント登録/退会・管理者操作。
+
+## Phase 4 — 横断基盤・独立機能の土台 🔶
+
+| # | ストーリー | 状態 | 備考 |
+|---|---|---|---|
+| 1 | F-AC-05 退会 | ✅ | Phase 1 で先取り済み |
+| 2 | 共通メニューバー | ⬜ | session-managementに依存（済）。未読バッジのデータ連携は Phase 9 |
+| 3 | F-NT-01 通知の発生条件 | ⬜ | `notifications`テーブルは済。共通の通知作成ヘルパーをここで作り、Phase 6・7・8 が呼ぶ |
+| 4 | F-SF-02 ブロック | ⬜ | `blocks`テーブルは済 |
+| 5 | F-SF-01 通報 | ⬜ | `reports`テーブルを自ら定義 |
+| 6 | F-RC-05 「行きたい」保存 | ⬜ | `wishlist`テーブルは済。Phase 5 の地図表示が消費 |
+| 7 | F-BG ステータスバッジ | ⬜ | `badges`テーブルは Phase 3 で済。都道府県判定に使う`spots.prefecture`も Phase 2 で済。いいね数バッジ（Task3）のみ Phase 6 完了後 |
+
+## Phase 5 — 地図・検索（F-MP） ⬜
+
+Phase 4 の wishlist、Phase 0 の pin-display-rules、Phase 2 の Google Maps ローダーが揃って全体マップが組める。
+
+| # | ストーリー | 備考 |
 |---|---|---|
-| 1 | ピンの表示ルール | [shared-ui/pin-display-rules](tasks/shared-ui/pin-display-rules/00-index.md) |
-| 2 | 共通エラー表示 | [shared-ui/error-display](tasks/shared-ui/error-display/00-index.md) |
-| 3 | 写真・動画レイアウト | [shared-ui/media-layout](tasks/shared-ui/media-layout/00-index.md) |
-| 4 | 投稿時の注意喚起表示 | [shared-ui/upload-notice](tasks/shared-ui/upload-notice/00-index.md) |
+| 1 | F-MP-01 地図表示 | 基盤画面（SC-02）。**ログイン後の着地点**。現在トップページが暫定でその役割を担っており、これができたら差し替える |
+| 2 | F-MP-03 ピン操作 | map-displayのピンタップ動作 |
+| 3 | F-MP-02 地名検索 | map-displayの検索バーUIを再利用 |
+| 4 | F-MP-04 投稿検索・絞り込み | pin-interactionの投稿一覧UIを再利用 |
+| 5 | F-MP-05 スポット写真一覧 | pin-interaction・media-layoutに依存 |
 
-## Phase 1 — 認証・アカウント基盤
+## Phase 6 — 閲覧・交流（F-VW） ⬜
 
-全機能がログイン必須（3.5.4）のため、最初に着手する。
+| # | ストーリー | 備考 |
+|---|---|---|
+| 1 | F-VW-01 投稿詳細閲覧 | SC-05。**投稿写真の署名付きURL発行**（`post-media`は非公開バケット）をここで実装する。post-delete Task4 の削除ボタンもここに置く |
+| 2 | F-VW-02 いいね | 完了後、Phase 4 の badges Task3 を統合 |
+| 3 | F-VW-03 コメント | |
 
-| # | ストーリー | ドキュメント | なぜこの順番か |
+## Phase 7 — 記録・振り返り（F-RC）残り ⬜
+
+| # | ストーリー | 備考 |
+|---|---|---|
+| 1 | F-RC-02 アルバム | **post-delete Task2（投稿0件アルバムの非表示）をここで実装** |
+| 2 | F-RC-03 アルバムの共同編集・招待 | account-deletionのオーナー継承（済）を参照。継承時に退会者を閲覧者へ降格する扱い（v2.7）の確認 |
+| 3 | F-RC-06 マイマップ | |
+| 4 | F-RC-01 マイページ | **trip-title Task5（表示範囲の制御）をここで実装**。現在トップページにある暫定の投稿一覧をここへ移す |
+
+## Phase 8 — 管理者機能（F-AD） 🔶
+
+| # | ストーリー | 状態 | 備考 |
 |---|---|---|---|
-| 1 | F-AC-01 サインアップ・ログイン | [account/signup-login](tasks/account/signup-login/00-index.md) | `users`テーブルを定義する土台。他の全ストーリーがログイン状態を前提とする |
-| 2 | F-AC-02 セッション管理 | [account/session-management](tasks/account/session-management/00-index.md) | signup-loginの認証結果を前提にMiddlewareを実装。以降ほぼ全画面がこのMiddlewareに依存 |
-| 3 | F-AC-03 ログアウト | [account/logout](tasks/account/logout/00-index.md) | session-managementのセッション破棄処理を利用 |
-| 4 | F-AC-04 プロフィール編集 | [account/profile-edit](tasks/account/profile-edit/00-index.md) | 画像アップロード共通処理（EXIF除去・縮小画像生成）をここで実装し、投稿機能（Phase 2）が再利用する |
+| 1 | F-AD-01 管理者ログイン | 🔶 | Task1（`/admin`の`is_admin`判定）は Phase 1 で先取り済み。Task2（ログイン後遷移）は未着手 |
+| 2 | F-AD-02 管理者ダッシュボード | ✅ | Phase 1 で先取り済み |
+| 3 | F-AD-03 お知らせ管理 | ⬜ | |
+| 4 | F-AD-04 通報一覧 | ⬜ | |
+| 5 | F-AD-05 通報対応操作 | ⬜ | |
 
-## Phase 2 — 投稿の中核
+## Phase 9 — 通知一覧の最終統合（F-NT-02） ⬜
 
-`trips`・`spots`・`posts`・`post_photos`テーブルを定義する、アプリの中心機能。
+| # | ストーリー | 備考 |
+|---|---|---|
+| 1 | F-NT-02 通知一覧画面 | `notifications`（済）＋`system_announcements`（Phase 8）の統合読み取り |
 
-| # | ストーリー | ドキュメント | なぜこの順番か |
-|---|---|---|---|
-| 1 | F-PO-01 投稿作成 | [posts/post-creation](tasks/posts/post-creation/00-index.md) | `posts`・`post_photos`テーブルを定義。profile-editの画像処理を再利用 |
-| 2 | F-PO-01 旅行タイトル仕様 | [posts/trip-title](tasks/posts/trip-title/00-index.md) | `trips`テーブルを定義。post-creationのフォームに統合される |
-| 3 | F-PO-01 スポット指定仕様 | [posts/spot-selection](tasks/posts/spot-selection/00-index.md) | `spots`テーブルを定義。都道府県逆ジオコーディングも含む（Phase 4のバッジ機能が利用） |
-| 4 | F-PO-02 投稿編集 | [posts/post-edit](tasks/posts/post-edit/00-index.md) | post-creationの成果物を編集対象とする |
-| 5 | F-PO-03 投稿削除 | [posts/post-delete](tasks/posts/post-delete/00-index.md) | post-creationの成果物を削除対象とする |
+---
 
-## Phase 3 — 共有テーブルの補完
+## 計画と実際の順序が異なった理由
 
-`users`・`trips`・`posts`・`spots`が揃って初めて定義できる、複数機能から参照される横断テーブル群。
+| 差異 | 理由 |
+|---|---|
+| Phase 1 を Phase 0 より先に | 最初の依頼が F-AD-02・F-AC-05（Issue #1〜#10）で、その依存を辿ると認証基盤が必要だった。F-AC 系は shared-ui に依存していなかったため、順序を変えても問題なかった |
+| Phase 3・4・8 の一部を Phase 1 で先取り | 同じ理由。`deactivate_user` が `album_members`・`notifications` を、`/admin` ガードがセッション検証を必要とした |
+| Phase 2 のストーリー順を変更 | post-creation を先頭に置く理由（テーブル定義）が先取りで消えており、フォームが内包する部品（旅行タイトル・スポット）を先に作る方が手戻りが無かった |
+| Phase 0 が Phase 0 単独で完了しなかった | upload-notice・error-display の一部は、組み込み先の画面が Phase 2/5 にあった。「他に依存しない」という前提が正確でなかった |
 
-| # | ストーリー | ドキュメント | 定義するテーブル |
-|---|---|---|---|
-| 1 | データテーブル一覧の整合性確保 | [data-model/table-catalog](tasks/data-model/table-catalog/00-index.md) | rate_limits, album_members, notifications, badges, comments/likes/wishlist/blocks, operation_logs |
+## テスト基盤について
 
-## Phase 4 — 横断基盤・独立機能の土台
-
-Phase 3のテーブルにのみ依存し、互いにはほぼ依存しないため並行着手できる。ここで「共通ヘルパー」を用意しておくことで、Phase 5以降の各機能が車輪の再発明をせずに済む。
-
-| # | ストーリー | ドキュメント | なぜここか |
-|---|---|---|---|
-| 1 | F-AC-05 退会 | [account/account-deletion](tasks/account/account-deletion/00-index.md) | `album_members`・`notifications`テーブルに依存。オーナー継承ロジックをここで実装（records/album-collaborationが後で参照） |
-| 2 | 共通メニューバー | [shared-ui/menu-bar](tasks/shared-ui/menu-bar/00-index.md) | session-managementに依存。未読バッジのデータ連携は後でnotification-listが行う |
-| 3 | F-NT-01 通知の発生条件 | [notifications/notification-triggers](tasks/notifications/notification-triggers/00-index.md) | `notifications`テーブルに依存する共通の通知作成ヘルパー。Phase 6・7・8の各機能がこれを呼び出す |
-| 4 | F-SF-02 ブロック | [safety/blocking](tasks/safety/blocking/00-index.md) | `blocks`テーブルに依存する共通の除外フィルタ。Phase 5〜7の各機能が任意で組み込む |
-| 5 | F-SF-01 通報 | [safety/reporting](tasks/safety/reporting/00-index.md) | `reports`テーブルを自ら新規定義。Phase 8の管理者機能（通報対応）が消費する |
-| 6 | F-RC-05 「行きたい」保存 | [records/wishlist](tasks/records/wishlist/00-index.md) | `wishlist`テーブルのみに依存。Phase 5の地図表示（「行きたい」タブ）が消費する |
-| 7 | F-BG ステータスバッジ | [badges/status-badges](tasks/badges/status-badges/00-index.md) | `badges`テーブル・spot-selectionの都道府県判定に依存。**いいね数バッジ判定（Task3）のみPhase 6のbrowsing/likes完了後に統合**（他のタスクはここで完了可） |
-
-## Phase 5 — 地図・検索（F-MP）
-
-Phase 4のwishlist・pin-display-rulesが揃って初めて全体マップが組める。
-
-| # | ストーリー | ドキュメント | なぜこの順番か |
-|---|---|---|---|
-| 1 | F-MP-01 地図表示 | [map-search/map-display](tasks/map-search/map-display/00-index.md) | spot-selection・pin-display-rules・session-management・records/wishlistに依存する基盤画面（SC-02） |
-| 2 | F-MP-03 ピン操作 | [map-search/pin-interaction](tasks/map-search/pin-interaction/00-index.md) | map-displayのピンタップ動作として実装 |
-| 3 | F-MP-02 地名検索 | [map-search/place-search](tasks/map-search/place-search/00-index.md) | map-displayの検索バーUIを再利用 |
-| 4 | F-MP-04 投稿検索・絞り込み | [map-search/post-filter](tasks/map-search/post-filter/00-index.md) | pin-interactionの投稿一覧UIを再利用 |
-| 5 | F-MP-05 スポット写真一覧 | [map-search/spot-photo-gallery](tasks/map-search/spot-photo-gallery/00-index.md) | pin-interaction・media-layoutに依存 |
-
-## Phase 6 — 閲覧・交流（F-VW）
-
-Phase 4の通知ヘルパーが揃って初めて、いいね・コメントの通知連携まで完成できる。
-
-| # | ストーリー | ドキュメント | なぜこの順番か |
-|---|---|---|---|
-| 1 | F-VW-01 投稿詳細閲覧 | [browsing/post-detail-view](tasks/browsing/post-detail-view/00-index.md) | posts・wishlistの保存導線を統合する詳細画面（SC-05） |
-| 2 | F-VW-02 いいね | [browsing/likes](tasks/browsing/likes/00-index.md) | interaction-tables・notification-triggersに依存。完了後、Phase 4のbadges Task3（いいね数バッジ）を統合する |
-| 3 | F-VW-03 コメント | [browsing/comments](tasks/browsing/comments/00-index.md) | interaction-tables・notification-triggersに依存 |
-
-## Phase 7 — 記録・振り返り（F-RC）残り
-
-wishlist以外の4ストーリー。album-collaborationはaccount-deletionのオーナー継承ロジックとnotification-triggersに、my-mapはmap-displayの地図コンポーネントに依存する。
-
-| # | ストーリー | ドキュメント | なぜこの順番か |
-|---|---|---|---|
-| 1 | F-RC-02 アルバム | [records/album](tasks/records/album/00-index.md) | trip-titleのリネーム機能・post-deleteの空アルバム非表示ロジックを再利用 |
-| 2 | F-RC-03 アルバムの共同編集・招待 | [records/album-collaboration](tasks/records/album-collaboration/00-index.md) | album_members・account-deletionのオーナー継承・notification-triggersに依存 |
-| 3 | F-RC-06 マイマップ | [records/my-map](tasks/records/my-map/00-index.md) | map-search/map-displayの地図コンポーネントとpin-display-rulesを再利用 |
-| 4 | F-RC-01 マイページ | [records/my-page](tasks/records/my-page/00-index.md) | 投稿一覧・アルバム・バッジへの導線をまとめるハブ画面のため、参照先が揃った最後に実装 |
-
-## Phase 8 — 管理者機能（F-AD）
-
-一般ユーザー向け機能が一通り揃った後、安全機能（Phase 4）と通知基盤（Phase 4）を消費する形で実装する。
-
-| # | ストーリー | ドキュメント | なぜこの順番か |
-|---|---|---|---|
-| 1 | F-AD-01 管理者ログイン | [admin/admin-login](tasks/admin/admin-login/00-index.md) | session-managementのMiddlewareを拡張。認証自体はF-AC-01を流用 |
-| 2 | F-AD-02 管理者ダッシュボード | [admin/admin-dashboard](tasks/admin/admin-dashboard/00-index.md) | admin-loginのログイン後遷移先 |
-| 3 | F-AD-03 お知らせ管理 | [admin/announcement-management](tasks/admin/announcement-management/00-index.md) | `system_announcements`テーブルを自ら新規定義（Phase 9のnotification-listが読み取る） |
-| 4 | F-AD-04 通報一覧 | [admin/report-list](tasks/admin/report-list/00-index.md) | safety/reportingが定義した`reports`テーブルを参照 |
-| 5 | F-AD-05 通報対応操作 | [admin/report-handling](tasks/admin/report-handling/00-index.md) | report-listの一覧から遷移。notification-triggersを使い「削除」対応時のみ通報者へ通知 |
-
-## Phase 9 — 通知一覧の最終統合（F-NT-02）
-
-`notifications`と`system_announcements`の両方を統合表示するため、Phase 8（お知らせ管理）が完了して初めて全機能テストが可能になる。
-
-| # | ストーリー | ドキュメント | なぜ最後か |
-|---|---|---|---|
-| 1 | F-NT-02 通知一覧画面 | [notifications/notification-list](tasks/notifications/notification-list/00-index.md) | `notifications`（Phase3）＋`system_announcements`（Phase8のannouncement-management）の統合読み取りが必要。加えてPhase6・7で発生する各種通知（コメント・いいね・アルバム招待等）が出揃った状態でE2E検証するのが最も効率的 |
+単体テスト（Vitest）は PR #235 で導入し、Phase 0〜2 の既存コードの単体テスト要件をコード化した。結合テスト（ローカルSupabase）・E2E（Playwright）は未整備。**各ストーリーの「受入テスト（E2E）」タスクはすべて未着手**で、E2E環境を入れるまで完了しない。詳細は[development-process.md](development-process.md)。
 
 ## 補足
 
-- 各フェーズ内のストーリーは基本的に並行着手可能。表中の「なぜこの順番か」列に他フェーズへの依存が書かれていないストーリー同士は、チーム体制が許せば同時進行してよい。
-- ここに挙げた順序はドキュメント間の論理依存（テーブル・共通コンポーネント）に基づくものであり、[受入条件の優先度や工数見積もりは含まない](requirement.md)。実際のスプリント計画では、要件定義書8章の受入条件のうちMVPとして外せないものを別途選定すること。
+- 各フェーズ内のストーリーは基本的に並行着手可能。表中の「備考」に他フェーズへの依存が書かれていないストーリー同士は同時進行してよい。
+- ここに挙げた順序はドキュメント間の論理依存に基づくものであり、[受入条件の優先度や工数見積もりは含まない](requirement.md)。提出日（2026年10月7日）に対して全Phaseは完了しない見込みのため、要件定義書8章の受入条件のうちMVPとして外せないものを別途選定すること。
 - 全体像・カテゴリごとのストーリー一覧は[README.md](README.md)を参照。
