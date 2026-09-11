@@ -2,7 +2,7 @@
 
 `docs/user-stories/`・`docs/tasks/`配下の全ストーリーを、テーブル依存関係と共通コンポーネントの再利用関係に基づいて開発順に並べたもの。各ストーリーの`00-index.md`に記載された「依存」欄を根拠としている。
 
-**2026-09-11 改訂**：当初の計画順（Phase 0 → 1 → 2 → …）に対し、実際の実装は Phase 1 から着手し、前提となるテーブルを後続Phaseから先取りする形で進んだ。本ファイルは**実際に実装した順**に並べ直し、各ストーリーの実装状況を併記する。Phase番号は他ドキュメント・Issue・PRから参照されているため**識別子として維持**し、並び順だけを変えている（番号順＝実装順ではない）。
+**2026-09-11 改訂**（2026-09-12 状態更新）：当初の計画順（Phase 0 → 1 → 2 → …）に対し、実際の実装は Phase 1 から着手し、前提となるテーブルを後続Phaseから先取りする形で進んだ。本ファイルは**実際に実装した順**に並べ直し、各ストーリーの実装状況を併記する。Phase番号は他ドキュメント・Issue・PRから参照されているため**識別子として維持**し、並び順だけを変えている（番号順＝実装順ではない）。
 
 **読み方**：上から順が実装順。「状態」列の凡例は以下。
 
@@ -16,8 +16,8 @@
 ```mermaid
 flowchart TD
     P1["Phase 1\n認証・アカウント基盤\n✅"] --> P0["Phase 0\n共通UIコンポーネント\n✅"]
-    P0 --> P2["Phase 2\n投稿の中核\n🔷"]
-    P2 --> P3["Phase 3\n共有テーブルの補完\n🔷"]
+    P0 --> P2["Phase 2\n投稿の中核\n✅"]
+    P2 --> P3["Phase 3\n共有テーブルの補完\n🔶"]
     P3 --> P4["Phase 4\n横断基盤の土台\n🔶"]
     P4 --> P5["Phase 5\n地図・検索\n⬜"]
     P4 --> P6["Phase 6\n閲覧・交流\n⬜"]
@@ -62,7 +62,7 @@ flowchart TD
 
 計画では「他のどのストーリーにも依存しない土台」としていたが、実際には upload-notice の組み込み先（SC-03）が Phase 2、error-display の障害表示先が Phase 2/5 にあり、**Phase 0 単独では完了できないタスクが含まれていた**。いずれも Phase 2 の実装で完了した。
 
-## Phase 2 — 投稿の中核 🔷
+## Phase 2 — 投稿の中核 ✅
 
 ストーリーの順序を計画から変更した。計画は post-creation を先頭に置いていたが、その理由（`posts`テーブルの定義）は Phase 1 で先取り済みだった。投稿フォーム（SC-03）は旅行タイトル入力とスポット入力を内包するため、**部品を先に作る順**に並べ直した。
 
@@ -71,20 +71,20 @@ flowchart TD
 | 1 | F-PO-01 旅行タイトル仕様 | ✅ | Task5（表示範囲の制御）は対象画面が Phase 5〜7 のため保留 |
 | 2 | F-PO-01 スポット指定仕様 | ✅ | Google Maps ローダー（`use-google-maps.ts`）をここで新設。Phase 5・7 が再利用する |
 | 3 | F-PO-01 投稿作成 | ✅ | **動画は未対応**（下記）。Task3 の入力検証は post-edit（PR #233）で `validatePostInput` として共通化 |
-| 4 | F-PO-02 投稿編集 | 🔷 | PR #233 |
-| 5 | F-PO-03 投稿削除 | 🔷 | PR #234（#233の上に積んでいる）。Task2（投稿0件アルバム非表示）は Phase 7、Task3（バッジ回帰テスト）は Phase 4 とテスト基盤を待つ |
+| 4 | F-PO-02 投稿編集 | ✅ | PR #233 |
+| 5 | F-PO-03 投稿削除 | ✅ | PR #234。Task2（投稿0件アルバム非表示）は Phase 7、Task3（バッジ回帰テスト）は F-BG 実装後の結合テスト待ち |
 
 **動画対応（post-creation Task4 の半分）は見送り**。要件定義書9章#5「ffmpegのVercelサーバーレス関数上での動作検証」が実装着手前の未決定事項のまま。写真のみで先行している。
 
-## Phase 3 — 共有テーブルの補完 🔷
+## Phase 3 — 共有テーブルの補完 🔶
 
 7タスク中4テーブルは Phase 1 で先取り済み。残りをここで実装。
 
 | # | ストーリー | 状態 | 備考 |
 |---|---|---|---|
-| 1 | データテーブル一覧の整合性確保 | 🔷 | Task4（badges）・Task6（operation_logs）は本PR。Task7（回帰確認）は結合テストのためローカルSupabase待ち |
+| 1 | データテーブル一覧の整合性確保 | 🔶 | Task4（badges）・Task6（operation_logs）はマージ済。Task7（回帰確認）は結合テストのためローカルSupabase待ち |
 
-`operation_logs` への書き込み呼び出しは「各機能ストーリー側のタスク」とされているが、**どの機能ストーリーのタスクファイルにも含まれていない**（タスク分割の抜け）。組み込み先：ログイン成否・投稿の作成/編集/削除・コメント・通報・アカウント登録/退会・管理者操作。
+`operation_logs` への書き込み呼び出しは「各機能ストーリー側のタスク」とされているが、**どの機能ストーリーのタスクファイルにも含まれていない**（タスク分割の抜け）。ログイン成否・投稿の作成/編集/削除・アカウント登録/退会・通報は組み込み済み（PR #237、#241）。残りはコメント（Phase 6）・管理者操作（Phase 8）で、各ハンドラ実装時に `recordOperation` を呼ぶ。組み込み状況の一覧は [06-operation-logs-table.md](tasks/data-model/table-catalog/06-operation-logs-table.md)。
 
 ## Phase 4 — 横断基盤・独立機能の土台 🔶
 
@@ -95,7 +95,7 @@ flowchart TD
 | 3 | F-NT-01 通知の発生条件 | ✅ | `notifications`テーブルは済。共通の通知作成ヘルパーをここで作り、Phase 6・7・8 が呼ぶ |
 | 4 | F-SF-02 ブロック | ✅ | 投稿一覧・コメント・検索へのフィルタ適用は各機能実装時に `getBlockedUserIds` を組み込む |
 | 5 | F-SF-01 通報 | ✅ | `reports`テーブル定義済。導線は現状プロフィールのみ。投稿詳細・コメント・スポット・アルバム画面の実装時に `ReportLink` を置く |
-| 6 | F-RC-05 「行きたい」保存 | ⬜ | `wishlist`テーブルは済。Phase 5 の地図表示が消費 |
+| 6 | F-RC-05 「行きたい」保存 | ✅ | `POST/GET /api/wishlist`・`DELETE /api/wishlist/[spotId]`、SC-08（/wishlist）、`WishlistButton`。ボタンの SC-04/SC-05 への組み込みは Phase 5・6、SC-06 からの導線は Phase 7 my-page Task4。地図上の「行きたい」ピンは Phase 5 が `wishlist` を参照 |
 | 7 | F-BG ステータスバッジ | ⬜ | `badges`テーブルは Phase 3 で済。都道府県判定に使う`spots.prefecture`も Phase 2 で済。いいね数バッジ（Task3）のみ Phase 6 完了後 |
 
 ## Phase 5 — 地図・検索（F-MP） ⬜
@@ -134,8 +134,8 @@ Phase 4 の wishlist、Phase 0 の pin-display-rules、Phase 2 の Google Maps �
 | 1 | F-AD-01 管理者ログイン | 🔶 | Task1（`/admin`の`is_admin`判定）は Phase 1 で先取り済み。Task2（ログイン後遷移）は未着手 |
 | 2 | F-AD-02 管理者ダッシュボード | ✅ | Phase 1 で先取り済み |
 | 3 | F-AD-03 お知らせ管理 | ⬜ | |
-| 4 | F-AD-04 通報一覧 | ⬜ | |
-| 5 | F-AD-05 通報対応操作 | ⬜ | |
+| 4 | F-AD-04 通報一覧 | ⬜ | `reports`テーブルは Phase 4 で済 |
+| 5 | F-AD-05 通報対応操作 | ⬜ | `reports`の status 更新と `report_resolved` 通知（`createNotification`）、`operation_logs` の `admin_action` を組み込む |
 
 ## Phase 9 — 通知一覧の最終統合（F-NT-02） ⬜
 
@@ -156,7 +156,7 @@ Phase 4 の wishlist、Phase 0 の pin-display-rules、Phase 2 の Google Maps �
 
 ## テスト基盤について
 
-単体テスト（Vitest）は PR #235 で導入し、Phase 0〜2 の既存コードの単体テスト要件をコード化した。結合テスト（ローカルSupabase）・E2E（Playwright）は未整備。**各ストーリーの「受入テスト（E2E）」タスクはすべて未着手**で、E2E環境を入れるまで完了しない。詳細は[development-process.md](development-process.md)。
+単体テスト（Vitest）は PR #235 で導入し、Phase 0〜2 の既存コードの単体テスト要件をコード化した。以降のストーリーは実装と同じPRで単体テストを書いている（Route Handler も `vi.mock` で Supabase を差し替えて分岐を検証する。例: `src/app/api/wishlist/route.test.ts`）。結合テスト（ローカルSupabase）・E2E（Playwright）は未整備。**各ストーリーの「受入テスト（E2E）」タスクはすべて未着手**で、E2E環境を入れるまで完了しない。詳細は[development-process.md](development-process.md)。
 
 ## 補足
 
