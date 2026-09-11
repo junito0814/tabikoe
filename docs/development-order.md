@@ -18,7 +18,7 @@ flowchart TD
     P1["Phase 1\n認証・アカウント基盤\n✅"] --> P0["Phase 0\n共通UIコンポーネント\n✅"]
     P0 --> P2["Phase 2\n投稿の中核\n✅"]
     P2 --> P3["Phase 3\n共有テーブルの補完\n🔶"]
-    P3 --> P4["Phase 4\n横断基盤の土台\n🔶"]
+    P3 --> P4["Phase 4\n横断基盤の土台\n✅"]
     P4 --> P5["Phase 5\n地図・検索\n⬜"]
     P4 --> P6["Phase 6\n閲覧・交流\n⬜"]
     P5 --> P7["Phase 7\n記録・振り返り\n⬜"]
@@ -86,7 +86,7 @@ flowchart TD
 
 `operation_logs` への書き込み呼び出しは「各機能ストーリー側のタスク」とされているが、**どの機能ストーリーのタスクファイルにも含まれていない**（タスク分割の抜け）。ログイン成否・投稿の作成/編集/削除・アカウント登録/退会・通報は組み込み済み（PR #237、#241）。残りはコメント（Phase 6）・管理者操作（Phase 8）で、各ハンドラ実装時に `recordOperation` を呼ぶ。組み込み状況の一覧は [06-operation-logs-table.md](tasks/data-model/table-catalog/06-operation-logs-table.md)。
 
-## Phase 4 — 横断基盤・独立機能の土台 🔶
+## Phase 4 — 横断基盤・独立機能の土台 ✅
 
 | # | ストーリー | 状態 | 備考 |
 |---|---|---|---|
@@ -96,7 +96,7 @@ flowchart TD
 | 4 | F-SF-02 ブロック | ✅ | 投稿一覧・コメント・検索へのフィルタ適用は各機能実装時に `getBlockedUserIds` を組み込む |
 | 5 | F-SF-01 通報 | ✅ | `reports`テーブル定義済。導線は現状プロフィールのみ。投稿詳細・コメント・スポット・アルバム画面の実装時に `ReportLink` を置く |
 | 6 | F-RC-05 「行きたい」保存 | ✅ | `POST/GET /api/wishlist`・`DELETE /api/wishlist/[spotId]`、SC-08（/wishlist）、`WishlistButton`。ボタンの SC-04/SC-05 への組み込みは Phase 5・6、SC-06 からの導線は Phase 7 my-page Task4。地図上の「行きたい」ピンは Phase 5 が `wishlist` を参照 |
-| 7 | F-BG ステータスバッジ | ⬜ | `badges`テーブルは Phase 3 で済。都道府県判定に使う`spots.prefecture`も Phase 2 で済。いいね数バッジ（Task3）のみ Phase 6 完了後 |
+| 7 | F-BG ステータスバッジ | ✅ | カタログ（`src/lib/badges/catalog.ts`）、投稿作成時の判定（`POST /api/posts` → `evaluatePostBadges`）、SC-10（/badges）、`GET /api/badges`、獲得トースト（投稿後にトップページへクエリで受け渡し）。いいね数バッジの関数 `awardLikeCountBadgeIfEligible` は実装済みで、呼び出しは Phase 6 likes Task1 が行う（組み込みガイドを同タスクに追記） |
 
 ## Phase 5 — 地図・検索（F-MP） ⬜
 
