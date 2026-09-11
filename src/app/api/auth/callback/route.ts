@@ -5,6 +5,7 @@ import { ensureUserRecord } from "@/lib/users/ensure-user-record";
 import { safeRedirectPath } from "@/lib/safe-redirect";
 import { getClientIp } from "@/lib/http/client-ip";
 import { isWithinRateLimit } from "@/lib/rate-limit/check-rate-limit";
+import { recordOperation } from "@/lib/logs/record-operation";
 
 // F-AC-01 Task8: 同一IPから1分間に10回を超える試行を拒否する
 const LOGIN_RATE_LIMIT_WINDOW_SECONDS = 60;
@@ -54,6 +55,11 @@ export async function GET(request: Request) {
     const { data, error } = await supabase.auth.exchangeCodeForSession(code);
 
     if (error || !data.user) {
+        // 要件7.5: ログイン失敗。ユーザーは確定していないのでuser_idは持たない
+        await recordOperation(admin, {
+            actionType: "login_failure",
+            detail: { reason: "code_exchange_failed", clientIp: getClientIp(request) },
+        });
         return NextResponse.redirect(`${origin}${entryScreen}?error=1`);
     }
 
@@ -75,10 +81,18 @@ export async function GET(request: Request) {
         // ログイン画面から来た場合は同意欄自体が無いため、必ずここに該当する。
         if (!isSignupFlow) {
             await supabase.auth.signOut();
+            await recordOperation(admin, {
+                actionType: "login_failure",
+                detail: { reason: "account_not_found" },
+            });
             return NextResponse.redirect(`${origin}/signup?error=account_not_found`);
         }
         if (consent !== "1") {
             await supabase.auth.signOut();
+            await recordOperation(admin, {
+                actionType: "login_failure",
+                detail: { reason: "consent_required" },
+            });
             return NextResponse.redirect(`${origin}/signup?error=consent_required`);
         }
 
@@ -88,9 +102,23 @@ export async function GET(request: Request) {
             await supabase.auth.signOut();
             return NextResponse.redirect(`${origin}/signup?error=1`);
         }
+
+        // 要件7.5: アカウントの登録
+        await recordOperation(admin, {
+            actionType: "account_create",
+            userId: data.user.id,
+            targetId: data.user.id,
+        });
     }
     // 登録済みの場合は、どちらの画面から来ても通常のログインとして扱う。
     // consented_atは初回サインアップ時の値を保持する（ensureUserRecordを呼ばない）。
+
+    // 要件7.5: ログイン成功（新規作成直後のログインも含む）
+    await recordOperation(admin, {
+        actionType: "login_success",
+        userId: data.user.id,
+        detail: { flow: isSignupFlow ? "signup" : "login" },
+    });
 
     return NextResponse.redirect(`${origin}${redirectTo}`);
 }

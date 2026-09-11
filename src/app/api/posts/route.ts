@@ -5,6 +5,7 @@ import { getAuthenticatedUser } from "@/lib/auth/get-authenticated-user";
 import { isWithinRateLimit } from "@/lib/rate-limit/check-rate-limit";
 import { resolveTripId, TripTitleValidationError } from "@/lib/trips/resolve-trip";
 import { validatePostInput } from "@/lib/posts/validate-post-input";
+import { recordOperation } from "@/lib/logs/record-operation";
 import {
   POST_RATE_LIMIT_MAX_ATTEMPTS,
   POST_RATE_LIMIT_WINDOW_SECONDS,
@@ -141,6 +142,14 @@ export async function POST(request: Request) {
     await admin.from("posts").delete().eq("id", post.id);
     return NextResponse.json({ error: "photo_insert_failed" }, { status: 500 });
   }
+
+  // 要件7.5: 投稿の作成
+  await recordOperation(admin, {
+    actionType: "post_create",
+    userId: user.id,
+    targetId: post.id,
+    detail: { visibility, photoCount: photoPaths.length },
+  });
 
   return NextResponse.json({ postId: post.id }, { status: 201 });
 }
