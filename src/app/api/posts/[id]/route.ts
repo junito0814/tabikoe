@@ -5,6 +5,7 @@ import { getAuthenticatedUser } from "@/lib/auth/get-authenticated-user";
 import { resolveTripId, TripTitleValidationError } from "@/lib/trips/resolve-trip";
 import { validatePostInput } from "@/lib/posts/validate-post-input";
 import { removeStorageObjects } from "@/lib/posts/photos";
+import { recordOperation } from "@/lib/logs/record-operation";
 
 /**
  * F-PO-02 Task1: 投稿編集
@@ -103,6 +104,14 @@ export async function PATCH(
     return NextResponse.json({ error: "update_failed" }, { status: 500 });
   }
 
+  // 要件7.5: 投稿の編集
+  await recordOperation(admin, {
+    actionType: "post_update",
+    userId: user.id,
+    targetId: id,
+    detail: { visibility },
+  });
+
   return NextResponse.json({ postId: id });
 }
 
@@ -167,6 +176,14 @@ export async function DELETE(
     admin,
     (photos ?? []).map((photo) => photo.storage_url)
   );
+
+  // 要件7.5: 投稿の削除。対象は既に消えているが、監査のためIDは残す
+  await recordOperation(admin, {
+    actionType: "post_delete",
+    userId: user.id,
+    targetId: id,
+    detail: { photoCount: photos?.length ?? 0 },
+  });
 
   return NextResponse.json({ ok: true });
 }

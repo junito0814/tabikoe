@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getAuthenticatedUser } from "@/lib/auth/get-authenticated-user";
 import { unlinkAllIdentities } from "@/lib/users/unlink-all-identities";
+import { recordOperation } from "@/lib/logs/record-operation";
 
 /**
  * F-AC-05: 退会実行 Route Handler
@@ -57,6 +58,14 @@ export async function POST(request: Request) {
   if (rpcError) {
     return NextResponse.json({ error: "deactivation_failed" }, { status: 500 });
   }
+
+  // 要件7.5: アカウントの退会。セッション破棄の前に、本人のIDで記録しておく
+  await recordOperation(admin, {
+    actionType: "account_delete",
+    userId: user.id,
+    targetId: user.id,
+    detail: { wasAdmin: profile.is_admin },
+  });
 
   // signOutでCookieが破棄される前に、有効なセッションのままIdP連携を解除する
   await unlinkAllIdentities(supabase);
