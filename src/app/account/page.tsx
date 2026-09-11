@@ -7,6 +7,8 @@ import DisplayNameForm from "./display-name-form";
 import AvatarUploadForm from "./avatar-upload-form";
 import LogoutButton from "./logout-button";
 import DeleteAccountDialog from "./delete-account-dialog";
+import { BlockedUsersList, type BlockedUser } from "@/components/blocks/BlockedUsersList";
+import { createAdminClient } from "@/lib/supabase/admin";
 
 /**
  * プロフィール編集画面（SC-07）
@@ -34,6 +36,30 @@ export default async function AccountPage() {
     );
   }
 
+  // F-SF-02 Task3: ブロック中のユーザー一覧。blocks は本人が blocker の行をRLSで読めるが、
+  // 相手の表示名・アイコンは users の他人行なので service_role で引く
+  const admin = createAdminClient();
+  const { data: blockRows } = await supabase
+    .from("blocks")
+    .select("blocked_id")
+    .eq("blocker_id", user.id)
+    .order("created_at", { ascending: false });
+  const blockedIds = (blockRows ?? []).map((row) => row.blocked_id);
+  let blockedUsers: BlockedUser[] = [];
+  if (blockedIds.length > 0) {
+    const { data: blockedProfiles } = await admin
+      .from("users")
+      .select("id, display_name, avatar_url")
+      .in("id", blockedIds);
+    const byId = new Map((blockedProfiles ?? []).map((row) => [row.id, row]));
+    blockedUsers = blockedIds.flatMap((blockedId) => {
+      const row = byId.get(blockedId);
+      return row
+        ? [{ id: row.id, displayName: row.display_name ?? "ユーザー", avatarUrl: row.avatar_url }]
+        : [];
+    });
+  }
+
   return (
     <div className="flex min-h-screen flex-col items-center gap-8 bg-[#FBF6F0] px-6 py-16">
       <h1 className="text-[16px] font-bold text-[#3D3A35]">アカウント</h1>
@@ -50,6 +76,10 @@ export default async function AccountPage() {
           管理者ダッシュボード
         </Link>
       )}
+
+      <div className="w-full max-w-[360px] border-t border-[#E8E1D8] pt-6">
+        <BlockedUsersList initialBlockedUsers={blockedUsers} />
+      </div>
 
       <div className="flex w-full max-w-[360px] flex-col items-center gap-4 border-t border-[#E8E1D8] pt-6">
         <LogoutButton />
