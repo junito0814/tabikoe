@@ -57,7 +57,7 @@ export function BlockUserButton({
   };
 
   return (
-    <div className="w-full">
+    <div className="flex flex-col items-center">
       <button
         type="button"
         onClick={() => setIsConfirming(true)}
