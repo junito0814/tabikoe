@@ -41,15 +41,16 @@ function NavLink({ href, label }: { href: string; label: string }) {
 export default async function Home({
   searchParams,
 }: {
-  searchParams: Promise<{ posted?: string }>;
+  searchParams: Promise<{ posted?: string; updated?: string }>;
 }) {
-  const { posted } = await searchParams;
+  const { posted, updated } = await searchParams;
   const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
 
   let isAdmin = false;
+  let myPosts: { id: string; category: string; created_at: string }[] = [];
   if (user) {
     const { data: profile } = await supabase
       .from("users")
@@ -57,6 +58,16 @@ export default async function Home({
       .eq("id", user.id)
       .maybeSingle();
     isAdmin = profile?.is_admin ?? false;
+
+    // 本来はマイページ（SC-06、F-RC-01）が担う一覧。
+    // そちらが未実装で編集画面への導線が他に無いため、暫定でここに置く。
+    const { data: posts } = await supabase
+      .from("posts")
+      .select("id, category, created_at")
+      .eq("user_id", user.id)
+      .order("created_at", { ascending: false })
+      .limit(10);
+    myPosts = posts ?? [];
   }
 
   return (
@@ -75,9 +86,9 @@ export default async function Home({
         </p>
       </div>
 
-      {posted === "1" && (
+      {(posted === "1" || updated === "1") && (
         <p className="w-full max-w-[320px] rounded-lg border border-[#3D7A5C]/25 bg-[#3D7A5C]/[0.08] px-3.5 py-2.5 text-center text-[13px] text-[#3D7A5C]">
-          投稿しました
+          {posted === "1" ? "投稿しました" : "投稿を更新しました"}
         </p>
       )}
 
@@ -96,9 +107,30 @@ export default async function Home({
         )}
       </div>
 
+      {myPosts.length > 0 && (
+        <div className="w-full max-w-[320px]">
+          <h2 className="mb-2 text-[12px] font-medium text-[#9C9488]">自分の投稿</h2>
+          <ul className="flex flex-col gap-2">
+            {myPosts.map((post) => (
+              <li key={post.id}>
+                <Link
+                  href={`/posts/${post.id}/edit`}
+                  className="flex items-center justify-between rounded-[10px] border border-[#E8E1D8] bg-white px-3.5 py-2.5"
+                >
+                  <span className="text-[13px] text-[#3D3A35]">{post.category}</span>
+                  <span className="text-[11px] text-[#9C9488]">
+                    {new Date(post.created_at).toLocaleDateString("ja-JP")}・編集
+                  </span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
       {user && (
         <p className="max-w-[320px] text-center text-[11px] leading-[1.7] text-[#9C9488]">
-          地図・投稿機能は開発中です
+          地図・投稿一覧の画面は開発中です
         </p>
       )}
     </div>

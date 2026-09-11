@@ -26,12 +26,33 @@ const MAX_PHOTO_SIZE_BYTES = 10 * 1024 * 1024;
 const ALLOWED_PHOTO_TYPES = ["image/jpeg", "image/png"];
 
 /**
- * F-PO-01 Task2: 投稿作成フォームUI（SC-03）
- * 出典: docs/tasks/posts/post-creation/02-post-form-ui.md
+ * SC-03 投稿作成・編集画面
+ * 出典: docs/tasks/posts/post-creation/02-post-form-ui.md（F-PO-01 Task2）
+ *       docs/tasks/posts/post-edit/03-post-edit-ui.md（F-PO-02 Task3）
  *
+ * 3.3.3が「編集可能項目＝投稿の全項目」としており、入力規則も作成時と同じため、
+ * 同じフォームを編集モードとして再利用する（initialPostの有無で切り替える）。
  * 旅行タイトル・スポット名は trip-title / spot-selection の成果物を組み込む。
  * 動画は未対応（要件定義書9章#5のffmpeg検証が未了のため、写真のみ先行実装）。
  */
+export interface ExistingPhoto {
+  id: string;
+  url: string;
+}
+
+export interface PostFormInitialValues {
+  postId: string;
+  tripTitle: string;
+  spot: RegisteredSpot;
+  category: PostCategory;
+  visitDate: string;
+  duration: PostDuration;
+  cost: string;
+  rating: number;
+  comment: string;
+  visibility: PostVisibility;
+  photos: ExistingPhoto[];
+}
 function StarRating({ value, onChange }: { value: number; onChange: (value: number) => void }) {
   return (
     <div className="flex gap-1" role="radiogroup" aria-label="星評価">
@@ -65,19 +86,25 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 const selectClass =
   "h-11 w-full rounded-[10px] border border-[#E8E1D8] bg-white px-3 text-[14px] text-[#3D3A35] focus:outline-none focus:ring-1 focus:ring-[#C4703F]";
 
-export default function PostForm() {
+export default function PostForm({ initialPost }: { initialPost?: PostFormInitialValues }) {
   const router = useRouter();
+  const isEditMode = initialPost !== undefined;
 
-  const [tripTitle, setTripTitle] = useState("");
-  const [spot, setSpot] = useState<RegisteredSpot | null>(null);
-  const [category, setCategory] = useState<PostCategory | "">("");
-  const [visitDate, setVisitDate] = useState("");
-  const [duration, setDuration] = useState<PostDuration | "">("");
-  const [cost, setCost] = useState("");
-  const [rating, setRating] = useState(0);
-  const [comment, setComment] = useState("");
-  const [visibility, setVisibility] = useState<PostVisibility>("public");
+  const [tripTitle, setTripTitle] = useState(initialPost?.tripTitle ?? "");
+  const [spot, setSpot] = useState<RegisteredSpot | null>(initialPost?.spot ?? null);
+  const [category, setCategory] = useState<PostCategory | "">(initialPost?.category ?? "");
+  const [visitDate, setVisitDate] = useState(initialPost?.visitDate ?? "");
+  const [duration, setDuration] = useState<PostDuration | "">(initialPost?.duration ?? "");
+  const [cost, setCost] = useState(initialPost?.cost ?? "");
+  const [rating, setRating] = useState(initialPost?.rating ?? 0);
+  const [comment, setComment] = useState(initialPost?.comment ?? "");
+  const [visibility, setVisibility] = useState<PostVisibility>(
+    initialPost?.visibility ?? "public"
+  );
   const [photos, setPhotos] = useState<File[]>([]);
+  const [existingPhotos, setExistingPhotos] = useState<ExistingPhoto[]>(
+    initialPost?.photos ?? []
+  );
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -90,16 +117,45 @@ export default function PostForm() {
     costNumber !== null &&
     (!Number.isInteger(costNumber) || costNumber < MIN_POST_COST || costNumber > MAX_POST_COST);
 
+  // 写真は1点以上必須（3.3.1）。編集時は既存分と新規追加分の合計で判定する
+  const totalPhotoCount = existingPhotos.length + photos.length;
+
   const canSubmit =
     tripTitle.trim().length > 0 &&
     spot !== null &&
     category !== "" &&
     duration !== "" &&
     rating > 0 &&
-    photos.length > 0 &&
+    totalPhotoCount > 0 &&
     !isCommentTooLong &&
     !isCostInvalid &&
     !isSubmitting;
+
+  const handleDeleteExistingPhoto = async (photoId: string) => {
+    if (!initialPost) return;
+    setErrorMessage(null);
+
+    try {
+      const response = await fetchWithAuthRedirect(
+        `/api/posts/${initialPost.postId}/photos/${photoId}`,
+        { method: "DELETE" }
+      );
+
+      if (response.status === 400) {
+        setErrorMessage("写真は1点以上必要です。追加してから削除してください");
+        return;
+      }
+      if (!response.ok) {
+        setErrorMessage("写真を削除できませんでした");
+        return;
+      }
+
+      setExistingPhotos((current) => current.filter((photo) => photo.id !== photoId));
+    } catch (error) {
+      if (error instanceof UnauthorizedError) return;
+      setErrorMessage("写真を削除できませんでした");
+    }
+  };
 
   const handlePhotoChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const selected = Array.from(event.target.files ?? []);
@@ -125,56 +181,96 @@ export default function PostForm() {
     setErrorMessage(null);
 
     try {
-      // 先に写真をアップロードし、返ったパスを投稿作成に渡す（要件定義書3.3.1の処理フロー）
-      const formData = new FormData();
-      photos.forEach((photo) => formData.append("photos", photo));
+      // 先に写真をアップロードし、返ったパスを投稿へ渡す（要件定義書3.3.1の処理フロー）
+      let uploadedPaths: string[] = [];
+      if (photos.length > 0) {
+        const formData = new FormData();
+        photos.forEach((photo) => formData.append("photos", photo));
 
-      const uploadResponse = await fetchWithAuthRedirect("/api/posts/photos", {
-        method: "POST",
-        body: formData,
-      });
+        const uploadResponse = await fetchWithAuthRedirect("/api/posts/photos", {
+          method: "POST",
+          body: formData,
+        });
 
-      if (!uploadResponse.ok) {
-        setErrorMessage("写真のアップロードに失敗しました");
-        return;
+        if (!uploadResponse.ok) {
+          setErrorMessage("写真のアップロードに失敗しました");
+          return;
+        }
+
+        const uploaded = (await uploadResponse.json()) as {
+          photos: { storagePath: string }[];
+        };
+        uploadedPaths = uploaded.photos.map((photo) => photo.storagePath);
       }
 
-      const uploaded = (await uploadResponse.json()) as { photos: { storagePath: string }[] };
+      const fields = {
+        tripTitle,
+        spotId: spot.id,
+        category,
+        visitDate: visitDate || null,
+        duration,
+        cost: costNumber,
+        rating,
+        comment,
+        visibility,
+      };
 
-      const response = await fetchWithAuthRedirect("/api/posts", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          tripTitle,
-          spotId: spot.id,
-          category,
-          visitDate: visitDate || null,
-          duration,
-          cost: costNumber,
-          rating,
-          comment,
-          visibility,
-          photoPaths: uploaded.photos.map((photo) => photo.storagePath),
-        }),
-      });
+      if (initialPost) {
+        // 追加分の写真を既存投稿へ紐づけてから、本体を更新する
+        if (uploadedPaths.length > 0) {
+          const attachResponse = await fetchWithAuthRedirect(
+            `/api/posts/${initialPost.postId}/photos`,
+            {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ photoPaths: uploadedPaths }),
+            }
+          );
+          if (!attachResponse.ok) {
+            setErrorMessage("写真の追加に失敗しました");
+            return;
+          }
+        }
 
-      if (response.status === 429) {
-        setErrorMessage("投稿の作成が集中しています。しばらく時間をおいてからお試しください");
-        return;
-      }
-      if (!response.ok) {
-        setErrorMessage("投稿の作成に失敗しました。入力内容をご確認ください");
-        return;
+        const response = await fetchWithAuthRedirect(`/api/posts/${initialPost.postId}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(fields),
+        });
+
+        if (!response.ok) {
+          setErrorMessage("投稿の更新に失敗しました。入力内容をご確認ください");
+          return;
+        }
+      } else {
+        const response = await fetchWithAuthRedirect("/api/posts", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ ...fields, photoPaths: uploadedPaths }),
+        });
+
+        if (response.status === 429) {
+          setErrorMessage("投稿の作成が集中しています。しばらく時間をおいてからお試しください");
+          return;
+        }
+        if (!response.ok) {
+          setErrorMessage("投稿の作成に失敗しました。入力内容をご確認ください");
+          return;
+        }
       }
 
       // 投稿後の遷移先は要件定義書に定義がない。本来の遷移先になりうる
       // 投稿詳細（SC-05）・マイページ（SC-06）が未実装のため、
       // 暫定でトップページへ戻し、完了したことだけを伝える。
-      router.push("/?posted=1");
+      router.push(initialPost ? "/?updated=1" : "/?posted=1");
       router.refresh();
     } catch (error) {
       if (error instanceof UnauthorizedError) return;
-      setErrorMessage("投稿の作成に失敗しました。入力内容をご確認ください");
+      setErrorMessage(
+        initialPost
+          ? "投稿の更新に失敗しました。入力内容をご確認ください"
+          : "投稿の作成に失敗しました。入力内容をご確認ください"
+      );
     } finally {
       setIsSubmitting(false);
     }
@@ -182,7 +278,9 @@ export default function PostForm() {
 
   return (
     <div className="flex min-h-screen flex-col items-center gap-5 bg-[#FBF6F0] px-6 py-12">
-      <h1 className="text-[16px] font-bold text-[#3D3A35]">新規投稿</h1>
+      <h1 className="text-[16px] font-bold text-[#3D3A35]">
+        {isEditMode ? "投稿を編集" : "新規投稿"}
+      </h1>
 
       <div className="flex w-full max-w-[360px] flex-col gap-5">
         <TripTitleInput value={tripTitle} onChange={setTripTitle} />
@@ -251,6 +349,28 @@ export default function PostForm() {
         </Field>
 
         <Field label="写真">
+          {existingPhotos.length > 0 && (
+            <ul className="mb-2 grid grid-cols-3 gap-2">
+              {existingPhotos.map((photo) => (
+                <li key={photo.id} className="relative">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={photo.url}
+                    alt="投稿済みの写真"
+                    className="aspect-square w-full rounded-[8px] object-cover"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => handleDeleteExistingPhoto(photo.id)}
+                    aria-label="この写真を削除"
+                    className="absolute right-1 top-1 flex h-6 w-6 items-center justify-center rounded-full bg-black/55 text-[13px] leading-none text-white"
+                  >
+                    ×
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
           <input
             type="file"
             accept="image/jpeg,image/png"
@@ -299,7 +419,13 @@ export default function PostForm() {
           disabled={!canSubmit}
           className="h-12 w-full rounded-[10px] bg-[#C4703F] text-[15px] font-semibold text-white disabled:cursor-not-allowed disabled:opacity-45"
         >
-          {isSubmitting ? "投稿中..." : "投稿する"}
+          {isSubmitting
+            ? isEditMode
+              ? "更新中..."
+              : "投稿中..."
+            : isEditMode
+              ? "更新する"
+              : "投稿する"}
         </button>
       </div>
     </div>

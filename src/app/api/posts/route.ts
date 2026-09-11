@@ -2,24 +2,12 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getAuthenticatedUser } from "@/lib/auth/get-authenticated-user";
-import { graphemeLength } from "@/lib/text/grapheme-length";
 import { isWithinRateLimit } from "@/lib/rate-limit/check-rate-limit";
 import { resolveTripId, TripTitleValidationError } from "@/lib/trips/resolve-trip";
+import { validatePostInput } from "@/lib/posts/validate-post-input";
 import {
-  MAX_POST_COMMENT_LENGTH,
-  MAX_POST_COST,
-  MAX_POST_RATING,
-  MIN_POST_COST,
-  MIN_POST_RATING,
-  POST_CATEGORIES,
-  POST_DURATIONS,
   POST_RATE_LIMIT_MAX_ATTEMPTS,
   POST_RATE_LIMIT_WINDOW_SECONDS,
-  POST_VISIBILITIES,
-  todayInJst,
-  type PostCategory,
-  type PostDuration,
-  type PostVisibility,
 } from "@/lib/posts/constants";
 
 interface PostRequestBody {
@@ -77,62 +65,12 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "rate_limited" }, { status: 429 });
   }
 
-  // --- 必須項目・入力規則の検証 ---
-  const { category, duration, visibility } = body;
-
-  if (typeof category !== "string" || !POST_CATEGORIES.includes(category as PostCategory)) {
-    return NextResponse.json({ error: "invalid_category" }, { status: 400 });
+  // --- 必須項目・入力規則の検証（編集APIと共通） ---
+  const validation = validatePostInput(body);
+  if (!validation.ok) {
+    return NextResponse.json({ error: validation.error }, { status: 400 });
   }
-  if (typeof duration !== "string" || !POST_DURATIONS.includes(duration as PostDuration)) {
-    return NextResponse.json({ error: "invalid_duration" }, { status: 400 });
-  }
-  if (
-    typeof visibility !== "string" ||
-    !POST_VISIBILITIES.includes(visibility as PostVisibility)
-  ) {
-    return NextResponse.json({ error: "invalid_visibility" }, { status: 400 });
-  }
-
-  const rating = body.rating;
-  if (
-    typeof rating !== "number" ||
-    !Number.isInteger(rating) ||
-    rating < MIN_POST_RATING ||
-    rating > MAX_POST_RATING
-  ) {
-    return NextResponse.json({ error: "invalid_rating" }, { status: 400 });
-  }
-
-  // 費用は任意。未入力はnullとして扱う
-  let cost: number | null = null;
-  if (body.cost !== null && body.cost !== undefined && body.cost !== "") {
-    if (
-      typeof body.cost !== "number" ||
-      !Number.isInteger(body.cost) ||
-      body.cost < MIN_POST_COST ||
-      body.cost > MAX_POST_COST
-    ) {
-      return NextResponse.json({ error: "invalid_cost" }, { status: 400 });
-    }
-    cost = body.cost;
-  }
-
-  // 訪問日は任意。指定された場合はJST基準で未来日を認めない
-  let visitDate: string | null = null;
-  if (typeof body.visitDate === "string" && body.visitDate.length > 0) {
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(body.visitDate)) {
-      return NextResponse.json({ error: "invalid_visit_date" }, { status: 400 });
-    }
-    if (body.visitDate > todayInJst()) {
-      return NextResponse.json({ error: "future_visit_date" }, { status: 400 });
-    }
-    visitDate = body.visitDate;
-  }
-
-  const comment = typeof body.comment === "string" ? body.comment : "";
-  if (graphemeLength(comment) > MAX_POST_COMMENT_LENGTH) {
-    return NextResponse.json({ error: "comment_too_long" }, { status: 400 });
-  }
+  const { category, duration, visibility, rating, cost, visitDate, comment } = validation.fields;
 
   const photoPaths = Array.isArray(body.photoPaths)
     ? body.photoPaths.filter((path): path is string => typeof path === "string")
@@ -179,7 +117,7 @@ export async function POST(request: Request) {
       duration,
       cost,
       rating,
-      comment: comment.length > 0 ? comment : null,
+      comment,
       visibility,
     })
     .select("id")

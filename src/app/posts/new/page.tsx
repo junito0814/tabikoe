@@ -1,6 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { requireUserOrRedirect } from "@/lib/auth/require-user-or-redirect";
-import PostForm from "./post-form";
+import PostForm from "@/components/posts/PostForm";
 
 /**
  * SC-03 投稿作成画面（新規作成モード）
