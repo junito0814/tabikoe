@@ -91,10 +91,10 @@ flowchart TD
 | # | ストーリー | 状態 | 備考 |
 |---|---|---|---|
 | 1 | F-AC-05 退会 | ✅ | Phase 1 で先取り済み |
-| 2 | 共通メニューバー | ⬜ | session-managementに依存（済）。未読バッジのデータ連携は Phase 9 |
-| 3 | F-NT-01 通知の発生条件 | ⬜ | `notifications`テーブルは済。共通の通知作成ヘルパーをここで作り、Phase 6・7・8 が呼ぶ |
-| 4 | F-SF-02 ブロック | ⬜ | `blocks`テーブルは済 |
-| 5 | F-SF-01 通報 | ⬜ | `reports`テーブルを自ら定義 |
+| 2 | 共通メニューバー | ✅ | session-managementに依存（済）。未読バッジのデータ連携は Phase 9 |
+| 3 | F-NT-01 通知の発生条件 | ✅ | `notifications`テーブルは済。共通の通知作成ヘルパーをここで作り、Phase 6・7・8 が呼ぶ |
+| 4 | F-SF-02 ブロック | ✅ | 投稿一覧・コメント・検索へのフィルタ適用は各機能実装時に `getBlockedUserIds` を組み込む |
+| 5 | F-SF-01 通報 | ✅ | `reports`テーブル定義済。導線は現状プロフィールのみ。投稿詳細・コメント・スポット・アルバム画面の実装時に `ReportLink` を置く |
 | 6 | F-RC-05 「行きたい」保存 | ⬜ | `wishlist`テーブルは済。Phase 5 の地図表示が消費 |
 | 7 | F-BG ステータスバッジ | ⬜ | `badges`テーブルは Phase 3 で済。都道府県判定に使う`spots.prefecture`も Phase 2 で済。いいね数バッジ（Task3）のみ Phase 6 完了後 |
 

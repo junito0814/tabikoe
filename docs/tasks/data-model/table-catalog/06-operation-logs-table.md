@@ -35,7 +35,7 @@
 | アカウントの登録 | `account_create` | `/api/auth/callback`（初回サインアップ時） | 済 |
 | アカウントの退会 | `account_delete` | `POST /api/users/me/deactivate` | 済 |
 | コメントの投稿・削除 | `comment_create` / `comment_delete` | F-VW-03（Phase 6） | 未実装の機能 |
-| 通報 | `report_create` | F-SF-01（Phase 4） | 未実装の機能 |
+| 通報 | `report_create` | `POST /api/reports` | 済 |
 | 管理者による対応操作 | `admin_action` | F-AD-05（Phase 8） | 未実装の機能 |
 
 `detail` には個人情報・認証情報を入れない。ログイン失敗時のIPアドレスはレート制限（F-AC-01 Task8）と同じ粒度の運用情報として記録する。

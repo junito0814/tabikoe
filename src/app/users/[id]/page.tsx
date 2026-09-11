@@ -4,6 +4,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { requireUserOrRedirect } from "@/lib/auth/require-user-or-redirect";
 import { isBlockedEitherWay } from "@/lib/blocks/get-blocked-user-ids";
 import { BlockUserButton } from "@/components/blocks/BlockUserButton";
+import { ReportLink } from "@/components/reports/ReportLink";
 import { DEFAULT_AVATAR_URL } from "@/lib/users/constants";
 
 /**
@@ -64,7 +65,9 @@ export default async function UserProfilePage({
       <p className="text-[15px] font-semibold text-[#3D3A35]">{displayName}</p>
 
       {!isSelf && (
-        <div className="mt-4 flex w-full max-w-[360px] justify-center">
+        <div className="mt-4 flex w-full max-w-[360px] items-center justify-center gap-4">
+          {/* F-SF-01 Task2: ユーザー通報の導線（SC-11へ） */}
+          <ReportLink targetType="user" targetId={id} returnTo={`/users/${id}`} />
           <BlockUserButton targetUserId={id} targetDisplayName={displayName} />
         </div>
       )}
