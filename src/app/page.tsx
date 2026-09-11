@@ -41,9 +41,9 @@ function NavLink({ href, label }: { href: string; label: string }) {
 export default async function Home({
   searchParams,
 }: {
-  searchParams: Promise<{ posted?: string; updated?: string; deleted?: string }>;
+  searchParams: Promise<{ posted?: string; updated?: string; deleted?: string; blocked?: string }>;
 }) {
-  const { posted, updated, deleted } = await searchParams;
+  const { posted, updated, deleted, blocked } = await searchParams;
   const supabase = await createClient();
   const {
     data: { user },
@@ -86,9 +86,15 @@ export default async function Home({
         </p>
       </div>
 
-      {(posted === "1" || updated === "1" || deleted === "1") && (
+      {(posted === "1" || updated === "1" || deleted === "1" || blocked === "1") && (
         <p className="w-full max-w-[320px] rounded-lg border border-[#3D7A5C]/25 bg-[#3D7A5C]/[0.08] px-3.5 py-2.5 text-center text-[13px] text-[#3D7A5C]">
-          {posted === "1" ? "投稿しました" : updated === "1" ? "投稿を更新しました" : "投稿を削除しました"}
+          {posted === "1"
+            ? "投稿しました"
+            : updated === "1"
+              ? "投稿を更新しました"
+              : deleted === "1"
+                ? "投稿を削除しました"
+                : "ユーザーをブロックしました"}
         </p>
       )}
 
