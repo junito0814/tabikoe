@@ -49,7 +49,7 @@ describe("BlockUserButton", () => {
     fireEvent.click(screen.getByRole("button", { name: "このユーザーをブロック" }));
     fireEvent.click(screen.getByRole("button", { name: "ブロックする" }));
 
-    await waitFor(() => expect(push).toHaveBeenCalledWith("/?blocked=1"));
+    await waitFor(() => expect(push).toHaveBeenCalledWith("/map?blocked=1"));
     expect(submitBlock).toHaveBeenCalledWith("u1");
   });
 
@@ -60,7 +60,7 @@ describe("BlockUserButton", () => {
     fireEvent.click(screen.getByRole("button", { name: "このユーザーをブロック" }));
     fireEvent.click(screen.getByRole("button", { name: "ブロックする" }));
 
-    await waitFor(() => expect(push).toHaveBeenCalledWith("/?blocked=1"));
+    await waitFor(() => expect(push).toHaveBeenCalledWith("/map?blocked=1"));
   });
 
   it("失敗時はエラーを表示し、遷移しない", async () => {

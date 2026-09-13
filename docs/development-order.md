@@ -2,7 +2,7 @@
 
 `docs/user-stories/`・`docs/tasks/`配下の全ストーリーを、テーブル依存関係と共通コンポーネントの再利用関係に基づいて開発順に並べたもの。各ストーリーの`00-index.md`に記載された「依存」欄を根拠としている。
 
-**2026-09-11 改訂**（2026-09-12 状態更新）：当初の計画順（Phase 0 → 1 → 2 → …）に対し、実際の実装は Phase 1 から着手し、前提となるテーブルを後続Phaseから先取りする形で進んだ。本ファイルは**実際に実装した順**に並べ直し、各ストーリーの実装状況を併記する。Phase番号は他ドキュメント・Issue・PRから参照されているため**識別子として維持**し、並び順だけを変えている（番号順＝実装順ではない）。
+**2026-09-11 改訂**（2026-09-14 状態更新）：当初の計画順（Phase 0 → 1 → 2 → …）に対し、実際の実装は Phase 1 から着手し、前提となるテーブルを後続Phaseから先取りする形で進んだ。本ファイルは**実際に実装した順**に並べ直し、各ストーリーの実装状況を併記する。Phase番号は他ドキュメント・Issue・PRから参照されているため**識別子として維持**し、並び順だけを変えている（番号順＝実装順ではない）。
 
 **読み方**：上から順が実装順。「状態」列の凡例は以下。
 
@@ -19,7 +19,7 @@ flowchart TD
     P0 --> P2["Phase 2\n投稿の中核\n✅"]
     P2 --> P3["Phase 3\n共有テーブルの補完\n🔶"]
     P3 --> P4["Phase 4\n横断基盤の土台\n✅"]
-    P4 --> P5["Phase 5\n地図・検索\n⬜"]
+    P4 --> P5["Phase 5\n地図・検索\n🔷"]
     P4 --> P6["Phase 6\n閲覧・交流\n⬜"]
     P5 --> P7["Phase 7\n記録・振り返り\n⬜"]
     P6 --> P7
@@ -98,17 +98,19 @@ flowchart TD
 | 6 | F-RC-05 「行きたい」保存 | ✅ | `POST/GET /api/wishlist`・`DELETE /api/wishlist/[spotId]`、SC-08（/wishlist）、`WishlistButton`。ボタンの SC-04/SC-05 への組み込みは Phase 5・6、SC-06 からの導線は Phase 7 my-page Task4。地図上の「行きたい」ピンは Phase 5 が `wishlist` を参照 |
 | 7 | F-BG ステータスバッジ | ✅ | カタログ（`src/lib/badges/catalog.ts`）、投稿作成時の判定（`POST /api/posts` → `evaluatePostBadges`）、SC-10（/badges）、`GET /api/badges`、獲得トースト（投稿後にトップページへクエリで受け渡し）。いいね数バッジの関数 `awardLikeCountBadgeIfEligible` は実装済みで、呼び出しは Phase 6 likes Task1 が行う（組み込みガイドを同タスクに追記） |
 
-## Phase 5 — 地図・検索（F-MP） ⬜
+## Phase 5 — 地図・検索（F-MP） 🔷
 
-Phase 4 の wishlist、Phase 0 の pin-display-rules、Phase 2 の Google Maps ローダーが揃って全体マップが組める。
+Phase 4 の wishlist、Phase 0 の pin-display-rules、Phase 2 の Google Maps ローダーが揃って全体マップが組めた。5ストーリーを1ブランチ（`feature/map-search`）でまとめて実装した（SC-04 を pin-interaction・post-filter・spot-photo-gallery が共有し、分けると画面が成立しないため）。
 
-| # | ストーリー | 備考 |
-|---|---|---|
-| 1 | F-MP-01 地図表示 | 基盤画面（SC-02）。**ログイン後の着地点**。現在トップページが暫定でその役割を担っており、これができたら差し替える |
-| 2 | F-MP-03 ピン操作 | map-displayのピンタップ動作 |
-| 3 | F-MP-02 地名検索 | map-displayの検索バーUIを再利用 |
-| 4 | F-MP-04 投稿検索・絞り込み | pin-interactionの投稿一覧UIを再利用 |
-| 5 | F-MP-05 スポット写真一覧 | pin-interaction・media-layoutに依存 |
+| # | ストーリー | 状態 | 備考 |
+|---|---|---|---|
+| 1 | F-MP-01 地図表示 | 🔷 | SC-02（`/map`）。共通地図コンポーネント `GoogleMap`（`src/components/map/`）はマイマップ（Phase 7）が再利用する。クラスタリングは `@googlemaps/markerclusterer`。**トップページはログイン済みなら `/map` へ転送**し、投稿完了等のフラッシュとバッジトーストも `/map` が表示する |
+| 2 | F-MP-03 ピン操作 | 🔷 | SC-04（`/spots/[id]`）。並び替えはいいね数の集計を含むためサーバー側でスポット単位に取ってから並べる（上限500件） |
+| 3 | F-MP-02 地名検索 | 🔷 | `GET /api/geocode`（サーバー側キーのみ）＋ SC-02 の検索バー。地図の移動のみ |
+| 4 | F-MP-04 投稿検索・絞り込み | 🔷 | SC-04 の検索モード（`/search?lat&lng`）。距離は矩形で DB を絞ってから Haversine で円判定し、落ちた分は次の行を読み足す |
+| 5 | F-MP-05 スポット写真一覧 | 🔷 | SC-13（`/spots/[id]/photos`）。`MediaThumbnail` を MediaGrid から切り出して再利用 |
+
+投稿詳細（SC-05）への遷移導線（pin-interaction Task3・spot-photo-gallery Task4）は `/posts/[id]` へのリンクとして置いてあり、画面本体は Phase 6 が実装する。
 
 ## Phase 6 — 閲覧・交流（F-VW） ⬜
 

@@ -35,7 +35,7 @@ export function DeletePostButton({ postId }: { postId: string }) {
         return;
       }
 
-      router.push("/?deleted=1");
+      router.push("/map?deleted=1");
       router.refresh();
     } catch (error) {
       if (error instanceof UnauthorizedError) return;

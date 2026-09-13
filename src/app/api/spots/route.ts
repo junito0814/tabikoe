@@ -5,9 +5,53 @@ import { getAuthenticatedUser } from "@/lib/auth/get-authenticated-user";
 import { graphemeLength } from "@/lib/text/grapheme-length";
 import { DUPLICATE_SPOT_RADIUS_METERS, findNearbySpots } from "@/lib/spots/nearby";
 import { reverseGeocodePrefecture } from "@/lib/google/geocoding";
+import {
+  getAllTabPins,
+  getWishlistTabPins,
+  parseMapBounds,
+  parseMapView,
+} from "@/lib/map/get-map-pins";
 
 /** スポット名の最大文字数（要件定義書3.3.1） */
 const MAX_SPOT_NAME_LENGTH = 200;
+
+/**
+ * F-MP-01 Task1・Task2: 全体マップ（SC-02）のピン取得
+ * 出典: docs/tasks/map-search/map-display/01-spots-fetch-handler.md
+ *       docs/tasks/map-search/map-display/02-wishlist-tab-integration.md
+ *
+ * `view=all`（既定）は、指定範囲内で公開投稿が1件以上あるスポットを1スポット1ピンで返す。
+ * `view=wishlist` は、ログインユーザー自身が「行きたい」保存したスポットのみ返す（専用エンドポイントは設けず、
+ * 同じ矩形・同じ上限100件の制約を共有するためパラメータで切り替える）。
+ * 範囲は north/south/east/west（度）で受け取る。
+ */
+export async function GET(request: Request) {
+  const supabase = await createClient();
+  const user = await getAuthenticatedUser(supabase);
+
+  if (!user) {
+    return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+  }
+
+  const searchParams = new URL(request.url).searchParams;
+  const bounds = parseMapBounds(searchParams);
+  if (!bounds) {
+    return NextResponse.json({ error: "invalid_bounds" }, { status: 400 });
+  }
+  const view = parseMapView(searchParams.get("view"));
+
+  // 他ユーザーの投稿・ブロック関係の判定を含むため service_role で読み、可視性はライブラリ側で絞る
+  const admin = createAdminClient();
+  try {
+    const pins =
+      view === "wishlist"
+        ? await getWishlistTabPins(admin, user.id, bounds)
+        : await getAllTabPins(admin, user.id, bounds);
+    return NextResponse.json({ view, pins });
+  } catch {
+    return NextResponse.json({ error: "fetch_failed" }, { status: 500 });
+  }
+}
 
 /**
  * F-PO-01 スポット指定 Task5: スポット登録（重複防止ロジック含む）

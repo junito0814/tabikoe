@@ -38,7 +38,7 @@ describe("BadgeToast", () => {
 
 describe("バッジの受け渡し（URLクエリ）", () => {
   it("獲得なしなら posted=1 だけ", () => {
-    expect(buildPostedHref([])).toBe("/?posted=1");
+    expect(buildPostedHref([])).toBe("/map?posted=1");
   });
 
   it("獲得ありなら badges にカンマ区切りで載せ、復元できる", () => {
