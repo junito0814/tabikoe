@@ -21,7 +21,7 @@ flowchart TD
     P3 --> P4["Phase 4\n横断基盤の土台\n✅"]
     P4 --> P5["Phase 5\n地図・検索\n🔷"]
     P4 --> P6["Phase 6\n閲覧・交流\n🔷"]
-    P5 --> P7["Phase 7\n記録・振り返り\n⬜"]
+    P5 --> P7["Phase 7\n記録・振り返り\n🔷"]
     P6 --> P7
     P7 --> P8["Phase 8\n管理者機能\n🔶"]
     P6 --> P9["Phase 9\n通知一覧の最終統合\n⬜"]
@@ -124,14 +124,16 @@ Phase 4 の wishlist、Phase 0 の pin-display-rules、Phase 2 の Google Maps �
 
 **要件定義書3.3.6 に従い、いいね・コメントは公開投稿にしか付けられない**（アルバムメンバー間でも不可）。comments Task1 の「閲覧権限があれば非公開投稿にもコメント可」という記述より要件定義書を優先した。RLS の `with check` にも同じ条件を入れてある。
 
-## Phase 7 — 記録・振り返り（F-RC）残り ⬜
+## Phase 7 — 記録・振り返り（F-RC）残り 🔷
 
-| # | ストーリー | 備考 |
-|---|---|---|
-| 1 | F-RC-02 アルバム | **post-delete Task2（投稿0件アルバムの非表示）をここで実装** |
-| 2 | F-RC-03 アルバムの共同編集・招待 | account-deletionのオーナー継承（済）を参照。継承時に退会者を閲覧者へ降格する扱い（v2.7）の確認 |
-| 3 | F-RC-06 マイマップ | |
-| 4 | F-RC-01 マイページ | **trip-title Task5（表示範囲の制御）をここで実装**。現在トップページにある暫定の投稿一覧をここへ移す |
+4ストーリーを1ブランチ（`feature/records`、Phase 6 の上に積む）で実装した。
+
+| # | ストーリー | 状態 | 備考 |
+|---|---|---|---|
+| 1 | F-RC-02 アルバム | 🔷 | `/albums`（一覧）・`/albums/[id]`（SC-09）、`GET /api/trips?view=albums`・`GET /api/trips/[id]`・`GET /api/trips/[id]/members`。**post-delete Task2（投稿0件アルバム非表示）を `filterAlbumsWithPosts` で実装**。名称変更UIはオーナーのみ |
+| 2 | F-RC-03 アルバムの共同編集・招待 | 🔷 | `album_invitations` テーブル＋**trips の INSERT でオーナーの `album_members` 行を自動作成するトリガー（既存分も補完）**（20260914000002）。招待発行／無効化／受諾、権限変更／削除／退出、`album_join`・`role_change`・`member_removed` 通知。編集者がアルバムに投稿できるよう `resolveTripId`・`GET /api/trips` を「本人がオーナー／編集者のアルバムの旅行」まで広げた。退会時のオーナー継承で旧オーナーを閲覧者へ降格する扱い（v2.7）はそのまま |
+| 3 | F-RC-06 マイマップ | 🔷 | `/mymap`（SC-12）、`GET /api/users/me/map-spots?mode&bounds`。SC-02 の `GoogleMap` を再利用し、posted / wishlist ピンで描画。投稿済みピン→自分の最新投稿（SC-05）、行きたいピン→SC-04 |
+| 4 | F-RC-01 マイページ | 🔷 | `/mypage`（SC-06）、`GET /api/users/me/summary`・`GET /api/users/me/posts?trip_id`。**trip-title Task5（表示範囲の制御）**: 旅行タイトルはマイページとアルバムだけが表示し、SC-04/05/13 のカード型（`PostCardData`）には項目自体を持たせていない |
 
 ## Phase 8 — 管理者機能（F-AD） 🔶
 

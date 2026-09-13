@@ -1,11 +1,40 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { getAuthenticatedUser } from "@/lib/auth/get-authenticated-user";
+import { getAlbumDetail } from "@/lib/albums/get-album";
 import {
   TripTitleValidationError,
   assertValidTripTitle,
   normalizeTripTitle,
 } from "@/lib/trips/resolve-trip";
+
+/**
+ * F-RC-02 Task1: アルバム詳細（投稿・写真・動画・メンバー）
+ * 出典: docs/tasks/records/album/01-album-detail-handler.md
+ *
+ * 当該旅行の album_members に居るユーザー（オーナー・編集者・閲覧者）のみ取得できる。
+ * メンバーには公開・非公開を問わず全投稿を返す（3.6.3）。メンバーでなければ404。
+ */
+export async function GET(_request: Request, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  const supabase = await createClient();
+  const user = await getAuthenticatedUser(supabase);
+
+  if (!user) {
+    return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+  }
+
+  try {
+    const album = await getAlbumDetail(createAdminClient(), user.id, id);
+    if (!album) {
+      return NextResponse.json({ error: "not_found" }, { status: 404 });
+    }
+    return NextResponse.json({ album });
+  } catch {
+    return NextResponse.json({ error: "fetch_failed" }, { status: 500 });
+  }
+}
 
 /**
  * F-PO-01 旅行タイトル Task3: 旅行タイトル編集（アルバム名変更）
