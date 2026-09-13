@@ -4,9 +4,8 @@ import Link from "next/link";
  * F-AD-02 Task1: 管理者ダッシュボード画面（SC-16）
  * 出典: docs/tasks/admin/admin-dashboard/01-dashboard-ui.md
  *
- * アクセス制御はsrc/middleware.ts（is_admin判定）に委ね、本ページは画面表示のみを扱う。
- * 遷移先のannouncement-management（F-AD-03）・report-list（F-AD-04）はまだ実装されていないため、
- * /admin/announcements・/admin/reportsは実装予定のプレースホルダーパス。
+ * アクセス制御はsrc/proxy.ts（is_admin判定・404）に委ね、本ページは画面表示のみを扱う。
+ * 遷移先: /admin/announcements（SC-17、F-AD-03）・/admin/reports（SC-18、F-AD-04/05）。
  */
 export default function AdminDashboardPage() {
   return (

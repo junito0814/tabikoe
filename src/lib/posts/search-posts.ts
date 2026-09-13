@@ -195,6 +195,9 @@ export async function searchPostCards(
       .from("posts")
       .select(`${POST_CARD_SELECT}, visibility, spots!inner(name, lat, lng)`)
       .eq("visibility", "public")
+      // F-AD-05: 非公開化された投稿・スポットは除く
+      .is("hidden_at", null)
+      .is("spots.hidden_at", null)
       .order("created_at", { ascending: false })
       .range(cursor, cursor + limit - 1);
 

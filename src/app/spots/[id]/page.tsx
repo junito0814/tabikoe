@@ -28,10 +28,11 @@ export default async function SpotPostsPage({
   const admin = createAdminClient();
   const { data: spot } = await admin
     .from("spots")
-    .select("id, name, prefecture")
+    .select("id, name, prefecture, hidden_at")
     .eq("id", id)
     .maybeSingle();
-  if (!spot) {
+  // F-AD-05: 非公開化されたスポットは存在しない扱い
+  if (!spot || spot.hidden_at) {
     notFound();
   }
 

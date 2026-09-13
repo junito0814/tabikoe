@@ -153,6 +153,9 @@ export async function getAllTabPins(
     .from("spots")
     .select("id, name, lat, lng, prefecture, posts!inner(user_id, visibility)")
     .eq("posts.visibility", "public")
+    // F-AD-05: 非公開化された投稿・スポットは除く
+    .is("posts.hidden_at", null)
+    .is("hidden_at", null)
     .gte("lat", bounds.south)
     .lte("lat", bounds.north)
     .gte("lng", bounds.west)
@@ -189,6 +192,7 @@ export async function getWishlistTabPins(
     .from("wishlist")
     .select("user_id, spot:spots!inner(id, name, lat, lng, prefecture)")
     .eq("user_id", userId)
+    .is("spots.hidden_at", null)
     .gte("spots.lat", bounds.south)
     .lte("spots.lat", bounds.north)
     .gte("spots.lng", bounds.west)

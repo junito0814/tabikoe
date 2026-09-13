@@ -37,6 +37,7 @@ export interface SpotPostMediaRow {
     video_url: string | null;
     media_type: string;
     display_order: number;
+    hidden_at?: string | null;
   }[];
 }
 
@@ -55,7 +56,7 @@ export function mergeSpotMedia(
       return [...row.post_photos]
         .sort((a, b) => a.display_order - b.display_order)
         .flatMap((photo) =>
-          photo.storage_url
+          photo.storage_url && !photo.hidden_at
             ? [
                 {
                   key: photo.id,
@@ -89,9 +90,11 @@ export async function getSpotMediaPage(
 
   let query = admin
     .from("posts")
-    .select("id, created_at, visibility, spots(name), post_photos(id, storage_url, video_url, media_type, display_order)")
+    .select("id, created_at, visibility, spots(name), post_photos(id, storage_url, video_url, media_type, display_order, hidden_at)")
     .eq("spot_id", spotId)
     .eq("visibility", "public")
+    // F-AD-05: 非公開化された投稿は除く（写真単位の非公開化は mergeSpotMedia で落とす）
+    .is("hidden_at", null)
     .order("created_at", { ascending: false })
     .limit(SPOT_POSTS_FETCH_CAP);
   if (blockedIds.length > 0) {

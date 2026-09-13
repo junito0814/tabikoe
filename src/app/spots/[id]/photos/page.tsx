@@ -19,8 +19,9 @@ export default async function SpotPhotosPage({ params }: { params: Promise<{ id:
   const user = await requireUserOrRedirect(supabase, `/spots/${id}/photos`);
 
   const admin = createAdminClient();
-  const { data: spot } = await admin.from("spots").select("id, name").eq("id", id).maybeSingle();
-  if (!spot) {
+  const { data: spot } = await admin.from("spots").select("id, name, hidden_at").eq("id", id).maybeSingle();
+  // F-AD-05: 非公開化されたスポットは存在しない扱い
+  if (!spot || spot.hidden_at) {
     notFound();
   }
 

@@ -73,7 +73,10 @@ export default function AuthScreen({ mode }: { mode: AuthMode }) {
     const errorParam = searchParams.get("error");
     const hasConsentError = errorParam === "consent_required";
     const hasAccountNotFound = errorParam === "account_not_found";
-    const hasError = localError || errorParam === "1" || hasConsentError || hasAccountNotFound;
+    const hasSuspended = errorParam === "suspended";
+    const hasError = localError || errorParam === "1" || hasConsentError || hasAccountNotFound || hasSuspended;
+    // F-AD-01 Task2: SC-15（管理者ログイン画面）は SC-01 を admin=1 付きで開いたもの（4.1）
+    const isAdminLogin = !isSignup && searchParams.get("admin") === "1";
 
     // SC-01は同意欄を持たないため、常に押下できる
     const canSubmit = (!isSignup || agreed) && !isLoading;
@@ -87,6 +90,9 @@ export default function AuthScreen({ mode }: { mode: AuthMode }) {
         const callbackUrl = new URL("/api/auth/callback", window.location.origin);
         callbackUrl.searchParams.set("redirect_to", redirectTo);
         callbackUrl.searchParams.set("mode", mode);
+        if (isAdminLogin) {
+            callbackUrl.searchParams.set("admin", "1");
+        }
         if (isSignup) {
             callbackUrl.searchParams.set("consent", agreed ? "1" : "0");
         }
@@ -111,7 +117,9 @@ export default function AuthScreen({ mode }: { mode: AuthMode }) {
         ? "アカウントが見つかりません。新規登録してください"
         : hasConsentError
             ? "利用規約と個人情報保護方針への同意が必要です"
-            : ERROR_MESSAGES.oauthFailure;
+            : hasSuspended
+                ? "このアカウントは一時停止されています"
+                : ERROR_MESSAGES.oauthFailure;
 
     return (
         <div
@@ -130,9 +138,15 @@ export default function AuthScreen({ mode }: { mode: AuthMode }) {
                     タビコエ
                 </h1>
                 <p className="mb-10 text-center text-[13px] leading-[1.7] tracking-[0.3px] text-[#9C9488]">
-                    みんなの旅の記録を、
-                    <br />
-                    次の旅のヒントに
+                    {isAdminLogin ? (
+                        <>管理者ログイン</>
+                    ) : (
+                        <>
+                            みんなの旅の記録を、
+                            <br />
+                            次の旅のヒントに
+                        </>
+                    )}
                 </p>
 
                 {isSignup && (

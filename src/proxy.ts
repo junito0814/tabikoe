@@ -49,6 +49,27 @@ export async function proxy(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
+  // F-AD-05: 一時停止されたアカウント（3.10.5）はセッションを破棄してログイン画面へ。
+  // ログイン自体はコールバックで拒否するが、停止前に発行済みのセッションもここで止める。
+  // 停止判定は SC-00・SC-01 等の未ログインでも開ける画面では不要なので、ログイン済みの時だけ問い合わせる
+  if (user && !request.nextUrl.pathname.startsWith("/api/auth/")) {
+    const { data: profile } = await supabase
+      .from("users")
+      .select("suspended_at")
+      .eq("id", user.id)
+      .maybeSingle();
+    if (profile?.suspended_at) {
+      await supabase.auth.signOut();
+      if (request.nextUrl.pathname.startsWith("/api/")) {
+        return NextResponse.json({ error: "account_suspended" }, { status: 401 });
+      }
+      const loginUrl = new URL("/login?error=suspended", request.url);
+      const redirect = NextResponse.redirect(loginUrl);
+      response.cookies.getAll().forEach((cookie) => redirect.cookies.set(cookie));
+      return redirect;
+    }
+  }
+
   if (request.nextUrl.pathname.startsWith("/admin")) {
     if (!user) {
       return new NextResponse(null, { status: 404 });

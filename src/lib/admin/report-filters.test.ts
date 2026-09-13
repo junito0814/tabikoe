@@ -1,0 +1,48 @@
+import { describe, expect, it } from "vitest";
+import { buildReportWhereClauses, parseReportFilters } from "./report-filters";
+
+/**
+ * 出典: docs/tasks/admin/report-list/01-report-list-handler.md 単体テスト
+ * - 対応状態・通報理由・対象種別・日時の各絞り込み条件が正しくクエリに反映されることを検証する
+ * - 複数条件を組み合わせた絞り込みが正しく動作することを検証する
+ */
+describe("parseReportFilters / buildReportWhereClauses", () => {
+  it("対応状態の絞り込み", () => {
+    const filters = parseReportFilters(new URLSearchParams({ status: "unconfirmed" }));
+    expect(buildReportWhereClauses(filters)).toEqual([{ op: "eq", column: "status", value: "unconfirmed" }]);
+  });
+
+  it("通報理由・対象種別の絞り込み", () => {
+    expect(buildReportWhereClauses(parseReportFilters(new URLSearchParams({ reason: "spam" })))).toEqual([
+      { op: "eq", column: "reason", value: "spam" },
+    ]);
+    expect(buildReportWhereClauses(parseReportFilters(new URLSearchParams({ target_type: "comment" })))).toEqual([
+      { op: "eq", column: "target_type", value: "comment" },
+    ]);
+  });
+
+  it("通報日時の範囲", () => {
+    const filters = parseReportFilters(new URLSearchParams({ from: "2026-09-01T00:00:00Z", to: "2026-09-30T23:59:59Z" }));
+    expect(buildReportWhereClauses(filters)).toEqual([
+      { op: "gte", column: "created_at", value: "2026-09-01T00:00:00.000Z" },
+      { op: "lte", column: "created_at", value: "2026-09-30T23:59:59.000Z" },
+    ]);
+  });
+
+  it("複数条件を組み合わせると全条件が AND で並ぶ", () => {
+    const filters = parseReportFilters(
+      new URLSearchParams({ status: "in_review", reason: "inappropriate", target_type: "post", from: "2026-09-01" })
+    );
+    expect(buildReportWhereClauses(filters)).toEqual([
+      { op: "eq", column: "status", value: "in_review" },
+      { op: "eq", column: "reason", value: "inappropriate" },
+      { op: "eq", column: "target_type", value: "post" },
+      { op: "gte", column: "created_at", value: new Date("2026-09-01").toISOString() },
+    ]);
+  });
+
+  it("不正な値は無視される（条件なし）", () => {
+    const filters = parseReportFilters(new URLSearchParams({ status: "bogus", reason: "x", target_type: "y", from: "not-date" }));
+    expect(buildReportWhereClauses(filters)).toEqual([]);
+  });
+});

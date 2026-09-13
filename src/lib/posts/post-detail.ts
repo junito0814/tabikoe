@@ -75,6 +75,8 @@ export interface PostDetailRow {
   comment: string | null;
   visibility: string;
   created_at: string;
+  hidden_at?: string | null;
+  review_hidden_at?: string | null;
   spots: { id: string; name: string; prefecture: string | null } | { id: string; name: string; prefecture: string | null }[] | null;
   users:
     | { id: string; display_name: string | null; avatar_url: string | null; is_deleted: boolean }
@@ -86,6 +88,7 @@ export interface PostDetailRow {
     video_url: string | null;
     media_type: string;
     display_order: number;
+    hidden_at?: string | null;
   }[];
 }
 
@@ -105,9 +108,9 @@ export async function getPostDetail(
   const { data, error } = await admin
     .from("posts")
     .select(
-      "id, user_id, trip_id, spot_id, category, visit_date, duration, cost, rating, comment, visibility, created_at, " +
+      "id, user_id, trip_id, spot_id, category, visit_date, duration, cost, rating, comment, visibility, created_at, hidden_at, review_hidden_at, " +
         "spots(id, name, prefecture), users(id, display_name, avatar_url, is_deleted), " +
-        "post_photos(id, storage_url, video_url, media_type, display_order)"
+        "post_photos(id, storage_url, video_url, media_type, display_order, hidden_at)"
     )
     .eq("id", postId)
     .maybeSingle();
@@ -116,6 +119,9 @@ export async function getPostDetail(
 
   const row = data as unknown as PostDetailRow;
   const isOwner = row.user_id === viewerId;
+
+  // F-AD-05: 通報対応で非公開化された投稿は本人以外に見せない（存在しない扱い）
+  if (row.hidden_at && !isOwner) return null;
 
   if (!isOwner) {
     // 3.8.2 相互非表示。存在自体を伏せる
@@ -148,6 +154,7 @@ export async function getPostDetail(
   const spot = one(row.spots);
   const user = one(row.users);
   const media: MediaItem[] = [...row.post_photos]
+    .filter((photo) => !photo.hidden_at || isOwner)
     .sort((a, b) => a.display_order - b.display_order)
     .flatMap((photo, index) => {
       const url = photo.storage_url ? signedUrls.get(photo.storage_url) : undefined;
@@ -172,7 +179,8 @@ export async function getPostDetail(
     duration: row.duration,
     cost: row.cost,
     rating: row.rating,
-    comment: row.comment,
+    // 感想テキストだけが非公開化された場合も本人以外には伏せる
+    comment: row.review_hidden_at && !isOwner ? null : row.comment,
     visibility: row.visibility === "private" ? "private" : "public",
     createdAt: row.created_at,
     author: presentAuthor(
