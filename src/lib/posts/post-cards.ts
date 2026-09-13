@@ -28,6 +28,8 @@ export interface PostCardData {
   mediaCount: number;
   likeCount: number;
   commentCount: number;
+  /** 閲覧者がいいね済みか（F-VW-02 Task3 のボタン初期状態） */
+  viewerHasLiked: boolean;
 }
 
 export const POST_SORTS = ["newest", "rating", "likes"] as const;
@@ -81,7 +83,11 @@ export function representativeMedia(
   return [...photos].sort((a, b) => a.display_order - b.display_order)[0] ?? null;
 }
 
-export function toPostCard(row: PostCardRow, signedUrls: Map<string, string>): PostCardData {
+export function toPostCard(
+  row: PostCardRow,
+  signedUrls: Map<string, string>,
+  likedPostIds: ReadonlySet<string> = new Set()
+): PostCardData {
   const spot = one(row.spots);
   const user = one(row.users);
   const representative = representativeMedia(row.post_photos);
@@ -111,6 +117,7 @@ export function toPostCard(row: PostCardRow, signedUrls: Map<string, string>): P
     mediaCount: row.post_photos.length,
     likeCount: row.likes?.[0]?.count ?? 0,
     commentCount: row.comments?.[0]?.count ?? 0,
+    viewerHasLiked: likedPostIds.has(row.id),
   };
 }
 
@@ -140,14 +147,34 @@ export function sortPostCards<T extends Pick<PostCardData, "createdAt" | "rating
 /** 一覧を署名付きURL付きのカードへ変換する（可視性の判定は呼び出し側が済ませていること） */
 export async function buildPostCards(
   admin: SupabaseClient,
+  viewerId: string,
   rows: PostCardRow[]
 ): Promise<PostCardData[]> {
   const paths = rows.flatMap((row) => {
     const path = representativeMedia(row.post_photos)?.storage_url;
     return path ? [path] : [];
   });
-  const signedUrls = await createPostPhotoUrls(admin, Array.from(new Set(paths)));
-  return rows.map((row) => toPostCard(row, signedUrls));
+  const [signedUrls, likedPostIds] = await Promise.all([
+    createPostPhotoUrls(admin, Array.from(new Set(paths))),
+    findLikedPostIds(admin, viewerId, rows.map((row) => row.id)),
+  ]);
+  return rows.map((row) => toPostCard(row, signedUrls, likedPostIds));
+}
+
+/** 閲覧者がいいね済みの投稿ID */
+async function findLikedPostIds(
+  admin: SupabaseClient,
+  viewerId: string,
+  postIds: string[]
+): Promise<Set<string>> {
+  if (postIds.length === 0) return new Set();
+  const { data, error } = await admin
+    .from("likes")
+    .select("post_id")
+    .eq("user_id", viewerId)
+    .in("post_id", postIds);
+  if (error) throw error;
+  return new Set((data ?? []).map((row) => row.post_id as string));
 }
 
 /** 1スポットあたりに読み込む投稿の上限。並び替えをサーバー側の集計に依存させないための安全弁 */
@@ -190,7 +217,7 @@ export async function getSpotPostCards(
   const { data, error } = await query;
   if (error) throw error;
 
-  const cards = await buildPostCards(admin, (data ?? []) as unknown as PostCardRow[]);
+  const cards = await buildPostCards(admin, viewerId, (data ?? []) as unknown as PostCardRow[]);
   const sorted = sortPostCards(cards, sort);
   const page = sorted.slice(offset, offset + limit);
   return {

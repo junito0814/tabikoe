@@ -34,7 +34,7 @@
 | 投稿の削除 | `post_delete` | `DELETE /api/posts/[id]` | 済 |
 | アカウントの登録 | `account_create` | `/api/auth/callback`（初回サインアップ時） | 済 |
 | アカウントの退会 | `account_delete` | `POST /api/users/me/deactivate` | 済 |
-| コメントの投稿・削除 | `comment_create` / `comment_delete` | F-VW-03（Phase 6） | 未実装の機能 |
+| コメントの投稿・削除 | `comment_create` / `comment_delete` | `POST /api/posts/[id]/comments` / `DELETE /api/comments/[id]` | 済 |
 | 通報 | `report_create` | `POST /api/reports` | 済 |
 | 管理者による対応操作 | `admin_action` | F-AD-05（Phase 8） | 未実装の機能 |
 

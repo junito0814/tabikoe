@@ -240,6 +240,6 @@ export async function searchPostCards(
     }
   }
 
-  const posts = await buildPostCards(admin, collected);
+  const posts = await buildPostCards(admin, viewerId, collected);
   return { posts, nextOffset: exhausted ? null : cursor };
 }
