@@ -31,7 +31,7 @@ docs/
 
 ## 機能カテゴリ別 進捗状況
 
-要件定義書 3.1 に定義された **9カテゴリすべてでユーザーストーリー・タスク分割が完了** しました（2026年9月時点）。ドキュメント総数：ユーザーストーリー41件、タスクファイル226件（2026-09-15 に動画対応の追補 5 件を追加）。
+要件定義書 3.1 に定義された **9カテゴリすべてでユーザーストーリー・タスク分割が完了** しました（2026年9月時点）。ドキュメント総数：ユーザーストーリー42件、タスクファイル232件（2026-09-15 に動画対応の追補 5 件、2026-09-16 に写真・動画ビューア 6 件を追加）。
 
 | 機能ID | カテゴリ | 該当節 | 状況 | ストーリー数 | ドキュメント |
 |---|---|---|---|---|---|
@@ -88,7 +88,7 @@ docs/
 
 | 種別 | 該当節 | ドキュメント | 備考 |
 |---|---|---|---|
-| 画面共通仕様 | 4.2, 4.5 | [user-stories/shared-ui](user-stories/shared-ui/) / [tasks/shared-ui](tasks/shared-ui/) | メニューバー・写真動画レイアウト・アップロード注意文・ピン表示ルール・エラー表示の5ストーリー |
+| 画面共通仕様 | 4.2, 4.5 | [user-stories/shared-ui](user-stories/shared-ui/) / [tasks/shared-ui](tasks/shared-ui/) | メニューバー・写真動画レイアウト・写真動画ビューア（v2.10で追加）・アップロード注意文・ピン表示ルール・エラー表示の6ストーリー |
 | データ設計の横断確認 | 5.2〜5.4 | [user-stories/data-model](user-stories/data-model/) / [tasks/data-model](tasks/data-model/) | `table-catalog`＝どの機能ストーリーにも属さない共有テーブル（rate_limits, album_members, notifications, badges, comments/likes/wishlist/blocks, operation_logs）を定義。`design-principles`・`media-handling`＝5.3/5.4の設計方針の一貫適用を確認するストーリー（新規タスク不要） |
 
 ## テーブル定義の分担（5.2 17テーブル）

@@ -10,44 +10,69 @@ import type { PostCardData } from "@/lib/posts/post-cards";
  * カード本体が投稿詳細（SC-05、/posts/[id]）へのリンク。いいねボタン（F-VW-02 Task3）は
  * リンクの外（フッター）に置く（リンク内にボタンを入れ子にしない）。
  * 検索結果（F-MP-04）ではスポット名も出す（`showSpotName`）。
+ * `onOpenMedia` を渡すと、サムネイルはリンクの外のボタンになり、タップでその投稿の
+ * 写真・動画をモーダルで開く（media-viewer Task4、4.5.5）。
  */
 export function formatCost(cost: number | null): string | null {
   if (cost === null) return null;
   return cost === 0 ? "無料" : `¥${cost.toLocaleString("ja-JP")}`;
 }
 
-export function PostCard({ post, showSpotName = false }: { post: PostCardData; showSpotName?: boolean }) {
+export function PostCard({
+  post,
+  showSpotName = false,
+  onOpenMedia,
+}: {
+  post: PostCardData;
+  showSpotName?: boolean;
+  /** サムネイルのタップでその投稿の写真・動画をモーダル表示する（media-viewer Task4） */
+  onOpenMedia?: (postId: string) => void;
+}) {
+  const thumbnailAlt = `${post.spotName}の${post.thumbnailMediaType === "video" ? "動画" : "写真"}`;
+  const thumbnail = (
+    <span className="relative block h-24 w-24 shrink-0 overflow-hidden rounded-[8px] bg-[#E8E1D8]">
+      {post.thumbnailUrl && (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img src={post.thumbnailUrl} alt={thumbnailAlt} className="h-full w-full object-cover" />
+      )}
+      {post.thumbnailMediaType === "video" && (
+        <span className="absolute inset-0 flex items-center justify-center">
+          <svg width="28" height="28" viewBox="0 0 40 40" aria-hidden>
+            <circle cx="20" cy="20" r="18" fill="rgba(0,0,0,0.45)" />
+            <path d="M16 13l12 7-12 7z" fill="#fff" />
+          </svg>
+        </span>
+      )}
+      {post.mediaCount > 1 && (
+        <span className="absolute bottom-1 right-1 rounded-full bg-black/55 px-1.5 text-[10px] font-semibold text-white">
+          {post.mediaCount}
+        </span>
+      )}
+    </span>
+  );
+
   return (
     <article className="rounded-[12px] border border-[#E8E1D8] bg-white shadow-[0_2px_16px_rgba(61,58,53,0.04)]">
+    <div className="flex gap-3 p-2.5" data-post-card={post.id}>
+      {onOpenMedia && post.thumbnailUrl ? (
+        <button
+          type="button"
+          onClick={() => onOpenMedia(post.id)}
+          aria-label={`${thumbnailAlt}を見る`}
+          className="shrink-0"
+        >
+          {thumbnail}
+        </button>
+      ) : (
+        <Link href={`/posts/${post.id}`} className="shrink-0" aria-hidden tabIndex={-1}>
+          {thumbnail}
+        </Link>
+      )}
+
     <Link
       href={`/posts/${post.id}`}
-      className="flex gap-3 p-2.5"
-      data-post-card={post.id}
+      className="flex min-w-0 flex-1"
     >
-      <span className="relative block h-24 w-24 shrink-0 overflow-hidden rounded-[8px] bg-[#E8E1D8]">
-        {post.thumbnailUrl && (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={post.thumbnailUrl}
-            alt={`${post.spotName}の${post.thumbnailMediaType === "video" ? "動画" : "写真"}`}
-            className="h-full w-full object-cover"
-          />
-        )}
-        {post.thumbnailMediaType === "video" && (
-          <span className="absolute inset-0 flex items-center justify-center">
-            <svg width="28" height="28" viewBox="0 0 40 40" aria-hidden>
-              <circle cx="20" cy="20" r="18" fill="rgba(0,0,0,0.45)" />
-              <path d="M16 13l12 7-12 7z" fill="#fff" />
-            </svg>
-          </span>
-        )}
-        {post.mediaCount > 1 && (
-          <span className="absolute bottom-1 right-1 rounded-full bg-black/55 px-1.5 text-[10px] font-semibold text-white">
-            {post.mediaCount}
-          </span>
-        )}
-      </span>
-
       <span className="flex min-w-0 flex-1 flex-col gap-1">
         {showSpotName && (
           <span className="truncate text-[13px] font-semibold text-[#3D3A35]">{post.spotName}</span>
@@ -77,6 +102,7 @@ export function PostCard({ post, showSpotName = false }: { post: PostCardData; s
         </span>
       </span>
     </Link>
+    </div>
     <div className="flex items-center justify-end border-t border-[#E8E1D8] px-2.5 py-1.5">
       <LikeButton postId={post.id} initialLiked={post.viewerHasLiked} initialCount={post.likeCount} className="h-8" />
     </div>

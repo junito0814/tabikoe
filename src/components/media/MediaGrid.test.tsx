@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { fireEvent, render, screen } from "@testing-library/react";
 import { MediaGrid, type MediaItem } from "./MediaGrid";
 
@@ -122,5 +122,36 @@ describe("MediaGrid 動画（Task3）", () => {
     const { container } = render(<MediaGrid items={makeItems(1)} />);
     fireEvent.click(screen.getByRole("button"));
     expect(container.querySelector("video")).toBeNull();
+  });
+});
+
+/**
+ * 出典: docs/tasks/shared-ui/media-viewer/02-post-detail-integration.md 単体テスト
+ * - 各枠のタップで正しい index が通知され、「+N」枠では 3 が通知される
+ * - onSelect 無しでは動画タップがインライン再生のまま
+ */
+describe("MediaGrid onSelect（media-viewer Task2）", () => {
+  it("各枠のタップで items 内の位置を通知する", () => {
+    const onSelect = vi.fn();
+    render(<MediaGrid items={makeItems(3)} onSelect={onSelect} />);
+    fireEvent.click(screen.getByRole("button", { name: "写真2" }));
+    expect(onSelect).toHaveBeenCalledWith(1);
+    fireEvent.click(screen.getByRole("button", { name: "写真3" }));
+    expect(onSelect).toHaveBeenCalledWith(2);
+  });
+
+  it("「+N」枠のタップは4点目（index 3）を通知する", () => {
+    const onSelect = vi.fn();
+    render(<MediaGrid items={makeItems(6)} onSelect={onSelect} />);
+    fireEvent.click(screen.getByRole("button", { name: "残り3点を見る" }));
+    expect(onSelect).toHaveBeenCalledWith(3);
+  });
+
+  it("onSelect があれば動画タップでもインライン再生には切り替えず通知する", () => {
+    const onSelect = vi.fn();
+    const { container } = render(<MediaGrid items={makeItems(1, { videoFirst: true })} onSelect={onSelect} />);
+    fireEvent.click(screen.getByRole("button"));
+    expect(container.querySelector("video")).toBeNull();
+    expect(onSelect).toHaveBeenCalledWith(0);
   });
 });

@@ -15,6 +15,7 @@ import {
   type PostSort,
 } from "@/lib/posts/post-cards";
 import { PostCard } from "./PostCard";
+import { usePostMediaViewer, type FetchPostMedia } from "@/components/media/use-post-media-viewer";
 import { useInfiniteScroll } from "./use-infinite-scroll";
 
 export interface SpotSummary {
@@ -41,13 +42,17 @@ export function SpotPostListScreen({
   initialPage,
   initialSort = "newest",
   fetchPosts = defaultFetchPosts,
+  fetchPostMedia,
 }: {
   spot: SpotSummary;
   initialPage: PostCardPage;
   initialSort?: PostSort;
   /** 差し替え口（単体テスト用） */
   fetchPosts?: FetchSpotPosts;
+  fetchPostMedia?: FetchPostMedia;
 }) {
+  // media-viewer Task4: カードのサムネイルからその投稿の写真・動画をモーダルで開く
+  const mediaViewer = usePostMediaViewer(fetchPostMedia);
   const [sort, setSort] = useState<PostSort>(initialSort);
   const [posts, setPosts] = useState<PostCardData[]>(initialPage.posts);
   const [nextOffset, setNextOffset] = useState<number | null>(initialPage.nextOffset);
@@ -151,7 +156,7 @@ export function SpotPostListScreen({
           <ul className="flex flex-col gap-2.5">
             {posts.map((post) => (
               <li key={post.id}>
-                <PostCard post={post} />
+                <PostCard post={post} onOpenMedia={(postId) => void mediaViewer.openPost(postId)} />
               </li>
             ))}
           </ul>
@@ -160,6 +165,8 @@ export function SpotPostListScreen({
         {errorMessage && (
           <ErrorNotice className="mt-3" message={errorMessage} onRetry={() => void load(sort, posts.length === 0 ? 0 : (nextOffset ?? 0), posts.length === 0)} />
         )}
+        {mediaViewer.errorMessage && <ErrorNotice className="mt-3" message={mediaViewer.errorMessage} />}
+        {mediaViewer.viewer}
 
         <div ref={sentinelRef} aria-hidden className="h-1" />
         {nextOffset !== null && (

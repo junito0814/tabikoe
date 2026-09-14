@@ -11,6 +11,7 @@ import type { AlbumDetail, AlbumMember } from "@/lib/albums/get-album";
 import { ALBUM_ROLE_LABELS, INVITABLE_ROLES, type InvitableRole } from "@/lib/albums/membership";
 import { MAX_TRIP_TITLE_LENGTH } from "@/lib/trips/constants";
 import { formatCost } from "@/components/posts/PostCard";
+import { usePostMediaViewer, type FetchPostMedia } from "@/components/media/use-post-media-viewer";
 
 export interface AlbumInvitation {
   id: string;
@@ -47,13 +48,17 @@ export function AlbumScreen({
   initialInvitations,
   viewerId,
   api = defaultApi,
+  fetchPostMedia,
 }: {
   album: AlbumDetail;
   initialInvitations: AlbumInvitation[];
   viewerId: string;
   /** 差し替え口（単体テスト用） */
   api?: AlbumApi;
+  fetchPostMedia?: FetchPostMedia;
 }) {
+  // media-viewer Task4: 代表画像のタップでその投稿の写真・動画をモーダルで開く
+  const mediaViewer = usePostMediaViewer(fetchPostMedia);
   const router = useRouter();
   const isOwner = album.viewerRole === "owner";
   const [title, setTitle] = useState(album.title);
@@ -345,6 +350,7 @@ export function AlbumScreen({
                         alt: `${post.spotName}の${post.thumbnailMediaType === "video" ? "動画" : "写真"}`,
                       },
                     ]}
+                    onSelect={() => void mediaViewer.openPost(post.id)}
                   />
                 )}
                 <Link href={`/posts/${post.id}`} className="flex flex-col gap-1 p-3">
@@ -368,6 +374,9 @@ export function AlbumScreen({
             ))
           )}
         </section>
+
+        {mediaViewer.errorMessage && <ErrorNotice message={mediaViewer.errorMessage} />}
+        {mediaViewer.viewer}
 
         <div className="flex justify-end">
           <ReportLink targetType="trip" targetId={album.tripId} returnTo={`/albums/${album.tripId}`} />

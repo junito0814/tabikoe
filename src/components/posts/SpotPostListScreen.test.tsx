@@ -73,7 +73,25 @@ describe("SpotPostListScreen（SC-04）", () => {
     render(
       <SpotPostListScreen spot={spot} initialPage={{ posts: [card("p1")], nextOffset: null }} fetchPosts={vi.fn()} />
     );
-    expect(document.querySelector("[data-post-card='p1']")).toHaveAttribute("href", "/posts/p1");
+    expect(document.querySelector("[data-post-card='p1'] a[href='/posts/p1']")).not.toBeNull();
     expect(screen.getByRole("link", { name: "写真" })).toHaveAttribute("href", "/spots/spot-1/photos");
+  });
+
+  it("カードのサムネイルをタップすると、その投稿の写真・動画がモーダルで開く（media-viewer Task4）", async () => {
+    const fetchPostMedia = vi.fn(async () => [
+      { id: "m1", mediaType: "photo" as const, thumbnailUrl: "https://example.com/1.jpg", alt: "東京駅の写真 1" },
+      { id: "m2", mediaType: "photo" as const, thumbnailUrl: "https://example.com/2.jpg", alt: "東京駅の写真 2" },
+    ]);
+    render(
+      <SpotPostListScreen
+        spot={spot}
+        initialPage={{ posts: [card("p1")], nextOffset: null }}
+        fetchPosts={vi.fn()}
+        fetchPostMedia={fetchPostMedia}
+      />
+    );
+    fireEvent.click(screen.getByRole("button", { name: "東京駅の写真を見る" }));
+    expect(await screen.findByRole("dialog")).toHaveTextContent("1 / 2");
+    expect(fetchPostMedia).toHaveBeenCalledWith("p1");
   });
 });

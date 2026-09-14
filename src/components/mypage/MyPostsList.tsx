@@ -7,6 +7,7 @@ import { ERROR_MESSAGES } from "@/components/notices/error-messages";
 import { fetchWithAuthRedirect, UnauthorizedError } from "@/lib/api/fetch-with-auth-redirect";
 import type { MyPost, MyPostsPage } from "@/lib/users/my-page";
 import { useInfiniteScroll } from "@/components/posts/use-infinite-scroll";
+import { usePostMediaViewer, type FetchPostMedia } from "@/components/media/use-post-media-viewer";
 
 export type FetchMyPosts = (tripId: string | null, offset: number) => Promise<MyPostsPage>;
 
@@ -19,12 +20,16 @@ export function MyPostsList({
   initialPage,
   tripOptions,
   fetchPosts = defaultFetchPosts,
+  fetchPostMedia,
 }: {
   initialPage: MyPostsPage;
   tripOptions: { id: string; title: string }[];
   /** 差し替え口（単体テスト用） */
   fetchPosts?: FetchMyPosts;
+  fetchPostMedia?: FetchPostMedia;
 }) {
+  // media-viewer Task4: サムネイルからその投稿の写真・動画をモーダルで開く
+  const mediaViewer = usePostMediaViewer(fetchPostMedia);
   const [tripId, setTripId] = useState<string | null>(null);
   const [posts, setPosts] = useState<MyPost[]>(initialPage.posts);
   const [nextOffset, setNextOffset] = useState<number | null>(initialPage.nextOffset);
@@ -94,17 +99,26 @@ export function MyPostsList({
         <ul className="flex flex-col gap-2">
           {posts.map((post) => (
             <li key={post.id}>
-              <Link
-                href={`/posts/${post.id}`}
+              <div
                 className="flex gap-3 rounded-[12px] border border-[#E8E1D8] bg-white p-2.5"
                 data-my-post={post.id}
               >
-                <span className="relative block h-16 w-16 shrink-0 overflow-hidden rounded-[8px] bg-[#E8E1D8]">
+                <button
+                  type="button"
+                  onClick={() => void mediaViewer.openPost(post.id)}
+                  disabled={!post.thumbnailUrl}
+                  aria-label={`${post.spotName}の${post.thumbnailMediaType === "video" ? "動画" : "写真"}を見る`}
+                  className="relative block h-16 w-16 shrink-0 overflow-hidden rounded-[8px] bg-[#E8E1D8]"
+                >
                   {post.thumbnailUrl && (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img src={post.thumbnailUrl} alt="" className="h-full w-full object-cover" />
                   )}
-                </span>
+                </button>
+              <Link
+                href={`/posts/${post.id}`}
+                className="flex min-w-0 flex-1"
+              >
                 <span className="flex min-w-0 flex-1 flex-col gap-0.5">
                   <span className="truncate text-[11px] font-medium text-[#C4703F]" data-trip-title>
                     {post.tripTitle}
@@ -120,12 +134,15 @@ export function MyPostsList({
                   </span>
                 </span>
               </Link>
+              </div>
             </li>
           ))}
         </ul>
       )}
 
       {errorMessage && <ErrorNotice message={errorMessage} onRetry={() => void load(tripId, posts.length === 0 ? 0 : (nextOffset ?? 0), posts.length === 0)} />}
+      {mediaViewer.errorMessage && <ErrorNotice message={mediaViewer.errorMessage} />}
+      {mediaViewer.viewer}
 
       <div ref={sentinelRef} aria-hidden className="h-1" />
       {nextOffset !== null && (

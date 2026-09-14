@@ -10,6 +10,10 @@ import { useState } from "react";
  *
  * 投稿カード一覧・投稿詳細・スポット写真一覧など複数画面で共通利用する想定（7.6 保守性準拠）。
  * 1点目を常に代表画像とし、各レイアウトで最初に配置する。
+ *
+ * `onSelect` を渡すと各枠のタップでその位置を通知し、呼び出し側が MediaViewerModal を開く
+ * （media-viewer Task2、4.5.5）。「+N」枠は4点目として通知する。
+ * `onSelect` が無い場合は従来どおり動画だけその場で再生する（開発用プレビュー向けの後方互換）。
  */
 export interface MediaItem {
   id: string;
@@ -24,14 +28,16 @@ function MediaCell({
   item,
   className,
   overflowCount,
+  onSelect,
 }: {
   item: MediaItem;
   className?: string;
   overflowCount?: number;
+  onSelect?: () => void;
 }) {
   const [isPlaying, setIsPlaying] = useState(false);
 
-  if (item.mediaType === "video" && isPlaying && item.videoUrl) {
+  if (!onSelect && item.mediaType === "video" && isPlaying && item.videoUrl) {
     return (
       <video
         src={item.videoUrl}
@@ -46,7 +52,11 @@ function MediaCell({
   return (
     <button
       type="button"
-      onClick={() => item.mediaType === "video" && setIsPlaying(true)}
+      onClick={() => {
+        if (onSelect) onSelect();
+        else if (item.mediaType === "video") setIsPlaying(true);
+      }}
+      aria-label={typeof overflowCount === "number" ? `残り${overflowCount}点を見る` : item.alt}
       className={`relative block h-full w-full overflow-hidden bg-[#E8E1D8] ${className ?? ""}`}
     >
       <MediaThumbnail item={item} />
@@ -88,7 +98,16 @@ export function MediaThumbnail({
   );
 }
 
-export function MediaGrid({ items }: { items: MediaItem[] }) {
+export function MediaGrid({
+  items,
+  onSelect,
+}: {
+  items: MediaItem[];
+  /** 枠のタップ時に呼ぶ。引数は items 内の位置（「+N」枠は 3） */
+  onSelect?: (index: number) => void;
+}) {
+  const select = (index: number) => (onSelect ? () => onSelect(index) : undefined);
+
   if (items.length === 0) {
     return null;
   }
@@ -96,7 +115,7 @@ export function MediaGrid({ items }: { items: MediaItem[] }) {
   if (items.length === 1) {
     return (
       <div className="aspect-square w-full">
-        <MediaCell item={items[0]} />
+        <MediaCell item={items[0]} onSelect={select(0)} />
       </div>
     );
   }
@@ -104,8 +123,8 @@ export function MediaGrid({ items }: { items: MediaItem[] }) {
   if (items.length === 2) {
     return (
       <div className="grid aspect-[2/1] w-full grid-cols-2 gap-0.5">
-        <MediaCell item={items[0]} />
-        <MediaCell item={items[1]} />
+        <MediaCell item={items[0]} onSelect={select(0)} />
+        <MediaCell item={items[1]} onSelect={select(1)} />
       </div>
     );
   }
@@ -113,9 +132,9 @@ export function MediaGrid({ items }: { items: MediaItem[] }) {
   if (items.length === 3) {
     return (
       <div className="grid aspect-square w-full grid-cols-2 grid-rows-2 gap-0.5">
-        <MediaCell item={items[0]} className="row-span-2" />
-        <MediaCell item={items[1]} />
-        <MediaCell item={items[2]} />
+        <MediaCell item={items[0]} className="row-span-2" onSelect={select(0)} />
+        <MediaCell item={items[1]} onSelect={select(1)} />
+        <MediaCell item={items[2]} onSelect={select(2)} />
       </div>
     );
   }
@@ -131,6 +150,7 @@ export function MediaGrid({ items }: { items: MediaItem[] }) {
           key={item.id}
           item={item}
           overflowCount={index === 3 ? overflowCount : undefined}
+          onSelect={select(index)}
         />
       ))}
     </div>
