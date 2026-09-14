@@ -28,6 +28,7 @@ flowchart TD
     P8 --> P9
     P9 --> P10["追補\n動画対応（video-upload）\n🔷"]
     P10 --> P11["追補\n写真・動画ビューア（media-viewer）\n🔷"]
+    P11 --> P12["追補\nアルバム写真一覧（album-photos）\n🔷"]
 ```
 
 ---
@@ -167,6 +168,7 @@ Phase 5〜9 の PR（#245 → #246 → #247 → #248 → #249、修正 #253・#2
 |---|---|---|---|
 | 1 | F-PO-01 動画対応 | 🔷 | `feature/video-upload`。Vercel の本文上限（4.5MB）のため、動画本体は `POST /api/posts/videos/upload-url` の署名付きURLでブラウザから Storage へ直接送り、`POST /api/posts/videos` が Storage 上で ffmpeg（`ffmpeg-static`）により検証・メタデータ除去・サムネイル生成する（iPhone の MOV／HEVC は H.264 の MP4 に変換）。投稿 API は `media`（写真・動画混在）を受け付け、パスの帰属（本人配下）を検証する。要件定義書 v2.9 に反映。**Supabase Free プランは 50MB 上限**（要件定義書9章#7） |
 | 2 | 写真・動画ビューア（shared-ui/media-viewer） | 🔷 | `feature/media-viewer`（video-upload の上に積む）。要件定義書 v2.10 で 4.5.5 を新設。`MediaViewerModal` を SC-05（`PostMediaGallery`）・SC-13（一覧全体を←→で移動、モーダル内に「この投稿を見る」）・投稿カード（SC-04/検索/SC-06/SC-09、`usePostMediaViewer` が `GET /api/posts/[id]` から全点を取得）に組み込み。4.5.1 のインライン再生と 3.4.5 の直接遷移を置き換え |
+| 3 | アルバム写真一覧（records/album-photos） | 🔷 | `feature/album-photos`（media-viewer の上に積む）。要件定義書 v2.11 で 3.6.2 に追加、SC-21 新設。`GET /api/trips/[id]/photos`（メンバー限定・非公開投稿を含む・ブロック除外なし）、`/albums/[id]/photos`。SC-13 の画面本体を `MediaGalleryScreen` に共通化して再利用 |
 
 ---
 

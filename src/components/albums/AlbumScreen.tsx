@@ -215,6 +215,20 @@ export function AlbumScreen({
           <p className="text-[11px] text-[#9C9488]">
             あなたの権限: {ALBUM_ROLE_LABELS[album.viewerRole]} ・ 投稿 {album.posts.length}件 ・ メンバー {members.length}人
           </p>
+          <div className="flex flex-wrap items-center gap-2">
+            {/* album-photos Task2: 「写真」タグ → SC-21（SC-04 の「写真」タグと同じ見た目） */}
+            <Link
+              href={`/albums/${album.tripId}/photos`}
+              className="inline-flex h-8 items-center gap-1 rounded-full border border-[#E8E1D8] bg-white px-3 text-[12px] font-semibold text-[#3D3A35]"
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden>
+                <rect x="3" y="5" width="18" height="14" rx="2" stroke="currentColor" strokeWidth="1.8" />
+                <circle cx="9" cy="10" r="1.8" fill="currentColor" />
+                <path d="M4 17l5-5 4 4 3-3 4 4" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round" />
+              </svg>
+              写真
+            </Link>
+          </div>
         </header>
 
         {errorMessage && <ErrorNotice message={errorMessage} />}

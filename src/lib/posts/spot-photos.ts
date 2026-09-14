@@ -43,13 +43,15 @@ export interface SpotPostMediaRow {
 
 /**
  * 複数投稿の写真・動画を1つの列に統合し、投稿日時が新しい順（同一投稿内は display_order 順）に並べる。
- * 非公開投稿・保存パスの無い行は落とす。単体テストの対象。
+ * 非公開投稿（`includePrivate` が無い場合）・保存パスの無い行は落とす。単体テストの対象。
+ * アルバム写真一覧（SC-21）はメンバー限定のため非公開投稿も含める（3.6.3）。
  */
 export function mergeSpotMedia(
-  rows: SpotPostMediaRow[]
+  rows: SpotPostMediaRow[],
+  options: { includePrivate?: boolean } = {}
 ): { key: string; postId: string; path: string; videoUrl: string | null; mediaType: "photo" | "video"; postedAt: string; spotName: string }[] {
   return rows
-    .filter((row) => row.visibility === "public")
+    .filter((row) => options.includePrivate || row.visibility === "public")
     .sort((a, b) => b.created_at.localeCompare(a.created_at))
     .flatMap((row) => {
       const spotName = (Array.isArray(row.spots) ? row.spots[0] : row.spots)?.name ?? "";
@@ -105,6 +107,19 @@ export async function getSpotMediaPage(
   if (error) throw error;
 
   const merged = mergeSpotMedia((data ?? []) as unknown as SpotPostMediaRow[]);
+  return buildMediaPage(admin, merged, offset, limit);
+}
+
+/**
+ * 統合済みの列から1ページ分を切り出し、署名付きURLを付けて返す。
+ * スポット写真一覧（SC-13）とアルバム写真一覧（SC-21）で共用。
+ */
+export async function buildMediaPage(
+  admin: SupabaseClient,
+  merged: ReturnType<typeof mergeSpotMedia>,
+  offset: number,
+  limit: number
+): Promise<SpotMediaPage> {
   const page = merged.slice(offset, offset + limit);
   // 動画本体も非公開バケットにあるため、サムネイルと合わせて署名する
   const signedUrls = await createPostPhotoUrls(

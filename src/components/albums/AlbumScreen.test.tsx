@@ -36,6 +36,11 @@ const api = (overrides: Partial<AlbumApi> = {}): AlbumApi => ({
 });
 
 describe("AlbumScreen（SC-09）", () => {
+  it("「写真」タグがアルバム写真一覧（SC-21）を指す（album-photos Task2）", () => {
+    render(<AlbumScreen album={album("viewer")} initialInvitations={[]} viewerId="me" api={api()} />);
+    expect(screen.getByRole("link", { name: "写真" })).toHaveAttribute("href", "/albums/trip-1/photos");
+  });
+
   it("オーナーには名称変更ボタンが出る", () => {
     render(<AlbumScreen album={album("owner")} initialInvitations={[]} viewerId="owner" api={api()} />);
     expect(screen.getByRole("button", { name: "名前を変更" })).toBeInTheDocument();

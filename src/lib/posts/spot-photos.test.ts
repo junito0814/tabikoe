@@ -46,6 +46,14 @@ describe("mergeSpotMedia", () => {
     expect(mergeSpotMedia(rows).map((item) => item.key)).toEqual(["q1"]);
   });
 
+  it("includePrivate を指定すると非公開投稿の写真も含める（アルバム写真一覧 SC-21 用）", () => {
+    const rows = [
+      row("private", "2026-09-05T00:00:00Z", "private", [{ id: "p1", order: 0 }]),
+      row("public", "2026-09-01T00:00:00Z", "public", [{ id: "q1", order: 0 }]),
+    ];
+    expect(mergeSpotMedia(rows, { includePrivate: true }).map((item) => item.key)).toEqual(["p1", "q1"]);
+  });
+
   it("保存パスの無い行は落とす", () => {
     const rows = [row("a", "2026-09-01T00:00:00Z", "public", [{ id: "x", order: 0, path: null }])];
     expect(mergeSpotMedia(rows)).toEqual([]);
