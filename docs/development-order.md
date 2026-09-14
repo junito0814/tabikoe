@@ -24,7 +24,7 @@ flowchart TD
     P5 --> P7["Phase 7\n記録・振り返り\n🔷"]
     P6 --> P7
     P7 --> P8["Phase 8\n管理者機能\n🔷"]
-    P6 --> P9["Phase 9\n通知一覧の最終統合\n⬜"]
+    P6 --> P9["Phase 9\n通知一覧の最終統合\n🔷"]
     P8 --> P9
 ```
 
@@ -149,11 +149,13 @@ Phase 4 の wishlist、Phase 0 の pin-display-rules、Phase 2 の Google Maps �
 
 **非公開化の反映先**: 地図ピン・スポット別一覧・検索・スポット写真一覧・投稿詳細（本人以外）・コメント一覧・アルバム（一覧・詳細）・スポット候補検索から除外し、RLS（`posts_select_visible`・`comments_select_visible_post`）にも `hidden_at is null or 本人` を追加した。`hidden_at`・`suspended_at` を本人が書き換えられないよう、`posts`・`trips`・`post_photos` の `authenticated` への UPDATE を列単位に絞り直した（`comments` は編集不可なので UPDATE 権限自体を外した）。
 
-## Phase 9 — 通知一覧の最終統合（F-NT-02） ⬜
+## Phase 9 — 通知一覧の最終統合（F-NT-02） 🔷
 
-| # | ストーリー | 備考 |
-|---|---|---|
-| 1 | F-NT-02 通知一覧画面 | `notifications`（済）＋`system_announcements`（Phase 8）の統合読み取り |
+| # | ストーリー | 状態 | 備考 |
+|---|---|---|---|
+| 1 | F-NT-02 通知一覧画面 | 🔷 | `feature/notification-list`（Phase 8 の上に積む）。`GET /api/notifications?offset`（`notifications` 90日以内＋公開済み `system_announcements` をメモリ上でマージして20件ずつ）、`PATCH /api/notifications/read`（本人の個人通知のみ）、SC-14 `/notifications`。既読化後は `tabikoe:notifications-read` イベントでメニューバーの未読バッジ（Phase 4 menu-bar Task2）を取り直す。タップ先は `resolveNotificationHref`（コメント→投稿、いいね→投稿、アルバム系→アルバム、通報対応→対象が残っていれば投稿、消えていればその旨）。お知らせは画面内モーダル、公開7日以内は NEW アイコン＋文字で強調 |
+
+**Phase 5〜9 の PR は #243（badges）→ #245 → #246 → #247 → #248 → #249 の順に積んである。** 先頭から順にマージすると、各 PR の base が自動で main に付け替わる（GitHub の仕様）。
 
 ---
 

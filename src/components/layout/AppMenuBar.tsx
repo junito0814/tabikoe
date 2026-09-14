@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { fetchWithAuthRedirect, UnauthorizedError } from "@/lib/api/fetch-with-auth-redirect";
 import { MENU_ITEMS, isMenuItemActive, shouldShowMenuBar, type MenuItem } from "./menu-bar-config";
+import { NOTIFICATIONS_READ_EVENT } from "@/components/notifications/notification-events";
 
 /**
  * 共通メニューバー Task1〜3
@@ -94,18 +95,24 @@ export function AppMenuBar({
     if (!visible) return;
     let cancelled = false;
 
-    fetchUnreadCountRef
-      .current()
-      .then((count) => {
-        if (!cancelled) setUnreadCount(count);
-      })
-      .catch((error) => {
-        if (error instanceof UnauthorizedError) return;
-        // 件数が取れなくてもメニュー自体は使えるので、バッジを出さないだけにする
-      });
+    const refresh = () => {
+      fetchUnreadCountRef
+        .current()
+        .then((count) => {
+          if (!cancelled) setUnreadCount(count);
+        })
+        .catch((error) => {
+          if (error instanceof UnauthorizedError) return;
+          // 件数が取れなくてもメニュー自体は使えるので、バッジを出さないだけにする
+        });
+    };
+    refresh();
+    // F-NT-02 Task3: 通知一覧で既読化した直後にも取り直す
+    window.addEventListener(NOTIFICATIONS_READ_EVENT, refresh);
 
     return () => {
       cancelled = true;
+      window.removeEventListener(NOTIFICATIONS_READ_EVENT, refresh);
     };
     // 画面遷移のたびに件数を取り直す（通知一覧で既読にした直後などに反映させるため）
   }, [visible, pathname]);
