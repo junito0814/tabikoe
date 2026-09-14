@@ -58,6 +58,11 @@ export function parseMapBounds(searchParams: URLSearchParams): MapBounds | null 
   return { north, south, east, west };
 }
 
+/** 同じ矩形か（idle の重複発火で無駄な再取得をしないための比較） */
+export function isSameBounds(a: MapBounds, b: MapBounds): boolean {
+  return a.north === b.north && a.south === b.south && a.east === b.east && a.west === b.west;
+}
+
 export function parseMapView(value: string | null): MapView {
   return value === "wishlist" ? "wishlist" : "all";
 }
