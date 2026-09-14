@@ -7,6 +7,8 @@ import { validatePostInput } from "@/lib/posts/validate-post-input";
 import { removeStorageObjects } from "@/lib/posts/photos";
 import { recordOperation } from "@/lib/logs/record-operation";
 import { getPostDetail } from "@/lib/posts/post-detail";
+import { evaluatePostBadges } from "@/lib/badges/award-badges";
+import { findBadgeDefinition } from "@/lib/badges/catalog";
 
 /**
  * F-VW-01 Task1: 投稿詳細取得・非公開アクセス制御
@@ -91,7 +93,7 @@ export async function PATCH(
   }
   const { data: spot } = await admin
     .from("spots")
-    .select("id")
+    .select("id, prefecture")
     .eq("id", body.spotId)
     .maybeSingle();
   if (!spot) {
@@ -140,7 +142,17 @@ export async function PATCH(
     detail: { visibility },
   });
 
-  return NextResponse.json({ postId: id });
+  // F-BG Task2: スポットが変わると投稿の都道府県も変わるため、編集後にもバッジを判定する（#251）。
+  // 投稿数は編集で増えないが、既得分は upsert で弾かれるので同じ関数でよい。失敗しても編集は成功させる
+  let newBadges: { type: string; label: string }[] = [];
+  try {
+    const awarded = await evaluatePostBadges(admin, user.id, spot.prefecture ?? null);
+    newBadges = awarded.map((type) => ({ type, label: findBadgeDefinition(type)?.label ?? type }));
+  } catch (error) {
+    console.error("[badges] evaluatePostBadges failed (post update)", error);
+  }
+
+  return NextResponse.json({ postId: id, newBadges });
 }
 
 /**
