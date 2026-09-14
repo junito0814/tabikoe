@@ -31,7 +31,7 @@ docs/
 
 ## 機能カテゴリ別 進捗状況
 
-要件定義書 3.1 に定義された **9カテゴリすべてでユーザーストーリー・タスク分割が完了** しました（2026年9月時点）。ドキュメント総数：ユーザーストーリー42件、タスクファイル232件（2026-09-15 に動画対応の追補 5 件、2026-09-16 に写真・動画ビューア 6 件を追加）。
+要件定義書 3.1 に定義された **9カテゴリすべてでユーザーストーリー・タスク分割が完了** しました（2026年9月時点）。ドキュメント総数：ユーザーストーリー43件、タスクファイル236件（2026-09-15 に動画対応の追補 5 件、2026-09-16 に写真・動画ビューア 6 件・アルバム写真一覧 4 件を追加）。
 
 | 機能ID | カテゴリ | 該当節 | 状況 | ストーリー数 | ドキュメント |
 |---|---|---|---|---|---|
@@ -70,6 +70,7 @@ docs/
 | F-VW-03 | コメント | [comments.md](user-stories/browsing/comments.md) | 7 |
 | F-RC-01 | マイページ | [my-page.md](user-stories/records/my-page.md) | 5 |
 | F-RC-02 | アルバム | [album.md](user-stories/records/album.md) | 5 |
+| F-RC-02 | アルバム写真一覧（v2.11で追加） | [album-photos.md](user-stories/records/album-photos.md) | 3 |
 | F-RC-03 | アルバム共同編集・招待 | [album-collaboration.md](user-stories/records/album-collaboration.md) | 8 |
 | F-RC-05 | 「行きたい」保存 | [wishlist.md](user-stories/records/wishlist.md) | 4 |
 | F-RC-06 | マイマップ | [my-map.md](user-stories/records/my-map.md) | 4 |
