@@ -12,6 +12,12 @@
 - 投稿へのいいね付与・取り消しを行うRoute Handlerを実装する（例：`POST /api/posts/{id}/like`、`DELETE /api/posts/{id}/like`）
 - `likes`テーブルの`(post_id, user_id)`一意制約により、同一ユーザーからの重複いいねを防止する
 - 対象投稿が非公開設定の場合はリクエストを拒否する
+- **いいね数バッジの組み込み（F-BG Task3、実装済み）**: いいね保存後に `src/lib/badges/award-badges.ts` を呼ぶ。
+  ```ts
+  const total = await countReceivedLikes(admin, post.user_id); // 自分の投稿への自分のいいねは除外済み
+  await awardLikeCountBadgeIfEligible(admin, post.user_id, total); // 戻り値は新規獲得 badge_type（トースト対象外）
+  ```
+  バッジ付与の失敗でいいね自体を失敗させない（try/catch で握る。投稿作成の `evaluatePostBadges` と同じ扱い）。取り消し時はバッジを剥奪しない（3.7）
 
 ## 成果物
 

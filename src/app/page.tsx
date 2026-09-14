@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { outfit, lora } from "./fonts";
+import { BadgeToast } from "@/components/badges/BadgeToast";
+import { parseBadgeToastParam } from "@/components/badges/badge-toast-params";
 
 /**
  * SC-00 トップページ
@@ -41,9 +43,17 @@ function NavLink({ href, label }: { href: string; label: string }) {
 export default async function Home({
   searchParams,
 }: {
-  searchParams: Promise<{ posted?: string; updated?: string; deleted?: string; blocked?: string }>;
+  searchParams: Promise<{
+    posted?: string;
+    updated?: string;
+    deleted?: string;
+    blocked?: string;
+    badges?: string;
+  }>;
 }) {
-  const { posted, updated, deleted, blocked } = await searchParams;
+  const { posted, updated, deleted, blocked, badges } = await searchParams;
+  // F-BG Task5: 投稿作成で新たに獲得したバッジ（PostForm がクエリで渡す）
+  const newBadgeTypes = parseBadgeToastParam(badges);
   const supabase = await createClient();
   const {
     data: { user },
@@ -74,6 +84,8 @@ export default async function Home({
     <div
       className={`${outfit.className} flex min-h-screen flex-col items-center justify-center gap-8 bg-[#FBF6F0] px-6`}
     >
+      {newBadgeTypes.length > 0 && <BadgeToast badgeTypes={newBadgeTypes} />}
+
       <div className="flex flex-col items-center gap-3">
         <AppLogoIcon />
         <h1 className={`${lora.className} text-[24px] font-bold tracking-[2px] text-[#3D3A35]`}>
@@ -102,6 +114,7 @@ export default async function Home({
         {user ? (
           <>
             <NavLink href="/posts/new" label="新規投稿" />
+            <NavLink href="/badges" label="ステータスバッジ" />
             <NavLink href="/account" label="アカウント" />
             {isAdmin && <NavLink href="/admin" label="管理者ダッシュボード" />}
           </>

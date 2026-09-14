@@ -6,6 +6,8 @@ import { isWithinRateLimit } from "@/lib/rate-limit/check-rate-limit";
 import { resolveTripId, TripTitleValidationError } from "@/lib/trips/resolve-trip";
 import { validatePostInput } from "@/lib/posts/validate-post-input";
 import { recordOperation } from "@/lib/logs/record-operation";
+import { evaluatePostBadges } from "@/lib/badges/award-badges";
+import { findBadgeDefinition } from "@/lib/badges/catalog";
 import {
   POST_RATE_LIMIT_MAX_ATTEMPTS,
   POST_RATE_LIMIT_WINDOW_SECONDS,
@@ -26,8 +28,10 @@ interface PostRequestBody {
 
 /**
  * F-PO-01 Task3・Task5: 投稿作成
+ * F-BG Task2: 保存完了後のバッジ判定（レスポンスの newBadges をトースト表示に使う）
  * 出典: docs/tasks/posts/post-creation/03-post-creation-handler.md
  *       docs/tasks/posts/post-creation/05-post-creation-rate-limiting.md
+ *       docs/tasks/badges/status-badges/02-post-count-prefecture-badge-evaluation.md
  *
  * 写真は先に POST /api/posts/photos でアップロードし、そのパスをphotoPathsで受け取る。
  */
@@ -86,7 +90,7 @@ export async function POST(request: Request) {
   }
   const { data: spot } = await admin
     .from("spots")
-    .select("id")
+    .select("id, prefecture")
     .eq("id", body.spotId)
     .maybeSingle();
   if (!spot) {
@@ -151,5 +155,17 @@ export async function POST(request: Request) {
     detail: { visibility, photoCount: photoPaths.length },
   });
 
-  return NextResponse.json({ postId: post.id }, { status: 201 });
+  // F-BG Task2: 投稿数・都道府県バッジの判定。バッジ付与の失敗で投稿を失敗させない
+  let newBadges: { type: string; label: string }[] = [];
+  try {
+    const awarded = await evaluatePostBadges(admin, user.id, spot.prefecture ?? null);
+    newBadges = awarded.map((type) => ({
+      type,
+      label: findBadgeDefinition(type)?.label ?? type,
+    }));
+  } catch (error) {
+    console.error("[badges] evaluatePostBadges failed", error);
+  }
+
+  return NextResponse.json({ postId: post.id, newBadges }, { status: 201 });
 }

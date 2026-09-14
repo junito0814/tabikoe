@@ -6,6 +6,7 @@ import { TripTitleInput } from "@/components/trips/TripTitleInput";
 import { SpotAutocompleteInput } from "@/components/spots/SpotAutocompleteInput";
 import { UploadNotice } from "@/components/notices/UploadNotice";
 import { DeletePostButton } from "./DeletePostButton";
+import { buildPostedHref } from "@/components/badges/badge-toast-params";
 import { ErrorNotice } from "@/components/notices/ErrorNotice";
 import { fetchWithAuthRedirect, UnauthorizedError } from "@/lib/api/fetch-with-auth-redirect";
 import { graphemeLength } from "@/lib/text/grapheme-length";
@@ -181,6 +182,7 @@ export default function PostForm({ initialPost }: { initialPost?: PostFormInitia
     if (!canSubmit || !spot) return;
     setIsSubmitting(true);
     setErrorMessage(null);
+    let newBadgeTypes: string[] = [];
 
     try {
       // 先に写真をアップロードし、返ったパスを投稿へ渡す（要件定義書3.3.1の処理フロー）
@@ -259,12 +261,18 @@ export default function PostForm({ initialPost }: { initialPost?: PostFormInitia
           setErrorMessage("投稿の作成に失敗しました。入力内容をご確認ください");
           return;
         }
+
+        // F-BG Task5: 新たに獲得したバッジは遷移先でトースト表示する（通知一覧には残さない）
+        const result = (await response.json().catch(() => ({}))) as {
+          newBadges?: { type: string }[];
+        };
+        newBadgeTypes = (result.newBadges ?? []).map((badge) => badge.type);
       }
 
       // 投稿後の遷移先は要件定義書に定義がない。本来の遷移先になりうる
       // 投稿詳細（SC-05）・マイページ（SC-06）が未実装のため、
       // 暫定でトップページへ戻し、完了したことだけを伝える。
-      router.push(initialPost ? "/?updated=1" : "/?posted=1");
+      router.push(initialPost ? "/?updated=1" : buildPostedHref(newBadgeTypes));
       router.refresh();
     } catch (error) {
       if (error instanceof UnauthorizedError) return;
