@@ -141,9 +141,12 @@ export async function getPostDetail(
   if (!canViewPost(row, viewerId, isAlbumMember)) return null;
 
   const [signedUrls, likeCount, commentCount, viewerLike, wishlist] = await Promise.all([
+    // 動画本体（video_url）も同じ非公開バケットにあるため、サムネイルと合わせて署名する
     createPostPhotoUrls(
       admin,
-      row.post_photos.flatMap((photo) => (photo.storage_url ? [photo.storage_url] : []))
+      row.post_photos.flatMap((photo) =>
+        [photo.storage_url, photo.video_url].filter((path): path is string => Boolean(path))
+      )
     ),
     admin.from("likes").select("id", { count: "exact", head: true }).eq("post_id", row.id),
     admin.from("comments").select("id", { count: "exact", head: true }).eq("post_id", row.id),
@@ -166,7 +169,7 @@ export async function getPostDetail(
           mediaType: isVideo ? ("video" as const) : ("photo" as const),
           thumbnailUrl: url,
           alt: `${spot?.name ?? "スポット"}の${isVideo ? "動画" : "写真"} ${index + 1}`,
-          videoUrl: isVideo ? (photo.video_url ?? undefined) : undefined,
+          videoUrl: isVideo && photo.video_url ? signedUrls.get(photo.video_url) : undefined,
         },
       ];
     });

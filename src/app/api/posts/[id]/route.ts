@@ -198,7 +198,7 @@ export async function DELETE(
   // カスケードでpost_photosの行が消えるため、実ファイルのパスは削除前に控える
   const { data: photos } = await admin
     .from("post_photos")
-    .select("storage_url")
+    .select("storage_url, video_url")
     .eq("post_id", id);
 
   const { error: deleteError } = await admin
@@ -214,7 +214,7 @@ export async function DELETE(
   // Storageの削除に失敗しても投稿は消えている。孤立ファイルが残るだけなのでエラーにしない
   await removeStorageObjects(
     admin,
-    (photos ?? []).map((photo) => photo.storage_url)
+    (photos ?? []).flatMap((photo) => [photo.storage_url, photo.video_url])
   );
 
   // 要件7.5: 投稿の削除。対象は既に消えているが、監査のためIDは残す

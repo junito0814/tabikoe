@@ -41,7 +41,7 @@ export async function DELETE(
 
   const { data: photos, error: photosError } = await admin
     .from("post_photos")
-    .select("id, storage_url")
+    .select("id, storage_url, video_url")
     .eq("post_id", id);
 
   if (photosError) {
@@ -68,7 +68,7 @@ export async function DELETE(
 
   // Storageの削除に失敗しても、DB上は消えているため投稿の整合性は保たれる。
   // 孤立ファイルが残るだけなのでエラーにはしない。
-  await removeStorageObjects(admin, [target.storage_url]);
+  await removeStorageObjects(admin, [target.storage_url, target.video_url]);
 
   try {
     await renumberPostPhotos(admin, id);

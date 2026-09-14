@@ -3,6 +3,8 @@
 > 出典: [post-creation.md](../../../user-stories/posts/post-creation.md)
 > インデックス: [post-creation](00-index.md)
 
+> **2026-09-15 追記**: 動画（MP4）の半分は、Vercel の本文上限（4.5MB）のため写真と同じ経路では実装できず、[video-upload](../video-upload/00-index.md) として別ストーリーに切り出した。本タスクの成果物は写真の経路（`POST /api/posts/photos`）のみ。
+
 ## 依存
 
 - [Task 3: 投稿作成 Route Handler（バリデーション・保存）](03-post-creation-handler.md)

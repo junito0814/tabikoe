@@ -10,8 +10,18 @@ import { buildPostedHref, buildUpdatedHref } from "@/components/badges/badge-toa
 import { ErrorNotice } from "@/components/notices/ErrorNotice";
 import { fetchWithAuthRedirect, UnauthorizedError } from "@/lib/api/fetch-with-auth-redirect";
 import { graphemeLength } from "@/lib/text/grapheme-length";
+import {
+  uploadVideo,
+  validateVideoFile,
+  VIDEO_ERROR_MESSAGES,
+  VideoUploadError,
+  type UploadedVideoMedia,
+} from "@/lib/video/client-upload";
 import type { RegisteredSpot } from "@/lib/spots/types";
 import {
+  ALLOWED_PHOTO_MIME_TYPES,
+  ALLOWED_VIDEO_MIME_TYPE,
+  MAX_PHOTO_SIZE_BYTES,
   MAX_POST_COMMENT_LENGTH,
   MAX_POST_COST,
   MAX_POST_RATING,
@@ -24,8 +34,8 @@ import {
   type PostVisibility,
 } from "@/lib/posts/constants";
 
-const MAX_PHOTO_SIZE_BYTES = 10 * 1024 * 1024;
-const ALLOWED_PHOTO_TYPES = ["image/jpeg", "image/png"];
+const ALLOWED_PHOTO_TYPES: readonly string[] = ALLOWED_PHOTO_MIME_TYPES;
+const isVideoFile = (file: File) => file.type === ALLOWED_VIDEO_MIME_TYPE;
 
 /**
  * SC-03 投稿作成・編集画面
@@ -35,11 +45,13 @@ const ALLOWED_PHOTO_TYPES = ["image/jpeg", "image/png"];
  * 3.3.3が「編集可能項目＝投稿の全項目」としており、入力規則も作成時と同じため、
  * 同じフォームを編集モードとして再利用する（initialPostの有無で切り替える）。
  * 旅行タイトル・スポット名は trip-title / spot-selection の成果物を組み込む。
- * 動画は未対応（要件定義書9章#5のffmpeg検証が未了のため、写真のみ先行実装）。
+ * 動画（MP4）は写真と同じ選択欄から追加でき、本体は Storage へ直接送る（video-upload Task3）。
  */
 export interface ExistingPhoto {
   id: string;
+  /** 写真の縮小画像、または動画のサムネイル */
   url: string;
+  mediaType?: "photo" | "video";
 }
 
 export interface PostFormInitialValues {
@@ -110,6 +122,7 @@ export default function PostForm({ initialPost }: { initialPost?: PostFormInitia
   );
 
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const commentLength = graphemeLength(comment);
@@ -164,14 +177,26 @@ export default function PostForm({ initialPost }: { initialPost?: PostFormInitia
     const selected = Array.from(event.target.files ?? []);
     setErrorMessage(null);
 
-    const invalidType = selected.find((file) => !ALLOWED_PHOTO_TYPES.includes(file.type));
+    const invalidType = selected.find(
+      (file) => !ALLOWED_PHOTO_TYPES.includes(file.type) && !isVideoFile(file)
+    );
     if (invalidType) {
-      setErrorMessage("写真はJPEGまたはPNG形式のみアップロードできます");
+      setErrorMessage("写真はJPEG／PNG、動画はMP4形式のみアップロードできます");
       return;
     }
-    const tooLarge = selected.find((file) => file.size > MAX_PHOTO_SIZE_BYTES);
+    const tooLarge = selected.find(
+      (file) => !isVideoFile(file) && file.size > MAX_PHOTO_SIZE_BYTES
+    );
     if (tooLarge) {
       setErrorMessage("写真は1点あたり10MB以内にしてください");
+      return;
+    }
+    const videoError = selected
+      .filter(isVideoFile)
+      .map(validateVideoFile)
+      .find((code) => code !== null);
+    if (videoError) {
+      setErrorMessage(VIDEO_ERROR_MESSAGES[videoError]);
       return;
     }
 
@@ -185,11 +210,17 @@ export default function PostForm({ initialPost }: { initialPost?: PostFormInitia
     let newBadgeTypes: string[] = [];
 
     try {
-      // 先に写真をアップロードし、返ったパスを投稿へ渡す（要件定義書3.3.1の処理フロー）
-      let uploadedPaths: string[] = [];
-      if (photos.length > 0) {
+      // 先に写真・動画を処理し、返ったパスを投稿へ渡す（要件定義書3.3.1の処理フロー）。
+      // 選択順を保つため、写真はまとめて1回、動画は1本ずつ処理してから元の順に並べ直す
+      const uploadedMedia: (UploadedVideoMedia | { mediaType: "photo"; storagePath: string })[] =
+        [];
+      const photoFiles = photos.filter((file) => !isVideoFile(file));
+      const videoFiles = photos.filter(isVideoFile);
+
+      let uploadedPhotoPaths: string[] = [];
+      if (photoFiles.length > 0) {
         const formData = new FormData();
-        photos.forEach((photo) => formData.append("photos", photo));
+        photoFiles.forEach((photo) => formData.append("photos", photo));
 
         const uploadResponse = await fetchWithAuthRedirect("/api/posts/photos", {
           method: "POST",
@@ -204,7 +235,32 @@ export default function PostForm({ initialPost }: { initialPost?: PostFormInitia
         const uploaded = (await uploadResponse.json()) as {
           photos: { storagePath: string }[];
         };
-        uploadedPaths = uploaded.photos.map((photo) => photo.storagePath);
+        uploadedPhotoPaths = uploaded.photos.map((photo) => photo.storagePath);
+      }
+
+      const uploadedVideos: UploadedVideoMedia[] = [];
+      for (const [index, file] of videoFiles.entries()) {
+        setUploadProgress(`動画を処理中... (${index + 1}/${videoFiles.length})`);
+        try {
+          uploadedVideos.push(await uploadVideo(file));
+        } catch (error) {
+          if (error instanceof VideoUploadError) {
+            setErrorMessage(VIDEO_ERROR_MESSAGES[error.code]);
+            return;
+          }
+          throw error;
+        }
+      }
+      setUploadProgress(null);
+
+      let photoCursor = 0;
+      let videoCursor = 0;
+      for (const file of photos) {
+        uploadedMedia.push(
+          isVideoFile(file)
+            ? uploadedVideos[videoCursor++]
+            : { mediaType: "photo", storagePath: uploadedPhotoPaths[photoCursor++] }
+        );
       }
 
       const fields = {
@@ -220,14 +276,14 @@ export default function PostForm({ initialPost }: { initialPost?: PostFormInitia
       };
 
       if (initialPost) {
-        // 追加分の写真を既存投稿へ紐づけてから、本体を更新する
-        if (uploadedPaths.length > 0) {
+        // 追加分の写真・動画を既存投稿へ紐づけてから、本体を更新する
+        if (uploadedMedia.length > 0) {
           const attachResponse = await fetchWithAuthRedirect(
             `/api/posts/${initialPost.postId}/photos`,
             {
               method: "POST",
               headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ photoPaths: uploadedPaths }),
+              body: JSON.stringify({ media: uploadedMedia }),
             }
           );
           if (!attachResponse.ok) {
@@ -256,7 +312,7 @@ export default function PostForm({ initialPost }: { initialPost?: PostFormInitia
         const response = await fetchWithAuthRedirect("/api/posts", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ ...fields, photoPaths: uploadedPaths }),
+          body: JSON.stringify({ ...fields, media: uploadedMedia }),
         });
 
         if (response.status === 429) {
@@ -289,6 +345,7 @@ export default function PostForm({ initialPost }: { initialPost?: PostFormInitia
       );
     } finally {
       setIsSubmitting(false);
+      setUploadProgress(null);
     }
   };
 
@@ -364,7 +421,7 @@ export default function PostForm({ initialPost }: { initialPost?: PostFormInitia
           <StarRating value={rating} onChange={setRating} />
         </Field>
 
-        <Field label="写真">
+        <Field label="写真・動画">
           {existingPhotos.length > 0 && (
             <ul className="mb-2 grid grid-cols-3 gap-2">
               {existingPhotos.map((photo) => (
@@ -372,9 +429,14 @@ export default function PostForm({ initialPost }: { initialPost?: PostFormInitia
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src={photo.url}
-                    alt="投稿済みの写真"
+                    alt={photo.mediaType === "video" ? "投稿済みの動画" : "投稿済みの写真"}
                     className="aspect-square w-full rounded-[8px] object-cover"
                   />
+                  {photo.mediaType === "video" && (
+                    <span className="absolute bottom-1 left-1 rounded bg-black/55 px-1.5 py-0.5 text-[10px] font-semibold text-white">
+                      動画
+                    </span>
+                  )}
                   <button
                     type="button"
                     onClick={() => handleDeleteExistingPhoto(photo.id)}
@@ -389,13 +451,19 @@ export default function PostForm({ initialPost }: { initialPost?: PostFormInitia
           )}
           <input
             type="file"
-            accept="image/jpeg,image/png"
+            accept="image/jpeg,image/png,video/mp4"
             multiple
             onChange={handlePhotoChange}
             className="text-[12px]"
           />
+          <p className="mt-1 text-[11px] text-[#9C9488]">
+            写真はJPEG／PNG（10MBまで）、動画はMP4（100MB・1分以内）
+          </p>
           {photos.length > 0 && (
-            <p className="mt-1 text-[11px] text-[#9C9488]">{photos.length}点を選択中</p>
+            <p className="mt-1 text-[11px] text-[#9C9488]">
+              {photos.length}点を選択中
+              {photos.some(isVideoFile) && `（うち動画${photos.filter(isVideoFile).length}点）`}
+            </p>
           )}
           <div className="mt-2">
             <UploadNotice />
@@ -427,6 +495,7 @@ export default function PostForm({ initialPost }: { initialPost?: PostFormInitia
           </select>
         </Field>
 
+        {uploadProgress && <p className="text-[12px] text-[#9C9488]">{uploadProgress}</p>}
         {errorMessage && <ErrorNotice message={errorMessage} />}
 
         <button

@@ -56,8 +56,10 @@ export async function nextDisplayOrder(
 /** Storage上の実ファイルも消す。DBだけ消すと孤立ファイルが残る。 */
 export async function removeStorageObjects(
   admin: SupabaseClient,
-  paths: string[]
+  paths: (string | null | undefined)[]
 ): Promise<void> {
-  if (paths.length === 0) return;
-  await admin.storage.from(POST_MEDIA_BUCKET).remove(paths);
+  // 写真は storage_url のみ、動画は storage_url（サムネイル）と video_url（本体）の両方を消す
+  const targets = paths.filter((path): path is string => typeof path === "string" && path.length > 0);
+  if (targets.length === 0) return;
+  await admin.storage.from(POST_MEDIA_BUCKET).remove(targets);
 }

@@ -13,9 +13,9 @@ import { POST_MEDIA_BUCKET } from "@/lib/posts/constants";
  * F-AC-04で実装した共通処理（EXIF位置情報除去・向き補正・長辺1200px縮小）を再利用する。
  * 投稿本体の作成（POST /api/posts）より前に呼び出し、返したパスを投稿作成時に渡す。
  *
- * 動画（MP4・ffmpegでの先頭フレーム抽出）は本エンドポイントの対象外。
- * 要件定義書9章#5「ffmpegのVercelサーバーレス関数上での動作検証」が未了のため、
- * 写真のみ先行して実装している。
+ * 動画（MP4）は本エンドポイントの対象外。本体が Vercel の本文上限（4.5MB）を超えるため、
+ * POST /api/posts/videos/upload-url → Storage 直接アップロード → POST /api/posts/videos の
+ * 別経路で処理する（docs/tasks/posts/video-upload/）。
  */
 export async function POST(request: Request) {
   const supabase = await createClient();

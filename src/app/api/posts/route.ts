@@ -8,6 +8,7 @@ import { validatePostInput } from "@/lib/posts/validate-post-input";
 import { recordOperation } from "@/lib/logs/record-operation";
 import { evaluatePostBadges } from "@/lib/badges/award-badges";
 import { findBadgeDefinition } from "@/lib/badges/catalog";
+import { parseMediaInput, toPostPhotoRows } from "@/lib/posts/media-input";
 import {
   POST_RATE_LIMIT_MAX_ATTEMPTS,
   POST_RATE_LIMIT_WINDOW_SECONDS,
@@ -24,6 +25,7 @@ interface PostRequestBody {
   comment?: unknown;
   visibility?: unknown;
   photoPaths?: unknown;
+  media?: unknown;
 }
 
 /**
@@ -33,7 +35,8 @@ interface PostRequestBody {
  *       docs/tasks/posts/post-creation/05-post-creation-rate-limiting.md
  *       docs/tasks/badges/status-badges/02-post-count-prefecture-badge-evaluation.md
  *
- * 写真は先に POST /api/posts/photos でアップロードし、そのパスをphotoPathsで受け取る。
+ * 写真は先に POST /api/posts/photos、動画は POST /api/posts/videos で処理し、
+ * その戻り値を media（旧形式は photoPaths）で受け取る。
  */
 export async function POST(request: Request) {
   const supabase = await createClient();
@@ -77,12 +80,15 @@ export async function POST(request: Request) {
   }
   const { category, duration, visibility, rating, cost, visitDate, comment } = validation.fields;
 
-  const photoPaths = Array.isArray(body.photoPaths)
-    ? body.photoPaths.filter((path): path is string => typeof path === "string")
-    : [];
-  if (photoPaths.length === 0) {
-    return NextResponse.json({ error: "photo_required" }, { status: 400 });
+  // 写真・動画は1点以上必須（3.3.1）。他人のファイルのパスは紐づけさせない
+  const mediaInput = parseMediaInput(body, user.id);
+  if (!mediaInput.ok) {
+    return NextResponse.json(
+      { error: mediaInput.error === "media_required" ? "photo_required" : mediaInput.error },
+      { status: 400 }
+    );
   }
+  const media = mediaInput.items;
 
   // スポットは登録済みのものだけを受け付ける（存在しないIDでの投稿を防ぐ）
   if (typeof body.spotId !== "string") {
@@ -132,14 +138,9 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "insert_failed" }, { status: 500 });
   }
 
-  const { error: photosError } = await admin.from("post_photos").insert(
-    photoPaths.map((storagePath, index) => ({
-      post_id: post.id,
-      media_type: "photo",
-      storage_url: storagePath,
-      display_order: index,
-    }))
-  );
+  const { error: photosError } = await admin
+    .from("post_photos")
+    .insert(toPostPhotoRows(post.id, media));
 
   if (photosError) {
     // 写真が1点も無い投稿は成立しないため、投稿ごと取り消す
@@ -152,7 +153,11 @@ export async function POST(request: Request) {
     actionType: "post_create",
     userId: user.id,
     targetId: post.id,
-    detail: { visibility, photoCount: photoPaths.length },
+    detail: {
+      visibility,
+      photoCount: media.filter((item) => item.mediaType === "photo").length,
+      videoCount: media.filter((item) => item.mediaType === "video").length,
+    },
   });
 
   // F-BG Task2: 投稿数・都道府県バッジの判定。バッジ付与の失敗で投稿を失敗させない

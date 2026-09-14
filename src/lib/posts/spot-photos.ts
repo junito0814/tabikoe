@@ -106,7 +106,11 @@ export async function getSpotMediaPage(
 
   const merged = mergeSpotMedia((data ?? []) as unknown as SpotPostMediaRow[]);
   const page = merged.slice(offset, offset + limit);
-  const signedUrls = await createPostPhotoUrls(admin, Array.from(new Set(page.map((item) => item.path))));
+  // 動画本体も非公開バケットにあるため、サムネイルと合わせて署名する
+  const signedUrls = await createPostPhotoUrls(
+    admin,
+    Array.from(new Set(page.flatMap((item) => (item.videoUrl ? [item.path, item.videoUrl] : [item.path]))))
+  );
 
   const items: SpotMediaItem[] = page.flatMap((item, index) => {
     const url = signedUrls.get(item.path);
@@ -117,7 +121,7 @@ export async function getSpotMediaPage(
         postId: item.postId,
         mediaType: item.mediaType,
         thumbnailUrl: url,
-        videoUrl: item.videoUrl,
+        videoUrl: item.videoUrl ? (signedUrls.get(item.videoUrl) ?? null) : null,
         alt: `${item.spotName}の${item.mediaType === "video" ? "動画" : "写真"} ${offset + index + 1}`,
         postedAt: item.postedAt,
       },

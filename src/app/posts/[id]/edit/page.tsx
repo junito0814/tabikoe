@@ -37,7 +37,7 @@ export default async function EditPostPage({
 
   const { data: photos } = await admin
     .from("post_photos")
-    .select("id, storage_url")
+    .select("id, storage_url, media_type")
     .eq("post_id", id)
     .order("display_order", { ascending: true });
 
@@ -74,7 +74,9 @@ export default async function EditPostPage({
     visibility: post.visibility as PostVisibility,
     photos: (photos ?? []).flatMap((photo) => {
       const url = signedUrls.get(photo.storage_url);
-      return url ? [{ id: photo.id, url }] : [];
+      return url
+        ? [{ id: photo.id, url, mediaType: photo.media_type === "video" ? ("video" as const) : ("photo" as const) }]
+        : [];
     }),
   };
 

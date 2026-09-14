@@ -31,7 +31,7 @@ docs/
 
 ## 機能カテゴリ別 進捗状況
 
-要件定義書 3.1 に定義された **9カテゴリすべてでユーザーストーリー・タスク分割が完了** しました（2026年9月時点）。ドキュメント総数：ユーザーストーリー41件、タスクファイル221件。
+要件定義書 3.1 に定義された **9カテゴリすべてでユーザーストーリー・タスク分割が完了** しました（2026年9月時点）。ドキュメント総数：ユーザーストーリー41件、タスクファイル226件（2026-09-15 に動画対応の追補 5 件を追加）。
 
 | 機能ID | カテゴリ | 該当節 | 状況 | ストーリー数 | ドキュメント |
 |---|---|---|---|---|---|
@@ -55,6 +55,7 @@ docs/
 | F-AC-04 | プロフィール編集 | [profile-edit.md](user-stories/account/profile-edit.md) | 6 |
 | F-AC-05 | 退会 | [account-deletion.md](user-stories/account/account-deletion.md) | 6 |
 | F-PO-01 | 投稿作成（3.3.1） | [post-creation.md](user-stories/posts/post-creation.md) | 6 |
+| F-PO-01 | 動画対応（3.3.1・5.4、追補） | [post-creation.md](user-stories/posts/post-creation.md) / [tasks/posts/video-upload](tasks/posts/video-upload/00-index.md) | 4 |
 | F-PO-01 | 旅行タイトル仕様（3.3.4） | [trip-title.md](user-stories/posts/trip-title.md) | 6 |
 | F-PO-01 | スポット指定仕様（3.3.5） | [spot-selection.md](user-stories/posts/spot-selection.md) | 7 |
 | F-PO-02 | 投稿編集 | [post-edit.md](user-stories/posts/post-edit.md) | 4 |
