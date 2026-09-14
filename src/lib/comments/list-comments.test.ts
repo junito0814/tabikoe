@@ -23,7 +23,7 @@ function fakeAdmin(all: CommentRow[]) {
   let from = 0;
   let to = 0;
   const q: Record<string, unknown> = {};
-  for (const m of ["select", "eq", "order", "not"]) q[m] = () => q;
+  for (const m of ["select", "eq", "order", "not", "is"]) q[m] = () => q;
   q.range = (f: number, t: number) => {
     from = f;
     to = t;

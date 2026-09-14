@@ -208,6 +208,8 @@ export async function getSpotPostCards(
     .select(POST_CARD_SELECT)
     .eq("spot_id", spotId)
     .eq("visibility", "public")
+    // F-AD-05: 非公開化された投稿は除く
+    .is("hidden_at", null)
     .order("created_at", { ascending: false })
     .limit(SPOT_POSTS_FETCH_CAP);
   if (blockedIds.length > 0) {

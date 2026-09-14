@@ -44,6 +44,8 @@ export async function GET(request: Request) {
   const { data: storedSpots, error: storedError } = await admin
     .from("spots")
     .select("id, name, lat, lng, source, posts(count)")
+    // F-AD-05: 非公開化されたスポットは候補に出さない
+    .is("hidden_at", null)
     .ilike("name", `%${escaped}%`)
     .limit(MAX_RESULTS);
 

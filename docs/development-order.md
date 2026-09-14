@@ -23,7 +23,7 @@ flowchart TD
     P4 --> P6["Phase 6\n閲覧・交流\n🔷"]
     P5 --> P7["Phase 7\n記録・振り返り\n🔷"]
     P6 --> P7
-    P7 --> P8["Phase 8\n管理者機能\n🔶"]
+    P7 --> P8["Phase 8\n管理者機能\n🔷"]
     P6 --> P9["Phase 9\n通知一覧の最終統合\n⬜"]
     P8 --> P9
 ```
@@ -135,15 +135,19 @@ Phase 4 の wishlist、Phase 0 の pin-display-rules、Phase 2 の Google Maps �
 | 3 | F-RC-06 マイマップ | 🔷 | `/mymap`（SC-12）、`GET /api/users/me/map-spots?mode&bounds`。SC-02 の `GoogleMap` を再利用し、posted / wishlist ピンで描画。投稿済みピン→自分の最新投稿（SC-05）、行きたいピン→SC-04 |
 | 4 | F-RC-01 マイページ | 🔷 | `/mypage`（SC-06）、`GET /api/users/me/summary`・`GET /api/users/me/posts?trip_id`。**trip-title Task5（表示範囲の制御）**: 旅行タイトルはマイページとアルバムだけが表示し、SC-04/05/13 のカード型（`PostCardData`）には項目自体を持たせていない |
 
-## Phase 8 — 管理者機能（F-AD） 🔶
+## Phase 8 — 管理者機能（F-AD） 🔷
+
+残り4ストーリー分を1ブランチ（`feature/admin`、Phase 7 の上に積む）で実装した。
 
 | # | ストーリー | 状態 | 備考 |
 |---|---|---|---|
-| 1 | F-AD-01 管理者ログイン | 🔶 | Task1（`/admin`の`is_admin`判定）は Phase 1 で先取り済み。Task2（ログイン後遷移）は未着手 |
+| 1 | F-AD-01 管理者ログイン | 🔷 | Task1 は Phase 1 で先取り済み。Task2: SC-15 は SC-01 を `/login?admin=1` で開いたもの（4.1「ログイン導線は一般と共通」）。その導線から来た `is_admin` ユーザーはコールバックで `/admin` へ（`resolvePostLoginRedirect`）。`/api/admin` 配下は proxy の対象外なので `requireAdminUser` で各ハンドラが判定（非管理者は404） |
 | 2 | F-AD-02 管理者ダッシュボード | ✅ | Phase 1 で先取り済み |
-| 3 | F-AD-03 お知らせ管理 | ⬜ | |
-| 4 | F-AD-04 通報一覧 | ⬜ | `reports`テーブルは Phase 4 で済 |
-| 5 | F-AD-05 通報対応操作 | ⬜ | `reports`の status 更新と `report_resolved` 通知（`createNotification`）、`operation_logs` の `admin_action` を組み込む |
+| 3 | F-AD-03 お知らせ管理 | 🔷 | `system_announcements`（20260914000003）、`GET/POST /api/admin/announcements`・`PATCH/DELETE .../[id]`、SC-17 `/admin/announcements` |
+| 4 | F-AD-04 通報一覧 | 🔷 | `GET /api/admin/reports?status&reason&target_type&from&to`・`GET .../[id]`（対象の内容を種別ごとに取得）、SC-18 `/admin/reports`・`/admin/reports/[id]` |
+| 5 | F-AD-05 通報対応操作 | 🔷 | `POST /api/admin/reports/[id]/action`（hide / delete / no_issue）。非公開化は `hidden_at`（投稿・写真・コメント・スポット・アルバム）／`review_hidden_at`（感想）、ユーザーは `suspended_at`（一時停止＝ログイン拒否＋既存セッション破棄）。削除時のみ通報者へ `report_resolved` 通知。`operation_logs` の `admin_action` を記録 |
+
+**非公開化の反映先**: 地図ピン・スポット別一覧・検索・スポット写真一覧・投稿詳細（本人以外）・コメント一覧・アルバム（一覧・詳細）・スポット候補検索から除外し、RLS（`posts_select_visible`・`comments_select_visible_post`）にも `hidden_at is null or 本人` を追加した。`hidden_at`・`suspended_at` を本人が書き換えられないよう、`posts`・`trips`・`post_photos` の `authenticated` への UPDATE を列単位に絞り直した（`comments` は編集不可なので UPDATE 権限自体を外した）。
 
 ## Phase 9 — 通知一覧の最終統合（F-NT-02） ⬜
 

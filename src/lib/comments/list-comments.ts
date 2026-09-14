@@ -82,6 +82,8 @@ export async function listComments(
     .from("comments")
     .select("id, user_id, body, created_at, users(display_name, avatar_url, is_deleted)", { count: "exact" })
     .eq("post_id", postId)
+    // F-AD-05: 非公開化されたコメントは除く
+    .is("hidden_at", null)
     .order("created_at", { ascending: false })
     .range(offset, offset + limit - 1);
   if (blockedIds.length > 0) {

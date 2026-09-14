@@ -64,7 +64,9 @@ export async function getAlbumList(admin: SupabaseClient, userId: string): Promi
   const { data, error } = await admin
     .from("album_members")
     .select("role, trips!inner(id, title, user_id, posts(count), album_members(count))")
-    .eq("user_id", userId);
+    .eq("user_id", userId)
+    // F-AD-05: 非公開化されたアルバムは一覧に出さない
+    .is("trips.hidden_at", null);
   if (error) throw error;
 
   const rows = (data ?? []) as unknown as AlbumListRow[];
@@ -179,11 +181,13 @@ export async function getAlbumDetail(
 
   const { data: trip, error: tripError } = await admin
     .from("trips")
-    .select("id, title, user_id")
+    .select("id, title, user_id, hidden_at")
     .eq("id", tripId)
     .maybeSingle();
   if (tripError) throw tripError;
   if (!trip) return null;
+  // F-AD-05: 非公開化されたアルバムはオーナー以外に見せない
+  if (trip.hidden_at && trip.user_id !== viewerId) return null;
 
   const [members, postsResult] = await Promise.all([
     getAlbumMembers(admin, tripId),
@@ -195,6 +199,8 @@ export async function getAlbumDetail(
           "post_photos(storage_url, media_type, display_order), likes(count), comments(count)"
       )
       .eq("trip_id", tripId)
+      // F-AD-05: 非公開化された投稿は除く
+      .is("hidden_at", null)
       .order("created_at", { ascending: false }),
   ]);
   if (postsResult.error) throw postsResult.error;

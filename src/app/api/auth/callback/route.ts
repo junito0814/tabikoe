@@ -6,6 +6,7 @@ import { safeRedirectPath } from "@/lib/safe-redirect";
 import { getClientIp } from "@/lib/http/client-ip";
 import { isWithinRateLimit } from "@/lib/rate-limit/check-rate-limit";
 import { recordOperation } from "@/lib/logs/record-operation";
+import { resolvePostLoginRedirect } from "@/lib/auth/post-login-redirect";
 
 // F-AC-01 Task8: 同一IPから1分間に10回を超える試行を拒否する
 const LOGIN_RATE_LIMIT_WINDOW_SECONDS = 60;
@@ -20,6 +21,8 @@ export async function GET(request: Request) {
     // アカウントの有無と合わせてここで分岐する（要件定義書3.2.1、v2.8）
     const isSignupFlow = searchParams.get("mode") === "signup";
     const entryScreen = isSignupFlow ? "/signup" : "/login";
+    // F-AD-01 Task2: 管理者ログイン画面（SC-15 = /login?admin=1）経由か
+    const fromAdminLogin = searchParams.get("admin") === "1";
 
     if (!code) {
         return NextResponse.redirect(`${origin}${entryScreen}?error=1`);
@@ -67,7 +70,7 @@ export async function GET(request: Request) {
     // IdP認証が通ってもアプリのアカウントがあるとは限らないため、ここで確認する。
     const { data: existingUser, error: lookupError } = await admin
         .from("users")
-        .select("id")
+        .select("id, is_admin, suspended_at")
         .eq("id", data.user.id)
         .maybeSingle();
 
@@ -113,6 +116,17 @@ export async function GET(request: Request) {
     // 登録済みの場合は、どちらの画面から来ても通常のログインとして扱う。
     // consented_atは初回サインアップ時の値を保持する（ensureUserRecordを呼ばない）。
 
+    // F-AD-05: 通報対応でアカウントを一時停止されたユーザーはログインできない（3.10.5）
+    if (existingUser?.suspended_at) {
+        await supabase.auth.signOut();
+        await recordOperation(admin, {
+            actionType: "login_failure",
+            userId: data.user.id,
+            detail: { reason: "account_suspended" },
+        });
+        return NextResponse.redirect(`${origin}/login?error=suspended`);
+    }
+
     // 要件7.5: ログイン成功（新規作成直後のログインも含む）
     await recordOperation(admin, {
         actionType: "login_success",
@@ -120,5 +134,11 @@ export async function GET(request: Request) {
         detail: { flow: isSignupFlow ? "signup" : "login" },
     });
 
-    return NextResponse.redirect(`${origin}${redirectTo}`);
+    // F-AD-01 Task2: 管理者ログイン導線から来た管理者はダッシュボードへ
+    const destination = resolvePostLoginRedirect({
+        fromAdminLogin,
+        isAdmin: existingUser?.is_admin ?? false,
+        redirectTo,
+    });
+    return NextResponse.redirect(`${origin}${destination}`);
 }

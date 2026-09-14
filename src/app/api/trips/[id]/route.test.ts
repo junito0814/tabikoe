@@ -19,7 +19,7 @@ vi.mock("@/lib/supabase/admin", () => ({
   createAdminClient: () => ({
     from: (table: string) => {
       const q: Record<string, unknown> = {};
-      for (const m of ["select", "eq", "in", "order"]) q[m] = () => q;
+      for (const m of ["select", "eq", "in", "order", "is"]) q[m] = () => q;
       q.maybeSingle = async () => ({
         data:
           table === "trips"
