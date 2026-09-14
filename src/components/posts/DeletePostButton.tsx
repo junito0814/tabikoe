@@ -9,9 +9,8 @@ import { fetchWithAuthRedirect, UnauthorizedError } from "@/lib/api/fetch-with-a
  * F-PO-03 Task4: 投稿削除ボタン・確認ダイアログ
  * 出典: docs/tasks/posts/post-delete/04-post-delete-ui.md
  *
- * 投稿者本人にのみ表示する。呼び出し側（SC-03編集モード）が本人確認済みの画面でのみ
- * 描画するため、このコンポーネント自体は権限判定を持たない。
- * 投稿詳細画面（SC-05）への設置は、その画面がPhase 6で未実装のため対象外。
+ * 投稿者本人にのみ表示する。呼び出し側（SC-03編集モード・SC-05投稿詳細）が本人確認済みの
+ * 画面でのみ描画するため、このコンポーネント自体は権限判定を持たない。
  */
 export function DeletePostButton({ postId }: { postId: string }) {
   const router = useRouter();

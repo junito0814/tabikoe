@@ -1,13 +1,13 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ErrorNotice } from "@/components/notices/ErrorNotice";
 import { ERROR_MESSAGES } from "@/components/notices/error-messages";
 import { fetchWithAuthRedirect, UnauthorizedError } from "@/lib/api/fetch-with-auth-redirect";
 import type { GeocodedPlace } from "@/lib/google/geocoding";
-import type { MapBounds, MapPinData, MapView } from "@/lib/map/get-map-pins";
+import { isSameBounds, type MapBounds, type MapPinData, type MapView } from "@/lib/map/get-map-pins";
 import { GoogleMap, type GoogleMapHandle, type GoogleMapPin } from "./GoogleMap";
 import { resolveInitialCenter, type InitialCenter, type LatLng } from "./initial-center";
 import { resolveMapPinType } from "./pin-type";
@@ -90,9 +90,13 @@ export function MapScreen({
     return () => clearTimeout(timer);
   }, [view, bounds, fetchPins]);
 
+  // idle は地図が動いていなくても発火することがある（タイル読み込み完了など）。
+  // 範囲が同じなら state を変えず、再取得・再描画の連鎖を起こさない
   const handleBoundsChange = useCallback((next: MapBounds, nextCenter: LatLng) => {
-    setBounds(next);
-    setCenter(nextCenter);
+    setBounds((current) => (current && isSameBounds(current, next) ? current : next));
+    setCenter((current) =>
+      current && current.lat === nextCenter.lat && current.lng === nextCenter.lng ? current : nextCenter
+    );
   }, []);
 
   const handlePinClick = useCallback(
@@ -107,13 +111,17 @@ export function MapScreen({
     mapRef.current?.panTo({ lat: place.lat, lng: place.lng }, PLACE_SEARCH_ZOOM);
   }, []);
 
-  const mapPins: GoogleMapPin[] = pins.map((pin) => ({
-    id: pin.spotId,
-    lat: pin.lat,
-    lng: pin.lng,
-    type: resolveMapPinType(view, pin),
-    title: pin.name,
-  }));
+  const mapPins = useMemo<GoogleMapPin[]>(
+    () =>
+      pins.map((pin) => ({
+        id: pin.spotId,
+        lat: pin.lat,
+        lng: pin.lng,
+        type: resolveMapPinType(view, pin),
+        title: pin.name,
+      })),
+    [pins, view]
+  );
 
   const searchHref = center
     ? `/search?lat=${center.lat.toFixed(5)}&lng=${center.lng.toFixed(5)}`

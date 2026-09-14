@@ -6,6 +6,34 @@ import { resolveTripId, TripTitleValidationError } from "@/lib/trips/resolve-tri
 import { validatePostInput } from "@/lib/posts/validate-post-input";
 import { removeStorageObjects } from "@/lib/posts/photos";
 import { recordOperation } from "@/lib/logs/record-operation";
+import { getPostDetail } from "@/lib/posts/post-detail";
+
+/**
+ * F-VW-01 Task1: 投稿詳細取得・非公開アクセス制御
+ * 出典: docs/tasks/browsing/post-detail-view/01-post-detail-handler.md
+ *
+ * 非公開投稿は投稿者本人・アルバムメンバー以外には404（存在しない扱い）。
+ * ブロック関係のユーザーの投稿も同様に404。退会済みユーザーの投稿者名は匿名化して返す。
+ */
+export async function GET(_request: Request, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  const supabase = await createClient();
+  const user = await getAuthenticatedUser(supabase);
+
+  if (!user) {
+    return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+  }
+
+  try {
+    const post = await getPostDetail(createAdminClient(), user.id, id);
+    if (!post) {
+      return NextResponse.json({ error: "not_found" }, { status: 404 });
+    }
+    return NextResponse.json({ post });
+  } catch {
+    return NextResponse.json({ error: "fetch_failed" }, { status: 500 });
+  }
+}
 
 /**
  * F-PO-02 Task1: 投稿編集

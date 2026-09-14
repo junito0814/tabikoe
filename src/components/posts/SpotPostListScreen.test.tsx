@@ -31,6 +31,7 @@ const card = (id: string): PostCardData => ({
   mediaCount: 1,
   likeCount: 2,
   commentCount: 0,
+  viewerHasLiked: false,
 });
 
 describe("SpotPostListScreen（SC-04）", () => {

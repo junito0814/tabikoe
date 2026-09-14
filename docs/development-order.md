@@ -20,7 +20,7 @@ flowchart TD
     P2 --> P3["Phase 3\n共有テーブルの補完\n🔶"]
     P3 --> P4["Phase 4\n横断基盤の土台\n✅"]
     P4 --> P5["Phase 5\n地図・検索\n🔷"]
-    P4 --> P6["Phase 6\n閲覧・交流\n⬜"]
+    P4 --> P6["Phase 6\n閲覧・交流\n🔷"]
     P5 --> P7["Phase 7\n記録・振り返り\n⬜"]
     P6 --> P7
     P7 --> P8["Phase 8\n管理者機能\n🔶"]
@@ -112,13 +112,17 @@ Phase 4 の wishlist、Phase 0 の pin-display-rules、Phase 2 の Google Maps �
 
 投稿詳細（SC-05）への遷移導線（pin-interaction Task3・spot-photo-gallery Task4）は `/posts/[id]` へのリンクとして置いてあり、画面本体は Phase 6 が実装する。
 
-## Phase 6 — 閲覧・交流（F-VW） ⬜
+## Phase 6 — 閲覧・交流（F-VW） 🔷
 
-| # | ストーリー | 備考 |
-|---|---|---|
-| 1 | F-VW-01 投稿詳細閲覧 | SC-05。**投稿写真の署名付きURL発行**（`post-media`は非公開バケット）をここで実装する。post-delete Task4 の削除ボタンもここに置く |
-| 2 | F-VW-02 いいね | 完了後、Phase 4 の badges Task3 を統合 |
-| 3 | F-VW-03 コメント | |
+3ストーリーを1ブランチ（`feature/browsing`、Phase 5 の上に積む）で実装した。SC-05 がいいね・コメント欄を内包するため。
+
+| # | ストーリー | 状態 | 備考 |
+|---|---|---|---|
+| 1 | F-VW-01 投稿詳細閲覧 | 🔷 | SC-05（`/posts/[id]`）、`GET /api/posts/[id]`。非公開投稿の閲覧可否（本人・アルバムメンバー）を Route Handler と RLS（`can_view_post()`、20260914000001）の両方で判定。post-delete Task4 の削除ボタンと編集導線を本人にのみ設置。Task3（ログイン誘導・復帰）は F-AC-02 Task3 の `requireUserOrRedirect` ＋ F-AC-01 のコールバックで既に実現済みで、単体テストだけ追加 |
+| 2 | F-VW-02 いいね | 🔷 | `POST/DELETE /api/posts/[id]/like`（冪等）。付与時に `like` 通知と F-BG Task3（いいね数バッジ）を統合。`LikeButton` を SC-04 のカードと SC-05 に設置 |
+| 3 | F-VW-03 コメント | 🔷 | `GET/POST /api/posts/[id]/comments`、`DELETE /api/comments/[id]`。本文は保存前に HTML エスケープ（表示時に戻して React のテキストとして描画）。レート制限（1分5件）、`comment` 通知、`operation_logs` を組み込み |
+
+**要件定義書3.3.6 に従い、いいね・コメントは公開投稿にしか付けられない**（アルバムメンバー間でも不可）。comments Task1 の「閲覧権限があれば非公開投稿にもコメント可」という記述より要件定義書を優先した。RLS の `with check` にも同じ条件を入れてある。
 
 ## Phase 7 — 記録・振り返り（F-RC）残り ⬜
 

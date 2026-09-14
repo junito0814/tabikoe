@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { LikeButton } from "@/components/likes/LikeButton";
 import type { PostCardData } from "@/lib/posts/post-cards";
 
 /**
@@ -6,7 +7,8 @@ import type { PostCardData } from "@/lib/posts/post-cards";
  * 出典: docs/tasks/map-search/pin-interaction/02-post-list-ui.md
  *       docs/tasks/map-search/pin-interaction/03-post-detail-navigation.md
  *
- * カード全体が投稿詳細（SC-05、/posts/[id]）へのリンク。
+ * カード本体が投稿詳細（SC-05、/posts/[id]）へのリンク。いいねボタン（F-VW-02 Task3）は
+ * リンクの外（フッター）に置く（リンク内にボタンを入れ子にしない）。
  * 検索結果（F-MP-04）ではスポット名も出す（`showSpotName`）。
  */
 export function formatCost(cost: number | null): string | null {
@@ -16,9 +18,10 @@ export function formatCost(cost: number | null): string | null {
 
 export function PostCard({ post, showSpotName = false }: { post: PostCardData; showSpotName?: boolean }) {
   return (
+    <article className="rounded-[12px] border border-[#E8E1D8] bg-white shadow-[0_2px_16px_rgba(61,58,53,0.04)]">
     <Link
       href={`/posts/${post.id}`}
-      className="flex gap-3 rounded-[12px] border border-[#E8E1D8] bg-white p-2.5 shadow-[0_2px_16px_rgba(61,58,53,0.04)]"
+      className="flex gap-3 p-2.5"
       data-post-card={post.id}
     >
       <span className="relative block h-24 w-24 shrink-0 overflow-hidden rounded-[8px] bg-[#E8E1D8]">
@@ -64,7 +67,6 @@ export function PostCard({ post, showSpotName = false }: { post: PostCardData; s
         <span className="mt-auto flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[11px] text-[#9C9488]">
           {post.duration && <span>{post.duration}</span>}
           {formatCost(post.cost) && <span>{formatCost(post.cost)}</span>}
-          <span aria-label={`いいね${post.likeCount}件`}>♥ {post.likeCount}</span>
           <span aria-label={`コメント${post.commentCount}件`}>💬 {post.commentCount}</span>
         </span>
         <span className="flex items-center gap-1.5 text-[11px] text-[#9C9488]">
@@ -75,5 +77,9 @@ export function PostCard({ post, showSpotName = false }: { post: PostCardData; s
         </span>
       </span>
     </Link>
+    <div className="flex items-center justify-end border-t border-[#E8E1D8] px-2.5 py-1.5">
+      <LikeButton postId={post.id} initialLiked={post.viewerHasLiked} initialCount={post.likeCount} className="h-8" />
+    </div>
+    </article>
   );
 }
