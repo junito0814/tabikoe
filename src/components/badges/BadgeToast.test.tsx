@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { fireEvent, render, screen } from "@testing-library/react";
 import { BadgeToast } from "./BadgeToast";
-import { buildPostedHref, parseBadgeToastParam } from "./badge-toast-params";
+import { buildPostedHref, buildUpdatedHref, parseBadgeToastParam } from "./badge-toast-params";
 
 /**
  * 出典: docs/tasks/badges/status-badges/05-badge-toast-notification.md 単体テスト
@@ -39,6 +39,11 @@ describe("BadgeToast", () => {
 describe("バッジの受け渡し（URLクエリ）", () => {
   it("獲得なしなら posted=1 だけ", () => {
     expect(buildPostedHref([])).toBe("/map?posted=1");
+  });
+
+  it("編集後も同じ形式で updated=1 に載せる（#251）", () => {
+    expect(buildUpdatedHref([])).toBe("/map?updated=1");
+    expect(buildUpdatedHref(["prefecture:大阪府"])).toBe(`/map?updated=1&badges=${encodeURIComponent("prefecture:大阪府")}`);
   });
 
   it("獲得ありなら badges にカンマ区切りで載せ、復元できる", () => {
