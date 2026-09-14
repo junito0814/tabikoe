@@ -14,7 +14,7 @@ export function buildPostedHref(newBadgeTypes: string[]): string {
   if (newBadgeTypes.length > 0) {
     params.set(BADGE_TOAST_QUERY_KEY, newBadgeTypes.join(","));
   }
-  return `/?${params.toString()}`;
+  return `/map?${params.toString()}`;
 }
 
 /** クエリ値を badge_type の配列に戻す。カタログに無い値（改ざん・古いURL）は捨てる */

@@ -37,7 +37,7 @@ export function BlockUserButton({
 
       if (response.status === 409) {
         // 既にブロック済み。目的は達しているので成功扱いで遷移する
-        router.push("/?blocked=1");
+        router.push("/map?blocked=1");
         router.refresh();
         return;
       }
@@ -47,7 +47,7 @@ export function BlockUserButton({
         return;
       }
 
-      router.push("/?blocked=1");
+      router.push("/map?blocked=1");
       router.refresh();
     } catch (error) {
       if (error instanceof UnauthorizedError) return;

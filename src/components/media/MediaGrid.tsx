@@ -49,17 +49,7 @@ function MediaCell({
       onClick={() => item.mediaType === "video" && setIsPlaying(true)}
       className={`relative block h-full w-full overflow-hidden bg-[#E8E1D8] ${className ?? ""}`}
     >
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src={item.thumbnailUrl} alt={item.alt} className="h-full w-full object-cover" />
-
-      {item.mediaType === "video" && (
-        <span className="absolute inset-0 flex items-center justify-center">
-          <svg width="40" height="40" viewBox="0 0 40 40" aria-hidden>
-            <circle cx="20" cy="20" r="18" fill="rgba(0,0,0,0.45)" />
-            <path d="M16 13l12 7-12 7z" fill="#fff" />
-          </svg>
-        </span>
-      )}
+      <MediaThumbnail item={item} />
 
       {typeof overflowCount === "number" && (
         <span className="absolute inset-0 flex items-center justify-center bg-black/50 text-[20px] font-semibold text-white">
@@ -67,6 +57,34 @@ function MediaCell({
         </span>
       )}
     </button>
+  );
+}
+
+/**
+ * サムネイル1点。動画なら中央に再生アイコンを重ねて写真と区別する（4.5.1）。
+ * MediaGrid の各枠のほか、スポット写真一覧（SC-13、F-MP-05）のグリッドでも再利用する。
+ */
+export function MediaThumbnail({
+  item,
+  className,
+}: {
+  item: Pick<MediaItem, "mediaType" | "thumbnailUrl" | "alt">;
+  className?: string;
+}) {
+  return (
+    <span className={`relative block h-full w-full ${className ?? ""}`}>
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img src={item.thumbnailUrl} alt={item.alt} className="h-full w-full object-cover" />
+
+      {item.mediaType === "video" && (
+        <span className="absolute inset-0 flex items-center justify-center" data-video-overlay>
+          <svg width="40" height="40" viewBox="0 0 40 40" aria-hidden>
+            <circle cx="20" cy="20" r="18" fill="rgba(0,0,0,0.45)" />
+            <path d="M16 13l12 7-12 7z" fill="#fff" />
+          </svg>
+        </span>
+      )}
+    </span>
   );
 }
 

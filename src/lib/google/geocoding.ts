@@ -70,3 +70,65 @@ export async function reverseGeocodePrefecture(
 
   return null;
 }
+
+/**
+ * F-MP-02 Task1: 地名 → 緯度経度（ジオコーディング）
+ * 出典: docs/tasks/map-search/place-search/01-geocode-handler.md
+ *       要件定義書3.4.2・6.3
+ */
+export interface GeocodedPlace {
+  lat: number;
+  lng: number;
+  /** Google が整形した住所（検索結果の確認表示用） */
+  formattedAddress: string | null;
+}
+
+interface ForwardGeocodeResponse {
+  status?: string;
+  results?: {
+    formatted_address?: string;
+    geometry?: { location?: { lat?: unknown; lng?: unknown } };
+  }[];
+}
+
+/**
+ * Geocoding API のレスポンスから最初の結果の緯度経度を取り出す。
+ * 結果なし・座標が数値でない場合は null。単体テストの対象（Route Handler の分岐から切り出している）。
+ */
+export function extractGeocodedPlace(data: ForwardGeocodeResponse): GeocodedPlace | null {
+  if (data.status === "ZERO_RESULTS") return null;
+  if (data.status !== "OK") {
+    throw new GeocodingApiError(`Geocoding API returned status ${data.status}`);
+  }
+  const first = data.results?.[0];
+  const lat = first?.geometry?.location?.lat;
+  const lng = first?.geometry?.location?.lng;
+  if (typeof lat !== "number" || typeof lng !== "number") return null;
+  return { lat, lng, formattedAddress: first?.formatted_address ?? null };
+}
+
+/** 地名から緯度経度を得る。見つからなければ null、API障害は GeocodingApiError */
+export async function geocodePlace(query: string): Promise<GeocodedPlace | null> {
+  const apiKey = process.env.GOOGLE_GEOCODING_API_KEY;
+  if (!apiKey) {
+    throw new GeocodingApiError("GOOGLE_GEOCODING_API_KEY is not set");
+  }
+
+  const url = new URL(GEOCODE_ENDPOINT);
+  url.searchParams.set("address", query);
+  url.searchParams.set("language", "ja");
+  url.searchParams.set("region", "jp");
+  url.searchParams.set("key", apiKey);
+
+  let response: Response;
+  try {
+    response = await fetch(url, { cache: "no-store" });
+  } catch (error) {
+    throw new GeocodingApiError(error instanceof Error ? error.message : "request failed");
+  }
+  if (!response.ok) {
+    throw new GeocodingApiError(`Geocoding API responded with ${response.status}`);
+  }
+
+  return extractGeocodedPlace((await response.json()) as ForwardGeocodeResponse);
+}

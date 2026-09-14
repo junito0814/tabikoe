@@ -4,6 +4,7 @@ import { ErrorNotice } from "@/components/notices/ErrorNotice";
 import { UploadNotice } from "@/components/notices/UploadNotice";
 import TripTitlePreview from "./trip-title-preview";
 import SpotAutocompletePreview from "./spot-autocomplete-preview";
+import GoogleMapPreview from "./google-map-preview";
 
 /**
  * 【一時的な開発用ページ】Phase 0（共通UIコンポーネント）の目視確認用。
@@ -39,6 +40,10 @@ export default function ComponentPreviewPage() {
       <p className="w-full max-w-[420px] rounded-lg bg-[#3D3A35] px-3 py-2 text-[11px] text-white">
         開発用プレビューページ（本番画面には組み込まれていません）
       </p>
+
+      <Section title="map-display: GoogleMap（共通地図コンポーネント）">
+        <GoogleMapPreview />
+      </Section>
 
       <Section title="pin-display-rules: MapPin">
         <div className="flex items-center gap-6 rounded-lg border border-[#E8E1D8] bg-white p-6">
