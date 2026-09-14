@@ -191,9 +191,11 @@ export async function searchPostCards(
   let exhausted = false;
 
   for (let round = 0; round < MAX_FETCH_ROUNDS && collected.length < limit && !exhausted; round++) {
+    // spots は POST_CARD_SELECT の `spots(name)` を inner join＋座標付きに置き換えて1回だけ埋め込む
+    // （2回埋め込むと PostgREST が "specified more than once" で失敗する。#252）
     let query = admin
       .from("posts")
-      .select(`${POST_CARD_SELECT}, visibility, spots!inner(name, lat, lng)`)
+      .select(`${POST_CARD_SELECT.replace("spots(name)", "spots!inner(name, lat, lng)")}, visibility`)
       .eq("visibility", "public")
       // F-AD-05: 非公開化された投稿・スポットは除く
       .is("hidden_at", null)
