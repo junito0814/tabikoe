@@ -24,7 +24,7 @@ async function fetchSuggestionsFromApi(query: string): Promise<TripSuggestion[]>
  * 出典: docs/tasks/posts/trip-title/04-trip-title-input-ui.md
  *
  * 投稿作成画面（SC-03）へ組み込むためのコンポーネント。
- * 候補は本人が過去に作成した旅行タイトルのみ（GET /api/trips）。
+ * 候補は本人が過去に作成した旅行タイトルと、本人が編集者・オーナーとして参加しているアルバムの旅行（GET /api/trips）。
  * 候補にない名称を入力した場合は新規の旅行として扱われる（解決はサーバー側のresolveTripId）。
  */
 export function TripTitleInput({
