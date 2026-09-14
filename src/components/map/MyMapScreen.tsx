@@ -1,12 +1,12 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ErrorNotice } from "@/components/notices/ErrorNotice";
 import { ERROR_MESSAGES } from "@/components/notices/error-messages";
 import { fetchWithAuthRedirect, UnauthorizedError } from "@/lib/api/fetch-with-auth-redirect";
-import type { MapBounds } from "@/lib/map/get-map-pins";
+import { isSameBounds, type MapBounds } from "@/lib/map/get-map-pins";
 import type { MyMapMode, MyMapPin } from "@/lib/map/get-my-map-pins";
 import { GoogleMap, type GoogleMapPin } from "./GoogleMap";
 import { resolveInitialCenter, type InitialCenter } from "./initial-center";
@@ -79,8 +79,9 @@ export function MyMapScreen({
     return () => clearTimeout(timer);
   }, [mode, bounds, fetchPins]);
 
+  // idle が連続しても範囲が同じなら state を変えない（MapScreen と同じ理由）
   const handleBoundsChange = useCallback((next: MapBounds) => {
-    setBounds(next);
+    setBounds((current) => (current && isSameBounds(current, next) ? current : next));
   }, []);
 
   const pinById = new Map(pins.map((pin) => [pin.spotId, pin]));
@@ -94,13 +95,10 @@ export function MyMapScreen({
     [router, pins]
   );
 
-  const mapPins: GoogleMapPin[] = pins.map((pin) => ({
-    id: pin.spotId,
-    lat: pin.lat,
-    lng: pin.lng,
-    type: pin.kind,
-    title: pin.name,
-  }));
+  const mapPins = useMemo<GoogleMapPin[]>(
+    () => pins.map((pin) => ({ id: pin.spotId, lat: pin.lat, lng: pin.lng, type: pin.kind, title: pin.name })),
+    [pins]
+  );
 
   return (
     <div className="relative flex h-[calc(100dvh-60px)] flex-col bg-[#FBF6F0] md:h-dvh">
