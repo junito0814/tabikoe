@@ -127,15 +127,21 @@ export function GoogleMap({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mapsState]);
 
-  // ピンの描画（pins が変わるたびに置き直す）
+  // ピンの描画。親が毎レンダー新しい配列を渡しても、中身（id・座標・種別）が同じなら置き直さない
+  // （置き直すたびにマーカーが消えて再描画され、点滅して見えるため）
+  const pinsSignature = pins.map((pin) => `${pin.id}:${pin.lat}:${pin.lng}:${pin.type}`).join("|");
+  const pinsRef = useRef(pins);
+  useEffect(() => {
+    pinsRef.current = pins;
+  }, [pins]);
   useEffect(() => {
     const map = mapRef.current;
     if (!map || mapsState !== "ready") return;
 
-    clustererRef.current?.clearMarkers();
+    clustererRef.current?.clearMarkers(true);
     markersRef.current.forEach((marker) => marker.setMap(null));
 
-    const markers = pins.map((pin) => {
+    const markers = pinsRef.current.map((pin) => {
       const marker = new google.maps.Marker({
         position: { lat: pin.lat, lng: pin.lng },
         title: pin.title ?? PIN_STYLES[pin.type].label,
@@ -159,7 +165,8 @@ export function GoogleMap({
     } else {
       markers.forEach((marker) => marker.setMap(map));
     }
-  }, [pins, cluster, mapsState]);
+    // pins の中身が変わった時だけ（配列の参照ではなく signature で判定）
+  }, [pinsSignature, cluster, mapsState]);
 
   if (mapsState === "error" || mapInitFailed) {
     return (
