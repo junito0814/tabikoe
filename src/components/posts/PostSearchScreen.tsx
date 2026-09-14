@@ -14,6 +14,7 @@ import {
   DISTANCE_OPTIONS,
 } from "@/lib/posts/search-posts";
 import { PostCard } from "./PostCard";
+import { usePostMediaViewer, type FetchPostMedia } from "@/components/media/use-post-media-viewer";
 import { buildPostSearchParams, EMPTY_SEARCH_STATE, type PostSearchState } from "./post-search-query";
 import { useInfiniteScroll } from "./use-infinite-scroll";
 
@@ -30,13 +31,17 @@ export function PostSearchScreen({
   center,
   initialPage,
   fetchPage = defaultFetchPage,
+  fetchPostMedia,
 }: {
   center: { lat: number; lng: number } | null;
   /** 条件なし（新着順）の1ページ目。Server Component が取得して渡す */
   initialPage: PostCardPage;
   /** 差し替え口（単体テスト用） */
   fetchPage?: FetchSearchPage;
+  fetchPostMedia?: FetchPostMedia;
 }) {
+  // media-viewer Task4: カードのサムネイルからその投稿の写真・動画をモーダルで開く
+  const mediaViewer = usePostMediaViewer(fetchPostMedia);
   const [draft, setDraft] = useState<PostSearchState>(EMPTY_SEARCH_STATE);
   const [applied, setApplied] = useState<PostSearchState>(EMPTY_SEARCH_STATE);
   const [isPanelOpen, setIsPanelOpen] = useState(false);
@@ -260,7 +265,7 @@ export function PostSearchScreen({
           <ul className="flex flex-col gap-2.5">
             {posts.map((post) => (
               <li key={post.id}>
-                <PostCard post={post} showSpotName />
+                <PostCard post={post} showSpotName onOpenMedia={(postId) => void mediaViewer.openPost(postId)} />
               </li>
             ))}
           </ul>
@@ -269,6 +274,8 @@ export function PostSearchScreen({
         {errorMessage && (
           <ErrorNotice className="mt-3" message={errorMessage} onRetry={() => void load(applied, posts.length === 0 ? 0 : (nextOffset ?? 0), posts.length === 0)} />
         )}
+        {mediaViewer.errorMessage && <ErrorNotice className="mt-3" message={mediaViewer.errorMessage} />}
+        {mediaViewer.viewer}
 
         <div ref={sentinelRef} aria-hidden className="h-1" />
         {nextOffset !== null && (

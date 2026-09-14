@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { MediaGrid } from "@/components/media/MediaGrid";
+import { PostMediaGallery } from "@/components/media/PostMediaGallery";
 import { WishlistButton } from "@/components/wishlist/WishlistButton";
 import { LikeButton } from "@/components/likes/LikeButton";
 import { CommentSection } from "@/components/comments/CommentSection";
@@ -16,7 +16,7 @@ import { formatCost } from "./PostCard";
  *
  * 投稿の全項目（スポット名・カテゴリ・日付・滞在時間・費用・星評価・写真・動画・感想・投稿者・投稿日時）と
  * コメント欄を表示する。**旅行タイトルは表示しない**（3.3.4 の表示範囲）。
- * 写真・動画は shared-ui/media-layout（MediaGrid）、コメント欄は F-VW-03（CommentSection）、
+ * 写真・動画は shared-ui/media-layout（MediaGrid）＋ media-viewer（タップでモーダル表示）、コメント欄は F-VW-03（CommentSection）、
  * 「行きたい」は F-RC-05（WishlistButton）、いいねは F-VW-02（LikeButton）を組み込む。
  * 削除ボタン（F-PO-03 Task4）と編集への導線は投稿者本人にだけ出す。
  */
@@ -81,7 +81,7 @@ export function PostDetailScreen({
 
         {post.media.length > 0 && (
           <div className="overflow-hidden rounded-[12px]">
-            <MediaGrid items={post.media} />
+            <PostMediaGallery items={post.media} />
           </div>
         )}
 

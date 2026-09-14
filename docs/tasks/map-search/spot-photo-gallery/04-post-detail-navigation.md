@@ -3,6 +3,8 @@
 > 出典: [spot-photo-gallery.md](../../../user-stories/map-search/spot-photo-gallery.md)
 > インデックス: [spot-photo-gallery](00-index.md)
 
+> **2026-09-16 追記（要件定義書 v2.10）**: タップ時の挙動は「投稿詳細へ直接遷移」から「モーダル表示＋モーダル内の『この投稿を見る』で遷移」に変更した。実装は [media-viewer Task 3](../../shared-ui/media-viewer/03-gallery-integration.md) が置き換えている。
+
 ## 依存
 
 - [Task 2: スポット写真一覧画面（SC-13）UI実装](02-gallery-screen-ui.md)

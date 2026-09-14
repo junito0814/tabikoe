@@ -8,6 +8,7 @@ import { fetchWithAuthRedirect, UnauthorizedError } from "@/lib/api/fetch-with-a
 import type { SpotMediaItem, SpotMediaPage } from "@/lib/posts/spot-photos";
 import { useInfiniteScroll } from "@/components/posts/use-infinite-scroll";
 import { MediaThumbnail } from "./MediaGrid";
+import { MediaViewerModal } from "./MediaViewerModal";
 import { gridColumnsForWidth, MIN_GALLERY_COLUMNS } from "./gallery-columns";
 
 export type FetchSpotMedia = (spotId: string, offset: number) => Promise<SpotMediaPage>;
@@ -19,7 +20,8 @@ export type FetchSpotMedia = (spotId: string, offset: number) => Promise<SpotMed
  *
  * 正方形サムネイルのグリッド。列数はコンテナ幅から決める（gridColumnsForWidth）。
  * 動画は shared-ui/media-layout の MediaThumbnail で再生アイコンを重ねる。
- * 各サムネイルは元投稿の詳細（SC-05、/posts/[id]）へのリンク。40点ずつの無限スクロール。
+ * サムネイルのタップで MediaViewerModal を開き、読み込み済みの全点を ←→ で行き来できる
+ * （media-viewer Task3、4.5.5）。元投稿（SC-05）への導線はモーダル内に置く。40点ずつの無限スクロール。
  */
 export function SpotPhotoGalleryScreen({
   spot,
@@ -36,6 +38,7 @@ export function SpotPhotoGalleryScreen({
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [columns, setColumns] = useState(MIN_GALLERY_COLUMNS);
+  const [viewerIndex, setViewerIndex] = useState<number | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
   // コンテナ幅の変化に追従して列数を決める
@@ -92,11 +95,16 @@ export function SpotPhotoGalleryScreen({
               className="grid gap-0.5"
               style={{ gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))` }}
             >
-              {items.map((item) => (
+              {items.map((item, index) => (
                 <li key={item.id} className="aspect-square overflow-hidden bg-[#E8E1D8]">
-                  <Link href={`/posts/${item.postId}`} className="block h-full w-full" aria-label={item.alt}>
+                  <button
+                    type="button"
+                    onClick={() => setViewerIndex(index)}
+                    className="block h-full w-full"
+                    aria-label={item.alt}
+                  >
                     <MediaThumbnail item={item} />
-                  </Link>
+                  </button>
                 </li>
               ))}
             </ul>
@@ -104,6 +112,22 @@ export function SpotPhotoGalleryScreen({
         </div>
 
         {errorMessage && <ErrorNotice className="mt-3" message={errorMessage} onRetry={() => void loadMore()} />}
+
+        {viewerIndex !== null && (
+          <MediaViewerModal
+            items={items.map((item) => ({
+              id: item.id,
+              mediaType: item.mediaType,
+              thumbnailUrl: item.thumbnailUrl,
+              alt: item.alt,
+              videoUrl: item.videoUrl ?? undefined,
+            }))}
+            index={viewerIndex}
+            onIndexChange={setViewerIndex}
+            onClose={() => setViewerIndex(null)}
+            link={(_item, index) => ({ href: `/posts/${items[index].postId}`, label: "この投稿を見る" })}
+          />
+        )}
 
         <div ref={sentinelRef} aria-hidden className="h-1" />
         {nextOffset !== null && (

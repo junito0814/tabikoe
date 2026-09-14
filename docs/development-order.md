@@ -27,6 +27,7 @@ flowchart TD
     P6 --> P9["Phase 9\n通知一覧の最終統合\n✅"]
     P8 --> P9
     P9 --> P10["追補\n動画対応（video-upload）\n🔷"]
+    P10 --> P11["追補\n写真・動画ビューア（media-viewer）\n🔷"]
 ```
 
 ---
@@ -165,6 +166,7 @@ Phase 5〜9 の PR（#245 → #246 → #247 → #248 → #249、修正 #253・#2
 | # | ストーリー | 状態 | 備考 |
 |---|---|---|---|
 | 1 | F-PO-01 動画対応 | 🔷 | `feature/video-upload`。Vercel の本文上限（4.5MB）のため、動画本体は `POST /api/posts/videos/upload-url` の署名付きURLでブラウザから Storage へ直接送り、`POST /api/posts/videos` が Storage 上で ffmpeg（`ffmpeg-static`）により検証・メタデータ除去・サムネイル生成する（iPhone の MOV／HEVC は H.264 の MP4 に変換）。投稿 API は `media`（写真・動画混在）を受け付け、パスの帰属（本人配下）を検証する。要件定義書 v2.9 に反映。**Supabase Free プランは 50MB 上限**（要件定義書9章#7） |
+| 2 | 写真・動画ビューア（shared-ui/media-viewer） | 🔷 | `feature/media-viewer`（video-upload の上に積む）。要件定義書 v2.10 で 4.5.5 を新設。`MediaViewerModal` を SC-05（`PostMediaGallery`）・SC-13（一覧全体を←→で移動、モーダル内に「この投稿を見る」）・投稿カード（SC-04/検索/SC-06/SC-09、`usePostMediaViewer` が `GET /api/posts/[id]` から全点を取得）に組み込み。4.5.1 のインライン再生と 3.4.5 の直接遷移を置き換え |
 
 ---
 
