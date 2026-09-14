@@ -164,7 +164,7 @@ Phase 5〜9 の PR（#245 → #246 → #247 → #248 → #249、修正 #253・#2
 
 | # | ストーリー | 状態 | 備考 |
 |---|---|---|---|
-| 1 | F-PO-01 動画対応 | 🔷 | `feature/video-upload`。Vercel の本文上限（4.5MB）のため、動画本体は `POST /api/posts/videos/upload-url` の署名付きURLでブラウザから Storage へ直接送り、`POST /api/posts/videos` が Storage 上で ffmpeg（`ffmpeg-static`）により検証・メタデータ除去・サムネイル生成する。投稿 API は `media`（写真・動画混在）を受け付け、パスの帰属（本人配下）を検証する。要件定義書 v2.9 に反映。**Supabase Free プランは 50MB 上限**（要件定義書9章#7） |
+| 1 | F-PO-01 動画対応 | 🔷 | `feature/video-upload`。Vercel の本文上限（4.5MB）のため、動画本体は `POST /api/posts/videos/upload-url` の署名付きURLでブラウザから Storage へ直接送り、`POST /api/posts/videos` が Storage 上で ffmpeg（`ffmpeg-static`）により検証・メタデータ除去・サムネイル生成する（iPhone の MOV／HEVC は H.264 の MP4 に変換）。投稿 API は `media`（写真・動画混在）を受け付け、パスの帰属（本人配下）を検証する。要件定義書 v2.9 に反映。**Supabase Free プランは 50MB 上限**（要件定義書9章#7） |
 
 ---
 

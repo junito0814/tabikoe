@@ -11,6 +11,7 @@ import { ErrorNotice } from "@/components/notices/ErrorNotice";
 import { fetchWithAuthRedirect, UnauthorizedError } from "@/lib/api/fetch-with-auth-redirect";
 import { graphemeLength } from "@/lib/text/grapheme-length";
 import {
+  isVideoFile,
   uploadVideo,
   validateVideoFile,
   VIDEO_ERROR_MESSAGES,
@@ -20,7 +21,6 @@ import {
 import type { RegisteredSpot } from "@/lib/spots/types";
 import {
   ALLOWED_PHOTO_MIME_TYPES,
-  ALLOWED_VIDEO_MIME_TYPE,
   MAX_PHOTO_SIZE_BYTES,
   MAX_POST_COMMENT_LENGTH,
   MAX_POST_COST,
@@ -35,7 +35,6 @@ import {
 } from "@/lib/posts/constants";
 
 const ALLOWED_PHOTO_TYPES: readonly string[] = ALLOWED_PHOTO_MIME_TYPES;
-const isVideoFile = (file: File) => file.type === ALLOWED_VIDEO_MIME_TYPE;
 
 /**
  * SC-03 投稿作成・編集画面
@@ -181,7 +180,7 @@ export default function PostForm({ initialPost }: { initialPost?: PostFormInitia
       (file) => !ALLOWED_PHOTO_TYPES.includes(file.type) && !isVideoFile(file)
     );
     if (invalidType) {
-      setErrorMessage("写真はJPEG／PNG、動画はMP4形式のみアップロードできます");
+      setErrorMessage("写真はJPEG／PNG、動画はMP4／MOV形式のみアップロードできます");
       return;
     }
     const tooLarge = selected.find(
@@ -451,13 +450,13 @@ export default function PostForm({ initialPost }: { initialPost?: PostFormInitia
           )}
           <input
             type="file"
-            accept="image/jpeg,image/png,video/mp4"
+            accept="image/jpeg,image/png,video/mp4,video/quicktime,.mp4,.mov"
             multiple
             onChange={handlePhotoChange}
             className="text-[12px]"
           />
           <p className="mt-1 text-[11px] text-[#9C9488]">
-            写真はJPEG／PNG（10MBまで）、動画はMP4（100MB・1分以内）
+            写真はJPEG／PNG（10MBまで）、動画はMP4／MOV（100MB・1分以内）
           </p>
           {photos.length > 0 && (
             <p className="mt-1 text-[11px] text-[#9C9488]">

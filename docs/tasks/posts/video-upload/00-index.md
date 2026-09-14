@@ -4,6 +4,8 @@
 
 post-creation [Task 4](../post-creation/04-media-upload-integration.md) のうち見送っていた動画（MP4）の半分を、独立したストーリーとして切り出したもの。写真の経路（`POST /api/posts/photos`・sharp）はそのまま残し、動画だけ別経路にする。
 
+**受付形式（v2.9）**: MP4 に加え、iPhone 標準カメラが保存する MOV（QuickTime・HEVC）も受け付ける。保存形式は常に MP4（H.264／AAC）で、H.264/AAC 以外はサーバー側で再エンコードする。
+
 **別経路にする理由**: Vercel の Route Handler はリクエスト本文が 4.5MB までで、要件の「1点あたり最大100MB」の動画本体を写真と同じ multipart で受け取れない。動画本体はブラウザから Supabase Storage へ署名付きURLで直接アップロードし、Route Handler は Storage 上のファイルを取り出して検証・処理する。
 
 Task 1 と Task 2 は独立して着手でき、Task 3 が両方を投稿フォーム・投稿 API に組み込む。Task 4 は全体の結合後に実施する。

@@ -1,7 +1,8 @@
 import { createClient } from "@/lib/supabase/client";
 import { fetchWithAuthRedirect } from "@/lib/api/fetch-with-auth-redirect";
 import {
-  ALLOWED_VIDEO_MIME_TYPE,
+  ALLOWED_VIDEO_EXTENSIONS,
+  ALLOWED_VIDEO_MIME_TYPES,
   MAX_VIDEO_DURATION_SECONDS,
   MAX_VIDEO_SIZE_BYTES,
   POST_MEDIA_BUCKET,
@@ -35,9 +36,22 @@ export class VideoUploadError extends Error {
   }
 }
 
+/**
+ * 動画として扱うファイルか。MIME タイプ（video/mp4・video/quicktime）で判定し、
+ * Android 等で MIME が空になる場合は拡張子（.mp4/.mov）で補う。サーバー側で実体を再検証する。
+ */
+export function isVideoFile(file: File): boolean {
+  if ((ALLOWED_VIDEO_MIME_TYPES as readonly string[]).includes(file.type)) return true;
+  if (file.type === "") {
+    const name = file.name.toLowerCase();
+    return ALLOWED_VIDEO_EXTENSIONS.some((ext) => name.endsWith(ext));
+  }
+  return false;
+}
+
 /** ファイル種別・サイズの事前チェック（サーバー側でも実体を再検証する） */
 export function validateVideoFile(file: File): VideoClientError | null {
-  if (file.type !== ALLOWED_VIDEO_MIME_TYPE) return "unsupported_format";
+  if (!isVideoFile(file)) return "unsupported_format";
   if (file.size > MAX_VIDEO_SIZE_BYTES) return "file_too_large";
   return null;
 }
@@ -78,16 +92,19 @@ export async function uploadVideo(file: File): Promise<UploadedVideoMedia> {
   const urlResponse = await fetchWithAuthRedirect("/api/posts/videos/upload-url", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ size: file.size, type: file.type }),
+    body: JSON.stringify({ size: file.size, type: file.type, name: file.name }),
   });
   if (!urlResponse.ok) {
     throw new VideoUploadError(await errorCodeOf(urlResponse, "upload_failed"));
   }
   const { path, token } = (await urlResponse.json()) as { path: string; token: string };
 
+  // MOV は video/quicktime のまま置き、サーバー側の処理で MP4 に変換される
   const { error: uploadError } = await createClient()
     .storage.from(POST_MEDIA_BUCKET)
-    .uploadToSignedUrl(path, token, file, { contentType: ALLOWED_VIDEO_MIME_TYPE });
+    .uploadToSignedUrl(path, token, file, {
+      contentType: file.type || (file.name.toLowerCase().endsWith(".mov") ? "video/quicktime" : "video/mp4"),
+    });
   if (uploadError) throw new VideoUploadError("upload_failed");
 
   const processResponse = await fetchWithAuthRedirect("/api/posts/videos", {
@@ -115,7 +132,7 @@ async function errorCodeOf(response: Response, fallback: VideoClientError): Prom
 }
 
 export const VIDEO_ERROR_MESSAGES: Record<VideoClientError, string> = {
-  unsupported_format: "動画はMP4形式のみアップロードできます",
+  unsupported_format: "動画はMP4またはMOV（iPhoneの標準カメラ）形式のみアップロードできます",
   file_too_large: "動画は1点あたり100MB以内にしてください",
   video_too_long: "動画は1分以内のものをアップロードしてください",
   upload_failed: "動画のアップロードに失敗しました",

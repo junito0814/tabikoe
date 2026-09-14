@@ -1,5 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { hasVideoStream, isMp4Header, parseFfmpegDuration } from "./mp4";
+import {
+  hasVideoStream,
+  isMp4Header,
+  needsAudioReencode,
+  needsVideoReencode,
+  parseFfmpegDuration,
+  parseStreamCodecs,
+} from "./mp4";
 
 /**
  * 出典: docs/tasks/posts/video-upload/02-video-processing-handler.md 単体テスト
@@ -30,8 +37,8 @@ describe("isMp4Header", () => {
     expect(isMp4Header(ftypHeader("XXXX", ["isom"]))).toBe(true);
   });
 
-  it("QuickTime（qt）や 3GP は MP4 として受理しない", () => {
-    expect(isMp4Header(ftypHeader("qt  "))).toBe(false);
+  it("iPhone 標準カメラの MOV（qt）は受理し、3GP は受理しない（v2.9）", () => {
+    expect(isMp4Header(ftypHeader("qt  "))).toBe(true);
     expect(isMp4Header(ftypHeader("3gp4"))).toBe(false);
   });
 
@@ -52,6 +59,28 @@ describe("parseFfmpegDuration", () => {
   it("Duration が無ければ null", () => {
     expect(parseFfmpegDuration("Invalid data found when processing input")).toBeNull();
     expect(parseFfmpegDuration("Duration: N/A")).toBeNull();
+  });
+});
+
+describe("parseStreamCodecs / 再エンコード判定", () => {
+  const iphoneMov = [
+    "  Stream #0:0[0x1](und): Video: hevc (Main) (hvc1 / 0x31637668), yuv420p(tv, bt709), 1920x1080",
+    "  Stream #0:1[0x2](und): Audio: aac (LC) (mp4a / 0x6134706D), 44100 Hz, stereo",
+  ].join("\n");
+  const h264Mp4 = "  Stream #0:0[0x1](und): Video: h264 (High) (avc1 / 0x31637661), yuv420p, 1280x720";
+
+  it("iPhone の HEVC/AAC は映像だけ再エンコードが必要", () => {
+    const codecs = parseStreamCodecs(iphoneMov);
+    expect(codecs).toEqual({ video: "hevc", audio: "aac" });
+    expect(needsVideoReencode(codecs.video)).toBe(true);
+    expect(needsAudioReencode(codecs.audio)).toBe(false);
+  });
+
+  it("H.264 の MP4 はコンテナ変換のみ（音声なしでも可）", () => {
+    const codecs = parseStreamCodecs(h264Mp4);
+    expect(codecs).toEqual({ video: "h264", audio: null });
+    expect(needsVideoReencode(codecs.video)).toBe(false);
+    expect(needsAudioReencode(codecs.audio)).toBe(false);
   });
 });
 

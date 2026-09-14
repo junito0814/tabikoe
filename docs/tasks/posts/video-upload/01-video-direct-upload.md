@@ -9,10 +9,10 @@
 
 ## 実装内容
 
-- `POST /api/posts/videos/upload-url` を実装する。`{ size, type }` を受け取り、規則外（100MB超・`video/mp4` 以外）は 400 で早期に弾き、`<userId>/<uuid>/video.mp4` への署名付きアップロードURL（`createSignedUploadUrl`）を返す
+- `POST /api/posts/videos/upload-url` を実装する。`{ size, type }` を受け取り、規則外（100MB超・`video/mp4`／`video/quicktime` 以外。MIME が空の端末は拡張子 .mp4/.mov で補う）は 400 で早期に弾き、`<userId>/<uuid>/video.mp4` への署名付きアップロードURL（`createSignedUploadUrl`）を返す
 - ブラウザ側は `uploadToSignedUrl` で Supabase Storage へ直接アップロードする（本文が Vercel を経由しない）
 - ブラウザ側の事前チェック: MIME タイプ・サイズ、`<video>` の `loadedmetadata` で再生時間（1分超は送らない）。いずれもサーバー側で再検証する
-- `post-media` バケットに `file_size_limit = 100MB`・`allowed_mime_types = image/jpeg, image/png, video/mp4` を設定するマイグレーションを追加する
+- `post-media` バケットに `file_size_limit = 100MB`・`allowed_mime_types = image/jpeg, image/png, video/mp4, video/quicktime` を設定するマイグレーションを追加する
 
 ## 成果物
 
@@ -34,7 +34,7 @@
 
 ## 関連する受入条件
 
-- 動画（MP4、1点あたり100MB以内、1分以内）を投稿に添付できること
+- 動画（MP4／MOV、1点あたり100MB以内、1分以内）を投稿に添付できること
 
 ## 補足
 

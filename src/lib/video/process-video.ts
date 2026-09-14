@@ -6,7 +6,14 @@ import { promisify } from "node:util";
 import sharp from "sharp";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { MAX_VIDEO_DURATION_SECONDS, MAX_VIDEO_SIZE_BYTES } from "@/lib/posts/constants";
-import { hasVideoStream, isMp4Header, parseFfmpegDuration } from "./mp4";
+import {
+  hasVideoStream,
+  isMp4Header,
+  needsAudioReencode,
+  needsVideoReencode,
+  parseFfmpegDuration,
+  parseStreamCodecs,
+} from "./mp4";
 
 const execFileAsync = promisify(execFile);
 
@@ -18,6 +25,10 @@ const execFileAsync = promisify(execFile);
  * Vercel の Route Handler はリクエスト本文が 4.5MB までのため、動画本体はブラウザから
  * Supabase Storage へ署名付きURLで直接アップロードし（Task1）、本関数は Storage 上の
  * ファイルを取り出して処理し、処理済みの動画で上書きする。
+ *
+ * 入力は MP4 に加えて iPhone 標準カメラの MOV（QuickTime・HEVC）も受け付け、常に
+ * 「MP4 コンテナ・H.264・AAC」に揃えて保存する（v2.9）。既に H.264/AAC なら再エンコードせず
+ * コンテナ変換とメタデータ除去だけ行う。HEVC 等はブラウザ横断で再生できないため再エンコードする。
  *
  * ffmpeg は `ffmpeg-static` の同梱バイナリを子プロセスとして実行する（fluent-ffmpeg 等の
  * ラッパーは使わない。呼び出しが2種類しかなく、依存を増やす理由がない）。
@@ -34,6 +45,9 @@ export interface ProcessedVideo {
 
 /** サムネイルの長辺（写真の縮小画像と同じ 1200px、5.4） */
 const THUMBNAIL_MAX_DIMENSION_PX = 1200;
+
+/** 再エンコード時の長辺上限。サーバーレスでの処理時間を抑えるため 1280px（HD）に落とす */
+const REENCODE_MAX_DIMENSION_PX = 1280;
 
 /**
  * 作業ディレクトリ内の出力を読む。`readFile(動的パス)` は Next.js のファイルトレースが
@@ -92,8 +106,22 @@ export async function transcodeLocalVideo(
     throw new VideoValidationError("video_too_long");
   }
 
-  // 位置情報等のメタデータをコンテナ・各ストリームから除去する。再エンコードはしない（-c copy）。
+  // 位置情報等のメタデータをコンテナ・各ストリームから除去し、MP4 コンテナで書き出す。
+  // H.264/AAC ならストリームはそのまま（-c copy）、それ以外（iPhone の HEVC 等）は
+  // ブラウザ横断で再生できる H.264/AAC に再エンコードする。
   // +faststart で moov を先頭に移し、ブラウザで再生開始が早くなるようにする
+  const codecs = parseStreamCodecs(info);
+  const videoArgs = needsVideoReencode(codecs.video)
+    ? [
+        "-c:v", "libx264", "-preset", "veryfast", "-crf", "26", "-pix_fmt", "yuv420p",
+        // 縦横どちらが長辺でも 1280px 以内に収める（回転情報は自動で画素に反映される）
+        "-vf", `scale='if(gt(iw,ih),min(iw,${REENCODE_MAX_DIMENSION_PX}),-2)':'if(gt(iw,ih),-2,min(ih,${REENCODE_MAX_DIMENSION_PX}))'`,
+      ]
+    : ["-c:v", "copy"];
+  const audioArgs = needsAudioReencode(codecs.audio)
+    ? ["-c:a", "aac", "-b:a", "128k"]
+    : ["-c:a", "copy"];
+
   const cleanedPath = path.join(workDir, "cleaned.mp4");
   await execFileAsync(ffmpeg, [
     "-hide_banner", "-loglevel", "error", "-y",
@@ -101,8 +129,10 @@ export async function transcodeLocalVideo(
     "-map_metadata", "-1",
     "-map_metadata:s:v", "-1",
     "-map_metadata:s:a", "-1",
-    "-c", "copy",
+    ...videoArgs,
+    ...audioArgs,
     "-movflags", "+faststart",
+    "-f", "mp4",
     cleanedPath,
   ]);
 
@@ -155,7 +185,8 @@ export async function processAndStoreVideo(
 
   const workDir = await mkdtemp(path.join(tmpdir(), "tabikoe-video-"));
   try {
-    const inputPath = path.join(workDir, "input.mp4");
+    // 拡張子は判定に使わない（MOV でも ffmpeg は中身で読む）
+    const inputPath = path.join(workDir, "input.video");
     await writeFile(inputPath, buffer);
 
     let result;

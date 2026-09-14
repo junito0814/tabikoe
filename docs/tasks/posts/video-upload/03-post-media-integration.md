@@ -12,7 +12,7 @@
 
 - 投稿作成 `POST /api/posts`・写真追加 `POST /api/posts/[id]/photos` の入力を `media: [{ mediaType, storagePath, videoPath?, durationSeconds? }]` に拡張し、`post_photos` に `media_type`・`video_url`・`duration_seconds` を保存する。旧形式 `photoPaths` も引き続き受け付ける
 - 紐づけるパスは本人のディレクトリ（`<userId>/`）配下に限定する（他人の非公開ファイルを自分の公開投稿に紐づけて署名付きURLで取り出す抜け道を塞ぐ）
-- 投稿フォーム（SC-03）のファイル選択に `video/mp4` を加え、写真は従来どおり一括、動画は 1 本ずつ Task 1 → Task 2 の順で処理し、選択順を保って `media` に並べる。処理中は進捗を表示する
+- 投稿フォーム（SC-03）のファイル選択に `video/mp4`・`video/quicktime`（.mp4/.mov）を加え、写真は従来どおり一括、動画は 1 本ずつ Task 1 → Task 2 の順で処理し、選択順を保って `media` に並べる。処理中は進捗を表示する
 - 編集画面の既存メディア一覧で動画に「動画」の印を付ける（サムネイルは `storage_url`）
 - 投稿削除・メディア個別削除で、サムネイルに加えて動画本体（`video_url`）も Storage から消す
 - 投稿詳細（SC-05）・スポット写真一覧（SC-13）で、動画本体も署名付きURLで配信する（非公開バケットのため）

@@ -3,7 +3,8 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getAuthenticatedUser } from "@/lib/auth/get-authenticated-user";
 import {
-  ALLOWED_VIDEO_MIME_TYPE,
+  ALLOWED_VIDEO_EXTENSIONS,
+  ALLOWED_VIDEO_MIME_TYPES,
   MAX_VIDEO_SIZE_BYTES,
   POST_MEDIA_BUCKET,
 } from "@/lib/posts/constants";
@@ -27,7 +28,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
 
-  let body: { size?: unknown; type?: unknown };
+  let body: { size?: unknown; type?: unknown; name?: unknown };
   try {
     body = await request.json();
   } catch {
@@ -38,11 +39,18 @@ export async function POST(request: Request) {
   if (typeof body.size !== "number" || body.size <= 0 || body.size > MAX_VIDEO_SIZE_BYTES) {
     return NextResponse.json({ error: "file_too_large" }, { status: 400 });
   }
-  if (body.type !== ALLOWED_VIDEO_MIME_TYPE) {
+  // MP4 と MOV（iPhone 標準カメラ）を受け付ける。MIME が空の端末は拡張子で補う
+  const type = typeof body.type === "string" ? body.type : "";
+  const name = typeof body.name === "string" ? body.name.toLowerCase() : "";
+  const acceptable =
+    (ALLOWED_VIDEO_MIME_TYPES as readonly string[]).includes(type) ||
+    (type === "" && ALLOWED_VIDEO_EXTENSIONS.some((ext) => name.endsWith(ext)));
+  if (!acceptable) {
     return NextResponse.json({ error: "unsupported_format" }, { status: 400 });
   }
 
   const admin = createAdminClient();
+  // 処理後は必ず MP4 になるため、保存パスは形式に関わらず video.mp4 で固定する
   const videoPath = `${user.id}/${crypto.randomUUID()}/video.mp4`;
   const { data, error } = await admin.storage
     .from(POST_MEDIA_BUCKET)

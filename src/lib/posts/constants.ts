@@ -41,10 +41,15 @@ export const POST_RATE_LIMIT_MAX_ATTEMPTS = 20;
 
 export const POST_MEDIA_BUCKET = "post-media";
 
-/** 動画の受付規則（要件定義書3.3.1・5.4）: MP4のみ、1点あたり最大100MB、再生時間1分以内 */
+/**
+ * 動画の受付規則（要件定義書3.3.1・5.4、v2.9）: 1点あたり最大100MB、再生時間1分以内。
+ * 受け付ける形式は MP4 と、iPhone 標準カメラが保存する MOV（QuickTime）。
+ * MOV はサーバー側で MP4 に変換して保存する（保存形式は常に MP4）。
+ */
 export const MAX_VIDEO_SIZE_BYTES = 100 * 1024 * 1024;
 export const MAX_VIDEO_DURATION_SECONDS = 60;
-export const ALLOWED_VIDEO_MIME_TYPE = "video/mp4";
+export const ALLOWED_VIDEO_MIME_TYPES = ["video/mp4", "video/quicktime"] as const;
+export const ALLOWED_VIDEO_EXTENSIONS = [".mp4", ".mov"] as const;
 
 /** 写真の受付規則（要件定義書5.4）: JPEG／PNG、1点あたり最大10MB */
 export const MAX_PHOTO_SIZE_BYTES = 10 * 1024 * 1024;
