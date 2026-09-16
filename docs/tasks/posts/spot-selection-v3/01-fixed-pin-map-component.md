@@ -11,7 +11,8 @@
 ## 実装内容
 
 - `ManualSpotRegistrationModal` から地図部分を `PostLocationMap`（中央固定ピン・現在地ボタン・初回案内・`onCenterChange`）として切り出す。`GoogleMap` を再利用し、既存スポット選択時は `lockedPosition` でピンを固定する
-- 初期位置は props（lat/lng）または現在地、拒否時は東京駅周辺＋案内文
+- 初期位置は props（lat/lng）または現在地、拒否時は東京駅周辺＋案内文。初回の案内は「地図を動かしてピンを合わせる」「現地でなければ『変更』から場所を探せます」の 2 行
+- 地図を動かしたかどうか（`moved`）を状態として持ち、親（PostComposeScreen）に渡す（Task 4 の自宅保護の判定に使う）
 - モーダル `ManualSpotRegistrationModal` とその導線を削除する
 
 ## 成果物
