@@ -1,6 +1,6 @@
 # F-MP-05 スポット写真一覧 — タスク分割
 
-> 出典: [spot-photo-gallery.md](../../../user-stories/map-search/spot-photo-gallery.md)
+> 出典: [spot-photo-gallery.md](../../../user-stories/map-search/photo-view.md)
 
 各タスクの詳細・テスト要件は個別ファイルを参照。Task 1が土台。Task 2はTask 1に依存し、shared-ui/media-layoutの動画サムネイル表示を再利用する。Task 3はTask 2に、Task 4はTask 2に依存し並行着手できる。Task 5は全体の結合後に実施する。
 

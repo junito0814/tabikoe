@@ -1,6 +1,8 @@
 # タビコエ ドキュメント構成・進捗ダッシュボード
 
-このファイルは、[requirement.md](requirement.md)（要件定義書）3.1の機能一覧を基準に、ユーザーストーリー・タスク分割の作成状況を一覧化したものです。**「完了」は文書化（ユーザーストーリー／タスク分割の作成）が完了していることを指し、実際のコード実装状況とは別軸です。** コード実装はまだごく初期段階（`src/app/login` 周辺のみ）のため、実装状況はこの表では管理していません。
+このファイルは、[requirement.md](requirement.md)（要件定義書）3.1の機能一覧を基準に、ユーザーストーリー・タスク分割の作成状況を一覧化したものです。**「完了」は文書化（ユーザーストーリー／タスク分割の作成）が完了していることを指し、実際のコード実装状況とは別軸です。** 実装状況は [development-order.md](development-order.md) で管理しています（v1 の Phase 1〜9 は 2026-09-14 に実装済み）。
+
+> **2026-09-16 v3.0**：要求定義書 v2・要件定義書 v3.0（コンセプト「インスタ × Googleマップ」、検索トップ＝ハブ、しおり、下書きなど）に合わせて、下記「v3.0 で追加・改訂したユーザーストーリー」のとおりストーリーを追加・書き換えた。タスク分割・Issue 化は未了。
 
 ## フォルダ構成
 
@@ -12,12 +14,14 @@ docs/
 ├── README.md              このファイル
 ├── development-order.md   全ストーリーの実装順と実装状況（テーブル・コンポーネント依存に基づく。2026-09-11に実態へ改訂）
 ├── development-process.md タスク→Issue→実装→PRの進め方（ブランチ運用・コミット規約含む）
+├── wireframes.md          ワイヤーフレーム（要件定義書 4.3・4.4 の別紙。画面デザインのキャンバスと同期）
 ├── user-stories/          機能ごとのユーザーストーリー（受入条件つき）
 │   ├── account/           F-AC アカウント管理
 │   ├── posts/             F-PO 投稿
-│   ├── map-search/        F-MP 地図・検索
+│   ├── map-search/        F-MP 検索・投稿一覧・地図
 │   ├── browsing/          F-VW 閲覧・交流
 │   ├── records/           F-RC 記録・振り返り
+│   ├── itinerary/         F-IT しおり（v3.0 で新設）
 │   ├── badges/            F-BG ステータスバッジ
 │   ├── safety/            F-SF 安全・健全性維持
 │   ├── notifications/     F-NT 通知
@@ -44,6 +48,7 @@ docs/
 | F-SF | 安全・健全性維持 | 3.8 | ✅ 完了 | 2 | [user-stories/safety](user-stories/safety/) / [tasks/safety](tasks/safety/) |
 | F-NT | 通知 | 3.9 | ✅ 完了 | 2 | [user-stories/notifications](user-stories/notifications/) / [tasks/notifications](tasks/notifications/) |
 | F-AD | 管理者機能 | 3.10 | ✅ 完了 | 5 | [user-stories/admin](user-stories/admin/) / [tasks/admin](tasks/admin/) |
+| F-IT | しおり（v3.0） | 3.11 | 🟡 ストーリーのみ | 7 | [user-stories/itinerary](user-stories/itinerary/)（タスク未作成） |
 
 ### カテゴリ詳細
 
@@ -59,19 +64,30 @@ docs/
 | F-PO-01 | スポット指定仕様（3.3.5） | [spot-selection.md](user-stories/posts/spot-selection.md) | 7 |
 | F-PO-02 | 投稿編集 | [post-edit.md](user-stories/posts/post-edit.md) | 4 |
 | F-PO-03 | 投稿削除 | [post-delete.md](user-stories/posts/post-delete.md) | 5 |
+| F-PO-04 | 下書き（v3.0） | [draft.md](user-stories/posts/draft.md) | — |
+| F-PO-01 | 投稿の起点（v3.0、3.3.8） | [post-entry-points.md](user-stories/posts/post-entry-points.md) | — |
 | F-MP-01 | 地図表示 | [map-display.md](user-stories/map-search/map-display.md) | 6 |
-| F-MP-02 | 地名検索 | [place-search.md](user-stories/map-search/place-search.md) | 3 |
-| F-MP-03 | ピン操作 | [pin-interaction.md](user-stories/map-search/pin-interaction.md) | 4 |
-| F-MP-04 | 投稿検索・絞り込み | [post-filter.md](user-stories/map-search/post-filter.md) | 3 |
-| F-MP-05 | スポット写真一覧 | [spot-photo-gallery.md](user-stories/map-search/spot-photo-gallery.md) | 5 |
+| F-MP-02 | 検索トップ（v3.0。旧 地名検索） | [search-top.md](user-stories/map-search/search-top.md) | 3（v1） |
+| F-MP-03 | ピン操作と地図からの投稿（v3.0） | [pin-interaction.md](user-stories/map-search/pin-interaction.md) | 4（v1） |
+| F-MP-04 | 投稿一覧（v3.0。旧 投稿検索・絞り込み） | [post-timeline.md](user-stories/map-search/post-timeline.md) | 3（v1） |
+| F-MP-05 | 写真の切替（v3.0。旧 スポット写真一覧） | [photo-view.md](user-stories/map-search/photo-view.md) | 5（v1） |
+| F-MP-06 | 探すモード（v3.0） | [explore-mode.md](user-stories/map-search/explore-mode.md) | — |
 | F-VW-01 | 投稿詳細閲覧 | [post-detail-view.md](user-stories/browsing/post-detail-view.md) | 4 |
 | F-VW-02 | いいね | [likes.md](user-stories/browsing/likes.md) | 4 |
 | F-VW-03 | コメント | [comments.md](user-stories/browsing/comments.md) | 7 |
+| F-VW-04 | 「まだあった」報告（v3.0） | [spot-status-report.md](user-stories/browsing/spot-status-report.md) | — |
 | F-RC-01 | マイページ | [my-page.md](user-stories/records/my-page.md) | 5 |
 | F-RC-02 | アルバム | [album.md](user-stories/records/album.md) | 5 |
 | F-RC-03 | アルバム共同編集・招待 | [album-collaboration.md](user-stories/records/album-collaboration.md) | 8 |
 | F-RC-05 | 「行きたい」保存 | [wishlist.md](user-stories/records/wishlist.md) | 4 |
 | F-RC-06 | マイマップ | [my-map.md](user-stories/records/my-map.md) | 4 |
+| F-IT-01 | しおりの作成・一覧・削除（v3.0） | [itinerary-basics.md](user-stories/itinerary/itinerary-basics.md) | — |
+| F-IT-02 | 期間と Day（v3.0） | [itinerary-days.md](user-stories/itinerary/itinerary-days.md) | — |
+| F-IT-03 | 到着予定時刻と並び順・メモ（v3.0） | [arrival-time.md](user-stories/itinerary/arrival-time.md) | — |
+| F-IT-04 | スポットの追加と追加モード（v3.0） | [add-spots.md](user-stories/itinerary/add-spots.md) | — |
+| F-IT-05 | チェック（v3.0） | [itinerary-check.md](user-stories/itinerary/itinerary-check.md) | — |
+| F-IT-06 | 地図表示と投稿（v3.0） | [itinerary-map-and-post.md](user-stories/itinerary/itinerary-map-and-post.md) | — |
+| F-IT-07 | 共有・招待（v3.0） | [itinerary-sharing.md](user-stories/itinerary/itinerary-sharing.md) | — |
 | F-BG | ステータスバッジ | [status-badges.md](user-stories/badges/status-badges.md) | 6 |
 | F-SF-01 | 通報 | [reporting.md](user-stories/safety/reporting.md) | 5 |
 | F-SF-02 | ブロック | [blocking.md](user-stories/safety/blocking.md) | 4 |
@@ -87,7 +103,7 @@ docs/
 
 | 種別 | 該当節 | ドキュメント | 備考 |
 |---|---|---|---|
-| 画面共通仕様 | 4.2, 4.5 | [user-stories/shared-ui](user-stories/shared-ui/) / [tasks/shared-ui](tasks/shared-ui/) | メニューバー・写真動画レイアウト・アップロード注意文・ピン表示ルール・エラー表示の5ストーリー |
+| 画面共通仕様 | 4.2, 4.5 | [user-stories/shared-ui](user-stories/shared-ui/) / [tasks/shared-ui](tasks/shared-ui/) | メニューバー・写真動画レイアウト・アップロード注意文・ピン表示ルール・エラー表示・配色とダークモード（v3.0 で [theme.md](user-stories/shared-ui/theme.md) を追加）の6ストーリー |
 | データ設計の横断確認 | 5.2〜5.4 | [user-stories/data-model](user-stories/data-model/) / [tasks/data-model](tasks/data-model/) | `table-catalog`＝どの機能ストーリーにも属さない共有テーブル（rate_limits, album_members, notifications, badges, comments/likes/wishlist/blocks, operation_logs）を定義。`design-principles`・`media-handling`＝5.3/5.4の設計方針の一貫適用を確認するストーリー（新規タスク不要） |
 
 ## テーブル定義の分担（5.2 17テーブル）
@@ -98,6 +114,18 @@ docs/
 |---|---|
 | 機能ストーリーが自ら定義 | users（F-AC-01）／trips・spots・posts・post_photos（F-PO-01）／album_invitations（F-RC-03）／reports（F-SF-01）／system_announcements（F-AD-03） |
 | data-model/table-catalogが補完 | rate_limits／album_members／notifications／badges／comments・likes・wishlist・blocks／operation_logs |
+
+## v3.0 で追加・改訂したユーザーストーリー（2026-09-16）
+
+要求定義書 v2・要件定義書 v3.0 に合わせた変更。「書き換え」は v1 実装を土台に差分を実装する前提で書いてある。タスク分割・Issue 化はこれから。
+
+| 区分 | ストーリー |
+|---|---|
+| 新規 | [posts/draft](user-stories/posts/draft.md)、[posts/post-entry-points](user-stories/posts/post-entry-points.md)、[map-search/explore-mode](user-stories/map-search/explore-mode.md)、[browsing/spot-status-report](user-stories/browsing/spot-status-report.md)、[itinerary/](user-stories/itinerary/) の 7 件、[shared-ui/theme](user-stories/shared-ui/theme.md) |
+| 書き換え（改名） | map-search: place-search → [search-top](user-stories/map-search/search-top.md)、post-filter → [post-timeline](user-stories/map-search/post-timeline.md)、spot-photo-gallery → [photo-view](user-stories/map-search/photo-view.md) |
+| 書き換え | [posts/post-creation](user-stories/posts/post-creation.md)、[posts/spot-selection](user-stories/posts/spot-selection.md)、[map-search/map-display](user-stories/map-search/map-display.md)、[map-search/pin-interaction](user-stories/map-search/pin-interaction.md)、[browsing/post-detail-view](user-stories/browsing/post-detail-view.md)、[records/my-page](user-stories/records/my-page.md)、[records/wishlist](user-stories/records/wishlist.md)、[records/my-map](user-stories/records/my-map.md)、[shared-ui/menu-bar](user-stories/shared-ui/menu-bar.md)、[shared-ui/pin-display-rules](user-stories/shared-ui/pin-display-rules.md) |
+| 追記 | [posts/trip-title](user-stories/posts/trip-title.md)、[posts/post-edit](user-stories/posts/post-edit.md)、[records/album](user-stories/records/album.md)、[shared-ui/media-layout](user-stories/shared-ui/media-layout.md)、[notifications/notification-triggers](user-stories/notifications/notification-triggers.md)、[data-model/table-catalog](user-stories/data-model/table-catalog.md)、[account/signup-login](user-stories/account/signup-login.md) |
+| 変更なし | account（signup-login 以外）、posts/post-delete、browsing/comments・likes、records/album-collaboration、badges、safety、notifications/notification-list、admin、shared-ui/upload-notice・error-display、data-model/design-principles・media-handling |
 
 ## 作成時に判明した設計上の補足・要確認事項
 

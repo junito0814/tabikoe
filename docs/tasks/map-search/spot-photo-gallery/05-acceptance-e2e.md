@@ -1,6 +1,6 @@
 # Task 5: 受入テスト（E2E）
 
-> 出典: [spot-photo-gallery.md](../../../user-stories/map-search/spot-photo-gallery.md)
+> 出典: [spot-photo-gallery.md](../../../user-stories/map-search/photo-view.md)
 > インデックス: [spot-photo-gallery](00-index.md)
 
 ## 依存

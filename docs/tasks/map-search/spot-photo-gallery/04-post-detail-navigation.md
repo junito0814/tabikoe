@@ -1,6 +1,6 @@
 # Task 4: タップ時の元投稿詳細への遷移統合
 
-> 出典: [spot-photo-gallery.md](../../../user-stories/map-search/spot-photo-gallery.md)
+> 出典: [spot-photo-gallery.md](../../../user-stories/map-search/photo-view.md)
 > インデックス: [spot-photo-gallery](00-index.md)
 
 ## 依存

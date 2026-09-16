@@ -1,6 +1,6 @@
 # Task 3: 受入テスト（E2E）
 
-> 出典: [post-filter.md](../../../user-stories/map-search/post-filter.md)
+> 出典: [post-filter.md](../../../user-stories/map-search/post-timeline.md)
 > インデックス: [post-filter](00-index.md)
 
 ## 依存

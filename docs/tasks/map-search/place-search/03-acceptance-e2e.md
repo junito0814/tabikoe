@@ -1,6 +1,6 @@
 # Task 3: 受入テスト（E2E）
 
-> 出典: [place-search.md](../../../user-stories/map-search/place-search.md)
+> 出典: [place-search.md](../../../user-stories/map-search/search-top.md)
 > インデックス: [place-search](00-index.md)
 
 ## 依存

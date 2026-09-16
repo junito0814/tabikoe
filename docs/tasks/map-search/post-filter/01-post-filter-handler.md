@@ -1,6 +1,6 @@
 # Task 1: 投稿検索・絞り込み Route Handler
 
-> 出典: [post-filter.md](../../../user-stories/map-search/post-filter.md)
+> 出典: [post-filter.md](../../../user-stories/map-search/post-timeline.md)
 > インデックス: [post-filter](00-index.md)
 
 ## 依存

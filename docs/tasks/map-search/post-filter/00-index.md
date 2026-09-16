@@ -1,6 +1,6 @@
 # F-MP-04 投稿検索・絞り込み — タスク分割
 
-> 出典: [post-filter.md](../../../user-stories/map-search/post-filter.md)
+> 出典: [post-filter.md](../../../user-stories/map-search/post-timeline.md)
 
 各タスクの詳細・テスト要件は個別ファイルを参照。Task 1が土台。Task 2はTask 1に依存。Task 3は全体の結合後に実施する。
 
