@@ -177,3 +177,17 @@ Phase 4 の wishlist、Phase 0 の pin-display-rules、Phase 2 の Google Maps �
 - 各フェーズ内のストーリーは基本的に並行着手可能。表中の「備考」に他フェーズへの依存が書かれていないストーリー同士は同時進行してよい。
 - ここに挙げた順序はドキュメント間の論理依存に基づくものであり、[受入条件の優先度や工数見積もりは含まない](requirement.md)。提出日（2026年10月7日）に対して全Phaseは完了しない見込みのため、要件定義書8章の受入条件のうちMVPとして外せないものを別途選定すること。
 - 全体像・カテゴリごとのストーリー一覧は[README.md](README.md)を参照。
+
+## v3.0 の実装順（2026-09-16 追加）
+
+要求定義書 v2・要件定義書 v3.0・[README の v3.0 一覧](README.md#v30-で追加改訂したユーザーストーリー2026-09-16)に対応する 30 ストーリー・107 タスク。v1 の Phase 1〜9 はすべてマージ済み（2026-09-14）。書き換えストーリーのタスクフォルダは `<story>-v3`。各タスクの「依存」欄が優先で、ここは目安。
+
+| Phase | 内容 | ストーリー（`docs/tasks/<category>/<story>/`） | 備考 |
+|---|---|---|---|
+| 10 | 基盤（テーブル・配色・共通部品） | data-model/table-catalog-v3、shared-ui/theme、shared-ui/menu-bar-v3、shared-ui/pin-display-rules-v3、shared-ui/media-layout-v3 | 他のすべてがここに依存する。theme は最初に |
+| 11 | 投稿（SC-03・下書き） | posts/post-creation-v3、posts/spot-selection-v3、posts/trip-title-v3、posts/draft、posts/post-edit-v3、posts/post-entry-points（Task 1） | post-creation-v3 Task 1 → spot-selection-v3 → draft の順 |
+| 12 | 主導線（検索トップ・タイムライン・地図） | map-search/search-top、account/signup-login-v3、map-search/post-timeline、map-search/map-display-v3、map-search/pin-interaction-v3、map-search/photo-view、map-search/explore-mode、browsing/spot-status-report | search-top Task 4（位置情報フック）と map-display-v3 Task 1 が土台 |
+| 13 | しおり・保存 | itinerary/itinerary-basics、itinerary/itinerary-days、itinerary/arrival-time、itinerary/add-spots、itinerary/itinerary-check、itinerary/itinerary-map-and-post、itinerary/itinerary-sharing、records/wishlist-v3、browsing/post-detail-view-v3、posts/post-entry-points（Task 2） | itinerary-basics Task 1・3 が土台。wishlist-v3 の保存先シートは add-spots Task 1 の後 |
+| 14 | 記録 | records/my-page-v3、records/my-map-v3 | draft Task 3・map-display-v3 Task 1 の後 |
+
+優先度は要求定義書 3-1-11 の A（Phase 10〜12）→ B（13）→ C（下書き・報告は 11・12 に含む）。提出日（2026-10-07）までに全 Phase が終わらない場合は、A を完了させたうえで B の itinerary-basics・itinerary-days・add-spots・wishlist-v3 を優先し、arrival-time・itinerary-sharing を後回しにする。

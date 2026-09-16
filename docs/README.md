@@ -48,7 +48,7 @@ docs/
 | F-SF | 安全・健全性維持 | 3.8 | ✅ 完了 | 2 | [user-stories/safety](user-stories/safety/) / [tasks/safety](tasks/safety/) |
 | F-NT | 通知 | 3.9 | ✅ 完了 | 2 | [user-stories/notifications](user-stories/notifications/) / [tasks/notifications](tasks/notifications/) |
 | F-AD | 管理者機能 | 3.10 | ✅ 完了 | 5 | [user-stories/admin](user-stories/admin/) / [tasks/admin](tasks/admin/) |
-| F-IT | しおり（v3.0） | 3.11 | 🟡 ストーリーのみ | 7 | [user-stories/itinerary](user-stories/itinerary/)（タスク未作成） |
+| F-IT | しおり（v3.0） | 3.11 | ✅ 完了 | 7 | [user-stories/itinerary](user-stories/itinerary/) / [tasks/itinerary](tasks/itinerary/) |
 
 ### カテゴリ詳細
 
@@ -117,7 +117,7 @@ docs/
 
 ## v3.0 で追加・改訂したユーザーストーリー（2026-09-16）
 
-要求定義書 v2・要件定義書 v3.0 に合わせた変更。「書き換え」は v1 実装を土台に差分を実装する前提で書いてある。タスク分割・Issue 化はこれから。
+要求定義書 v2・要件定義書 v3.0 に合わせた変更。「書き換え」は v1 実装を土台に差分を実装する前提で書いてある。タスク分割は `docs/tasks/<category>/<story>/`（書き換えストーリーは `<story>-v3`）に 30 ストーリー・107 タスクで作成済み。実装順は [development-order.md](development-order.md) の「v3.0 の実装順」。
 
 | 区分 | ストーリー |
 |---|---|
