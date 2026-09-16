@@ -1,6 +1,6 @@
 # Task 1: 地名検索 Route Handler（/api/geocode）
 
-> 出典: [place-search.md](../../../user-stories/map-search/place-search.md)
+> 出典: [place-search.md](../../../user-stories/map-search/search-top.md)
 > インデックス: [place-search](00-index.md)
 
 ## 依存

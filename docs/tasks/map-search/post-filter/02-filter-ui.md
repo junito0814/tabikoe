@@ -1,6 +1,6 @@
 # Task 2: 絞り込みUI実装（SC-04）
 
-> 出典: [post-filter.md](../../../user-stories/map-search/post-filter.md)
+> 出典: [post-filter.md](../../../user-stories/map-search/post-timeline.md)
 > インデックス: [post-filter](00-index.md)
 
 ## 依存

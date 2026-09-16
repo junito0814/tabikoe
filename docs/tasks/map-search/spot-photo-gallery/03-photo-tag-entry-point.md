@@ -1,6 +1,6 @@
 # Task 3: 投稿一覧画面（SC-04）からの「写真」タグ導線実装
 
-> 出典: [spot-photo-gallery.md](../../../user-stories/map-search/spot-photo-gallery.md)
+> 出典: [spot-photo-gallery.md](../../../user-stories/map-search/photo-view.md)
 > インデックス: [spot-photo-gallery](00-index.md)
 
 ## 依存

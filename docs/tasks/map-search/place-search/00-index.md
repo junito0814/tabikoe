@@ -1,6 +1,6 @@
 # F-MP-02 地名検索 — タスク分割
 
-> 出典: [place-search.md](../../../user-stories/map-search/place-search.md)
+> 出典: [place-search.md](../../../user-stories/map-search/search-top.md)
 
 各タスクの詳細・テスト要件は個別ファイルを参照。Task 1が土台。Task 2はTask 1およびmap-display Task3に依存する。Task 3は全体の結合後に実施する。
 

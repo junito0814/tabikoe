@@ -1,6 +1,6 @@
 # F-RC-02 アルバム
 
-> 出典: [requirement.md](../../requirement.md) 3.6.2
+> 出典: [requirement.md](../../requirement.md) 3.6.2（v3.0で導線を追加）
 
 ## ユーザーストーリー
 
@@ -21,6 +21,7 @@
 - アルバムのメンバー・権限（オーナー／編集者／閲覧者）および招待の仕組みは [album-collaboration](album-collaboration.md)（F-RC-03）を参照。
 - アルバムのメンバーは、投稿の公開／非公開設定にかかわらずアルバム内では全投稿を閲覧できる（詳細は album-collaboration 参照）。
 - 投稿・写真・動画の表示レイアウトは [media-layout](../shared-ui/media-layout.md) の`MediaGrid`コンポーネントを再利用する。
+- **しおりとの導線（v3.0）**：同じ旅行 ID のしおりがあり、自分がそのメンバーのとき、アルバム画面に「しおりを見る」を出す（[itinerary-basics](../itinerary/itinerary-basics.md)）。しおりのメンバーでなければ出さない。
 
 ## 受入条件
 

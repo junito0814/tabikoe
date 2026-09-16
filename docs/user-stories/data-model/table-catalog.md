@@ -1,6 +1,6 @@
 # データテーブル一覧の整合性確保
 
-> 出典: [requirement.md](../../requirement.md) 5.2
+> 出典: [requirement.md](../../requirement.md) 5.2（v3.0で追加テーブルを追記）
 
 ## ユーザーストーリー
 
@@ -30,8 +30,23 @@
 | operation_logs | 操作ログ | 実装済み（[本ストーリー Task6](../../tasks/data-model/table-catalog/06-operation-logs-table.md)） |
 | system_announcements | 運営からのお知らせ | 実装済み（[F-AD-03 Task1](../../tasks/admin/announcement-management/01-system-announcements-table.md)、機能ストーリー側で自ら定義） |
 
+v3.0（要件定義書 5.2・5.3）で追加・変更するテーブル。定義は各機能ストーリーのタスクで行い、本表で追跡する。
+
+| テーブル名 | 概要 | 担当ストーリー |
+|---|---|---|
+| posts（変更） | status（draft／published）・lat・lng・published_at を追加。draft は spot_id・category・stay_time・rating・visited_at が NULL 可（CHECK は published のときだけ必須項目を検証）。category の CHECK を 7 値に更新し「イベント会場」→「エンタメ・イベント」へ一括更新 | [posts/draft](../posts/draft.md)、[posts/post-creation](../posts/post-creation.md) |
+| itineraries | しおり。trip_id（trips と 1 対 1、UNIQUE）・start_date・end_date（NULL 可）・updated_at | [itinerary/itinerary-basics](../itinerary/itinerary-basics.md) |
+| itinerary_spots | itinerary_id・spot_id（組で UNIQUE）・day_index（NULL＝未定）・arrival_time（NULL 可）・sort_order・memo・checked_at・checked_by | [itinerary/itinerary-days](../itinerary/itinerary-days.md) |
+| itinerary_members | しおりのメンバーと権限（owner／member）・joined_at | [itinerary/itinerary-sharing](../itinerary/itinerary-sharing.md) |
+| itinerary_invitations | 招待リンクのトークン・有効期限（album_invitations と同じ構造） | [itinerary/itinerary-sharing](../itinerary/itinerary-sharing.md) |
+| spot_status_reports | spot_id・user_id（組で UNIQUE）・status（still_there／gone）・reported_at | [browsing/spot-status-report](../browsing/spot-status-report.md) |
+| rate_limits（変更なし） | action_type に itinerary_invite・draft_save・spot_status_report を追加して使う | 各ストーリー |
+
+いずれも RLS を有効にし、下書き・しおりは本人／メンバー以外が参照できないポリシーを持つ。
+
 ## 受入条件
 
 - [ ] 既存タスクが参照するテーブル（rate_limits, album_members, notifications, badges, comments, likes, wishlist, blocks, operation_logs）すべてにスキーマ定義（マイグレーション）が存在すること
 - [ ] 新規定義したテーブルに対し、既存タスク（F-AC-05, F-PO-03, menu-bar）の結合テストが実際のスキーマに対して実行でき、成功すること
 - [ ] album_invitations・reports・system_announcementsは、それぞれの機能ストーリー（F-RC-03・F-SF-01・F-AD-03）側でスキーマ定義が完了していること
+- [ ] v3.0 で追加・変更するテーブル（posts の列追加と category 移行、itineraries、itinerary_spots、itinerary_members、itinerary_invitations、spot_status_reports）にマイグレーションと RLS ポリシーが存在し、下書き・しおりが本人／メンバー以外から参照できないこと
