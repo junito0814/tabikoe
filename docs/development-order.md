@@ -178,7 +178,7 @@ Phase 5〜9 の PR（#243 → #245 → #246 → #247 → #248 → #249）は 202
 |---|---|---|---|---|
 | 1 | 配色とダークモード（theme） | #274 | ⬜ | `globals.css` の変数化 → ダーク変数と地図スタイル → 直書き色の置き換え（400 箇所超）。OS 追従のみ、アプリ内切替なし |
 | 2 | データテーブル一覧の整合性確保（table-catalog-v3） | #280 | ⬜ | posts に status・lat・lng・published_at、カテゴリ 7 値への移行、itineraries・itinerary_spots・itinerary_members・itinerary_invitations・spot_status_reports、rate_limits の action 追加。Task 1〜4 は並行可 |
-| 3 | 共通メニューバー（menu-bar-v3） | #287 | ⬜ | さがす・しおり・通知・マイページの 4 項目。PC は左サイドバー。しおりの遷移先 `/itineraries` は Phase 13 まで 404 でよい |
+| 3 | 共通メニューバー（menu-bar-v3） | #287 | ⬜ | ホーム（家のアイコン）・しおり・通知・マイページの 4 項目。PC は左サイドバー。しおりの遷移先 `/itineraries` は Phase 13 まで 404 でよい |
 | 4 | ピンの表示ルール（pin-display-rules-v3） | #291 | ⬜ | 8 種別（青＝みんなの投稿・赤＝保存済み・投稿済み・下書き・フォーカス・番号・クラスタ・現在地）と凡例部品。theme Task 3 の後 |
 | 5 | 写真・動画のモーダルと投稿フォームのサムネイル（media-layout-v3） | #295 | ⬜ | `MediaModal`（全画面共通）と `PostForm` のサムネイル。Task 1・2 は独立 |
 
