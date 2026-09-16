@@ -117,7 +117,7 @@ docs/
 
 ## v3.0 で追加・改訂したユーザーストーリー（2026-09-16）
 
-要求定義書 v2・要件定義書 v3.0 に合わせた変更。「書き換え」は v1 実装を土台に差分を実装する前提で書いてある。タスク分割は `docs/tasks/<category>/<story>/`（書き換えストーリーは `<story>-v3`）に 30 ストーリー・107 タスクで作成済み。実装順は [development-order.md](development-order.md) の「v3.0 の実装順」。
+要求定義書 v2・要件定義書 v3.0 に合わせた変更。「書き換え」は v1 実装を土台に差分を実装する前提で書いてある。タスク分割は `docs/tasks/<category>/<story>/`（書き換えストーリーは `<story>-v3`）に 30 ストーリー・107 タスクで作成済み。実装順は [development-order.md](development-order.md) の Phase 10〜14。
 
 | 区分 | ストーリー |
 |---|---|
