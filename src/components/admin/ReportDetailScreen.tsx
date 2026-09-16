@@ -18,6 +18,10 @@ export type SubmitReportAction = (reportId: string, action: ModerationAction, no
  *       docs/tasks/admin/report-handling/03-report-action-ui.md
  *
  * 「削除」は復元不可のため、確認ダイアログで確定しない限り API を呼ばない。
+ *
+ * 【初心者向け】3 つの対応（非公開化／削除／問題なし）はすべて同じ `run(action)` を通り、
+ * サーバー（/api/admin/reports/[id]/action）が種別ごとの実処理と通知を行う。画面側は結果の文言を出して
+ * `router.refresh()` でサーバーの最新状態を取り直すだけ。対応済み（isResolved）ならボタンを無効にする。
  */
 export function ReportDetailScreen({
   report,

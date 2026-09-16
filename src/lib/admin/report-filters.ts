@@ -10,6 +10,10 @@ import {
  * F-AD-04 Task1: 通報一覧の絞り込み
  * 出典: docs/tasks/admin/report-list/01-report-list-handler.md
  *       要件定義書3.8.1（対応状態）・3.10.4
+ *
+ * 【初心者向け】URL クエリ → 条件（parseReportFilters）→ where 句の配列（buildReportWhereClauses）→ Supabase クエリ
+ * （listReports）の 3 段。前 2 つは DB に触らない純粋関数なので単体テストで検証し、最後だけ結合テストの対象にする。
+ * `count: "exact"` は総件数も一緒に返してもらう指定で、「もっと見る」を出すかの判断（nextOffset）に使う。
  */
 export const REPORT_STATUSES = [
   "unconfirmed",

@@ -41,6 +41,10 @@ export interface AlbumApi {
  * - 招待リンクの発行・無効化、メンバーの権限変更・削除もオーナーのみ
  * - 編集者・閲覧者には「退出」を出す
  * - 投稿は公開・非公開を問わず MediaGrid で表示し、旅行タイトルを見せてよい画面（trip-title Task5）
+ *
+ * 【初心者向け】操作が 6 種類（名前変更・招待発行・無効化・権限変更・削除・退出）あるので、
+ * 共通の `run()` に「二重実行の防止（busy）・エラー表示・後始末」をまとめ、各 handle〜 は API 呼び出しと
+ * state の更新だけを書いている。`api` を props で差し替えられるのは単体テストのため。
  */
 export function AlbumScreen({
   album,
@@ -66,6 +70,7 @@ export function AlbumScreen({
   const [busy, setBusy] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
+  // すべての操作の共通枠。busy に操作名を入れて、完了まで他のボタンを無効にする
   const run = async (key: string, action: () => Promise<void>, failure: string) => {
     if (busy) return;
     setBusy(key);
@@ -165,6 +170,7 @@ export function AlbumScreen({
     );
   };
 
+  // 招待リンクは相対パスで返ってくるので、表示用にブラウザの origin（https://…）を前に付ける
   const origin = typeof window !== "undefined" ? window.location.origin : "";
 
   return (

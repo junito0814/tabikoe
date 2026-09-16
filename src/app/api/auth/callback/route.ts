@@ -1,3 +1,14 @@
+/**
+ * F-AC-01 Task4〜8: Google ログインのコールバック（GET /api/auth/callback）
+ * 出典: docs/tasks/account/signup-login/04-auth-callback-handler.md ほか
+ *
+ * 【初心者向け】ログインの流れは次の 3 段階。
+ *   1. 画面（SC-01 / SC-20）のボタン → Google の認証ページへ移動
+ *   2. Google が認証を終えると、このURLに `?code=...` を付けて戻してくる
+ *   3. ここで code をセッション（Cookie）に交換し、アプリ側のアカウント有無を確認して遷移先へ送る
+ * つまり「Google で本人確認 OK」と「タビコエにアカウントがある」は別物で、後者はこのファイルで判定する。
+ * 失敗時は必ず元の画面（/login または /signup）へ `?error=` 付きで戻し、白い画面を出さない。
+ */
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -54,6 +65,8 @@ export async function GET(request: Request) {
         return new NextResponse("Too Many Requests", { status: 429 });
     }
 
+    // Google から受け取った一時的な code を、ログイン状態（アクセストークン＋リフレッシュトークン）に交換する。
+    // createClient() は Cookie を読み書きできる Supabase クライアントなので、ここでセッションが Cookie に保存される
     const supabase = await createClient();
     const { data, error } = await supabase.auth.exchangeCodeForSession(code);
 

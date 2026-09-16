@@ -1,3 +1,12 @@
+/**
+ * POST /api/posts — 投稿を作成する Route Handler（サーバー側 API）
+ *
+ * 【初心者向け】Next.js では `app/api/.../route.ts` に置いた `POST` 関数がそのまま API になる。
+ * ブラウザ（PostForm.tsx）が fetch で JSON を送り、ここで検証 → DB 保存 → 結果を JSON で返す。
+ * 処理の順番: ①ログイン確認 → ②JSON の読み取り → ③レート制限 → ④入力検証 → ⑤スポット・旅行の確定
+ *            → ⑥posts に INSERT → ⑦写真を post_photos に INSERT → ⑧操作ログ → ⑨バッジ判定 → ⑩応答
+ * DB へは `createAdminClient()`（service_role。RLS を通らない）で書くため、①の本人確認を必ず先に行う。
+ */
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -13,6 +22,7 @@ import {
   POST_RATE_LIMIT_WINDOW_SECONDS,
 } from "@/lib/posts/constants";
 
+/** ブラウザから届く JSON の形。値の型は信用せず `unknown` で受け、validatePostInput で確かめる */
 interface PostRequestBody {
   tripTitle?: unknown;
   spotId?: unknown;
@@ -36,6 +46,7 @@ interface PostRequestBody {
  * 写真は先に POST /api/posts/photos でアップロードし、そのパスをphotoPathsで受け取る。
  */
 export async function POST(request: Request) {
+  // ① Cookie のセッションからログイン中のユーザーを取り出す。無ければ 401（未ログイン）
   const supabase = await createClient();
   const user = await getAuthenticatedUser(supabase);
 
@@ -43,6 +54,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
 
+  // ② リクエスト本文を JSON として読む。壊れた JSON は 400（クライアントの誤り）
   let body: PostRequestBody;
   try {
     body = await request.json();
@@ -111,6 +123,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "trip_resolution_failed" }, { status: 500 });
   }
 
+  // ⑥ 投稿本体を保存。`.select("id").single()` で作成された行の id だけを受け取る
   const { data: post, error: insertError } = await admin
     .from("posts")
     .insert({
@@ -132,6 +145,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "insert_failed" }, { status: 500 });
   }
 
+  // ⑦ 写真は別テーブル（1 投稿に複数枚）。display_order が並び順で、0 番目が代表写真
   const { error: photosError } = await admin.from("post_photos").insert(
     photoPaths.map((storagePath, index) => ({
       post_id: post.id,

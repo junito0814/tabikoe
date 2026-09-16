@@ -17,6 +17,12 @@ import {
  * F-MP-04 Task1: 投稿検索・絞り込み
  * 出典: docs/tasks/map-search/post-filter/01-post-filter-handler.md
  *       要件定義書3.4.4
+ *
+ * 【初心者向け】このファイルは 3 段構成。
+ *   1. 選択肢の定数（距離・費用レンジ）と、URL クエリ → 条件（parsePostSearchParams）。純粋関数で単体テストしやすい
+ *   2. 条件 → Supabase のクエリ（searchPosts）。距離は「まず矩形で DB を絞り、次に Haversine（球面距離）で円判定」の 2 段階
+ *   3. 取れた行を PostCardData に整形（post-cards.ts の buildPostCards を再利用）
+ * ブロック中のユーザーの投稿は getBlockedUserIds で除外する。
  */
 
 /** 距離の選択肢（m）。地図の中心座標を基準にする */

@@ -24,6 +24,8 @@ import {
   type PostVisibility,
 } from "@/lib/posts/constants";
 
+// 写真の上限（要件定義書 3.3.1）。サーバー側（/api/posts/photos）でも同じ検証をするが、
+// 送る前にブラウザで弾いた方が利用者を待たせないので二重にしている
 const MAX_PHOTO_SIZE_BYTES = 10 * 1024 * 1024;
 const ALLOWED_PHOTO_TYPES = ["image/jpeg", "image/png"];
 
@@ -36,6 +38,13 @@ const ALLOWED_PHOTO_TYPES = ["image/jpeg", "image/png"];
  * 同じフォームを編集モードとして再利用する（initialPostの有無で切り替える）。
  * 旅行タイトル・スポット名は trip-title / spot-selection の成果物を組み込む。
  * 動画は未対応（要件定義書9章#5のffmpeg検証が未了のため、写真のみ先行実装）。
+ *
+ * 【初心者向け】このファイルの読み方
+ *   - "use client": ブラウザで動くコンポーネント。useState で入力値を持ち、ボタンで fetch する
+ *   - 入力値ごとに useState が 1 つずつある（tripTitle, spot, category, ...）。value と onChange で結ぶ「制御コンポーネント」
+ *   - canSubmit: 必須項目が揃い、文字数・金額が規則内のときだけ true。ボタンの disabled に使う
+ *   - handleSubmit: ①写真を先にアップロード → ②本体を POST（新規）/ PATCH（編集） → ③結果ページへ遷移
+ *   - 見た目（Tailwind のクラス）はいまの配色。v3.0 の theme ストーリーで CSS 変数へ置き換える予定
  */
 export interface ExistingPhoto {
   id: string;
@@ -56,6 +65,7 @@ export interface PostFormInitialValues {
   photos: ExistingPhoto[];
 }
 
+/** 星評価（1〜5）。5 個のボタンを並べ、押した番号を onChange で親へ返す。role="radio" は読み上げ用 */
 function StarRating({ value, onChange }: { value: number; onChange: (value: number) => void }) {
   return (
     <div className="flex gap-1" role="radiogroup" aria-label="星評価">
@@ -77,6 +87,7 @@ function StarRating({ value, onChange }: { value: number; onChange: (value: numb
   );
 }
 
+/** ラベル＋入力欄の共通レイアウト。各項目の見た目を揃えるための小さな部品 */
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div className="w-full">
@@ -91,6 +102,7 @@ const selectClass =
 
 export default function PostForm({ initialPost }: { initialPost?: PostFormInitialValues }) {
   const router = useRouter();
+  // initialPost が渡されていれば「編集」、無ければ「新規作成」。同じフォームを 2 通りに使う
   const isEditMode = initialPost !== undefined;
 
   const [tripTitle, setTripTitle] = useState(initialPost?.tripTitle ?? "");
@@ -104,6 +116,7 @@ export default function PostForm({ initialPost }: { initialPost?: PostFormInitia
   const [visibility, setVisibility] = useState<PostVisibility>(
     initialPost?.visibility ?? "public"
   );
+  // photos は今回新しく選んだファイル、existingPhotos は編集時に既に保存済みの写真（URL だけ持つ）
   const [photos, setPhotos] = useState<File[]>([]);
   const [existingPhotos, setExistingPhotos] = useState<ExistingPhoto[]>(
     initialPost?.photos ?? []
@@ -112,6 +125,7 @@ export default function PostForm({ initialPost }: { initialPost?: PostFormInitia
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
+  // 文字数は「見た目の 1 文字」単位で数える（絵文字を 2 文字と数えないため。要件定義書 3.3.1）
   const commentLength = graphemeLength(comment);
   const isCommentTooLong = commentLength > MAX_POST_COMMENT_LENGTH;
 
@@ -134,6 +148,7 @@ export default function PostForm({ initialPost }: { initialPost?: PostFormInitia
     !isCostInvalid &&
     !isSubmitting;
 
+  // 編集時: 保存済みの写真を 1 枚ずつ削除する。サーバーは「最後の 1 枚」の削除を 400 で拒む（写真 1 点以上の規則）
   const handleDeleteExistingPhoto = async (photoId: string) => {
     if (!initialPost) return;
     setErrorMessage(null);
@@ -160,6 +175,7 @@ export default function PostForm({ initialPost }: { initialPost?: PostFormInitia
     }
   };
 
+  // ファイル選択時: 形式と容量をその場で確かめ、問題なければ state に入れる（アップロードは投稿ボタンを押したとき）
   const handlePhotoChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const selected = Array.from(event.target.files ?? []);
     setErrorMessage(null);
@@ -292,6 +308,7 @@ export default function PostForm({ initialPost }: { initialPost?: PostFormInitia
     }
   };
 
+  // ---- ここから画面の描画。上から順に、要件定義書 3.3.1 の項目の並び ----
   return (
     <div className="flex min-h-screen flex-col items-center gap-5 bg-[#FBF6F0] px-6 py-12">
       <h1 className="text-[16px] font-bold text-[#3D3A35]">

@@ -18,6 +18,14 @@ import { sessionCookieOptions } from "@/lib/supabase/cookie-options";
  *
  * /admin配下は、存在自体を一般ユーザーに露出させないため、
  * 未ログイン・is_admin=falseのいずれも404を返す（リダイレクトしない）。
+ *
+ * 【初心者向け】Next.js 16 では middleware.ts が proxy.ts に改名された。役割は「すべてのリクエストが
+ * ページや API に届く前に通る関所」。ここでやることは 3 つ：
+ *   1. Cookie のトークンを確かめ、期限切れなら裏で更新して新しい Cookie を返す（利用者は気づかない）
+ *   2. 一時停止されたアカウントを締め出す
+ *   3. /admin 配下を管理者以外に見せない（404）
+ * 「未ログインならログイン画面へ」の誘導はここではなく、各ページの requireUserOrRedirect が行う
+ * （元の遷移先を redirect_to に持たせるため）。`config.matcher` は静的ファイルを対象外にする条件。
  */
 export async function proxy(request: NextRequest) {
   assertSupabaseEnv();

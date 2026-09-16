@@ -10,6 +10,10 @@ const MAIN = "#C4703F";
  * 出典: docs/tasks/account/account-deletion/04-deletion-confirmation-dialog-ui.md
  *
  * プロフィール編集画面（SC-07）である ../account/page.tsx から呼び出す。
+ *
+ * 【初心者向け】`open` が true のときだけモーダル（画面全体を覆う div）を描画する単純な作り。
+ * 退会は取り消せない操作なので、①注意文を読んだチェック、②管理者なら引き継ぎ済みチェック、の両方が
+ * 揃うまでボタンを押せない（canSubmit）。成功したらセッションは無効になるのでログイン画面へ送る。
  */
 export default function DeleteAccountDialog({ isAdmin }: { isAdmin: boolean }) {
   const router = useRouter();

@@ -22,6 +22,9 @@ export interface CommentApi {
  *
  * 入力フォーム（4,000文字の残数表示）、一覧（新着順・20件）、「もっと見る」、削除ボタン（自分のコメントのみ）。
  * 非公開投稿にはコメントできない（3.3.6）ため、`canComment=false` ではフォームを出さない。
+ *
+ * 【初心者向け】投稿・削除のあとは一覧を取り直さず、手元の state を直接書き換える（体感が速い）。
+ * そのぶん `totalCount` と `nextOffset`（次に読む位置）も自分でずらす必要がある点に注意。
  */
 export function CommentSection({
   postId,

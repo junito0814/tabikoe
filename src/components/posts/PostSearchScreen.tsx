@@ -25,6 +25,10 @@ export type FetchSearchPage = (params: URLSearchParams) => Promise<PostCardPage>
  *
  * 全体マップの「投稿を検索」から開く。距離の基準は地図の中心（クエリの lat/lng）で、
  * 地名検索（F-MP-02）はこの画面の条件に影響しない（3.4.2）。20件ずつの無限スクロール。
+ *
+ * 【初心者向け】state は 2 系統。`draft` は絞り込みパネルで編集中の条件、`applied` は実際に検索した条件。
+ * 「検索」で draft → applied にし、1 ページ目から取り直す。`requestIdRef` は古い応答で上書きしないための番号。
+ * v3.0 ではこの画面が「行き先のタイムライン」（post-timeline）に作り替えられる。
  */
 export function PostSearchScreen({
   center,
@@ -96,6 +100,7 @@ export function PostSearchScreen({
     }));
   };
 
+  // 「絞り込み（N）」の N。適用中の条件の種類数を数える
   const activeCount =
     (applied.keyword.trim() ? 1 : 0) +
     (applied.categories.length > 0 ? 1 : 0) +

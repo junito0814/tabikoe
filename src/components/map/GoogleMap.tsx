@@ -49,6 +49,13 @@ interface GoogleMapProps {
  *
  * ピンは shared-ui/pin-display-rules の PinIcon と同じ図形（pin-marker-icon）をマーカーのアイコンにする。
  * Maps API の読み込み失敗時は共通のエラー表示（「地図を読み込めませんでした」）を地図エリアに出す（6.1）。
+ *
+ * 【初心者向け】Google マップは React の管理外にある「外部ライブラリ」なので、次の順で扱う。
+ *   1. useGoogleMaps() でスクリプトの読み込み状態を待つ（loading → ready）
+ *   2. ready になったら useRef で確保した div に `new google.maps.Map(...)` で地図を 1 回だけ作る
+ *   3. `pins` が変わったらマーカーを作り直す（前のマーカーは setMap(null) で消す）。クラスタは MarkerClusterer が担当
+ *   4. 地図が動いて止まった（idle）ときに onBoundsChange で表示範囲を親に知らせ、親がピンを取り直す
+ * `useImperativeHandle` は、親が ref 経由で `panTo` などを呼べるようにする仕組み。
  */
 export function GoogleMap({
   initialCenter,

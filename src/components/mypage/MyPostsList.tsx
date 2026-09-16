@@ -14,6 +14,10 @@ export type FetchMyPosts = (tripId: string | null, offset: number) => Promise<My
  * F-RC-01 Task3 / trip-title Task5: 自分の投稿一覧（旅行タイトル表示・旅行で絞り込み）
  * 出典: docs/tasks/records/my-page/03-my-posts-list-handler.md
  *       docs/tasks/posts/trip-title/05-display-scope-control.md
+ *
+ * 【初心者向け】SpotPostListScreen と同じ「1 ページ目は props、以降は fetch」型。絞り込みは旅行（trip_id）の
+ * ドロップダウンだけで、変更すると 1 ページ目から取り直す。`isFirstRender` は「初回描画時に useEffect が走って
+ * 1 ページ目を二重に取ってしまう」のを避けるための旗。旅行タイトルを表示してよい数少ない画面の 1 つ（3.3.4）。
  */
 export function MyPostsList({
   initialPage,

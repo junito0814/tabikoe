@@ -5,6 +5,10 @@ import { MAX_MAP_PINS, type MapBounds } from "./get-map-pins";
  * F-RC-06 Task1: マイマップ用ピンデータ
  * 出典: docs/tasks/records/my-map/01-my-map-pin-data-handler.md
  *       要件定義書3.6.5
+ *
+ * 【初心者向け】DB から「自分の投稿があるスポット」と「行きたいスポット」を別々に取り（Promise.all で同時に）、
+ * `mergeMyMapPins` で 1 つの配列に合体させる。合体のルール（両方該当は posted、最大 100 件）は純粋関数にして
+ * 単体テストしやすくしてある。`spots!inner(...)` は「spots を結合し、範囲外のものは除く」という PostgREST の書き方。
  */
 export type MyMapMode = "posted" | "wishlist" | "both";
 

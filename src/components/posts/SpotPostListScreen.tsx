@@ -35,6 +35,11 @@ export type FetchSpotPosts = (spotId: string, sort: PostSort, offset: number) =>
  *       docs/tasks/records/wishlist/03-wishlist-entry-points-ui.md
  *
  * 地図のピンタップから開く。並び替えを変えると先頭から取り直す。投稿が無ければ「まだ投稿がありません」。
+ *
+ * 【初心者向け】一覧画面に共通する 3 つの型
+ *   1. 1 ページ目は Server Component（page.tsx）がサーバーで取ってきて props で渡す → 初回表示が速く、SEO にも効く
+ *   2. 2 ページ目以降はブラウザから `fetchPosts` で取り足す（無限スクロール＋「もっと見る」）
+ *   3. `fetchPosts` を props で差し替えられるようにしておくと、単体テストで本物の API を呼ばずに済む
  */
 export function SpotPostListScreen({
   spot,
@@ -53,6 +58,8 @@ export function SpotPostListScreen({
   const [nextOffset, setNextOffset] = useState<number | null>(initialPage.nextOffset);
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  // 通信のたびに番号を振り、応答が返ってきた時点で「まだ最新の要求か」を確かめる。
+  // 並び替えを素早く 2 回変えたとき、遅れて返ってきた古い結果で画面を上書きしないための仕組み
   const requestIdRef = useRef(0);
 
   const load = useCallback(
@@ -91,6 +98,7 @@ export function SpotPostListScreen({
     void load(sort, nextOffset, false);
   }, [isLoading, nextOffset, load, sort]);
 
+  // 画面の一番下に置いた見えない要素（sentinel）が見えたら loadMore を呼ぶ（IntersectionObserver）
   const sentinelRef = useInfiniteScroll(nextOffset !== null && !isLoading, loadMore);
 
   return (
@@ -177,6 +185,7 @@ export function SpotPostListScreen({
   );
 }
 
+/** 本番で使う取得関数。`/api/spots/[id]/posts` を呼ぶ。テストではこれを差し替える */
 async function defaultFetchPosts(spotId: string, sort: PostSort, offset: number): Promise<PostCardPage> {
   const params = new URLSearchParams({ sort, offset: String(offset) });
   const response = await fetchWithAuthRedirect(`/api/spots/${spotId}/posts?${params.toString()}`);

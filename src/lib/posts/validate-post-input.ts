@@ -19,6 +19,12 @@ import {
  *
  * 投稿作成（F-PO-01 Task3）と投稿編集（F-PO-02 Task1）で同じルールを適用するため、
  * 両方のRoute Handlerから呼び出す共通処理として切り出している。
+ *
+ * 【初心者向け】ブラウザから来た値は「何が入っているか分からない」前提で `unknown` 型で受け、
+ * ここで 1 つずつ型と範囲を確かめてから、安全な型（ValidatedPostFields）に変換して返す。
+ * 戻り値は { ok: true, fields } か { ok: false, error } のどちらか（判別可能なユニオン型）。
+ * 呼び出し側は `if (!validation.ok) return 400` と書けばよい。
+ * v3.0 ではカテゴリ 7 値・日付必須・lat/lng・status の検証がここに加わる（post-creation-v3 Task 1）。
  */
 export interface ValidatedPostFields {
   category: PostCategory;

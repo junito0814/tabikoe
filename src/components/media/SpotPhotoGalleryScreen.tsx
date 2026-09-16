@@ -20,6 +20,10 @@ export type FetchSpotMedia = (spotId: string, offset: number) => Promise<SpotMed
  * 正方形サムネイルのグリッド。列数はコンテナ幅から決める（gridColumnsForWidth）。
  * 動画は shared-ui/media-layout の MediaThumbnail で再生アイコンを重ねる。
  * 各サムネイルは元投稿の詳細（SC-05、/posts/[id]）へのリンク。40点ずつの無限スクロール。
+ *
+ * 【初心者向け】列数は CSS のメディアクエリではなく、`ResizeObserver` でコンテナの実際の幅を測って決めている
+ * （gridColumnsForWidth）。サイドバーの有無で幅が変わっても正しい列数になる。
+ * v3.0（photo-view）ではこの部品を「投稿一覧の写真切替」として再利用し、単独画面は廃止する。
  */
 export function SpotPhotoGalleryScreen({
   spot,

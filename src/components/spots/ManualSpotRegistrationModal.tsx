@@ -20,6 +20,11 @@ const DEFAULT_ZOOM = 17;
  * ピンは画面中央に固定し、地図側をドラッグして位置を合わせる「中央固定ピン」方式。
  * 確定時に地図中心の緯度経度をPOST /api/spotsへ送り、半径50m以内に既存スポットがあれば
  * 登録されず、その既存スポットの選択を促す（要件定義書3.3.5）。
+ *
+ * 【初心者向け】Google マップは React の部品ではないので、`useRef` で div を確保し、
+ * `new google.maps.Map(div, ...)` で自分で生成する（生成は 1 回だけ。mapRef に入れて再生成を防ぐ）。
+ * ピンは地図の上に CSS で重ねた画像で、地図を動かすと「地図の中心＝ピンの位置」になる。
+ * v3.0 ではこのモーダルは廃止され、地図部分が SC-03 の上 1/3（PostLocationMap）へ移る。
  */
 export function ManualSpotRegistrationModal({
   initialName,
@@ -52,6 +57,7 @@ export function ManualSpotRegistrationModal({
     });
   }, []);
 
+  // Google Maps のスクリプト読み込み（useGoogleMaps）が "ready" になってから地図を生成する
   useEffect(() => {
     if (mapsState !== "ready" || !mapContainerRef.current || mapRef.current) {
       return;
@@ -77,6 +83,7 @@ export function ManualSpotRegistrationModal({
     moveToCurrentLocation();
   }, [mapsState, moveToCurrentLocation]);
 
+  // 「この位置で登録」: 地図の中心座標を読み取って POST。409 は「50m 以内に既存あり」の合図
   const handleRegister = async () => {
     const center = mapRef.current?.getCenter();
     if (!center || isSubmitting) return;

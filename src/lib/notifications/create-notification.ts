@@ -11,6 +11,10 @@ import type { NotificationType } from "./catalog";
  *
  * 書き込みは service_role で行う（notifications への INSERT は authenticated に許していない）。
  * 通知の作成失敗で本来の操作（コメント投稿等）を失敗させないため、例外は投げない。
+ *
+ * 【初心者向け】通知は「メールを送る」のではなく notifications テーブルに 1 行足すだけ。
+ * 通知一覧（SC-14）とメニューバーの未読バッジがその行を読む。種類（type）と「何の id を related_id に入れるか」は
+ * catalog.ts に一覧があり、しおりの通知（v3.0）もそこに追加する。
  */
 export interface CreateNotificationInput {
   /** 通知を受け取るユーザー */

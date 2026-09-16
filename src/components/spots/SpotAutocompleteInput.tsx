@@ -41,6 +41,11 @@ async function searchSpotsFromApi(query: string): Promise<SearchResult> {
  * 採番されたIDを投稿に設定する（要件定義書3.3.5「手動登録スポットの共有」と同じく、
  * Places由来のスポットも登録して以降の候補に載せる）。
  * 候補が無い場合はSC-19（手動登録モーダル）への導線を出す。
+ *
+ * 【初心者向け】入力のたびに API を叩かないよう、300ms 入力が止まってから検索する（debounce。下の setTimeout）。
+ * 候補は「登録済み（id あり）」と「Google 由来で未登録（id なし）」の 2 種類があり、後者は選んだ時点で
+ * POST /api/spots で登録して id を作る。50m 以内に既存があるとサーバーが 409 で既存を返すので、それに寄せる。
+ * v3.0 では SC-19 のモーダルは廃止され、この部品は「変更」ボタンの先で使われる。
  */
 export function SpotAutocompleteInput({
   selectedSpot,
@@ -71,6 +76,8 @@ export function SpotAutocompleteInput({
     searchSpotsRef.current = searchSpots;
   }, [searchSpots]);
 
+  // debounce: 入力が変わるたびにタイマーを張り直し、300ms 止まったときだけ検索する。
+  // cleanup（return の clearTimeout）が前回のタイマーを消すので、連続入力では最後の 1 回だけ走る
   useEffect(() => {
     if (trimmedQuery.length === 0) {
       return;
@@ -151,6 +158,7 @@ export function SpotAutocompleteInput({
     }
   };
 
+  // 選択済みなら入力欄の代わりにスポット名と「変更」を出す（変更で null に戻して再検索）
   if (selectedSpot) {
     return (
       <div className="w-full">
