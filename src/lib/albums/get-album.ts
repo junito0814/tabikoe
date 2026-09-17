@@ -194,8 +194,6 @@ export async function getAlbumDetail(
 
   const [members, postsResult, itineraryMembership] = await Promise.all([
     getAlbumMembers(admin, tripId),
-    // しおりのメンバーは アルバムのメンバーとは別（3.11.7）。両方に該当するときだけ「しおりを見る」を出す
-    admin.from("itinerary_members").select("itinerary_id, itineraries!inner(trip_id)").eq("user_id", viewerId).eq("itineraries.trip_id", tripId).maybeSingle(),
     admin
       .from("posts")
       .select(
@@ -208,6 +206,8 @@ export async function getAlbumDetail(
       // F-AD-05: 非公開化された投稿は除く
       .is("hidden_at", null)
       .order("created_at", { ascending: false }),
+    // しおりのメンバーは アルバムのメンバーとは別（3.11.7）。両方に該当するときだけ「しおりを見る」を出す
+    admin.from("itinerary_members").select("itinerary_id, itineraries!inner(trip_id)").eq("user_id", viewerId).eq("itineraries.trip_id", tripId).maybeSingle(),
   ]);
   if (postsResult.error) throw postsResult.error;
 

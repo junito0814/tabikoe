@@ -111,39 +111,5 @@ export function buildComposeInitialState(query: ComposeQuery, context: ComposeCo
   return base;
 }
 
-/** 各入口が `/posts/new` を開くときの href（post-entry-points Task2 の compose-href と同じ規則） */
-export function composeHref(input:
-  | { kind: "current"; lat?: number; lng?: number }
-  | { kind: "location"; lat: number; lng: number }
-  | { kind: "spot"; spotId: string }
-  | { kind: "itinerary"; itineraryId: string; spotId: string; dayIndex?: number | null }
-  | { kind: "draft"; draftId: string }
-): string {
-  const params = new URLSearchParams();
-  switch (input.kind) {
-    case "current":
-      if (typeof input.lat === "number" && typeof input.lng === "number") {
-        params.set("lat", String(input.lat));
-        params.set("lng", String(input.lng));
-      }
-      params.set("from", "current");
-      break;
-    case "location":
-      params.set("lat", String(input.lat));
-      params.set("lng", String(input.lng));
-      break;
-    case "spot":
-      params.set("spot", input.spotId);
-      break;
-    case "itinerary":
-      params.set("itinerary", input.itineraryId);
-      params.set("spot", input.spotId);
-      if (input.dayIndex) params.set("day", String(input.dayIndex));
-      break;
-    case "draft":
-      params.set("draft", input.draftId);
-      break;
-  }
-  const query = params.toString();
-  return query ? `/posts/new?${query}` : "/posts/new";
-}
+/** 各入口が `/posts/new` を開くときの href（本体は lib/posts/compose-href.ts。post-entry-points Task2） */
+export { composeHref } from "./compose-href";

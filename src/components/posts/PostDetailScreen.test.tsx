@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import { PostDetailScreen } from "./PostDetailScreen";
 import type { PostDetailData } from "@/lib/posts/post-detail";
 
@@ -14,7 +14,7 @@ const TRIP_TITLE = "2026年夏の東北旅行";
 
 const post: PostDetailData = {
   id: "p1",
-  spot: { id: "s1", name: "東京駅 グランスタ", prefecture: "東京都" },
+  spot: { id: "s1", name: "東京駅 グランスタ", prefecture: "東京都", lat: 35.68, lng: 139.76, isManualSpot: true },
   category: "グルメ",
   visitDate: "2026-09-01",
   duration: "1時間以内",
@@ -47,17 +47,29 @@ describe("PostDetailScreen（SC-05）", () => {
     expect(screen.getByText("グルメ")).toBeInTheDocument();
     expect(screen.getByText(new Date("2026-09-01").toLocaleDateString("ja-JP"))).toBeInTheDocument();
     expect(screen.getByText("1時間以内")).toBeInTheDocument();
-    expect(screen.getByText("¥1,200")).toBeInTheDocument();
+    expect(screen.getByText("¥1,200/人")).toBeInTheDocument();
     expect(screen.getByLabelText("星4")).toBeInTheDocument();
     expect(screen.getByAltText("東京駅 グランスタの写真 1")).toBeInTheDocument();
     expect(screen.getByAltText("東京駅 グランスタの動画 2")).toBeInTheDocument();
     expect(screen.getByText("駅弁がとても美味しかった")).toBeInTheDocument();
     expect(screen.getByText("たろう")).toBeInTheDocument();
-    expect(screen.getByText(new Date("2026-09-02T03:04:05Z").toLocaleString("ja-JP"))).toBeInTheDocument();
-    // 組み込み: 行きたい・いいね・コメント欄
-    expect(screen.getByRole("button", { name: "行きたいに保存" })).toBeInTheDocument();
+    expect(screen.getByText(`${new Date("2026-09-02T03:04:05Z").toLocaleString("ja-JP")} 投稿`)).toBeInTheDocument();
+    // 組み込み: 保存（＋）・いいね・コメント欄
+    expect(screen.getByRole("button", { name: "保存する" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "いいねする" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: /コメント/ })).toBeInTheDocument();
+  });
+
+  it("v3.0: 見出しはスポット名でスポット別一覧へのリンク。タビコエだけの場所・地図で見る・自分も投稿する", () => {
+    render(<PostDetailScreen post={post} initialComments={noComments} />);
+    const heading = screen.getByRole("heading", { level: 1 });
+    expect(heading).toHaveTextContent("東京駅 グランスタ");
+    expect(heading).toHaveTextContent("タビコエだけの場所");
+    expect(heading.querySelector("a")).toHaveAttribute("href", "/spots/s1");
+    const mapHref = new URL(screen.getByRole("link", { name: /地図で見る/ }).getAttribute("href") ?? "", "https://example.com");
+    expect(mapHref.pathname).toBe("/map");
+    expect(mapHref.searchParams.get("spot")).toBe("s1");
+    expect(screen.getByRole("link", { name: /自分も投稿する/ })).toHaveAttribute("href", "/posts/new?spot=s1");
   });
 
   it("旅行タイトルは画面のどこにも表示されない", () => {
@@ -74,8 +86,12 @@ describe("PostDetailScreen（SC-05）", () => {
     expect(screen.queryByRole("link", { name: "編集" })).toBeNull();
     unmount();
     render(<PostDetailScreen post={{ ...post, isOwner: true }} initialComments={noComments} />);
-    expect(screen.getByRole("link", { name: "編集" })).toHaveAttribute("href", "/posts/p1/edit");
+    expect(screen.queryByRole("link", { name: "通報する" })).toBeNull();
+    // 本人は「⋯」の中に編集・削除
+    fireEvent.click(screen.getByRole("button", { name: "その他" }));
+    expect(screen.getByRole("menuitem", { name: "編集" })).toHaveAttribute("href", "/posts/p1/edit");
     expect(screen.getByRole("button", { name: "この投稿を削除" })).toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: /自分も投稿する/ })).toBeNull();
   });
 
   it("非公開投稿ではいいねボタンとコメントフォームを出さない", () => {
