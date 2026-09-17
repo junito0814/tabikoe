@@ -37,45 +37,45 @@ export function PostDetailScreen({
   const cost = formatCost(post.cost);
 
   return (
-    <div className="flex min-h-screen flex-col items-center bg-[#FBF6F0] px-4 py-6">
+    <div className="flex min-h-screen flex-col items-center bg-app px-4 py-6">
       <article className="flex w-full max-w-[520px] flex-col gap-4">
         <header className="flex flex-col gap-2">
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
-              <Link href={`/spots/${post.spot.id}`} className="block truncate text-[18px] font-bold text-[#3D3A35]">
+              <Link href={`/spots/${post.spot.id}`} className="block truncate text-[18px] font-bold text-ink">
                 {post.spot.name}
               </Link>
-              <p className="mt-0.5 text-[11px] text-[#9C9488]">
+              <p className="mt-0.5 text-[11px] text-muted">
                 {post.spot.prefecture ?? "都道府県未設定"}
-                {post.visibility === "private" && <span className="ml-2 rounded-full bg-[#E8E1D8] px-2 py-0.5 text-[#3D3A35]">非公開</span>}
+                {post.visibility === "private" && <span className="ml-2 rounded-full bg-line px-2 py-0.5 text-ink">非公開</span>}
               </p>
             </div>
             <WishlistButton spotId={post.spot.id} initialSaved={post.isWishlisted} className="shrink-0" />
           </div>
-          <dl className="flex flex-wrap gap-x-4 gap-y-1 text-[12px] text-[#3D3A35]">
+          <dl className="flex flex-wrap gap-x-4 gap-y-1 text-[12px] text-ink">
             <div className="flex gap-1">
-              <dt className="text-[#9C9488]">カテゴリ</dt>
-              <dd className="rounded-full bg-white px-2 text-[#C4703F]">{post.category}</dd>
+              <dt className="text-muted">カテゴリ</dt>
+              <dd className="rounded-full bg-surface px-2 text-accent">{post.category}</dd>
             </div>
             <div className="flex gap-1">
-              <dt className="text-[#9C9488]">訪問日</dt>
+              <dt className="text-muted">訪問日</dt>
               <dd>{post.visitDate ? new Date(post.visitDate).toLocaleDateString("ja-JP") : "未入力"}</dd>
             </div>
             <div className="flex gap-1">
-              <dt className="text-[#9C9488]">滞在時間</dt>
+              <dt className="text-muted">滞在時間</dt>
               <dd>{post.duration ?? "未入力"}</dd>
             </div>
             <div className="flex gap-1">
-              <dt className="text-[#9C9488]">費用</dt>
+              <dt className="text-muted">費用</dt>
               <dd>{cost ?? "未入力"}</dd>
             </div>
             <div className="flex gap-1">
-              <dt className="text-[#9C9488]">評価</dt>
+              <dt className="text-muted">評価</dt>
               <dd aria-label={post.rating !== null ? `星${post.rating}` : "未評価"}>
                 {post.rating !== null ? (
                   <>
-                    <span className="text-[#C4703F]">{"★".repeat(post.rating)}</span>
-                    <span className="text-[#E8E1D8]">{"★".repeat(5 - post.rating)}</span>
+                    <span className="text-accent">{"★".repeat(post.rating)}</span>
+                    <span className="text-line">{"★".repeat(5 - post.rating)}</span>
                   </>
                 ) : (
                   "未評価"
@@ -92,24 +92,24 @@ export function PostDetailScreen({
         )}
 
         {post.comment && (
-          <p className="whitespace-pre-wrap break-words text-[14px] leading-[1.8] text-[#3D3A35]">{post.comment}</p>
+          <p className="whitespace-pre-wrap break-words text-[14px] leading-[1.8] text-ink">{post.comment}</p>
         )}
 
-        <div className="flex items-center justify-between gap-3 border-t border-[#E8E1D8] pt-3">
+        <div className="flex items-center justify-between gap-3 border-t border-line pt-3">
           {post.author.isDeleted ? (
-            <span className="flex items-center gap-2 text-[12px] text-[#9C9488]">
+            <span className="flex items-center gap-2 text-[12px] text-muted">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src={post.author.avatarUrl} alt="" className="h-7 w-7 rounded-full object-cover" />
               {post.author.displayName}
             </span>
           ) : (
-            <Link href={`/users/${post.author.id}`} className="flex items-center gap-2 text-[12px] text-[#3D3A35]">
+            <Link href={`/users/${post.author.id}`} className="flex items-center gap-2 text-[12px] text-ink">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src={post.author.avatarUrl} alt={`${post.author.displayName}のアイコン画像`} className="h-7 w-7 rounded-full object-cover" />
               <span className="font-medium">{post.author.displayName}</span>
             </Link>
           )}
-          <time dateTime={post.createdAt} className="text-[11px] text-[#9C9488]">
+          <time dateTime={post.createdAt} className="text-[11px] text-muted">
             {new Date(post.createdAt).toLocaleString("ja-JP")}
           </time>
         </div>
@@ -120,7 +120,7 @@ export function PostDetailScreen({
           )}
           {post.isOwner ? (
             <>
-              <Link href={`/posts/${post.id}/edit`} className="text-[13px] font-medium text-[#3D3A35] underline underline-offset-2">
+              <Link href={`/posts/${post.id}/edit`} className="text-[13px] font-medium text-ink underline underline-offset-2">
                 編集
               </Link>
               <DeletePostButton postId={post.id} />

@@ -9,7 +9,7 @@ import { ErrorNotice } from "@/components/notices/ErrorNotice";
 import { ERROR_MESSAGES } from "@/components/notices/error-messages";
 import { outfit, lora } from "@/app/fonts";
 
-const MAIN = "#C4703F";
+const MAIN = "var(--accent)";
 
 /**
  * F-AC-01 Task3（SC-01 ログイン画面）/ Task7（SC-20 アカウント新規作成画面）
@@ -128,21 +128,21 @@ export default function AuthScreen({ mode }: { mode: AuthMode }) {
 
     return (
         <div
-            className={`${outfit.className} flex min-h-screen flex-col items-center justify-center bg-[#FBF6F0] px-6`}
+            className={`${outfit.className} flex min-h-screen flex-col items-center justify-center bg-app px-6`}
         >
             <div className="flex w-full max-w-[360px] flex-col items-center">
                 <div className="relative mb-6 flex h-[160px] w-[160px] items-center justify-center">
-                    <div className="absolute h-[120px] w-[120px] rounded-full border border-[#E8E1D8] opacity-60" />
-                    <div className="absolute h-[160px] w-[160px] rounded-full border border-[#E8E1D8] opacity-30" />
+                    <div className="absolute h-[120px] w-[120px] rounded-full border border-line opacity-60" />
+                    <div className="absolute h-[160px] w-[160px] rounded-full border border-line opacity-30" />
                     <AppLogoIcon />
                 </div>
 
                 <h1
-                    className={`${lora.className} mb-2.5 text-[26px] font-bold tracking-[2px] text-[#3D3A35]`}
+                    className={`${lora.className} mb-2.5 text-[26px] font-bold tracking-[2px] text-ink`}
                 >
                     タビコエ
                 </h1>
-                <p className="mb-10 text-center text-[13px] leading-[1.7] tracking-[0.3px] text-[#9C9488]">
+                <p className="mb-10 text-center text-[13px] leading-[1.7] tracking-[0.3px] text-muted">
                     {isAdminLogin ? (
                         <>管理者ログイン</>
                     ) : (
@@ -166,7 +166,7 @@ export default function AuthScreen({ mode }: { mode: AuthMode }) {
                         />
                         <span
                             aria-hidden
-                            className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-[6px] border-[1.5px] transition-colors peer-focus-visible:ring-2 peer-focus-visible:ring-[#C4703F] peer-focus-visible:ring-offset-2 ${agreed ? "bg-[#C4703F] border-[#C4703F]" : "border-[#E8E1D8] bg-transparent"
+                            className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-[6px] border-[1.5px] transition-colors peer-focus-visible:ring-2 peer-focus-visible:ring-accent peer-focus-visible:ring-offset-2 ${agreed ? "bg-accent border-accent" : "border-line bg-transparent"
                                 }`}
                         >
                             {agreed && (
@@ -175,10 +175,10 @@ export default function AuthScreen({ mode }: { mode: AuthMode }) {
                                 </svg>
                             )}
                         </span>
-                        <span className="select-none text-[13px] leading-[1.65] text-[#3D3A35]">
-                            <span className="font-medium text-[#C4703F]">利用規約</span>
+                        <span className="select-none text-[13px] leading-[1.65] text-ink">
+                            <span className="font-medium text-accent">利用規約</span>
                             {" と "}
-                            <span className="font-medium text-[#C4703F]">個人情報保護方針</span>
+                            <span className="font-medium text-accent">個人情報保護方針</span>
                             {" に同意する"}
                         </span>
                     </label>
@@ -188,10 +188,10 @@ export default function AuthScreen({ mode }: { mode: AuthMode }) {
                     type="button"
                     onClick={handleSubmit}
                     disabled={!canSubmit}
-                    className="flex h-[52px] w-full items-center justify-center gap-3 rounded-[10px] border border-[#E8E1D8] bg-white transition-opacity disabled:cursor-not-allowed disabled:opacity-45 enabled:cursor-pointer enabled:shadow-[0_2px_16px_rgba(61,58,53,0.1)]"
+                    className="flex h-[52px] w-full items-center justify-center gap-3 rounded-[10px] border border-line bg-surface transition-opacity disabled:cursor-not-allowed disabled:opacity-45 enabled:cursor-pointer enabled:shadow-card"
                 >
                     <GoogleIcon />
-                    <span className="text-[15px] font-semibold tracking-[0.2px] text-[#3D3A35]">
+                    <span className="text-[15px] font-semibold tracking-[0.2px] text-ink">
                         {isLoading
                             ? "リダイレクト中..."
                             : isSignup
@@ -202,18 +202,18 @@ export default function AuthScreen({ mode }: { mode: AuthMode }) {
 
                 {hasError && <ErrorNotice className="mt-3 w-full" message={errorMessage} />}
 
-                <p className="mt-8 text-center text-[13px] leading-[1.7] text-[#9C9488]">
+                <p className="mt-8 text-center text-[13px] leading-[1.7] text-muted">
                     {isSignup ? (
                         <>
                             すでにアカウントをお持ちの方は{" "}
-                            <Link href="/login" className="font-medium text-[#C4703F] underline underline-offset-2">
+                            <Link href="/login" className="font-medium text-accent underline underline-offset-2">
                                 ログイン
                             </Link>
                         </>
                     ) : (
                         <>
                             アカウントをお持ちでない方は{" "}
-                            <Link href="/signup" className="font-medium text-[#C4703F] underline underline-offset-2">
+                            <Link href="/signup" className="font-medium text-accent underline underline-offset-2">
                                 新規登録
                             </Link>
                         </>

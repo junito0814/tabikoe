@@ -72,9 +72,9 @@ export default function AvatarUploadForm({ initialAvatarUrl }: { initialAvatarUr
       <img
         src={previewUrl}
         alt={selectedFile ? "選択したアイコン画像のプレビュー" : "現在のアイコン画像"}
-        className="h-20 w-20 rounded-full border border-[#E8E1D8] object-cover"
+        className="h-20 w-20 rounded-full border border-line object-cover"
       />
-      <label className="cursor-pointer text-[12px] font-medium text-[#C4703F] underline underline-offset-2">
+      <label className="cursor-pointer text-[12px] font-medium text-accent underline underline-offset-2">
         画像を選択
         <input
           type="file"
@@ -83,13 +83,13 @@ export default function AvatarUploadForm({ initialAvatarUrl }: { initialAvatarUr
           className="hidden"
         />
       </label>
-      {warning && <p className="text-[11px] text-[#C4703F]">{warning}</p>}
+      {warning && <p className="text-[11px] text-accent">{warning}</p>}
       {selectedFile && (
         <button
           type="button"
           onClick={handleUpload}
           disabled={isUploading}
-          className="h-9 rounded-[8px] bg-[#C4703F] px-4 text-[12px] font-semibold text-white disabled:cursor-not-allowed disabled:opacity-45"
+          className="h-9 rounded-[8px] bg-accent px-4 text-[12px] font-semibold text-white disabled:cursor-not-allowed disabled:opacity-45"
         >
           {isUploading ? "アップロード中..." : "アイコンを更新"}
         </button>

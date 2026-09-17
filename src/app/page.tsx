@@ -16,7 +16,7 @@ import { outfit, lora } from "./fonts";
  * v3.0 では、この画面が「検索トップ（ハブ）」に置き換わり、ログイン済みでもここに留まる予定（search-top ストーリー）。
  */
 
-const MAIN = "#C4703F";
+const MAIN = "var(--accent)";
 
 function AppLogoIcon() {
   return (
@@ -35,7 +35,7 @@ function NavLink({ href, label }: { href: string; label: string }) {
   return (
     <Link
       href={href}
-      className="flex h-12 w-full items-center justify-center rounded-[10px] border border-[#E8E1D8] bg-white text-[14px] font-semibold text-[#3D3A35] shadow-[0_2px_16px_rgba(61,58,53,0.06)]"
+      className="flex h-12 w-full items-center justify-center rounded-[10px] border border-line bg-surface text-[14px] font-semibold text-ink shadow-card"
     >
       {label}
     </Link>
@@ -63,14 +63,14 @@ export default async function Home({
 
   return (
     <div
-      className={`${outfit.className} flex min-h-screen flex-col items-center justify-center gap-8 bg-[#FBF6F0] px-6`}
+      className={`${outfit.className} flex min-h-screen flex-col items-center justify-center gap-8 bg-app px-6`}
     >
       <div className="flex flex-col items-center gap-3">
         <AppLogoIcon />
-        <h1 className={`${lora.className} text-[24px] font-bold tracking-[2px] text-[#3D3A35]`}>
+        <h1 className={`${lora.className} text-[24px] font-bold tracking-[2px] text-ink`}>
           タビコエ
         </h1>
-        <p className="text-center text-[13px] leading-[1.7] tracking-[0.3px] text-[#9C9488]">
+        <p className="text-center text-[13px] leading-[1.7] tracking-[0.3px] text-muted">
           みんなの旅の記録を、
           <br />
           次の旅のヒントに

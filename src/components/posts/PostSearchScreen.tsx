@@ -109,11 +109,11 @@ export function PostSearchScreen({
     (applied.duration !== null ? 1 : 0);
 
   return (
-    <div className="flex min-h-screen flex-col items-center bg-[#FBF6F0] px-4 py-6">
+    <div className="flex min-h-screen flex-col items-center bg-app px-4 py-6">
       <div className="w-full max-w-[520px]">
         <header className="mb-4 flex items-center justify-between">
-          <h1 className="text-[18px] font-bold text-[#3D3A35]">投稿を検索</h1>
-          <Link href="/map" className="text-[12px] font-medium text-[#9C9488] underline underline-offset-2">
+          <h1 className="text-[18px] font-bold text-ink">投稿を検索</h1>
+          <Link href="/map" className="text-[12px] font-medium text-muted underline underline-offset-2">
             地図へ戻る
           </Link>
         </header>
@@ -126,21 +126,21 @@ export function PostSearchScreen({
               onChange={(event) => setDraft((current) => ({ ...current, keyword: event.target.value }))}
               placeholder="スポット名で検索"
               aria-label="キーワード（スポット名）"
-              className="h-11 min-w-0 flex-1 rounded-[10px] border border-[#E8E1D8] bg-white px-3 text-[14px] text-[#3D3A35] focus:outline-none focus:ring-1 focus:ring-[#C4703F]"
+              className="h-11 min-w-0 flex-1 rounded-[10px] border border-line bg-surface px-3 text-[14px] text-ink focus:outline-none focus:ring-1 focus:ring-accent"
             />
             <button
               type="button"
               onClick={() => setIsPanelOpen((open) => !open)}
               aria-expanded={isPanelOpen}
               aria-controls="post-filter-panel"
-              className="h-11 shrink-0 rounded-[10px] border border-[#E8E1D8] bg-white px-3 text-[12px] font-semibold text-[#3D3A35]"
+              className="h-11 shrink-0 rounded-[10px] border border-line bg-surface px-3 text-[12px] font-semibold text-ink"
             >
               絞り込み{activeCount > 0 && `（${activeCount}）`}
             </button>
             <button
               type="submit"
               disabled={isLoading}
-              className="h-11 shrink-0 rounded-[10px] bg-[#C4703F] px-4 text-[13px] font-semibold text-white disabled:opacity-45"
+              className="h-11 shrink-0 rounded-[10px] bg-accent px-4 text-[13px] font-semibold text-white disabled:opacity-45"
             >
               検索
             </button>
@@ -149,10 +149,10 @@ export function PostSearchScreen({
           <div
             id="post-filter-panel"
             hidden={!isPanelOpen}
-            className="flex flex-col gap-4 rounded-[12px] border border-[#E8E1D8] bg-white p-4"
+            className="flex flex-col gap-4 rounded-[12px] border border-line bg-surface p-4"
           >
             <fieldset>
-              <legend className="mb-1.5 text-[12px] font-medium text-[#9C9488]">カテゴリ（複数選択可）</legend>
+              <legend className="mb-1.5 text-[12px] font-medium text-muted">カテゴリ（複数選択可）</legend>
               <div className="flex flex-wrap gap-1.5">
                 {POST_CATEGORIES.map((category) => {
                   const checked = draft.categories.includes(category);
@@ -160,7 +160,7 @@ export function PostSearchScreen({
                     <label
                       key={category}
                       className={`cursor-pointer rounded-full border px-3 py-1.5 text-[12px] font-medium ${
-                        checked ? "border-[#C4703F] bg-[#C4703F] text-white" : "border-[#E8E1D8] text-[#3D3A35]"
+                        checked ? "border-accent bg-accent text-white" : "border-line text-ink"
                       }`}
                     >
                       <input
@@ -177,15 +177,15 @@ export function PostSearchScreen({
             </fieldset>
 
             <fieldset>
-              <legend className="mb-1.5 text-[12px] font-medium text-[#9C9488]">
-                距離（地図の中心から）{!center && <span className="ml-1 text-[#C4703F]">※地図から開くと使えます</span>}
+              <legend className="mb-1.5 text-[12px] font-medium text-muted">
+                距離（地図の中心から）{!center && <span className="ml-1 text-accent">※地図から開くと使えます</span>}
               </legend>
               <div className="flex flex-wrap gap-1.5">
                 {DISTANCE_OPTIONS.map((option) => (
                   <label
                     key={option}
                     className={`cursor-pointer rounded-full border px-3 py-1.5 text-[12px] font-medium ${
-                      draft.distance === option ? "border-[#C4703F] bg-[#C4703F] text-white" : "border-[#E8E1D8] text-[#3D3A35]"
+                      draft.distance === option ? "border-accent bg-accent text-white" : "border-line text-ink"
                     } ${!center ? "opacity-45" : ""}`}
                   >
                     <input
@@ -203,13 +203,13 @@ export function PostSearchScreen({
             </fieldset>
 
             <fieldset>
-              <legend className="mb-1.5 text-[12px] font-medium text-[#9C9488]">費用（1人あたり）</legend>
+              <legend className="mb-1.5 text-[12px] font-medium text-muted">費用（1人あたり）</legend>
               <div className="flex flex-wrap gap-1.5">
                 {COST_RANGES.map((range) => (
                   <label
                     key={range}
                     className={`cursor-pointer rounded-full border px-3 py-1.5 text-[12px] font-medium ${
-                      draft.cost === range ? "border-[#C4703F] bg-[#C4703F] text-white" : "border-[#E8E1D8] text-[#3D3A35]"
+                      draft.cost === range ? "border-accent bg-accent text-white" : "border-line text-ink"
                     }`}
                   >
                     <input
@@ -226,13 +226,13 @@ export function PostSearchScreen({
             </fieldset>
 
             <fieldset>
-              <legend className="mb-1.5 text-[12px] font-medium text-[#9C9488]">滞在時間</legend>
+              <legend className="mb-1.5 text-[12px] font-medium text-muted">滞在時間</legend>
               <div className="flex flex-wrap gap-1.5">
                 {POST_DURATIONS.map((option) => (
                   <label
                     key={option}
                     className={`cursor-pointer rounded-full border px-3 py-1.5 text-[12px] font-medium ${
-                      draft.duration === option ? "border-[#C4703F] bg-[#C4703F] text-white" : "border-[#E8E1D8] text-[#3D3A35]"
+                      draft.duration === option ? "border-accent bg-accent text-white" : "border-line text-ink"
                     }`}
                   >
                     <input
@@ -249,10 +249,10 @@ export function PostSearchScreen({
             </fieldset>
 
             <div className="flex justify-between">
-              <button type="button" onClick={handleReset} className="text-[12px] font-medium text-[#9C9488] underline underline-offset-2">
+              <button type="button" onClick={handleReset} className="text-[12px] font-medium text-muted underline underline-offset-2">
                 条件をクリア
               </button>
-              <button type="submit" className="h-9 rounded-[8px] bg-[#3D3A35] px-4 text-[12px] font-semibold text-white">
+              <button type="submit" className="h-9 rounded-[8px] bg-ink px-4 text-[12px] font-semibold text-white">
                 この条件で検索
               </button>
             </div>
@@ -260,7 +260,7 @@ export function PostSearchScreen({
         </form>
 
         {posts.length === 0 && !isLoading && !errorMessage ? (
-          <p className="py-16 text-center text-[13px] text-[#9C9488]">条件に合う投稿がありません</p>
+          <p className="py-16 text-center text-[13px] text-muted">条件に合う投稿がありません</p>
         ) : (
           <ul className="flex flex-col gap-2.5">
             {posts.map((post) => (
@@ -281,7 +281,7 @@ export function PostSearchScreen({
             type="button"
             onClick={loadMore}
             disabled={isLoading}
-            className="mt-3 h-10 w-full rounded-[10px] border border-[#E8E1D8] bg-white text-[13px] font-semibold text-[#3D3A35] disabled:opacity-45"
+            className="mt-3 h-10 w-full rounded-[10px] border border-line bg-surface text-[13px] font-semibold text-ink disabled:opacity-45"
           >
             {isLoading ? "読み込み中…" : "もっと見る"}
           </button>

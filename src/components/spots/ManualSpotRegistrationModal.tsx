@@ -127,28 +127,28 @@ export function ManualSpotRegistrationModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
-      <div className="flex w-full max-w-[420px] flex-col gap-3 rounded-[14px] bg-white p-5 shadow-xl">
+      <div className="flex w-full max-w-[420px] flex-col gap-3 rounded-[14px] bg-surface p-5 shadow-xl">
         <div className="flex items-center justify-between">
-          <h2 className="text-[15px] font-bold text-[#3D3A35]">スポットを登録</h2>
+          <h2 className="text-[15px] font-bold text-ink">スポットを登録</h2>
           <button
             type="button"
             onClick={onClose}
-            className="text-[13px] text-[#9C9488] underline underline-offset-2"
+            className="text-[13px] text-muted underline underline-offset-2"
           >
             閉じる
           </button>
         </div>
 
-        <label className="text-[12px] font-medium text-[#9C9488]">
+        <label className="text-[12px] font-medium text-muted">
           スポット名
           <input
             value={name}
             onChange={(event) => setName(event.target.value)}
-            className="mt-1.5 h-11 w-full rounded-[10px] border border-[#E8E1D8] px-3 text-[14px] text-[#3D3A35] focus:outline-none focus:ring-1 focus:ring-[#C4703F]"
+            className="mt-1.5 h-11 w-full rounded-[10px] border border-line px-3 text-[14px] text-ink focus:outline-none focus:ring-1 focus:ring-accent"
           />
         </label>
 
-        <div className="relative h-[260px] w-full overflow-hidden rounded-[10px] bg-[#E8E1D8]">
+        <div className="relative h-[260px] w-full overflow-hidden rounded-[10px] bg-line">
           {mapsState === "error" || mapInitFailed ? (
             <div className="flex h-full items-center justify-center p-4">
               <ErrorNotice message={ERROR_MESSAGES.mapLoadFailure} />
@@ -158,7 +158,7 @@ export function ManualSpotRegistrationModal({
               <div ref={mapContainerRef} className="h-full w-full" />
               {mapsState === "loading" && (
                 <div className="absolute inset-0 flex items-center justify-center">
-                  <span className="text-[12px] text-[#9C9488]">地図を読み込んでいます…</span>
+                  <span className="text-[12px] text-muted">地図を読み込んでいます…</span>
                 </div>
               )}
               {/* 中央固定ピン。地図側を動かして位置を合わせる */}
@@ -166,7 +166,7 @@ export function ManualSpotRegistrationModal({
                 <svg width="32" height="40" viewBox="0 0 32 40" aria-hidden>
                   <path
                     d="M16 0C7.7 0 1 6.7 1 15c0 10.5 13.2 23.6 13.8 24.2a1.7 1.7 0 0 0 2.4 0C17.8 38.6 31 25.5 31 15 31 6.7 24.3 0 16 0z"
-                    fill="#C4703F"
+                    fill="var(--accent)"
                   />
                   <circle cx="16" cy="15" r="5.5" fill="#fff" />
                 </svg>
@@ -174,7 +174,7 @@ export function ManualSpotRegistrationModal({
               <button
                 type="button"
                 onClick={moveToCurrentLocation}
-                className="absolute right-2 top-2 rounded-[8px] border border-[#E8E1D8] bg-white px-2.5 py-1.5 text-[11px] font-medium text-[#3D3A35] shadow-sm"
+                className="absolute right-2 top-2 rounded-[8px] border border-line bg-surface px-2.5 py-1.5 text-[11px] font-medium text-ink shadow-sm"
               >
                 現在地
               </button>
@@ -182,19 +182,19 @@ export function ManualSpotRegistrationModal({
           )}
         </div>
 
-        <p className="text-[11px] leading-[1.6] text-[#9C9488]">
+        <p className="text-[11px] leading-[1.6] text-muted">
           地図を動かして、中央のピンを登録したい位置に合わせてください
         </p>
 
         {duplicateSpot && (
-          <div className="rounded-lg border border-[#E8E1D8] bg-[#FBF6F0] p-3">
-            <p className="mb-2 text-[12px] leading-[1.6] text-[#3D3A35]">
+          <div className="rounded-lg border border-line bg-tint p-3">
+            <p className="mb-2 text-[12px] leading-[1.6] text-ink">
               半径50m以内に「{duplicateSpot.name}」が登録済みです。こちらを使用してください。
             </p>
             <button
               type="button"
               onClick={() => onSelectExisting(duplicateSpot)}
-              className="h-9 w-full rounded-[8px] bg-[#C4703F] text-[12px] font-semibold text-white"
+              className="h-9 w-full rounded-[8px] bg-accent text-[12px] font-semibold text-white"
             >
               このスポットを選択
             </button>
@@ -207,7 +207,7 @@ export function ManualSpotRegistrationModal({
           type="button"
           onClick={handleRegister}
           disabled={isSubmitting || name.trim().length === 0 || mapsState !== "ready"}
-          className="h-11 w-full rounded-[10px] bg-[#C4703F] text-[14px] font-semibold text-white disabled:cursor-not-allowed disabled:opacity-45"
+          className="h-11 w-full rounded-[10px] bg-accent text-[14px] font-semibold text-white disabled:cursor-not-allowed disabled:opacity-45"
         >
           {isSubmitting ? "登録中..." : "この位置でスポットを登録"}
         </button>

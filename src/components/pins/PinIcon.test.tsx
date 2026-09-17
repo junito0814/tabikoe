@@ -9,22 +9,22 @@ import { PIN_STYLES, type PinType } from "./pin-styles";
  *       docs/tasks/shared-ui/pin-display-rules/02-map-pin-integration-interface.md 単体テスト
  * 「色情報を取り除いた状態でも3種別が形状・アイコンにより判別可能であること」（要件7.7）
  */
-const ALL_TYPES: PinType[] = ["normal", "wishlist", "posted"];
+const ALL_TYPES: PinType[] = ["post", "saved", "posted", "draft", "focus", "numbered", "cluster"];
 
 describe("PIN_STYLES（Task1）", () => {
-  it("3種別それぞれに異なる形状が割り当てられている", () => {
-    const shapes = ALL_TYPES.map((type) => PIN_STYLES[type].shape);
-    expect(new Set(shapes).size).toBe(3);
+  it("7種別それぞれが形状＋記号＋破線の組み合わせで判別できる（色に依存しない）", () => {
+    const shapes = ALL_TYPES.map((type) => `${PIN_STYLES[type].shape}/${PIN_STYLES[type].glyph}/${PIN_STYLES[type].dashed ? "dashed" : "solid"}`);
+    expect(new Set(shapes).size).toBe(ALL_TYPES.length);
   });
 
-  it("3種別それぞれに異なる色が割り当てられている", () => {
-    const colors = ALL_TYPES.map((type) => PIN_STYLES[type].color);
-    expect(new Set(colors).size).toBe(3);
-  });
-
-  it("3種別それぞれに異なるラベルが割り当てられている", () => {
+  it("7種別それぞれに異なるラベルが割り当てられている", () => {
     const labels = ALL_TYPES.map((type) => PIN_STYLES[type].label);
-    expect(new Set(labels).size).toBe(3);
+    expect(new Set(labels).size).toBe(ALL_TYPES.length);
+  });
+
+  it("みんなの投稿は青（accent）、保存済みは赤（saved）", () => {
+    expect(PIN_STYLES.post.color).toBe("accent");
+    expect(PIN_STYLES.saved.color).toBe("saved");
   });
 });
 
@@ -38,12 +38,12 @@ describe("PinIcon（Task1）", () => {
       unmount();
       return html;
     });
-    expect(new Set(rendered).size).toBe(3);
+    expect(new Set(rendered).size).toBe(ALL_TYPES.length);
   });
 
   it("種別のラベルがアクセシブルネームとして付く", () => {
-    render(<PinIcon type="wishlist" />);
-    expect(screen.getByRole("img", { name: PIN_STYLES.wishlist.label })).toBeInTheDocument();
+    render(<PinIcon type="saved" />);
+    expect(screen.getByRole("img", { name: PIN_STYLES.saved.label })).toBeInTheDocument();
   });
 });
 

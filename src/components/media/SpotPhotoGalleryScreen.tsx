@@ -73,16 +73,16 @@ export function SpotPhotoGalleryScreen({
   const sentinelRef = useInfiniteScroll(nextOffset !== null && !isLoading, () => void loadMore());
 
   return (
-    <div className="flex min-h-screen flex-col items-center bg-[#FBF6F0] px-4 py-6">
+    <div className="flex min-h-screen flex-col items-center bg-app px-4 py-6">
       <div className="w-full max-w-[760px]">
         <header className="mb-4 flex items-center justify-between gap-3">
           <div className="min-w-0">
-            <h1 className="truncate text-[18px] font-bold text-[#3D3A35]">{spot.name}</h1>
-            <p className="mt-0.5 text-[11px] text-[#9C9488]">写真・動画</p>
+            <h1 className="truncate text-[18px] font-bold text-ink">{spot.name}</h1>
+            <p className="mt-0.5 text-[11px] text-muted">写真・動画</p>
           </div>
           <Link
             href={`/spots/${spot.id}`}
-            className="shrink-0 text-[12px] font-medium text-[#9C9488] underline underline-offset-2"
+            className="shrink-0 text-[12px] font-medium text-muted underline underline-offset-2"
           >
             投稿一覧へ
           </Link>
@@ -90,14 +90,14 @@ export function SpotPhotoGalleryScreen({
 
         <div ref={containerRef} data-columns={columns}>
           {items.length === 0 ? (
-            <p className="py-16 text-center text-[13px] text-[#9C9488]">まだ写真・動画がありません</p>
+            <p className="py-16 text-center text-[13px] text-muted">まだ写真・動画がありません</p>
           ) : (
             <ul
               className="grid gap-0.5"
               style={{ gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))` }}
             >
               {items.map((item) => (
-                <li key={item.id} className="aspect-square overflow-hidden bg-[#E8E1D8]">
+                <li key={item.id} className="aspect-square overflow-hidden bg-line">
                   <Link href={`/posts/${item.postId}`} className="block h-full w-full" aria-label={item.alt}>
                     <MediaThumbnail item={item} />
                   </Link>
@@ -115,7 +115,7 @@ export function SpotPhotoGalleryScreen({
             type="button"
             onClick={() => void loadMore()}
             disabled={isLoading}
-            className="mt-3 h-10 w-full rounded-[10px] border border-[#E8E1D8] bg-white text-[13px] font-semibold text-[#3D3A35] disabled:opacity-45"
+            className="mt-3 h-10 w-full rounded-[10px] border border-line bg-surface text-[13px] font-semibold text-ink disabled:opacity-45"
           >
             {isLoading ? "読み込み中…" : "もっと見る"}
           </button>

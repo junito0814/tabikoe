@@ -34,7 +34,7 @@ export default async function SpotPhotosPage({ params }: { params: Promise<{ id:
 
   if (initialPage === null) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-[#FBF6F0] px-6">
+      <div className="flex min-h-screen items-center justify-center bg-app px-6">
         <ErrorNotice message={ERROR_MESSAGES.dbLoadFailure} retryable className="w-full max-w-[360px]" />
       </div>
     );

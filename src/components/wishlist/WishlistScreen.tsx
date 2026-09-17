@@ -46,12 +46,12 @@ export function WishlistScreen({
   };
 
   return (
-    <div className="flex min-h-screen flex-col items-center gap-5 bg-[#FBF6F0] px-6 py-12">
-      <h1 className="text-[16px] font-bold text-[#3D3A35]">行きたいスポット</h1>
+    <div className="flex min-h-screen flex-col items-center gap-5 bg-app px-6 py-12">
+      <h1 className="text-[16px] font-bold text-ink">行きたいスポット</h1>
 
       <div className="w-full max-w-[420px]">
         {items.length === 0 ? (
-          <p className="text-center text-[13px] text-[#9C9488]">
+          <p className="text-center text-[13px] text-muted">
             まだ「行きたい」スポットはありません
           </p>
         ) : (
@@ -59,7 +59,7 @@ export function WishlistScreen({
             {items.map((item) => (
               <li
                 key={item.spotId}
-                className="flex items-center gap-3 rounded-[12px] border border-[#E8E1D8] bg-white p-2.5"
+                className="flex items-center gap-3 rounded-[12px] border border-line bg-surface p-2.5"
               >
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
@@ -69,8 +69,8 @@ export function WishlistScreen({
                   className="h-16 w-16 shrink-0 rounded-[8px] object-cover"
                 />
                 <div className="min-w-0 flex-1">
-                  <p className="truncate text-[14px] font-semibold text-[#3D3A35]">{item.name}</p>
-                  <p className="mt-0.5 text-[11px] text-[#9C9488]">
+                  <p className="truncate text-[14px] font-semibold text-ink">{item.name}</p>
+                  <p className="mt-0.5 text-[11px] text-muted">
                     {item.prefecture ?? "都道府県未設定"}
                     {!item.hasPost && " ・ 投稿なし"}
                   </p>
@@ -80,7 +80,7 @@ export function WishlistScreen({
                   onClick={() => handleRemove(item.spotId)}
                   disabled={pendingId !== null}
                   aria-label={`${item.name}の保存を解除`}
-                  className="shrink-0 text-[12px] font-medium text-[#C4703F] underline underline-offset-2 disabled:opacity-45"
+                  className="shrink-0 text-[12px] font-medium text-accent underline underline-offset-2 disabled:opacity-45"
                 >
                   {pendingId === item.spotId ? "解除中..." : "解除"}
                 </button>

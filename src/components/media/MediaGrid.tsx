@@ -53,7 +53,7 @@ function MediaCell({
     <button
       type="button"
       onClick={() => item.mediaType === "video" && setIsPlaying(true)}
-      className={`relative block h-full w-full overflow-hidden bg-[#E8E1D8] ${className ?? ""}`}
+      className={`relative block h-full w-full overflow-hidden bg-line ${className ?? ""}`}
     >
       <MediaThumbnail item={item} />
 

@@ -62,7 +62,7 @@ export function LikeButton({
       aria-pressed={liked}
       aria-label={liked ? "いいねを取り消す" : "いいねする"}
       className={`inline-flex h-9 items-center gap-1.5 rounded-full border px-3 text-[12px] font-semibold transition-colors disabled:opacity-60 ${
-        liked ? "border-[#C4703F] bg-[#C4703F] text-white" : "border-[#E8E1D8] bg-white text-[#3D3A35]"
+        liked ? "border-accent bg-accent text-white" : "border-line bg-surface text-ink"
       } ${className ?? ""}`}
     >
       <svg width="14" height="14" viewBox="0 0 24 24" aria-hidden="true">

@@ -78,7 +78,7 @@ function StarRating({ value, onChange }: { value: number; onChange: (value: numb
           aria-label={`${star}`}
           onClick={() => onChange(star)}
           className="text-[26px] leading-none"
-          style={{ color: star <= value ? "#C4703F" : "#E8E1D8" }}
+          style={{ color: star <= value ? "var(--accent)" : "var(--line)" }}
         >
           ★
         </button>
@@ -91,14 +91,14 @@ function StarRating({ value, onChange }: { value: number; onChange: (value: numb
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div className="w-full">
-      <span className="mb-1.5 block text-[12px] font-medium text-[#9C9488]">{label}</span>
+      <span className="mb-1.5 block text-[12px] font-medium text-muted">{label}</span>
       {children}
     </div>
   );
 }
 
 const selectClass =
-  "h-11 w-full rounded-[10px] border border-[#E8E1D8] bg-white px-3 text-[14px] text-[#3D3A35] focus:outline-none focus:ring-1 focus:ring-[#C4703F]";
+  "h-11 w-full rounded-[10px] border border-line bg-surface px-3 text-[14px] text-ink focus:outline-none focus:ring-1 focus:ring-accent";
 
 export default function PostForm({ initialPost }: { initialPost?: PostFormInitialValues }) {
   const router = useRouter();
@@ -310,8 +310,8 @@ export default function PostForm({ initialPost }: { initialPost?: PostFormInitia
 
   // ---- ここから画面の描画。上から順に、要件定義書 3.3.1 の項目の並び ----
   return (
-    <div className="flex min-h-screen flex-col items-center gap-5 bg-[#FBF6F0] px-6 py-12">
-      <h1 className="text-[16px] font-bold text-[#3D3A35]">
+    <div className="flex min-h-screen flex-col items-center gap-5 bg-app px-6 py-12">
+      <h1 className="text-[16px] font-bold text-ink">
         {isEditMode ? "投稿を編集" : "新規投稿"}
       </h1>
 
@@ -371,7 +371,7 @@ export default function PostForm({ initialPost }: { initialPost?: PostFormInitia
             className={selectClass}
           />
           {isCostInvalid && (
-            <p className="mt-1 text-[11px] text-[#C4703F]">
+            <p className="mt-1 text-[11px] text-accent">
               0〜{MAX_POST_COST.toLocaleString()}の整数で入力してください
             </p>
           )}
@@ -412,7 +412,7 @@ export default function PostForm({ initialPost }: { initialPost?: PostFormInitia
             className="text-[12px]"
           />
           {photos.length > 0 && (
-            <p className="mt-1 text-[11px] text-[#9C9488]">{photos.length}点を選択中</p>
+            <p className="mt-1 text-[11px] text-muted">{photos.length}点を選択中</p>
           )}
           <div className="mt-2">
             <UploadNotice />
@@ -424,10 +424,10 @@ export default function PostForm({ initialPost }: { initialPost?: PostFormInitia
             value={comment}
             onChange={(event) => setComment(event.target.value)}
             rows={5}
-            className="w-full rounded-[10px] border border-[#E8E1D8] bg-white px-3 py-2.5 text-[14px] leading-[1.7] text-[#3D3A35] focus:outline-none focus:ring-1 focus:ring-[#C4703F]"
+            className="w-full rounded-[10px] border border-line bg-surface px-3 py-2.5 text-[14px] leading-[1.7] text-ink focus:outline-none focus:ring-1 focus:ring-accent"
           />
           <p
-            className={`mt-1 text-[11px] ${isCommentTooLong ? "text-[#C4703F]" : "text-[#9C9488]"}`}
+            className={`mt-1 text-[11px] ${isCommentTooLong ? "text-accent" : "text-muted"}`}
           >
             {commentLength} / {MAX_POST_COMMENT_LENGTH}
           </p>
@@ -450,7 +450,7 @@ export default function PostForm({ initialPost }: { initialPost?: PostFormInitia
           type="button"
           onClick={handleSubmit}
           disabled={!canSubmit}
-          className="h-12 w-full rounded-[10px] bg-[#C4703F] text-[15px] font-semibold text-white disabled:cursor-not-allowed disabled:opacity-45"
+          className="h-12 w-full rounded-[10px] bg-accent text-[15px] font-semibold text-white disabled:cursor-not-allowed disabled:opacity-45"
         >
           {isSubmitting
             ? isEditMode
@@ -462,7 +462,7 @@ export default function PostForm({ initialPost }: { initialPost?: PostFormInitia
         </button>
 
         {initialPost && (
-          <div className="flex justify-center border-t border-[#E8E1D8] pt-5">
+          <div className="flex justify-center border-t border-line pt-5">
             <DeletePostButton postId={initialPost.postId} />
           </div>
         )}

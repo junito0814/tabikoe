@@ -21,19 +21,19 @@ export function ErrorNotice({ message, onRetry, retryable, className }: ErrorNot
 
   return (
     <div
-      className={`flex items-center gap-2 rounded-lg border border-[#C4703F]/25 bg-[#C4703F]/[0.08] px-3.5 py-2.5 ${className ?? ""}`}
+      className={`flex items-center gap-2 rounded-lg border border-accent/25 bg-accent/[0.08] px-3.5 py-2.5 ${className ?? ""}`}
     >
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" className="shrink-0">
-        <circle cx="12" cy="12" r="9" stroke="#C4703F" strokeWidth="1.8" />
-        <line x1="12" y1="8" x2="12" y2="13" stroke="#C4703F" strokeWidth="1.8" strokeLinecap="round" />
-        <circle cx="12" cy="16.5" r="1" fill="#C4703F" />
+        <circle cx="12" cy="12" r="9" stroke="var(--accent)" strokeWidth="1.8" />
+        <line x1="12" y1="8" x2="12" y2="13" stroke="var(--accent)" strokeWidth="1.8" strokeLinecap="round" />
+        <circle cx="12" cy="16.5" r="1" fill="var(--accent)" />
       </svg>
-      <span className="flex-1 text-[13px] leading-[1.5] text-[#C4703F]">{message}</span>
+      <span className="flex-1 text-[13px] leading-[1.5] text-accent">{message}</span>
       {showRetryButton && (
         <button
           type="button"
           onClick={handleRetry}
-          className="shrink-0 text-[12px] font-semibold text-[#C4703F] underline underline-offset-2"
+          className="shrink-0 text-[12px] font-semibold text-accent underline underline-offset-2"
         >
           再読み込み
         </button>

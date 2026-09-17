@@ -76,12 +76,12 @@ export function MyPostsList({
   return (
     <section aria-labelledby="my-posts-heading" className="flex flex-col gap-3">
       <div className="flex items-center justify-between gap-3">
-        <h2 id="my-posts-heading" className="text-[14px] font-bold text-[#3D3A35]">自分の投稿</h2>
+        <h2 id="my-posts-heading" className="text-[14px] font-bold text-ink">自分の投稿</h2>
         <select
           value={tripId ?? ""}
           onChange={(event) => setTripId(event.target.value || null)}
           aria-label="旅行で絞り込み"
-          className="h-9 max-w-[200px] rounded-[8px] border border-[#E8E1D8] bg-white px-2 text-[12px] text-[#3D3A35]"
+          className="h-9 max-w-[200px] rounded-[8px] border border-line bg-surface px-2 text-[12px] text-ink"
         >
           <option value="">すべての旅行</option>
           {tripOptions.map((trip) => (
@@ -93,33 +93,33 @@ export function MyPostsList({
       </div>
 
       {posts.length === 0 && !isLoading ? (
-        <p className="py-10 text-center text-[13px] text-[#9C9488]">まだ投稿がありません</p>
+        <p className="py-10 text-center text-[13px] text-muted">まだ投稿がありません</p>
       ) : (
         <ul className="flex flex-col gap-2">
           {posts.map((post) => (
             <li key={post.id}>
               <Link
                 href={`/posts/${post.id}`}
-                className="flex gap-3 rounded-[12px] border border-[#E8E1D8] bg-white p-2.5"
+                className="flex gap-3 rounded-[12px] border border-line bg-surface p-2.5"
                 data-my-post={post.id}
               >
-                <span className="relative block h-16 w-16 shrink-0 overflow-hidden rounded-[8px] bg-[#E8E1D8]">
+                <span className="relative block h-16 w-16 shrink-0 overflow-hidden rounded-[8px] bg-line">
                   {post.thumbnailUrl && (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img src={post.thumbnailUrl} alt="" className="h-full w-full object-cover" />
                   )}
                 </span>
                 <span className="flex min-w-0 flex-1 flex-col gap-0.5">
-                  <span className="truncate text-[11px] font-medium text-[#C4703F]" data-trip-title>
+                  <span className="truncate text-[11px] font-medium text-accent" data-trip-title>
                     {post.tripTitle}
                   </span>
-                  <span className="flex items-center gap-1.5 truncate text-[13px] font-semibold text-[#3D3A35]">
+                  <span className="flex items-center gap-1.5 truncate text-[13px] font-semibold text-ink">
                     {post.spotName}
                     {post.visibility === "private" && (
-                      <span className="rounded-full bg-[#E8E1D8] px-1.5 py-0.5 text-[10px] font-medium">非公開</span>
+                      <span className="rounded-full bg-line px-1.5 py-0.5 text-[10px] font-medium">非公開</span>
                     )}
                   </span>
-                  <span className="text-[11px] text-[#9C9488]">
+                  <span className="text-[11px] text-muted">
                     {post.category} ・ {new Date(post.createdAt).toLocaleDateString("ja-JP")} ・ ♥ {post.likeCount}
                   </span>
                 </span>
@@ -137,7 +137,7 @@ export function MyPostsList({
           type="button"
           onClick={loadMore}
           disabled={isLoading}
-          className="h-10 w-full rounded-[10px] border border-[#E8E1D8] bg-white text-[13px] font-semibold text-[#3D3A35] disabled:opacity-45"
+          className="h-10 w-full rounded-[10px] border border-line bg-surface text-[13px] font-semibold text-ink disabled:opacity-45"
         >
           {isLoading ? "読み込み中…" : "もっと見る"}
         </button>

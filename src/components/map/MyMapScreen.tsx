@@ -106,19 +106,19 @@ export function MyMapScreen({
   );
 
   return (
-    <div className="relative flex h-[calc(100dvh-60px)] flex-col bg-[#FBF6F0] md:h-dvh">
+    <div className="relative flex h-[calc(100dvh-60px)] flex-col bg-app md:h-dvh">
       <div className="pointer-events-none absolute inset-x-0 top-0 z-10 flex flex-col gap-2 p-3">
         <div className="pointer-events-auto mx-auto flex w-full max-w-[420px] items-center gap-2">
           <Link
             href="/mypage"
-            className="flex h-9 shrink-0 items-center rounded-full border border-[#E8E1D8] bg-white px-3 text-[12px] font-semibold text-[#3D3A35] shadow-[0_2px_16px_rgba(61,58,53,0.10)]"
+            className="flex h-9 shrink-0 items-center rounded-full border border-line bg-surface px-3 text-[12px] font-semibold text-ink shadow-card"
           >
             マイページ
           </Link>
           <div
             role="radiogroup"
             aria-label="表示するピン"
-            className="flex flex-1 rounded-full border border-[#E8E1D8] bg-white p-1 shadow-[0_2px_16px_rgba(61,58,53,0.10)]"
+            className="flex flex-1 rounded-full border border-line bg-surface p-1 shadow-card"
           >
             {MODES.map((item) => {
               const selected = item.mode === mode;
@@ -130,7 +130,7 @@ export function MyMapScreen({
                   aria-checked={selected}
                   onClick={() => setMode(item.mode)}
                   className={`h-8 flex-1 rounded-full text-[12px] font-semibold transition-colors ${
-                    selected ? "bg-[#3D3A35] text-white" : "text-[#9C9488]"
+                    selected ? "bg-ink text-white" : "text-muted"
                   }`}
                 >
                   {item.label}
@@ -158,13 +158,13 @@ export function MyMapScreen({
           className="flex-1"
         />
       ) : (
-        <div role="region" aria-label="地図" className="flex flex-1 items-center justify-center bg-[#E8E1D8]">
-          <span className="text-[12px] text-[#9C9488]">現在地を確認しています…</span>
+        <div role="region" aria-label="地図" className="flex flex-1 items-center justify-center bg-line">
+          <span className="text-[12px] text-muted">現在地を確認しています…</span>
         </div>
       )}
 
       {bounds && !fetchFailed && pins.length === 0 && (
-        <p className="pointer-events-none absolute inset-x-0 bottom-6 z-10 text-center text-[12px] text-[#3D3A35]">
+        <p className="pointer-events-none absolute inset-x-0 bottom-6 z-10 text-center text-[12px] text-ink">
           この範囲に表示できるスポットはありません
         </p>
       )}

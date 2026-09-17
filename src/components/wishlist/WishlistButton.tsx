@@ -59,8 +59,8 @@ export function WishlistButton({
       aria-label={saved ? "行きたいを解除" : "行きたいに保存"}
       className={`inline-flex h-9 items-center gap-1.5 rounded-full border px-3 text-[12px] font-semibold transition-colors disabled:opacity-60 ${
         saved
-          ? "border-[#C4703F] bg-[#C4703F] text-white"
-          : "border-[#E8E1D8] bg-white text-[#3D3A35]"
+          ? "border-accent bg-accent text-white"
+          : "border-line bg-surface text-ink"
       } ${className ?? ""}`}
     >
       <svg width="14" height="14" viewBox="0 0 24 24" aria-hidden="true">

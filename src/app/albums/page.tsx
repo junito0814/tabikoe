@@ -26,24 +26,24 @@ export default async function AlbumsPage() {
 
   if (albums === null) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-[#FBF6F0] px-6">
+      <div className="flex min-h-screen items-center justify-center bg-app px-6">
         <ErrorNotice message={ERROR_MESSAGES.dbLoadFailure} retryable className="w-full max-w-[360px]" />
       </div>
     );
   }
 
   return (
-    <div className="flex min-h-screen flex-col items-center bg-[#FBF6F0] px-4 py-6">
+    <div className="flex min-h-screen flex-col items-center bg-app px-4 py-6">
       <div className="w-full max-w-[560px]">
         <header className="mb-4 flex items-center justify-between">
-          <h1 className="text-[18px] font-bold text-[#3D3A35]">アルバム</h1>
-          <Link href="/mypage" className="text-[12px] text-[#9C9488] underline underline-offset-2">
+          <h1 className="text-[18px] font-bold text-ink">アルバム</h1>
+          <Link href="/mypage" className="text-[12px] text-muted underline underline-offset-2">
             マイページへ
           </Link>
         </header>
 
         {albums.length === 0 ? (
-          <p className="py-16 text-center text-[13px] leading-[1.8] text-[#9C9488]">
+          <p className="py-16 text-center text-[13px] leading-[1.8] text-muted">
             まだアルバムがありません
             <br />
             投稿すると旅行タイトルごとにアルバムができます
@@ -52,7 +52,7 @@ export default async function AlbumsPage() {
           <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3">
             {albums.map((album) => (
               <li key={album.tripId}>
-                <Link href={`/albums/${album.tripId}`} className="block overflow-hidden rounded-[12px] border border-[#E8E1D8] bg-white">
+                <Link href={`/albums/${album.tripId}`} className="block overflow-hidden rounded-[12px] border border-line bg-surface">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src={album.coverUrl ?? SPOT_PLACEHOLDER_IMAGE_URL}
@@ -60,8 +60,8 @@ export default async function AlbumsPage() {
                     className="aspect-square w-full object-cover"
                   />
                   <span className="block p-2.5">
-                    <span className="block truncate text-[13px] font-semibold text-[#3D3A35]">{album.title}</span>
-                    <span className="block text-[11px] text-[#9C9488]">
+                    <span className="block truncate text-[13px] font-semibold text-ink">{album.title}</span>
+                    <span className="block text-[11px] text-muted">
                       {album.postCount}件 ・ {album.memberCount}人 ・ {ALBUM_ROLE_LABELS[album.role]}
                     </span>
                   </span>

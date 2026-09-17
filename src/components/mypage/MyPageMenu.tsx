@@ -20,7 +20,7 @@ export function MyPageMenu() {
           <li key={item.key}>
             <Link
               href={item.href}
-              className="flex h-12 items-center justify-center rounded-[10px] border border-[#E8E1D8] bg-white text-[13px] font-semibold text-[#3D3A35]"
+              className="flex h-12 items-center justify-center rounded-[10px] border border-line bg-surface text-[13px] font-semibold text-ink"
             >
               {item.label}
             </Link>

@@ -42,19 +42,19 @@ export function BadgeToast({
       aria-live="polite"
       className="fixed inset-x-0 top-4 z-50 flex justify-center px-4"
     >
-      <div className="flex w-full max-w-[360px] items-start gap-3 rounded-[12px] border border-[#C4703F]/30 bg-white px-4 py-3 shadow-[0_6px_24px_rgba(61,58,53,0.14)]">
+      <div className="flex w-full max-w-[360px] items-start gap-3 rounded-[12px] border border-accent/30 bg-surface px-4 py-3 shadow-card">
         <span aria-hidden className="mt-0.5 text-[18px]">
           🏅
         </span>
         <div className="min-w-0 flex-1">
-          <p className="text-[13px] font-bold text-[#3D3A35]">
+          <p className="text-[13px] font-bold text-ink">
             {badges.length === 1 ? "バッジを獲得しました" : `${badges.length}個のバッジを獲得しました`}
           </p>
           <ul className="mt-1 flex flex-wrap gap-1.5">
             {badges.map((badge) => (
               <li
                 key={badge.type}
-                className="rounded-full bg-[#C4703F]/[0.1] px-2.5 py-0.5 text-[12px] font-medium text-[#C4703F]"
+                className="rounded-full bg-accent/[0.1] px-2.5 py-0.5 text-[12px] font-medium text-accent"
               >
                 {badge.label}
               </li>
@@ -62,7 +62,7 @@ export function BadgeToast({
           </ul>
           <Link
             href="/badges"
-            className="mt-1.5 inline-block text-[11px] font-medium text-[#9C9488] underline underline-offset-2"
+            className="mt-1.5 inline-block text-[11px] font-medium text-muted underline underline-offset-2"
           >
             バッジ一覧を見る
           </Link>
@@ -71,7 +71,7 @@ export function BadgeToast({
           type="button"
           onClick={() => setIsOpen(false)}
           aria-label="閉じる"
-          className="shrink-0 text-[14px] leading-none text-[#9C9488]"
+          className="shrink-0 text-[14px] leading-none text-muted"
         >
           ×
         </button>

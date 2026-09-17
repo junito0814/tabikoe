@@ -40,26 +40,26 @@ export default function DisplayNameForm({ initialDisplayName }: { initialDisplay
 
   return (
     <div className="w-full max-w-[360px]">
-      <label className="mb-1.5 block text-[12px] font-medium text-[#9C9488]">ユーザー名</label>
+      <label className="mb-1.5 block text-[12px] font-medium text-muted">ユーザー名</label>
       <input
         value={value}
         onChange={(e) => setValue(e.target.value)}
-        className="h-11 w-full rounded-[10px] border border-[#E8E1D8] bg-white px-3 text-[14px] text-[#3D3A35] focus:outline-none focus:ring-1 focus:ring-[#C4703F]"
+        className="h-11 w-full rounded-[10px] border border-line bg-surface px-3 text-[14px] text-ink focus:outline-none focus:ring-1 focus:ring-accent"
       />
       <div className="mt-1.5 flex items-center justify-between">
-        <span className={`text-[11px] ${isTooLong ? "text-[#C4703F]" : "text-[#9C9488]"}`}>
+        <span className={`text-[11px] ${isTooLong ? "text-accent" : "text-muted"}`}>
           {length} / {MAX_LENGTH}
         </span>
         <button
           type="button"
           onClick={handleSave}
           disabled={isTooLong || isSaving}
-          className="h-8 rounded-[8px] bg-[#C4703F] px-4 text-[12px] font-semibold text-white disabled:cursor-not-allowed disabled:opacity-45"
+          className="h-8 rounded-[8px] bg-accent px-4 text-[12px] font-semibold text-white disabled:cursor-not-allowed disabled:opacity-45"
         >
           {isSaving ? "保存中..." : "保存"}
         </button>
       </div>
-      {message && <p className="mt-1.5 text-[11px] text-[#9C9488]">{message}</p>}
+      {message && <p className="mt-1.5 text-[11px] text-muted">{message}</p>}
     </div>
   );
 }

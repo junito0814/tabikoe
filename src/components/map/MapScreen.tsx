@@ -132,13 +132,13 @@ export function MapScreen({
     : "/search";
 
   return (
-    <div className="relative flex h-[calc(100dvh-60px)] flex-col bg-[#FBF6F0] md:h-dvh">
+    <div className="relative flex h-[calc(100dvh-60px)] flex-col bg-app md:h-dvh">
       {/* 上部：タブ＋検索バー（地図に重ねる） */}
       <div className="pointer-events-none absolute inset-x-0 top-0 z-10 flex flex-col gap-2 p-3">
         <div
           role="tablist"
           aria-label="表示するピン"
-          className="pointer-events-auto mx-auto flex w-full max-w-[420px] rounded-full border border-[#E8E1D8] bg-white p-1 shadow-[0_2px_16px_rgba(61,58,53,0.10)]"
+          className="pointer-events-auto mx-auto flex w-full max-w-[420px] rounded-full border border-line bg-surface p-1 shadow-card"
         >
           {TABS.map((tab) => {
             const selected = tab.view === view;
@@ -150,7 +150,7 @@ export function MapScreen({
                 aria-selected={selected}
                 onClick={() => setView(tab.view)}
                 className={`h-9 flex-1 rounded-full text-[13px] font-semibold transition-colors ${
-                  selected ? "bg-[#C4703F] text-white" : "text-[#9C9488]"
+                  selected ? "bg-accent text-white" : "text-muted"
                 }`}
               >
                 {tab.label}
@@ -184,8 +184,8 @@ export function MapScreen({
           className="flex-1"
         />
       ) : (
-        <div role="region" aria-label="地図" className="flex flex-1 items-center justify-center bg-[#E8E1D8]">
-          <span className="text-[12px] text-[#9C9488]">現在地を確認しています…</span>
+        <div role="region" aria-label="地図" className="flex flex-1 items-center justify-center bg-line">
+          <span className="text-[12px] text-muted">現在地を確認しています…</span>
         </div>
       )}
 
@@ -193,14 +193,14 @@ export function MapScreen({
       <div className="pointer-events-none absolute inset-x-0 bottom-4 z-10 flex justify-center">
         <Link
           href={searchHref}
-          className="pointer-events-auto flex h-10 items-center gap-1.5 rounded-full bg-[#3D3A35] px-4 text-[12px] font-semibold text-white shadow-[0_2px_16px_rgba(61,58,53,0.25)]"
+          className="pointer-events-auto flex h-10 items-center gap-1.5 rounded-full bg-ink px-4 text-[12px] font-semibold text-white shadow-card"
         >
           投稿を検索
         </Link>
       </div>
 
       {view === "wishlist" && bounds && !fetchFailed && pins.length === 0 && (
-        <p className="pointer-events-none absolute inset-x-0 bottom-16 z-10 text-center text-[12px] text-[#3D3A35]">
+        <p className="pointer-events-none absolute inset-x-0 bottom-16 z-10 text-center text-[12px] text-ink">
           この範囲に「行きたい」スポットはありません
         </p>
       )}

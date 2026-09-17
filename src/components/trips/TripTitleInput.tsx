@@ -82,7 +82,7 @@ export function TripTitleInput({
 
   return (
     <div ref={containerRef} className="relative w-full">
-      <label htmlFor={inputId} className="mb-1.5 block text-[12px] font-medium text-[#9C9488]">
+      <label htmlFor={inputId} className="mb-1.5 block text-[12px] font-medium text-muted">
         旅行タイトル
       </label>
       <input
@@ -97,14 +97,14 @@ export function TripTitleInput({
         role="combobox"
         aria-expanded={isOpen && suggestions.length > 0}
         aria-controls={`${inputId}-suggestions`}
-        className="h-11 w-full rounded-[10px] border border-[#E8E1D8] bg-white px-3 text-[14px] text-[#3D3A35] focus:outline-none focus:ring-1 focus:ring-[#C4703F]"
+        className="h-11 w-full rounded-[10px] border border-line bg-surface px-3 text-[14px] text-ink focus:outline-none focus:ring-1 focus:ring-accent"
       />
 
       {isOpen && suggestions.length > 0 && (
         <ul
           id={`${inputId}-suggestions`}
           role="listbox"
-          className="absolute z-10 mt-1 w-full overflow-hidden rounded-[10px] border border-[#E8E1D8] bg-white shadow-[0_2px_16px_rgba(61,58,53,0.1)]"
+          className="absolute z-10 mt-1 w-full overflow-hidden rounded-[10px] border border-line bg-surface shadow-card"
         >
           {suggestions.map((suggestion) => (
             <li key={suggestion.id} role="option" aria-selected={suggestion.title === value}>
@@ -114,7 +114,7 @@ export function TripTitleInput({
                   onChange(suggestion.title);
                   setIsOpen(false);
                 }}
-                className="block w-full px-3 py-2.5 text-left text-[14px] text-[#3D3A35] hover:bg-[#FBF6F0]"
+                className="block w-full px-3 py-2.5 text-left text-[14px] text-ink hover:bg-tint"
               >
                 {suggestion.title}
               </button>
@@ -124,11 +124,11 @@ export function TripTitleInput({
       )}
 
       <div className="mt-1.5 flex items-center justify-between">
-        <span className={`text-[11px] ${isTooLong ? "text-[#C4703F]" : "text-[#9C9488]"}`}>
+        <span className={`text-[11px] ${isTooLong ? "text-accent" : "text-muted"}`}>
           {length} / {MAX_TRIP_TITLE_LENGTH}
         </span>
         {isTooLong && (
-          <span className="text-[11px] text-[#C4703F]">
+          <span className="text-[11px] text-accent">
             {MAX_TRIP_TITLE_LENGTH}文字以内で入力してください
           </span>
         )}

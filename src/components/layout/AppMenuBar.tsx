@@ -72,7 +72,7 @@ export function UnreadBadge({ count }: { count: number }) {
   return (
     <span
       aria-label={`未読${count}件`}
-      className="absolute -right-2 -top-1 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-[#C4703F] px-1 text-[10px] font-bold leading-none text-white"
+      className="absolute -right-2 -top-1 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-accent px-1 text-[10px] font-bold leading-none text-white"
     >
       {count > 99 ? "99+" : count}
     </span>
@@ -129,7 +129,7 @@ export function AppMenuBar({
     <nav
       aria-label="メインメニュー"
       data-menu-bar
-      className="fixed inset-x-0 bottom-0 z-40 border-t border-[#E8E1D8] bg-white/95 backdrop-blur md:inset-x-auto md:bottom-auto md:left-0 md:top-0 md:h-full md:w-[200px] md:border-r md:border-t-0"
+      className="fixed inset-x-0 bottom-0 z-40 border-t border-line bg-surface/95 backdrop-blur md:inset-x-auto md:bottom-auto md:left-0 md:top-0 md:h-full md:w-[200px] md:border-r md:border-t-0"
     >
       <ul className="flex h-[60px] items-stretch justify-around md:h-auto md:flex-col md:items-stretch md:justify-start md:gap-1 md:p-4">
         {MENU_ITEMS.map((item) => {
@@ -140,7 +140,7 @@ export function AppMenuBar({
                 href={item.href}
                 aria-current={active ? "page" : undefined}
                 className={`relative flex h-full flex-col items-center justify-center gap-0.5 text-[10px] font-medium md:h-11 md:flex-row md:justify-start md:gap-3 md:rounded-[10px] md:px-3 md:text-[13px] ${
-                  active ? "text-[#C4703F] md:bg-[#FBF6F0]" : "text-[#9C9488] hover:text-[#3D3A35]"
+                  active ? "text-accent md:bg-tint" : "text-muted hover:text-ink"
                 }`}
               >
                 <span className="relative">

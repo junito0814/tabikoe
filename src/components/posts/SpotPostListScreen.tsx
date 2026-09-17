@@ -102,13 +102,13 @@ export function SpotPostListScreen({
   const sentinelRef = useInfiniteScroll(nextOffset !== null && !isLoading, loadMore);
 
   return (
-    <div className="flex min-h-screen flex-col items-center bg-[#FBF6F0] px-4 py-6">
+    <div className="flex min-h-screen flex-col items-center bg-app px-4 py-6">
       <div className="w-full max-w-[520px]">
         <header className="mb-4 flex flex-col gap-3">
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
-              <h1 className="truncate text-[18px] font-bold text-[#3D3A35]">{spot.name}</h1>
-              <p className="mt-0.5 text-[11px] text-[#9C9488]">{spot.prefecture ?? "都道府県未設定"}</p>
+              <h1 className="truncate text-[18px] font-bold text-ink">{spot.name}</h1>
+              <p className="mt-0.5 text-[11px] text-muted">{spot.prefecture ?? "都道府県未設定"}</p>
             </div>
             <WishlistButton spotId={spot.id} initialSaved={spot.isWishlisted} className="shrink-0" />
           </div>
@@ -117,7 +117,7 @@ export function SpotPostListScreen({
             {/* F-MP-05 Task3: 「写真」タグ → SC-13 */}
             <Link
               href={`/spots/${spot.id}/photos`}
-              className="inline-flex h-8 items-center gap-1 rounded-full border border-[#E8E1D8] bg-white px-3 text-[12px] font-semibold text-[#3D3A35]"
+              className="inline-flex h-8 items-center gap-1 rounded-full border border-line bg-surface px-3 text-[12px] font-semibold text-ink"
             >
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden>
                 <rect x="3" y="5" width="18" height="14" rx="2" stroke="currentColor" strokeWidth="1.8" />
@@ -128,7 +128,7 @@ export function SpotPostListScreen({
             </Link>
             <Link
               href="/map"
-              className="inline-flex h-8 items-center rounded-full border border-[#E8E1D8] bg-white px-3 text-[12px] font-semibold text-[#3D3A35]"
+              className="inline-flex h-8 items-center rounded-full border border-line bg-surface px-3 text-[12px] font-semibold text-ink"
             >
               地図へ戻る
             </Link>
@@ -144,7 +144,7 @@ export function SpotPostListScreen({
                 aria-checked={sort === option}
                 onClick={() => setSort(option)}
                 className={`h-8 rounded-full px-3 text-[12px] font-semibold ${
-                  sort === option ? "bg-[#3D3A35] text-white" : "bg-white text-[#9C9488] border border-[#E8E1D8]"
+                  sort === option ? "bg-ink text-white" : "bg-surface text-muted border border-line"
                 }`}
               >
                 {POST_SORT_LABELS[option]}
@@ -154,7 +154,7 @@ export function SpotPostListScreen({
         </header>
 
         {posts.length === 0 && !isLoading ? (
-          <p className="py-16 text-center text-[13px] text-[#9C9488]">まだ投稿がありません</p>
+          <p className="py-16 text-center text-[13px] text-muted">まだ投稿がありません</p>
         ) : (
           <ul className="flex flex-col gap-2.5">
             {posts.map((post) => (
@@ -175,7 +175,7 @@ export function SpotPostListScreen({
             type="button"
             onClick={loadMore}
             disabled={isLoading}
-            className="mt-3 h-10 w-full rounded-[10px] border border-[#E8E1D8] bg-white text-[13px] font-semibold text-[#3D3A35] disabled:opacity-45"
+            className="mt-3 h-10 w-full rounded-[10px] border border-line bg-surface text-[13px] font-semibold text-ink disabled:opacity-45"
           >
             {isLoading ? "読み込み中…" : "もっと見る"}
           </button>

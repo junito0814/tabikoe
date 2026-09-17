@@ -30,7 +30,7 @@ export default async function AccountPage() {
 
   if (profileError) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-[#FBF6F0] px-6">
+      <div className="flex min-h-screen items-center justify-center bg-app px-6">
         <ErrorNotice message={ERROR_MESSAGES.dbLoadFailure} retryable className="w-full max-w-[360px]" />
       </div>
     );
@@ -61,8 +61,8 @@ export default async function AccountPage() {
   }
 
   return (
-    <div className="flex min-h-screen flex-col items-center gap-8 bg-[#FBF6F0] px-6 py-16">
-      <h1 className="text-[16px] font-bold text-[#3D3A35]">アカウント</h1>
+    <div className="flex min-h-screen flex-col items-center gap-8 bg-app px-6 py-16">
+      <h1 className="text-[16px] font-bold text-ink">アカウント</h1>
 
       <AvatarUploadForm initialAvatarUrl={profile?.avatar_url ?? null} />
       <DisplayNameForm initialDisplayName={profile?.display_name ?? ""} />
@@ -71,17 +71,17 @@ export default async function AccountPage() {
       {profile?.is_admin && (
         <Link
           href="/admin"
-          className="flex h-11 w-full max-w-[360px] items-center justify-center rounded-[10px] border border-[#E8E1D8] bg-white text-[14px] font-semibold text-[#3D3A35]"
+          className="flex h-11 w-full max-w-[360px] items-center justify-center rounded-[10px] border border-line bg-surface text-[14px] font-semibold text-ink"
         >
           管理者ダッシュボード
         </Link>
       )}
 
-      <div className="w-full max-w-[360px] border-t border-[#E8E1D8] pt-6">
+      <div className="w-full max-w-[360px] border-t border-line pt-6">
         <BlockedUsersList initialBlockedUsers={blockedUsers} />
       </div>
 
-      <div className="flex w-full max-w-[360px] flex-col items-center gap-4 border-t border-[#E8E1D8] pt-6">
+      <div className="flex w-full max-w-[360px] flex-col items-center gap-4 border-t border-line pt-6">
         <LogoutButton />
         <DeleteAccountDialog isAdmin={profile?.is_admin ?? false} />
       </div>
