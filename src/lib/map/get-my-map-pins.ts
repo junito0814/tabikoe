@@ -99,6 +99,7 @@ export async function getMyMapPins(
           .from("posts")
           .select("id, created_at, spot:spots!inner(id, name, lat, lng)")
           .eq("user_id", userId)
+          .eq("status", "published")
           .gte("spots.lat", bounds.south)
           .lte("spots.lat", bounds.north)
           .gte("spots.lng", bounds.west)

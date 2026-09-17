@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { graphemeLength } from "@/lib/text/grapheme-length";
 import { MAX_TRIP_TITLE_LENGTH } from "./constants";
+import { provisionalTripTitle } from "./provisional-title";
 
 /**
  * F-PO-01 旅行タイトル Task2: 旅行タイトル作成・紐付けロジック
@@ -13,6 +14,8 @@ import { MAX_TRIP_TITLE_LENGTH } from "./constants";
  * F-RC-03（アルバム共同編集）: 本人の旅行に無ければ、本人が編集者・オーナーとして参加している
  * アルバム（album_members）の旅行をタイトル一致で探す。編集者は「そのアルバムに自分の投稿を
  * 追加できる」（3.6.3）ため、投稿フォームの候補（GET /api/trips）にもそれらが出る。
+ *
+ * trip-title-v3 Task2: タイトルが空のときは仮タイトル「今日の投稿（M/D）」で解決する（`allowProvisional`）。
  */
 export class TripTitleValidationError extends Error {}
 
@@ -32,9 +35,13 @@ export function assertValidTripTitle(title: string): void {
 export async function resolveTripId(
   supabase: SupabaseClient,
   userId: string,
-  rawTitle: string
+  rawTitle: string,
+  options: { allowProvisional?: boolean } = {}
 ): Promise<string> {
-  const title = normalizeTripTitle(rawTitle);
+  let title = normalizeTripTitle(rawTitle);
+  if (title.length === 0 && options.allowProvisional) {
+    title = provisionalTripTitle();
+  }
   assertValidTripTitle(title);
 
   const { data: existing, error: selectError } = await supabase

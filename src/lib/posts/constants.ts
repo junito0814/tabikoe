@@ -28,6 +28,13 @@ export const POST_DURATIONS = [
 
 export const POST_VISIBILITIES = ["public", "private"] as const;
 
+/** 投稿の状態（v3.0）。draft＝下書き（本人だけに見える）、published＝公開済み */
+export const POST_STATUSES = ["draft", "published"] as const;
+export type PostStatus = (typeof POST_STATUSES)[number];
+
+/** 下書きの上限（1 ユーザーあたり。要件定義書 v3.0 3.3.7） */
+export const MAX_DRAFTS_PER_USER = 20;
+
 export type PostCategory = (typeof POST_CATEGORIES)[number];
 export type PostDuration = (typeof POST_DURATIONS)[number];
 export type PostVisibility = (typeof POST_VISIBILITIES)[number];

@@ -37,7 +37,9 @@ function fakeAdmin({
     from: (table: string) => {
       if (table === "badges") return { upsert };
       if (table === "posts") {
-        return { select: () => ({ eq: async () => ({ count: postCount, error: null }) }) };
+        // v3.0: user_id と status（published）の 2 段の eq
+        const query = { eq: () => query, then: (resolve: (v: unknown) => void) => resolve({ count: postCount, error: null }) };
+        return { select: () => query };
       }
       if (table === "likes") return { select: () => ({ eq: likesEq }) };
       throw new Error(`unexpected table ${table}`);

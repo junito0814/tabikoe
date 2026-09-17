@@ -57,7 +57,9 @@ export async function evaluatePostBadges(
   const { count, error } = await admin
     .from("posts")
     .select("id", { count: "exact", head: true })
-    .eq("user_id", userId);
+    .eq("user_id", userId)
+    // v3.0: 下書きは投稿数に数えない
+    .eq("status", "published");
   if (error) throw error;
 
   candidates.push(...reachedPostCountBadgeTypes(count ?? 0));

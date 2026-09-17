@@ -17,7 +17,8 @@ export interface MyPageSummary {
 export async function getMyPageSummary(admin: SupabaseClient, userId: string): Promise<MyPageSummary> {
   const [posts, likes] = await Promise.all([
     // 公開設定で絞らない（非公開投稿も投稿数に含める。3.6.1）
-    admin.from("posts").select("id", { count: "exact", head: true }).eq("user_id", userId),
+    // v3.0: 投稿数に下書きは含めない
+    admin.from("posts").select("id", { count: "exact", head: true }).eq("user_id", userId).eq("status", "published"),
     admin
       .from("likes")
       .select("id, post:posts!inner(user_id)", { count: "exact", head: true })
@@ -69,6 +70,8 @@ export async function getMyPosts(
       { count: "exact" }
     )
     .eq("user_id", userId)
+    // v3.0: 下書きは別の一覧（getMyDrafts）で出す
+    .eq("status", "published")
     .order("created_at", { ascending: false })
     .range(offset, offset + limit - 1);
   if (tripId) {
@@ -104,6 +107,7 @@ export async function getMyTripOptions(
     .from("posts")
     .select("trip_id, trips!inner(id, title)")
     .eq("user_id", userId)
+    .eq("status", "published")
     .order("created_at", { ascending: false });
   if (error) throw error;
 

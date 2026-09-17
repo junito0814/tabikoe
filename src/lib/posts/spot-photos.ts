@@ -93,6 +93,8 @@ export async function getSpotMediaPage(
     .select("id, created_at, visibility, spots(name), post_photos(id, storage_url, video_url, media_type, display_order, hidden_at)")
     .eq("spot_id", spotId)
     .eq("visibility", "public")
+    // v3.0: 下書きは公開一覧に出さない
+    .eq("status", "published")
     // F-AD-05: 非公開化された投稿は除く（写真単位の非公開化は mergeSpotMedia で落とす）
     .is("hidden_at", null)
     .order("created_at", { ascending: false })
@@ -106,7 +108,11 @@ export async function getSpotMediaPage(
 
   const merged = mergeSpotMedia((data ?? []) as unknown as SpotPostMediaRow[]);
   const page = merged.slice(offset, offset + limit);
-  const signedUrls = await createPostPhotoUrls(admin, Array.from(new Set(page.map((item) => item.path))));
+  // v3.0: 動画本体も署名付き URL にする
+  const signedUrls = await createPostPhotoUrls(
+    admin,
+    Array.from(new Set(page.flatMap((item) => [item.path, ...(item.videoUrl ? [item.videoUrl] : [])])))
+  );
 
   const items: SpotMediaItem[] = page.flatMap((item, index) => {
     const url = signedUrls.get(item.path);
@@ -117,7 +123,7 @@ export async function getSpotMediaPage(
         postId: item.postId,
         mediaType: item.mediaType,
         thumbnailUrl: url,
-        videoUrl: item.videoUrl,
+        videoUrl: item.videoUrl ? (signedUrls.get(item.videoUrl) ?? null) : null,
         alt: `${item.spotName}の${item.mediaType === "video" ? "動画" : "写真"} ${offset + index + 1}`,
         postedAt: item.postedAt,
       },

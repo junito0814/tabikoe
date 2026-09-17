@@ -77,6 +77,7 @@ async function findLatestPhotoPaths(
     .from("posts")
     .select("spot_id, user_id, created_at, post_photos(storage_url, media_type, display_order)")
     .in("spot_id", spotIds)
+    .eq("status", "published")
     .or(`visibility.eq.public,user_id.eq.${userId}`)
     .order("created_at", { ascending: false });
   if (blockedIds.length > 0) {

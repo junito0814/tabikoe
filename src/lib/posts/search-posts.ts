@@ -203,6 +203,8 @@ export async function searchPostCards(
       .from("posts")
       .select(`${POST_CARD_SELECT.replace("spots(name)", "spots!inner(name, lat, lng)")}, visibility`)
       .eq("visibility", "public")
+      // v3.0: 下書きは公開一覧に出さない
+      .eq("status", "published")
       // F-AD-05: 非公開化された投稿・スポットは除く
       .is("hidden_at", null)
       .is("spots.hidden_at", null)
