@@ -1,12 +1,28 @@
+"use client";
+
+import { useState } from "react";
+
 /**
  * 投稿時の注意喚起 Task1: 注意喚起メッセージ共通コンポーネント
  * 出典: docs/tasks/shared-ui/upload-notice/01-notice-display.md
+ *       docs/tasks/posts/post-creation-v3/02-form-layout-compaction.md（compact: 1 行に畳み「詳しく」で全文）
  *
- * 組み込み先の投稿作成画面（post-creation）・投稿編集画面（post-edit）はまだ実装されていない
- * （Phase 2、未着手）。それらの実装時に、写真・動画アップロードUIの近傍へこのコンポーネントを
- * 組み込むこと。コンポーネント自体は依存なく完成している。
+ * SC-03（投稿作成・編集）の写真・動画欄の近くに置く。`compact` のときは 1 行に畳んで
+ * 「詳しく」で全文を出す（スクロールを減らすため。要件定義書 v3.0 3.3.1）。
  */
-export function UploadNotice() {
+export function UploadNotice({ compact = false }: { compact?: boolean }) {
+  const [expanded, setExpanded] = useState(!compact);
+  if (!expanded) {
+    return (
+      <p className="flex items-center gap-1.5 text-[11px] text-muted">
+        <span aria-hidden>⚠</span>
+        写り込み・個人情報に注意
+        <button type="button" onClick={() => setExpanded(true)} className="font-medium text-accent underline underline-offset-2">
+          詳しく
+        </button>
+      </p>
+    );
+  }
   return (
     <ul className="list-disc space-y-1 pl-4 text-[11px] leading-[1.6] text-muted">
       <li>他人が写り込んだ写真・動画は、本人の同意を得てから投稿してください</li>

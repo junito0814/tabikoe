@@ -5,6 +5,9 @@ import { requireUserOrRedirect } from "@/lib/auth/require-user-or-redirect";
 import { ErrorNotice } from "@/components/notices/ErrorNotice";
 import { ERROR_MESSAGES } from "@/components/notices/error-messages";
 import { PostDetailScreen } from "@/components/posts/PostDetailScreen";
+import { BadgeToast } from "@/components/badges/BadgeToast";
+import { parseBadgeToastParam } from "@/components/badges/badge-toast-params";
+import { FlashNotice, resolveFlashKey } from "@/components/notices/FlashNotice";
 import { getPostDetail, type PostDetailData } from "@/lib/posts/post-detail";
 import { listComments, type CommentPage } from "@/lib/comments/list-comments";
 
@@ -17,8 +20,18 @@ import { listComments, type CommentPage } from "@/lib/comments/list-comments";
  * ログイン後に redirect_to でこの投稿へ戻す（F-AC-02 Task3 / F-AC-01 コールバックと共通の仕組み）。
  * 非公開投稿は投稿者本人・アルバムメンバー以外には 404（存在しない扱い）。
  */
-export default async function PostDetailPage({ params }: { params: Promise<{ id: string }> }) {
+export default async function PostDetailPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ id: string }>;
+  searchParams: Promise<{ posted?: string; updated?: string; badges?: string }>;
+}) {
   const { id } = await params;
+  // v3.0: 投稿・更新の完了後はこの画面に遷移するので、完了メッセージとバッジ獲得トーストをここで出す
+  const query = await searchParams;
+  const flashKey = resolveFlashKey(query);
+  const newBadgeTypes = parseBadgeToastParam(query.badges);
   const supabase = await createClient();
   const user = await requireUserOrRedirect(supabase, `/posts/${id}`);
 
@@ -47,5 +60,10 @@ export default async function PostDetailPage({ params }: { params: Promise<{ id:
     notFound();
   }
 
-  return <PostDetailScreen post={post} initialComments={comments} />;
+  return (
+    <>
+      {newBadgeTypes.length > 0 && <BadgeToast badgeTypes={newBadgeTypes} />}
+      <PostDetailScreen post={post} initialComments={comments} notice={flashKey ? <FlashNotice flashKey={flashKey} /> : undefined} />
+    </>
+  );
 }

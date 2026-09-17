@@ -23,7 +23,8 @@ const execFileAsync = promisify(execFile);
 
 export const MAX_VIDEO_SIZE_BYTES = 100 * 1024 * 1024;
 export const MAX_VIDEO_DURATION_SECONDS = 60;
-const ALLOWED_VIDEO_TYPES = new Set(["video/mp4", "video/quicktime"]);
+import { isVideoFile } from "./media-kind";
+export { isVideoFile };
 
 export class VideoValidationError extends Error {}
 
@@ -33,10 +34,6 @@ export interface ProcessedVideoUpload {
   /** MP4 本体のパス。post_photos.video_url に入れる */
   videoPath: string;
   durationSeconds: number;
-}
-
-export function isVideoFile(file: File): boolean {
-  return ALLOWED_VIDEO_TYPES.has(file.type) || /\.(mp4|mov)$/i.test(file.name);
 }
 
 export function isVideoUploadDisabled(): boolean {
