@@ -19,6 +19,9 @@ export const NOTIFICATION_TYPES = [
   "member_removed",
   "new_owner",
   "report_resolved",
+  // v3.0（itinerary-sharing Task2）。related_id は itinerary_id。20260918000001 で CHECK 制約に追加
+  "itinerary_joined",
+  "itinerary_member_removed",
 ] as const;
 
 export type NotificationType = (typeof NOTIFICATION_TYPES)[number];
@@ -67,6 +70,16 @@ export const NOTIFICATION_CATALOG: Record<NotificationType, NotificationTypeSpec
     relatedIdRefersTo: "report_id",
     recipients: "通報した本人（対応が「削除」の場合のみ）",
     producedBy: "admin/report-handling",
+  },
+  itinerary_joined: {
+    relatedIdRefersTo: "itinerary_id",
+    recipients: "参加した本人・しおりのオーナー・既存メンバー",
+    producedBy: "itinerary/itinerary-sharing",
+  },
+  itinerary_member_removed: {
+    relatedIdRefersTo: "itinerary_id",
+    recipients: "削除されたメンバー本人",
+    producedBy: "itinerary/itinerary-sharing",
   },
 };
 

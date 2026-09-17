@@ -69,8 +69,14 @@ describe("resolveNotificationHref", () => {
     commentPostIds: new Map([["c1", "p1"]]),
     existingPostIds: new Set(["p1"]),
     existingTripIds: new Set(["t1"]),
+    existingItineraryIds: new Set(["it1"]),
     reportTargetHrefs: new Map([["r-kept", "/posts/p1"], ["r-deleted", null]]),
   };
+
+  it("v3.0: しおりの通知はしおり詳細へ（消えていれば案内）", () => {
+    expect(resolveNotificationHref("itinerary_joined", "it1", lookups)).toEqual({ href: "/itineraries/it1", fallbackMessage: null });
+    expect(resolveNotificationHref("itinerary_member_removed", "gone", lookups)).toEqual({ href: null, fallbackMessage: "このしおりは存在しません" });
+  });
 
   it("各 type に対して想定した遷移先", () => {
     expect(resolveNotificationHref("comment", "c1", lookups).href).toBe("/posts/p1");

@@ -53,6 +53,8 @@ export const NOTIFICATION_MESSAGES: Record<NotificationType, string> = {
   member_removed: "アルバムから削除されました",
   new_owner: "アルバムの新しいオーナーに選出されました",
   report_resolved: "あなたの通報に対応しました（対象を削除しました）",
+  itinerary_joined: "しおりに新しいメンバーが参加しました",
+  itinerary_member_removed: "しおりから削除されました",
 };
 
 export function retentionCutoff(now: Date = new Date()): Date {
@@ -95,6 +97,8 @@ export interface NotificationLookups {
   existingPostIds: ReadonlySet<string>;
   /** 存在する旅行ID */
   existingTripIds: ReadonlySet<string>;
+  /** 存在するしおりID（v3.0） */
+  existingItineraryIds: ReadonlySet<string>;
   /** report_resolved 通知: 通報ID → 対象のリンク（対象が消えていれば null） */
   reportTargetHrefs: ReadonlyMap<string, string | null>;
 }
@@ -126,6 +130,11 @@ export function resolveNotificationHref(
       const href = lookups.reportTargetHrefs.get(relatedId) ?? null;
       return href ? { href, fallbackMessage: null } : { href: null, fallbackMessage: "対象は削除されました" };
     }
+    case "itinerary_joined":
+    case "itinerary_member_removed":
+      return lookups.existingItineraryIds.has(relatedId)
+        ? { href: `/itineraries/${relatedId}`, fallbackMessage: null }
+        : { href: null, fallbackMessage: "このしおりは存在しません" };
   }
 }
 
@@ -146,14 +155,16 @@ async function buildLookups(admin: SupabaseClient, rows: NotificationRow[]): Pro
   const likePostIds = ids(["like"]);
   const tripIds = ids(["album_join", "role_change", "member_removed", "new_owner"]);
   const reportIds = ids(["report_resolved"]);
+  const itineraryIds = ids(["itinerary_joined", "itinerary_member_removed"]);
 
-  const [comments, posts, trips, reports] = await Promise.all([
+  const [comments, posts, trips, reports, itineraries] = await Promise.all([
     commentIds.length ? admin.from("comments").select("id, post_id").in("id", commentIds) : Promise.resolve({ data: [] }),
     likePostIds.length ? admin.from("posts").select("id").in("id", likePostIds) : Promise.resolve({ data: [] }),
     tripIds.length ? admin.from("trips").select("id").in("id", tripIds) : Promise.resolve({ data: [] }),
     reportIds.length
       ? admin.from("reports").select("id, target_type, target_id, status").in("id", reportIds)
       : Promise.resolve({ data: [] }),
+    itineraryIds.length ? admin.from("itineraries").select("id").in("id", itineraryIds) : Promise.resolve({ data: [] }),
   ]);
 
   const commentPostIds = new Map<string, string>();
@@ -186,6 +197,7 @@ async function buildLookups(admin: SupabaseClient, rows: NotificationRow[]): Pro
     commentPostIds,
     existingPostIds,
     existingTripIds: new Set(((trips.data ?? []) as { id: string }[]).map((row) => row.id)),
+    existingItineraryIds: new Set(((itineraries.data ?? []) as { id: string }[]).map((row) => row.id)),
     reportTargetHrefs,
   };
 }

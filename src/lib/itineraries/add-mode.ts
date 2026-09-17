@@ -32,3 +32,30 @@ export async function loadAddMode(
 function one<T>(value: T | T[] | null): T | null {
   return Array.isArray(value) ? (value[0] ?? null) : value;
 }
+
+/**
+ * add-spots Task2: しおり詳細の「＋ スポットを追加」の行き先
+ * しおりのスポットで最も多い都道府県を自動入力して投稿一覧（追加モード）へ。
+ * しおりが空（都道府県が分からない）なら検索トップ（/）を追加モードで開き、決定後の一覧に引き継ぐ。
+ * 純粋関数（単体テストの対象）
+ */
+export function addSpotsHref(itineraryId: string, dayIndex: number | null, prefectures: (string | null)[]): string {
+  const counts = new Map<string, number>();
+  for (const prefecture of prefectures) {
+    if (!prefecture) continue;
+    counts.set(prefecture, (counts.get(prefecture) ?? 0) + 1);
+  }
+  let best: string | null = null;
+  let bestCount = 0;
+  for (const [prefecture, count] of counts) {
+    if (count > bestCount) {
+      best = prefecture;
+      bestCount = count;
+    }
+  }
+  const params = new URLSearchParams();
+  if (best) params.set("pref", best);
+  params.set("itinerary", itineraryId);
+  if (dayIndex !== null) params.set("day", String(dayIndex));
+  return `${best ? "/search" : "/"}?${params.toString()}`;
+}
