@@ -1,0 +1,94 @@
+/**
+ * post-timeline Task3: 一覧のスクロール位置・読み込み済みページ数の保存と復元
+ * 出典: docs/tasks/map-search/post-timeline/03-scroll-and-back.md
+ *       要件定義書 v3.0 3.4.2（「一覧に戻る」で位置・条件を保って戻る。受入条件 46）
+ *
+ * 【初心者向け】検索条件・絞り込み・並び替えは URL クエリに持つ（URL がそのまま「条件」になる）。
+ * URL に持てない「どこまでスクロールしたか」「何ページ読み込んだか」は sessionStorage に保存する。
+ *   - キーは URL（パス＋クエリ）。同じ条件で戻ってきたときだけ復元される
+ *   - sessionStorage はタブを閉じると消える（永続化しない。localStorage ではない）
+ *   - 読み込み済みページ数を覚えておくと、戻ったときに同じ件数まで取り直せる（スクロール位置が意味を持つ）
+ * ブラウザ以外（テスト・SSR）や Safari のプライベートモードでは storage が例外を投げるので、すべて try/catch で包む。
+ */
+export interface ListState {
+  /** window.scrollY */
+  scrollY: number;
+  /** 読み込み済みのページ数（1 始まり） */
+  loadedPages: number;
+}
+
+const KEY_PREFIX = "tabikoe:list-state:";
+/** 保存から 30 分を過ぎたものは使わない（古い一覧に戻る意味が薄い） */
+const MAX_AGE_MS = 30 * 60 * 1000;
+
+interface StoredListState extends ListState {
+  savedAt: number;
+}
+
+/** 現在の URL（パス＋クエリ）をキーにする。ハッシュは含めない */
+export function listStateKey(url: string): string {
+  return `${KEY_PREFIX}${url.split("#")[0]}`;
+}
+
+export function saveListState(url: string, state: ListState, storage: Storage | undefined = defaultStorage()): void {
+  if (!storage) return;
+  try {
+    const stored: StoredListState = { ...state, savedAt: Date.now() };
+    storage.setItem(listStateKey(url), JSON.stringify(stored));
+  } catch {
+    // 容量超過やプライベートモードでは黙って諦める
+  }
+}
+
+export function loadListState(url: string, storage: Storage | undefined = defaultStorage(), now: number = Date.now()): ListState | null {
+  if (!storage) return null;
+  try {
+    const raw = storage.getItem(listStateKey(url));
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as Partial<StoredListState>;
+    if (typeof parsed.scrollY !== "number" || typeof parsed.loadedPages !== "number" || typeof parsed.savedAt !== "number") return null;
+    if (now - parsed.savedAt > MAX_AGE_MS) return null;
+    return { scrollY: parsed.scrollY, loadedPages: Math.max(1, Math.floor(parsed.loadedPages)) };
+  } catch {
+    return null;
+  }
+}
+
+export function clearListState(url: string, storage: Storage | undefined = defaultStorage()): void {
+  if (!storage) return;
+  try {
+    storage.removeItem(listStateKey(url));
+  } catch {
+    // noop
+  }
+}
+
+function defaultStorage(): Storage | undefined {
+  try {
+    return typeof window === "undefined" ? undefined : window.sessionStorage;
+  } catch {
+    return undefined;
+  }
+}
+
+/**
+ * 地図の「一覧に戻る」用: 一覧の URL を `back` に埋め込んだ地図 URL を作る。
+ * 例: /map?spot=<id>&lat=..&lng=..&back=%2Fsearch%3Fpref%3D...
+ */
+export function buildMapHrefWithBack(mapParams: Record<string, string | number | null | undefined>, backUrl: string | null): string {
+  const params = new URLSearchParams();
+  for (const [key, value] of Object.entries(mapParams)) {
+    if (value === null || value === undefined || value === "") continue;
+    params.set(key, String(value));
+  }
+  if (backUrl) params.set("back", backUrl);
+  const query = params.toString();
+  return `/map${query ? `?${query}` : ""}`;
+}
+
+/** `back` クエリの安全な読み取り。同一サイトの相対パス（/search…）だけ許す（オープンリダイレクト対策） */
+export function parseBackHref(value: string | null | undefined): string | null {
+  if (!value) return null;
+  if (!value.startsWith("/") || value.startsWith("//")) return null;
+  return value;
+}

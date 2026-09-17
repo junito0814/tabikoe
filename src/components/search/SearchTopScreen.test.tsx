@@ -74,7 +74,7 @@ describe("SearchTopScreen", () => {
     fireEvent.click(screen.getByRole("button", { name: "近くのスポットを探す" }));
     await waitFor(() => expect(screen.getByRole("status")).toHaveTextContent("行き先を入力してください"));
     expect(push).not.toHaveBeenCalled();
-    expect(screen.getByRole("combobox", { name: "行き先" })).toHaveFocus();
+    await waitFor(() => expect(screen.getByRole("combobox", { name: "行き先" })).toHaveFocus());
   });
 
   it("「いまいる場所に投稿する」は許可なら現在地付き、拒否なら位置なしで投稿画面へ", async () => {

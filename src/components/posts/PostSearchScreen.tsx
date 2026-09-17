@@ -1,278 +1,253 @@
 "use client";
 
-import { useCallback, useRef, useState, type FormEvent } from "react";
+import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { ErrorNotice } from "@/components/notices/ErrorNotice";
 import { ERROR_MESSAGES } from "@/components/notices/error-messages";
 import { fetchWithAuthRedirect, UnauthorizedError } from "@/lib/api/fetch-with-auth-redirect";
-import { POST_CATEGORIES, POST_DURATIONS, type PostCategory } from "@/lib/posts/constants";
-import type { PostCardData, PostCardPage } from "@/lib/posts/post-cards";
-import {
-  COST_RANGE_LABELS,
-  COST_RANGES,
-  DISTANCE_LABELS,
-  DISTANCE_OPTIONS,
-} from "@/lib/posts/search-posts";
+import { walkMinutesBetween } from "@/lib/geo/walk-minutes";
+import { requestCurrentPosition } from "@/lib/geo/use-current-position";
+import type { PostCardData, PostCardPage, PostSort } from "@/lib/posts/post-cards";
+import { loadListState, saveListState } from "@/lib/search/list-state";
+import { AddModeBanner, type AddModeInfo } from "./AddModeBanner";
+import { FilterSheet } from "./FilterSheet";
 import { PostCard } from "./PostCard";
-import { buildPostSearchParams, EMPTY_SEARCH_STATE, type PostSearchState } from "./post-search-query";
+import { SortDropdown } from "./SortDropdown";
+import {
+  buildPostSearchParams,
+  buildSearchPageHref,
+  countActiveFilters,
+  distanceCenter,
+  type PostSearchState,
+  type SearchContext,
+} from "./post-search-query";
 import { useInfiniteScroll } from "./use-infinite-scroll";
 
 export type FetchSearchPage = (params: URLSearchParams) => Promise<PostCardPage>;
 
+/** 1 ページの件数（サーバー側の既定と揃える） */
+const PAGE_SIZE = 20;
+
 /**
- * F-MP-04 Task2: 絞り込みUI（SC-04・検索モード）
- * 出典: docs/tasks/map-search/post-filter/02-filter-ui.md
+ * post-timeline Task2〜4（v3.0）: 投稿一覧（SC-04、タイムライン形式）
+ * 出典: docs/tasks/map-search/post-timeline/02-timeline-ui.md
+ *       docs/tasks/map-search/post-timeline/03-scroll-and-back.md
+ *       docs/tasks/map-search/post-timeline/04-spot-list-header-and-add-mode.md
+ *       要件定義書 v3.0 3.4.2・3.4.3
  *
- * 全体マップの「投稿を検索」から開く。距離の基準は地図の中心（クエリの lat/lng）で、
- * 地名検索（F-MP-02）はこの画面の条件に影響しない（3.4.2）。20件ずつの無限スクロール。
- *
- * 【初心者向け】state は 2 系統。`draft` は絞り込みパネルで編集中の条件、`applied` は実際に検索した条件。
- * 「検索」で draft → applied にし、1 ページ目から取り直す。`requestIdRef` は古い応答で上書きしないための番号。
- * v3.0 ではこの画面が「行き先のタイムライン」（post-timeline）に作り替えられる。
+ * 【初心者向け】検索結果（都道府県・駅・スポット別）で共通の画面。
+ *   - 行き先は `context`（開いたときに決まる）。絞り込み・並び替えは `state`
+ *   - state を変えると URL も書き換える（router.replace）。URL がそのまま条件なので、リロードや「一覧に戻る」で再現できる
+ *   - スクロール位置と読み込み済みページ数は sessionStorage（lib/search/list-state.ts）に保存し、同じ URL で開き直したら復元する
+ *   - 「徒歩 N 分」は位置情報の許可が既に出ているときだけ、画面側で計算して足す（許可ダイアログはここでは出さない）
+ *   - `requestIdRef` は古い応答で画面を上書きしないための番号（並び替えを素早く 2 回変えたときなど）
+ * スポット別一覧の見出し（SpotPostListScreen）は `header` に差し込む。
  */
 export function PostSearchScreen({
-  center,
+  context,
+  initialState,
   initialPage,
+  title,
+  backHref,
+  backLabel,
+  header,
+  addMode = null,
+  emptyMessage = "条件に合う投稿がありません",
   fetchPage = defaultFetchPage,
+  geolocation,
+  permissions,
 }: {
-  center: { lat: number; lng: number } | null;
-  /** 条件なし（新着順）の1ページ目。Server Component が取得して渡す */
+  context: SearchContext;
+  /** URL から読んだ絞り込み・並び替え */
+  initialState: PostSearchState;
+  /** 1 ページ目。Server Component が取得して渡す */
   initialPage: PostCardPage;
+  /** 見出し（大阪府／大阪駅／スポット名） */
+  title: string;
+  backHref: string;
+  backLabel: string;
+  /** 見出しの下に差し込む要素（スポット別の情報行など） */
+  header?: ReactNode;
+  addMode?: AddModeInfo | null;
+  emptyMessage?: string;
   /** 差し替え口（単体テスト用） */
   fetchPage?: FetchSearchPage;
+  geolocation?: Pick<Geolocation, "getCurrentPosition">;
+  permissions?: Pick<Permissions, "query">;
 }) {
-  const [draft, setDraft] = useState<PostSearchState>(EMPTY_SEARCH_STATE);
-  const [applied, setApplied] = useState<PostSearchState>(EMPTY_SEARCH_STATE);
-  const [isPanelOpen, setIsPanelOpen] = useState(false);
+  const router = useRouter();
+  const [state, setState] = useState<PostSearchState>(initialState);
+  const [isSheetOpen, setIsSheetOpen] = useState(false);
   const [posts, setPosts] = useState<PostCardData[]>(initialPage.posts);
   const [nextOffset, setNextOffset] = useState<number | null>(initialPage.nextOffset);
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [viewer, setViewer] = useState<{ lat: number; lng: number } | null>(null);
   const requestIdRef = useRef(0);
+  const pageHref = buildSearchPageHref(state, context);
 
   const load = useCallback(
-    async (state: PostSearchState, offset: number, replace: boolean) => {
+    async (nextState: PostSearchState, offset: number, replace: boolean): Promise<PostCardPage | null> => {
       const requestId = ++requestIdRef.current;
       setIsLoading(true);
       setErrorMessage(null);
       try {
-        const page = await fetchPage(buildPostSearchParams(state, center, offset));
-        if (requestIdRef.current !== requestId) return;
+        const page = await fetchPage(buildPostSearchParams(nextState, context, offset));
+        if (requestIdRef.current !== requestId) return null;
         setPosts((current) => (replace ? page.posts : [...current, ...page.posts]));
         setNextOffset(page.nextOffset);
+        return page;
       } catch (error) {
-        if (error instanceof UnauthorizedError) return;
-        if (requestIdRef.current !== requestId) return;
+        if (error instanceof UnauthorizedError) return null;
+        if (requestIdRef.current !== requestId) return null;
         setErrorMessage(ERROR_MESSAGES.dbLoadFailure);
+        return null;
       } finally {
         if (requestIdRef.current === requestId) setIsLoading(false);
       }
     },
-    [fetchPage, center]
+    [fetchPage, context]
   );
 
-  const handleSubmit = (event: FormEvent) => {
-    event.preventDefault();
-    setApplied(draft);
-    setIsPanelOpen(false);
-    void load(draft, 0, true);
-  };
-
-  const handleReset = () => {
-    setDraft(EMPTY_SEARCH_STATE);
-    setApplied(EMPTY_SEARCH_STATE);
-    void load(EMPTY_SEARCH_STATE, 0, true);
+  // 条件が変わったら URL を書き換えて 1 ページ目から取り直す
+  const applyState = (next: PostSearchState) => {
+    setState(next);
+    setIsSheetOpen(false);
+    router.replace(buildSearchPageHref(next, context), { scroll: false });
+    window.scrollTo({ top: 0 });
+    void load(next, 0, true);
   };
 
   const loadMore = useCallback(() => {
     if (isLoading || nextOffset === null) return;
-    void load(applied, nextOffset, false);
-  }, [isLoading, nextOffset, load, applied]);
+    void load(state, nextOffset, false);
+  }, [isLoading, nextOffset, load, state]);
 
   const sentinelRef = useInfiniteScroll(nextOffset !== null && !isLoading, loadMore);
 
-  const toggleCategory = (category: PostCategory) => {
-    setDraft((current) => ({
-      ...current,
-      categories: current.categories.includes(category)
-        ? current.categories.filter((item) => item !== category)
-        : [...current.categories, category],
-    }));
-  };
+  // ── Task3: 「一覧に戻る」の復元 ─────────────────────────────
+  // 初回だけ: 保存された状態があれば同じページ数まで読み込み、スクロール位置を戻す
+  const restoredRef = useRef(false);
+  useEffect(() => {
+    if (restoredRef.current) return;
+    restoredRef.current = true;
+    const saved = loadListState(pageHref);
+    if (!saved) return;
+    let cancelled = false;
+    const restore = async () => {
+      let offset: number | null = initialPage.nextOffset;
+      for (let pageNo = 2; pageNo <= saved.loadedPages && offset !== null && !cancelled; pageNo++) {
+        const page = await load(initialState, offset, false);
+        offset = page?.nextOffset ?? null;
+      }
+      if (!cancelled) {
+        // 描画が終わってからスクロールする（同期だと高さが足りず途中で止まる）
+        requestAnimationFrame(() => window.scrollTo({ top: saved.scrollY }));
+      }
+    };
+    void restore();
+    return () => {
+      cancelled = true;
+    };
+  }, [pageHref, initialPage.nextOffset, initialState, load]);
 
-  // 「絞り込み（N）」の N。適用中の条件の種類数を数える
-  const activeCount =
-    (applied.keyword.trim() ? 1 : 0) +
-    (applied.categories.length > 0 ? 1 : 0) +
-    (applied.distance !== null ? 1 : 0) +
-    (applied.cost !== null ? 1 : 0) +
-    (applied.duration !== null ? 1 : 0);
+  // スクロールのたび（間引き）と離脱時に保存
+  const loadedPages = Math.max(1, Math.ceil(posts.length / PAGE_SIZE));
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    let frame = 0;
+    const save = () => saveListState(pageHref, { scrollY: window.scrollY, loadedPages });
+    const onScroll = () => {
+      if (frame) return;
+      frame = requestAnimationFrame(() => {
+        frame = 0;
+        save();
+      });
+    };
+    window.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("pagehide", save);
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+      window.removeEventListener("pagehide", save);
+      if (frame) cancelAnimationFrame(frame);
+      save();
+    };
+  }, [pageHref, loadedPages]);
+
+  // ── 「徒歩 N 分」: 許可済みのときだけ現在地を取る（ダイアログは出さない） ──
+  useEffect(() => {
+    let cancelled = false;
+    const run = async () => {
+      const perms = permissions ?? (typeof navigator === "undefined" ? undefined : navigator.permissions);
+      if (!perms?.query) return;
+      try {
+        const status = await perms.query({ name: "geolocation" });
+        if (status.state !== "granted" || cancelled) return;
+        const result = await requestCurrentPosition(geolocation ?? navigator.geolocation);
+        if (result.ok && !cancelled) setViewer({ lat: result.lat, lng: result.lng });
+      } catch {
+        // Permissions API 非対応ブラウザでは徒歩分を出さない
+      }
+    };
+    void run();
+    return () => {
+      cancelled = true;
+    };
+  }, [geolocation, permissions]);
+
+  const withWalk = (post: PostCardData): PostCardData =>
+    viewer ? { ...post, walkMinutes: walkMinutesBetween(viewer, { lat: post.spotLat, lng: post.spotLng }) } : post;
+
+  const activeCount = countActiveFilters(state, context);
+  const onSortChange = (sort: PostSort) => applyState({ ...state, sort });
 
   return (
-    <div className="flex min-h-screen flex-col items-center bg-app px-4 py-6">
-      <div className="w-full max-w-[520px]">
-        <header className="mb-4 flex items-center justify-between">
-          <h1 className="text-[18px] font-bold text-ink">投稿を検索</h1>
-          <Link href="/map" className="text-[12px] font-medium text-muted underline underline-offset-2">
-            地図へ戻る
-          </Link>
-        </header>
-
-        <form onSubmit={handleSubmit} className="mb-4 flex flex-col gap-3">
-          <div className="flex gap-2">
-            <input
-              type="search"
-              value={draft.keyword}
-              onChange={(event) => setDraft((current) => ({ ...current, keyword: event.target.value }))}
-              placeholder="スポット名で検索"
-              aria-label="キーワード（スポット名）"
-              className="h-11 min-w-0 flex-1 rounded-[10px] border border-line bg-surface px-3 text-[14px] text-ink focus:outline-none focus:ring-1 focus:ring-accent"
-            />
+    <div className="flex min-h-screen flex-col items-center bg-app pb-6">
+      {addMode && <AddModeBanner info={addMode} />}
+      <div className="w-full max-w-[520px] px-4 pt-4">
+        <header className="mb-3 flex flex-col gap-2.5">
+          <div className="flex items-center gap-2">
+            <Link href={backHref} className="inline-flex h-8 shrink-0 items-center gap-1 text-[12px] font-medium text-muted">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden>
+                <path d="M15 5l-7 7 7 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+              {backLabel}
+            </Link>
+            <h1 className="min-w-0 flex-1 truncate text-center text-[16px] font-bold text-ink">{title}</h1>
             <button
               type="button"
-              onClick={() => setIsPanelOpen((open) => !open)}
-              aria-expanded={isPanelOpen}
-              aria-controls="post-filter-panel"
-              className="h-11 shrink-0 rounded-[10px] border border-line bg-surface px-3 text-[12px] font-semibold text-ink"
+              onClick={() => setIsSheetOpen(true)}
+              aria-haspopup="dialog"
+              className="h-8 shrink-0 rounded-full border border-line bg-surface px-3 text-[12px] font-semibold text-ink"
             >
               絞り込み{activeCount > 0 && `（${activeCount}）`}
             </button>
-            <button
-              type="submit"
-              disabled={isLoading}
-              className="h-11 shrink-0 rounded-[10px] bg-accent px-4 text-[13px] font-semibold text-white disabled:opacity-45"
-            >
-              検索
-            </button>
           </div>
-
-          <div
-            id="post-filter-panel"
-            hidden={!isPanelOpen}
-            className="flex flex-col gap-4 rounded-[12px] border border-line bg-surface p-4"
-          >
-            <fieldset>
-              <legend className="mb-1.5 text-[12px] font-medium text-muted">カテゴリ（複数選択可）</legend>
-              <div className="flex flex-wrap gap-1.5">
-                {POST_CATEGORIES.map((category) => {
-                  const checked = draft.categories.includes(category);
-                  return (
-                    <label
-                      key={category}
-                      className={`cursor-pointer rounded-full border px-3 py-1.5 text-[12px] font-medium ${
-                        checked ? "border-accent bg-accent text-white" : "border-line text-ink"
-                      }`}
-                    >
-                      <input
-                        type="checkbox"
-                        checked={checked}
-                        onChange={() => toggleCategory(category)}
-                        className="sr-only"
-                      />
-                      {category}
-                    </label>
-                  );
-                })}
-              </div>
-            </fieldset>
-
-            <fieldset>
-              <legend className="mb-1.5 text-[12px] font-medium text-muted">
-                距離（地図の中心から）{!center && <span className="ml-1 text-accent">※地図から開くと使えます</span>}
-              </legend>
-              <div className="flex flex-wrap gap-1.5">
-                {DISTANCE_OPTIONS.map((option) => (
-                  <label
-                    key={option}
-                    className={`cursor-pointer rounded-full border px-3 py-1.5 text-[12px] font-medium ${
-                      draft.distance === option ? "border-accent bg-accent text-white" : "border-line text-ink"
-                    } ${!center ? "opacity-45" : ""}`}
-                  >
-                    <input
-                      type="radio"
-                      name="distance"
-                      disabled={!center}
-                      checked={draft.distance === option}
-                      onChange={() => setDraft((current) => ({ ...current, distance: option }))}
-                      className="sr-only"
-                    />
-                    {DISTANCE_LABELS[option]}
-                  </label>
-                ))}
-              </div>
-            </fieldset>
-
-            <fieldset>
-              <legend className="mb-1.5 text-[12px] font-medium text-muted">費用（1人あたり）</legend>
-              <div className="flex flex-wrap gap-1.5">
-                {COST_RANGES.map((range) => (
-                  <label
-                    key={range}
-                    className={`cursor-pointer rounded-full border px-3 py-1.5 text-[12px] font-medium ${
-                      draft.cost === range ? "border-accent bg-accent text-white" : "border-line text-ink"
-                    }`}
-                  >
-                    <input
-                      type="radio"
-                      name="cost"
-                      checked={draft.cost === range}
-                      onChange={() => setDraft((current) => ({ ...current, cost: range }))}
-                      className="sr-only"
-                    />
-                    {COST_RANGE_LABELS[range]}
-                  </label>
-                ))}
-              </div>
-            </fieldset>
-
-            <fieldset>
-              <legend className="mb-1.5 text-[12px] font-medium text-muted">滞在時間</legend>
-              <div className="flex flex-wrap gap-1.5">
-                {POST_DURATIONS.map((option) => (
-                  <label
-                    key={option}
-                    className={`cursor-pointer rounded-full border px-3 py-1.5 text-[12px] font-medium ${
-                      draft.duration === option ? "border-accent bg-accent text-white" : "border-line text-ink"
-                    }`}
-                  >
-                    <input
-                      type="radio"
-                      name="duration"
-                      checked={draft.duration === option}
-                      onChange={() => setDraft((current) => ({ ...current, duration: option }))}
-                      className="sr-only"
-                    />
-                    {option}
-                  </label>
-                ))}
-              </div>
-            </fieldset>
-
-            <div className="flex justify-between">
-              <button type="button" onClick={handleReset} className="text-[12px] font-medium text-muted underline underline-offset-2">
-                条件をクリア
-              </button>
-              <button type="submit" className="h-9 rounded-[8px] bg-ink px-4 text-[12px] font-semibold text-white">
-                この条件で検索
-              </button>
-            </div>
+          {header}
+          <div className="flex items-center justify-end gap-2">
+            <SortDropdown value={state.sort} onChange={onSortChange} />
           </div>
-        </form>
+        </header>
 
         {posts.length === 0 && !isLoading && !errorMessage ? (
-          <p className="py-16 text-center text-[13px] text-muted">条件に合う投稿がありません</p>
+          <p className="py-16 text-center text-[13px] text-muted">{emptyMessage}</p>
         ) : (
-          <ul className="flex flex-col gap-2.5">
+          <ul className="flex flex-col gap-3">
             {posts.map((post) => (
               <li key={post.id}>
-                <PostCard post={post} showSpotName />
+                <PostCard post={withWalk(post)} backHref={pageHref} showSpotName={context.destination?.kind !== "spot"} />
               </li>
             ))}
           </ul>
         )}
 
         {errorMessage && (
-          <ErrorNotice className="mt-3" message={errorMessage} onRetry={() => void load(applied, posts.length === 0 ? 0 : (nextOffset ?? 0), posts.length === 0)} />
+          <ErrorNotice
+            className="mt-3"
+            message={errorMessage}
+            onRetry={() => void load(state, posts.length === 0 ? 0 : (nextOffset ?? 0), posts.length === 0)}
+          />
         )}
 
         <div ref={sentinelRef} aria-hidden className="h-1" />
@@ -287,6 +262,14 @@ export function PostSearchScreen({
           </button>
         )}
       </div>
+
+      <FilterSheet
+        open={isSheetOpen}
+        value={state}
+        hasDistanceCenter={distanceCenter(context) !== null}
+        onApply={applyState}
+        onClose={() => setIsSheetOpen(false)}
+      />
     </div>
   );
 }

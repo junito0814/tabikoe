@@ -1,18 +1,29 @@
 import { describe, expect, it, vi } from "vitest";
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
-import { SpotPostListScreen } from "./SpotPostListScreen";
+import { render, screen } from "@testing-library/react";
+
+vi.mock("next/navigation", () => ({ useRouter: () => ({ replace: vi.fn(), push: vi.fn(), refresh: vi.fn() }) }));
+
+import { SpotPostListScreen, type SpotSummary } from "./SpotPostListScreen";
+import { EMPTY_SEARCH_STATE } from "./post-search-query";
 import type { PostCardData } from "@/lib/posts/post-cards";
 
 /**
- * 出典: docs/tasks/map-search/pin-interaction/02-post-list-ui.md 単体テスト
- * - 並び替えUIの選択に応じて、Task1へ渡すパラメータが正しく切り替わることを検証する
- * - 投稿が0件の場合「まだ投稿がありません」と表示する
- * 出典: docs/tasks/map-search/pin-interaction/03-post-detail-navigation.md
- * - 投稿カードは投稿詳細（/posts/[id]）へのリンク
- * 出典: docs/tasks/map-search/spot-photo-gallery/03-photo-tag-entry-point.md
- * - 「写真」タグは SC-13（/spots/[id]/photos）へのリンク
+ * 出典: docs/tasks/map-search/post-timeline/04-spot-list-header-and-add-mode.md 単体テスト
+ * - 見出し（スポット名・都道府県・件数・まだあった・地図で見る・＋・投稿する）
+ * - 投稿が無ければ「まだ投稿がありません」
+ * - バナーの表示条件と「完了」の遷移先
  */
-const spot = { id: "spot-1", name: "東京駅", prefecture: "東京都", isWishlisted: false };
+const spot: SpotSummary = {
+  id: "spot-1",
+  name: "東京駅",
+  prefecture: "東京都",
+  lat: 35.68,
+  lng: 139.76,
+  isManualSpot: false,
+  postCount: 7,
+  isWishlisted: false,
+  latestStatus: { status: "still_there", reportedAt: "2026-09-10T00:00:00Z" },
+};
 
 const card = (id: string): PostCardData => ({
   id,
@@ -29,51 +40,54 @@ const card = (id: string): PostCardData => ({
   thumbnailUrl: "https://example.com/p.jpg",
   thumbnailMediaType: "photo",
   mediaCount: 1,
+  media: [],
   likeCount: 2,
   commentCount: 0,
   viewerHasLiked: false,
+  viewerHasSaved: false,
+  isManualSpot: false,
+  prefecture: "東京都",
+  spotLat: 35.68,
+  spotLng: 139.76,
+  walkMinutes: null,
+  latestStatus: null,
 });
 
-describe("SpotPostListScreen（SC-04）", () => {
+describe("SpotPostListScreen（SC-04 スポット別）", () => {
   it("投稿が0件なら「まだ投稿がありません」", () => {
-    render(<SpotPostListScreen spot={spot} initialPage={{ posts: [], nextOffset: null }} fetchPosts={vi.fn()} />);
+    render(<SpotPostListScreen spot={spot} initialState={EMPTY_SEARCH_STATE} initialPage={{ posts: [], nextOffset: null }} fetchPage={vi.fn()} />);
     expect(screen.getByText("まだ投稿がありません")).toBeInTheDocument();
   });
 
-  it("並び替えを選ぶと、その sort で先頭から取り直す", async () => {
-    const fetchPosts = vi.fn(async () => ({ posts: [card("p2")], nextOffset: null }));
-    render(
-      <SpotPostListScreen spot={spot} initialPage={{ posts: [card("p1")], nextOffset: null }} fetchPosts={fetchPosts} />
+  it("見出しにスポット名・都道府県・件数・まだあった・地図で見る・＋・投稿する", () => {
+    render(<SpotPostListScreen spot={spot} initialState={EMPTY_SEARCH_STATE} initialPage={{ posts: [card("p1")], nextOffset: null }} fetchPage={vi.fn()} />);
+    expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("東京駅");
+    expect(screen.getByText("東京都")).toBeInTheDocument();
+    expect(screen.getByText("投稿 7 件")).toBeInTheDocument();
+    expect(screen.getByText("9月にまだあった")).toBeInTheDocument();
+    expect(screen.getAllByRole("link", { name: "地図で見る" })[0]).toHaveAttribute(
+      "href",
+      "/map?spot=spot-1&lat=35.68&lng=139.76&back=%2Fsearch%3Fspot%3Dspot-1"
     );
-    expect(screen.getByRole("radio", { name: "新着順" })).toHaveAttribute("aria-checked", "true");
-    expect(fetchPosts).not.toHaveBeenCalled();
-
-    fireEvent.click(screen.getByRole("radio", { name: "評価順" }));
-    await waitFor(() => expect(fetchPosts).toHaveBeenCalledWith("spot-1", "rating", 0));
-    expect(screen.getByRole("radio", { name: "評価順" })).toHaveAttribute("aria-checked", "true");
-
-    fireEvent.click(screen.getByRole("radio", { name: "いいね順" }));
-    await waitFor(() => expect(fetchPosts).toHaveBeenLastCalledWith("spot-1", "likes", 0));
-
-    fireEvent.click(screen.getByRole("radio", { name: "新着順" }));
-    await waitFor(() => expect(fetchPosts).toHaveBeenLastCalledWith("spot-1", "newest", 0));
+    expect(screen.getAllByRole("button", { name: "保存する" }).length).toBeGreaterThan(0);
+    expect(screen.getByRole("link", { name: "投稿する" })).toHaveAttribute("href", "/posts/new?spot=spot-1");
+    // 見出しにスポット名があるので、カードの見出しは出さない
+    expect(document.querySelector("[data-post-card='p1'] h3")).toBeNull();
+    expect(screen.getByRole("link", { name: "地図" })).toHaveAttribute("href", "/map");
   });
 
-  it("「もっと見る」で nextOffset から追加読み込みする", async () => {
-    const fetchPosts = vi.fn(async () => ({ posts: [card("p21")], nextOffset: null }));
+  it("追加モードならバナーが出て「完了」でしおりへ戻る", () => {
     render(
-      <SpotPostListScreen spot={spot} initialPage={{ posts: [card("p1")], nextOffset: 20 }} fetchPosts={fetchPosts} />
+      <SpotPostListScreen
+        spot={spot}
+        initialState={EMPTY_SEARCH_STATE}
+        initialPage={{ posts: [], nextOffset: null }}
+        addMode={{ itineraryId: "it-1", day: null, title: "東京旅行" }}
+        fetchPage={vi.fn()}
+      />
     );
-    fireEvent.click(screen.getByRole("button", { name: "もっと見る" }));
-    await waitFor(() => expect(fetchPosts).toHaveBeenCalledWith("spot-1", "newest", 20));
-    expect(await screen.findByText("良かった", { selector: "[data-post-card='p21'] *" })).toBeInTheDocument();
-  });
-
-  it("投稿カードは投稿詳細へ、「写真」タグはスポット写真一覧へのリンク", () => {
-    render(
-      <SpotPostListScreen spot={spot} initialPage={{ posts: [card("p1")], nextOffset: null }} fetchPosts={vi.fn()} />
-    );
-    expect(document.querySelector("[data-post-card='p1']")).toHaveAttribute("href", "/posts/p1");
-    expect(screen.getByRole("link", { name: "写真" })).toHaveAttribute("href", "/spots/spot-1/photos");
+    expect(screen.getByRole("status")).toHaveTextContent("東京旅行");
+    expect(screen.getByRole("status")).toHaveTextContent("未定 に追加中");
+    expect(screen.getByRole("link", { name: "完了" })).toHaveAttribute("href", "/itineraries/it-1");
   });
 });

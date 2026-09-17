@@ -3,6 +3,7 @@ import {
   haversineMeters,
   matchesCostRange,
   matchesFilters,
+  parsePeriod,
   parsePostSearchParams,
   type PostSearchFilters,
 } from "./search-posts";
@@ -123,12 +124,18 @@ describe("parsePostSearchParams", () => {
       duration: "30分以内",
     });
     expect(parsePostSearchParams(params)).toEqual({
-      keyword: "東京",
+      // v3.0: 座標付きの q は周辺検索のラベル（スポット名の絞り込みではない）
+      keyword: null,
       categories: ["グルメ", "観光スポット"],
       distanceMeters: 1000,
       center: { lat: 35.68, lng: 139.76 },
       costRange: "3000",
       duration: "30分以内",
+      destination: { kind: "nearby", center: { lat: 35.68, lng: 139.76 }, label: "東京" },
+      visitFrom: null,
+      visitTo: null,
+      sort: "newest",
+      viewer: null,
     });
   });
 
@@ -141,6 +148,66 @@ describe("parsePostSearchParams", () => {
       center: null,
       costRange: null,
       duration: null,
+      destination: null,
+      visitFrom: null,
+      visitTo: null,
+      sort: "newest",
+      viewer: null,
     });
+  });
+
+  it("v3.0: 都道府県・スポット別・座標の 3 通りの行き先を読む", () => {
+    expect(parsePostSearchParams(new URLSearchParams({ pref: "大阪府" })).destination).toEqual({ kind: "prefecture", name: "大阪府" });
+    expect(parsePostSearchParams(new URLSearchParams({ spot: "spot-1", pref: "大阪府" })).destination).toEqual({ kind: "spot", spotId: "spot-1" });
+    expect(parsePostSearchParams(new URLSearchParams({ lat: "34.7", lng: "135.5", q: "大阪駅" })).destination).toEqual({
+      kind: "nearby",
+      center: { lat: 34.7, lng: 135.5 },
+      label: "大阪駅",
+    });
+  });
+
+  it("v3.0: 並び替え・閲覧者の現在地を読む", () => {
+    const filters = parsePostSearchParams(new URLSearchParams({ sort: "likes", vlat: "35.0", vlng: "135.0" }));
+    expect(filters.sort).toBe("likes");
+    expect(filters.viewer).toEqual({ lat: 35, lng: 135 });
+    expect(parsePostSearchParams(new URLSearchParams({ sort: "x" })).sort).toBe("newest");
+  });
+});
+
+describe("parsePeriod", () => {
+  it("今月・先月は月初〜月末", () => {
+    expect(parsePeriod(new URLSearchParams({ period: "this_month" }), "2026-09-18")).toEqual({ visitFrom: "2026-09-01", visitTo: "2026-09-30" });
+    expect(parsePeriod(new URLSearchParams({ period: "last_month" }), "2026-09-18")).toEqual({ visitFrom: "2026-08-01", visitTo: "2026-08-31" });
+    // 1 月の先月は前年 12 月
+    expect(parsePeriod(new URLSearchParams({ period: "last_month" }), "2026-01-05")).toEqual({ visitFrom: "2025-12-01", visitTo: "2025-12-31" });
+  });
+
+  it("日付指定は from/to をそのまま（形式が違えば無視）", () => {
+    expect(parsePeriod(new URLSearchParams({ period: "custom", from: "2026-05-01", to: "bad" }), "2026-09-18")).toEqual({ visitFrom: "2026-05-01", visitTo: null });
+    expect(parsePeriod(new URLSearchParams(), "2026-09-18")).toEqual({ visitFrom: null, visitTo: null });
+  });
+});
+
+describe("matchesFilters（v3.0 の行き先・期間）", () => {
+  const base = { visibility: "public", category: "グルメ", cost: 1000, duration: "30分以内", visit_date: "2026-09-03" };
+  const spot = { id: "s1", name: "たこ焼き", lat: 34.7025, lng: 135.4959, prefecture: "大阪府" };
+  const emptyFilters = parsePostSearchParams(new URLSearchParams());
+
+  it("都道府県が一致しなければ除外", () => {
+    expect(matchesFilters({ ...base, spot }, { ...emptyFilters, destination: { kind: "prefecture", name: "大阪府" } })).toBe(true);
+    expect(matchesFilters({ ...base, spot }, { ...emptyFilters, destination: { kind: "prefecture", name: "京都府" } })).toBe(false);
+  });
+
+  it("周辺 5km の外は除外", () => {
+    const near = { kind: "nearby" as const, center: { lat: 34.70, lng: 135.50 }, label: null };
+    const far = { kind: "nearby" as const, center: { lat: 35.0, lng: 135.5 }, label: null };
+    expect(matchesFilters({ ...base, spot }, { ...emptyFilters, destination: near })).toBe(true);
+    expect(matchesFilters({ ...base, spot }, { ...emptyFilters, destination: far })).toBe(false);
+  });
+
+  it("訪問日が期間の外・未設定なら除外", () => {
+    expect(matchesFilters({ ...base, spot }, { ...emptyFilters, visitFrom: "2026-09-01", visitTo: "2026-09-30" })).toBe(true);
+    expect(matchesFilters({ ...base, spot }, { ...emptyFilters, visitFrom: "2026-10-01", visitTo: null })).toBe(false);
+    expect(matchesFilters({ ...base, spot, visit_date: null }, { ...emptyFilters, visitFrom: "2026-09-01", visitTo: null })).toBe(false);
   });
 });
