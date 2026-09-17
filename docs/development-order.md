@@ -2,7 +2,7 @@
 
 `docs/user-stories/`・`docs/tasks/`配下の全ストーリーを、テーブル依存関係と共通コンポーネントの再利用関係に基づいて開発順に並べたもの。各ストーリーの`00-index.md`に記載された「依存」欄を根拠としている。
 
-**2026-09-11 改訂**（2026-09-14 状態更新）：当初の計画順（Phase 0 → 1 → 2 → …）に対し、実際の実装は Phase 1 から着手し、前提となるテーブルを後続Phaseから先取りする形で進んだ。本ファイルは**実際に実装した順**に並べ直し、各ストーリーの実装状況を併記する。Phase番号は他ドキュメント・Issue・PRから参照されているため**識別子として維持**し、並び順だけを変えている（番号順＝実装順ではない）。
+**2026-09-11 改訂**（2026-09-14 状態更新、2026-09-16 に Phase 10〜14 を追加）：当初の計画順（Phase 0 → 1 → 2 → …）に対し、実際の実装は Phase 1 から着手し、前提となるテーブルを後続Phaseから先取りする形で進んだ。本ファイルは**実際に実装した順**に並べ直し、各ストーリーの実装状況を併記する。Phase番号は他ドキュメント・Issue・PRから参照されているため**識別子として維持**し、並び順だけを変えている（番号順＝実装順ではない）。
 
 **読み方**：上から順が実装順。「状態」列の凡例は以下。
 
@@ -19,13 +19,20 @@ flowchart TD
     P0 --> P2["Phase 2\n投稿の中核\n✅"]
     P2 --> P3["Phase 3\n共有テーブルの補完\n🔶"]
     P3 --> P4["Phase 4\n横断基盤の土台\n✅"]
-    P4 --> P5["Phase 5\n地図・検索\n🔷"]
-    P4 --> P6["Phase 6\n閲覧・交流\n🔷"]
-    P5 --> P7["Phase 7\n記録・振り返り\n🔷"]
+    P4 --> P5["Phase 5\n地図・検索\n✅"]
+    P4 --> P6["Phase 6\n閲覧・交流\n✅"]
+    P5 --> P7["Phase 7\n記録・振り返り\n✅"]
     P6 --> P7
-    P7 --> P8["Phase 8\n管理者機能\n🔷"]
-    P6 --> P9["Phase 9\n通知一覧の最終統合\n🔷"]
+    P7 --> P8["Phase 8\n管理者機能\n✅"]
+    P6 --> P9["Phase 9\n通知一覧の最終統合\n✅"]
     P8 --> P9
+    P9 --> P10["Phase 10\nv3.0 基盤（テーブル・配色・共通部品）\n⬜"]
+    P10 --> P11["Phase 11\n投稿（SC-03・下書き）\n⬜"]
+    P10 --> P12["Phase 12\n主導線（検索トップ・一覧・地図）\n⬜"]
+    P11 --> P12
+    P11 --> P13["Phase 13\nしおり・保存\n⬜"]
+    P12 --> P13
+    P13 --> P14["Phase 14\n記録（マイページ・マイマップ）\n⬜"]
 ```
 
 ---
@@ -98,64 +105,138 @@ flowchart TD
 | 6 | F-RC-05 「行きたい」保存 | ✅ | `POST/GET /api/wishlist`・`DELETE /api/wishlist/[spotId]`、SC-08（/wishlist）、`WishlistButton`。ボタンの SC-04/SC-05 への組み込みは Phase 5・6、SC-06 からの導線は Phase 7 my-page Task4。地図上の「行きたい」ピンは Phase 5 が `wishlist` を参照 |
 | 7 | F-BG ステータスバッジ | ✅ | カタログ（`src/lib/badges/catalog.ts`）、投稿作成時の判定（`POST /api/posts` → `evaluatePostBadges`）、SC-10（/badges）、`GET /api/badges`、獲得トースト（投稿後にトップページへクエリで受け渡し）。いいね数バッジの関数 `awardLikeCountBadgeIfEligible` は実装済みで、呼び出しは Phase 6 likes Task1 が行う（組み込みガイドを同タスクに追記） |
 
-## Phase 5 — 地図・検索（F-MP） 🔷
+## Phase 5 — 地図・検索（F-MP） ✅
 
 Phase 4 の wishlist、Phase 0 の pin-display-rules、Phase 2 の Google Maps ローダーが揃って全体マップが組めた。5ストーリーを1ブランチ（`feature/map-search`）でまとめて実装した（SC-04 を pin-interaction・post-filter・spot-photo-gallery が共有し、分けると画面が成立しないため）。
 
 | # | ストーリー | 状態 | 備考 |
 |---|---|---|---|
-| 1 | F-MP-01 地図表示 | 🔷 | SC-02（`/map`）。共通地図コンポーネント `GoogleMap`（`src/components/map/`）はマイマップ（Phase 7）が再利用する。クラスタリングは `@googlemaps/markerclusterer`。**トップページはログイン済みなら `/map` へ転送**し、投稿完了等のフラッシュとバッジトーストも `/map` が表示する |
-| 2 | F-MP-03 ピン操作 | 🔷 | SC-04（`/spots/[id]`）。並び替えはいいね数の集計を含むためサーバー側でスポット単位に取ってから並べる（上限500件） |
-| 3 | F-MP-02 地名検索 | 🔷 | `GET /api/geocode`（サーバー側キーのみ）＋ SC-02 の検索バー。地図の移動のみ |
-| 4 | F-MP-04 投稿検索・絞り込み | 🔷 | SC-04 の検索モード（`/search?lat&lng`）。距離は矩形で DB を絞ってから Haversine で円判定し、落ちた分は次の行を読み足す |
-| 5 | F-MP-05 スポット写真一覧 | 🔷 | SC-13（`/spots/[id]/photos`）。`MediaThumbnail` を MediaGrid から切り出して再利用 |
+| 1 | F-MP-01 地図表示 | ✅ | SC-02（`/map`）。共通地図コンポーネント `GoogleMap`（`src/components/map/`）はマイマップ（Phase 7）が再利用する。クラスタリングは `@googlemaps/markerclusterer`。**トップページはログイン済みなら `/map` へ転送**し、投稿完了等のフラッシュとバッジトーストも `/map` が表示する |
+| 2 | F-MP-03 ピン操作 | ✅ | SC-04（`/spots/[id]`）。並び替えはいいね数の集計を含むためサーバー側でスポット単位に取ってから並べる（上限500件） |
+| 3 | F-MP-02 地名検索 | ✅ | `GET /api/geocode`（サーバー側キーのみ）＋ SC-02 の検索バー。地図の移動のみ |
+| 4 | F-MP-04 投稿検索・絞り込み | ✅ | SC-04 の検索モード（`/search?lat&lng`）。距離は矩形で DB を絞ってから Haversine で円判定し、落ちた分は次の行を読み足す |
+| 5 | F-MP-05 スポット写真一覧 | ✅ | SC-13（`/spots/[id]/photos`）。`MediaThumbnail` を MediaGrid から切り出して再利用 |
 
 投稿詳細（SC-05）への遷移導線（pin-interaction Task3・spot-photo-gallery Task4）は `/posts/[id]` へのリンクとして置いてあり、画面本体は Phase 6 が実装する。
 
-## Phase 6 — 閲覧・交流（F-VW） 🔷
+## Phase 6 — 閲覧・交流（F-VW） ✅
 
 3ストーリーを1ブランチ（`feature/browsing`、Phase 5 の上に積む）で実装した。SC-05 がいいね・コメント欄を内包するため。
 
 | # | ストーリー | 状態 | 備考 |
 |---|---|---|---|
-| 1 | F-VW-01 投稿詳細閲覧 | 🔷 | SC-05（`/posts/[id]`）、`GET /api/posts/[id]`。非公開投稿の閲覧可否（本人・アルバムメンバー）を Route Handler と RLS（`can_view_post()`、20260914000001）の両方で判定。post-delete Task4 の削除ボタンと編集導線を本人にのみ設置。Task3（ログイン誘導・復帰）は F-AC-02 Task3 の `requireUserOrRedirect` ＋ F-AC-01 のコールバックで既に実現済みで、単体テストだけ追加 |
-| 2 | F-VW-02 いいね | 🔷 | `POST/DELETE /api/posts/[id]/like`（冪等）。付与時に `like` 通知と F-BG Task3（いいね数バッジ）を統合。`LikeButton` を SC-04 のカードと SC-05 に設置 |
-| 3 | F-VW-03 コメント | 🔷 | `GET/POST /api/posts/[id]/comments`、`DELETE /api/comments/[id]`。本文は保存前に HTML エスケープ（表示時に戻して React のテキストとして描画）。レート制限（1分5件）、`comment` 通知、`operation_logs` を組み込み |
+| 1 | F-VW-01 投稿詳細閲覧 | ✅ | SC-05（`/posts/[id]`）、`GET /api/posts/[id]`。非公開投稿の閲覧可否（本人・アルバムメンバー）を Route Handler と RLS（`can_view_post()`、20260914000001）の両方で判定。post-delete Task4 の削除ボタンと編集導線を本人にのみ設置。Task3（ログイン誘導・復帰）は F-AC-02 Task3 の `requireUserOrRedirect` ＋ F-AC-01 のコールバックで既に実現済みで、単体テストだけ追加 |
+| 2 | F-VW-02 いいね | ✅ | `POST/DELETE /api/posts/[id]/like`（冪等）。付与時に `like` 通知と F-BG Task3（いいね数バッジ）を統合。`LikeButton` を SC-04 のカードと SC-05 に設置 |
+| 3 | F-VW-03 コメント | ✅ | `GET/POST /api/posts/[id]/comments`、`DELETE /api/comments/[id]`。本文は保存前に HTML エスケープ（表示時に戻して React のテキストとして描画）。レート制限（1分5件）、`comment` 通知、`operation_logs` を組み込み |
 
 **要件定義書3.3.6 に従い、いいね・コメントは公開投稿にしか付けられない**（アルバムメンバー間でも不可）。comments Task1 の「閲覧権限があれば非公開投稿にもコメント可」という記述より要件定義書を優先した。RLS の `with check` にも同じ条件を入れてある。
 
-## Phase 7 — 記録・振り返り（F-RC）残り 🔷
+## Phase 7 — 記録・振り返り（F-RC）残り ✅
 
 4ストーリーを1ブランチ（`feature/records`、Phase 6 の上に積む）で実装した。
 
 | # | ストーリー | 状態 | 備考 |
 |---|---|---|---|
-| 1 | F-RC-02 アルバム | 🔷 | `/albums`（一覧）・`/albums/[id]`（SC-09）、`GET /api/trips?view=albums`・`GET /api/trips/[id]`・`GET /api/trips/[id]/members`。**post-delete Task2（投稿0件アルバム非表示）を `filterAlbumsWithPosts` で実装**。名称変更UIはオーナーのみ |
-| 2 | F-RC-03 アルバムの共同編集・招待 | 🔷 | `album_invitations` テーブル＋**trips の INSERT でオーナーの `album_members` 行を自動作成するトリガー（既存分も補完）**（20260914000002）。招待発行／無効化／受諾、権限変更／削除／退出、`album_join`・`role_change`・`member_removed` 通知。編集者がアルバムに投稿できるよう `resolveTripId`・`GET /api/trips` を「本人がオーナー／編集者のアルバムの旅行」まで広げた。退会時のオーナー継承で旧オーナーを閲覧者へ降格する扱い（v2.7）はそのまま |
-| 3 | F-RC-06 マイマップ | 🔷 | `/mymap`（SC-12）、`GET /api/users/me/map-spots?mode&bounds`。SC-02 の `GoogleMap` を再利用し、posted / wishlist ピンで描画。投稿済みピン→自分の最新投稿（SC-05）、行きたいピン→SC-04 |
-| 4 | F-RC-01 マイページ | 🔷 | `/mypage`（SC-06）、`GET /api/users/me/summary`・`GET /api/users/me/posts?trip_id`。**trip-title Task5（表示範囲の制御）**: 旅行タイトルはマイページとアルバムだけが表示し、SC-04/05/13 のカード型（`PostCardData`）には項目自体を持たせていない |
+| 1 | F-RC-02 アルバム | ✅ | `/albums`（一覧）・`/albums/[id]`（SC-09）、`GET /api/trips?view=albums`・`GET /api/trips/[id]`・`GET /api/trips/[id]/members`。**post-delete Task2（投稿0件アルバム非表示）を `filterAlbumsWithPosts` で実装**。名称変更UIはオーナーのみ |
+| 2 | F-RC-03 アルバムの共同編集・招待 | ✅ | `album_invitations` テーブル＋**trips の INSERT でオーナーの `album_members` 行を自動作成するトリガー（既存分も補完）**（20260914000002）。招待発行／無効化／受諾、権限変更／削除／退出、`album_join`・`role_change`・`member_removed` 通知。編集者がアルバムに投稿できるよう `resolveTripId`・`GET /api/trips` を「本人がオーナー／編集者のアルバムの旅行」まで広げた。退会時のオーナー継承で旧オーナーを閲覧者へ降格する扱い（v2.7）はそのまま |
+| 3 | F-RC-06 マイマップ | ✅ | `/mymap`（SC-12）、`GET /api/users/me/map-spots?mode&bounds`。SC-02 の `GoogleMap` を再利用し、posted / wishlist ピンで描画。投稿済みピン→自分の最新投稿（SC-05）、行きたいピン→SC-04 |
+| 4 | F-RC-01 マイページ | ✅ | `/mypage`（SC-06）、`GET /api/users/me/summary`・`GET /api/users/me/posts?trip_id`。**trip-title Task5（表示範囲の制御）**: 旅行タイトルはマイページとアルバムだけが表示し、SC-04/05/13 のカード型（`PostCardData`）には項目自体を持たせていない |
 
-## Phase 8 — 管理者機能（F-AD） 🔷
+## Phase 8 — 管理者機能（F-AD） ✅
 
 残り4ストーリー分を1ブランチ（`feature/admin`、Phase 7 の上に積む）で実装した。
 
 | # | ストーリー | 状態 | 備考 |
 |---|---|---|---|
-| 1 | F-AD-01 管理者ログイン | 🔷 | Task1 は Phase 1 で先取り済み。Task2: SC-15 は SC-01 を `/login?admin=1` で開いたもの（4.1「ログイン導線は一般と共通」）。その導線から来た `is_admin` ユーザーはコールバックで `/admin` へ（`resolvePostLoginRedirect`）。`/api/admin` 配下は proxy の対象外なので `requireAdminUser` で各ハンドラが判定（非管理者は404） |
+| 1 | F-AD-01 管理者ログイン | ✅ | Task1 は Phase 1 で先取り済み。Task2: SC-15 は SC-01 を `/login?admin=1` で開いたもの（4.1「ログイン導線は一般と共通」）。その導線から来た `is_admin` ユーザーはコールバックで `/admin` へ（`resolvePostLoginRedirect`）。`/api/admin` 配下は proxy の対象外なので `requireAdminUser` で各ハンドラが判定（非管理者は404） |
 | 2 | F-AD-02 管理者ダッシュボード | ✅ | Phase 1 で先取り済み |
-| 3 | F-AD-03 お知らせ管理 | 🔷 | `system_announcements`（20260914000003）、`GET/POST /api/admin/announcements`・`PATCH/DELETE .../[id]`、SC-17 `/admin/announcements` |
-| 4 | F-AD-04 通報一覧 | 🔷 | `GET /api/admin/reports?status&reason&target_type&from&to`・`GET .../[id]`（対象の内容を種別ごとに取得）、SC-18 `/admin/reports`・`/admin/reports/[id]` |
-| 5 | F-AD-05 通報対応操作 | 🔷 | `POST /api/admin/reports/[id]/action`（hide / delete / no_issue）。非公開化は `hidden_at`（投稿・写真・コメント・スポット・アルバム）／`review_hidden_at`（感想）、ユーザーは `suspended_at`（一時停止＝ログイン拒否＋既存セッション破棄）。削除時のみ通報者へ `report_resolved` 通知。`operation_logs` の `admin_action` を記録 |
+| 3 | F-AD-03 お知らせ管理 | ✅ | `system_announcements`（20260914000003）、`GET/POST /api/admin/announcements`・`PATCH/DELETE .../[id]`、SC-17 `/admin/announcements` |
+| 4 | F-AD-04 通報一覧 | ✅ | `GET /api/admin/reports?status&reason&target_type&from&to`・`GET .../[id]`（対象の内容を種別ごとに取得）、SC-18 `/admin/reports`・`/admin/reports/[id]` |
+| 5 | F-AD-05 通報対応操作 | ✅ | `POST /api/admin/reports/[id]/action`（hide / delete / no_issue）。非公開化は `hidden_at`（投稿・写真・コメント・スポット・アルバム）／`review_hidden_at`（感想）、ユーザーは `suspended_at`（一時停止＝ログイン拒否＋既存セッション破棄）。削除時のみ通報者へ `report_resolved` 通知。`operation_logs` の `admin_action` を記録 |
 
 **非公開化の反映先**: 地図ピン・スポット別一覧・検索・スポット写真一覧・投稿詳細（本人以外）・コメント一覧・アルバム（一覧・詳細）・スポット候補検索から除外し、RLS（`posts_select_visible`・`comments_select_visible_post`）にも `hidden_at is null or 本人` を追加した。`hidden_at`・`suspended_at` を本人が書き換えられないよう、`posts`・`trips`・`post_photos` の `authenticated` への UPDATE を列単位に絞り直した（`comments` は編集不可なので UPDATE 権限自体を外した）。
 
-## Phase 9 — 通知一覧の最終統合（F-NT-02） 🔷
+## Phase 9 — 通知一覧の最終統合（F-NT-02） ✅
 
 | # | ストーリー | 状態 | 備考 |
 |---|---|---|---|
-| 1 | F-NT-02 通知一覧画面 | 🔷 | `feature/notification-list`（Phase 8 の上に積む）。`GET /api/notifications?offset`（`notifications` 90日以内＋公開済み `system_announcements` をメモリ上でマージして20件ずつ）、`PATCH /api/notifications/read`（本人の個人通知のみ）、SC-14 `/notifications`。既読化後は `tabikoe:notifications-read` イベントでメニューバーの未読バッジ（Phase 4 menu-bar Task2）を取り直す。タップ先は `resolveNotificationHref`（コメント→投稿、いいね→投稿、アルバム系→アルバム、通報対応→対象が残っていれば投稿、消えていればその旨）。お知らせは画面内モーダル、公開7日以内は NEW アイコン＋文字で強調 |
+| 1 | F-NT-02 通知一覧画面 | ✅ | `feature/notification-list`（Phase 8 の上に積む）。`GET /api/notifications?offset`（`notifications` 90日以内＋公開済み `system_announcements` をメモリ上でマージして20件ずつ）、`PATCH /api/notifications/read`（本人の個人通知のみ）、SC-14 `/notifications`。既読化後は `tabikoe:notifications-read` イベントでメニューバーの未読バッジ（Phase 4 menu-bar Task2）を取り直す。タップ先は `resolveNotificationHref`（コメント→投稿、いいね→投稿、アルバム系→アルバム、通報対応→対象が残っていれば投稿、消えていればその旨）。お知らせは画面内モーダル、公開7日以内は NEW アイコン＋文字で強調 |
 
-**Phase 5〜9 の PR は #243（badges）→ #245 → #246 → #247 → #248 → #249 の順に積んである。** 先頭から順にマージすると、各 PR の base が自動で main に付け替わる（GitHub の仕様）。
+Phase 5〜9 の PR（#243 → #245 → #246 → #247 → #248 → #249）は 2026-09-14 にすべて main にマージ済み。修正 PR #253（検索の埋め込み・編集時のバッジ）も同日にマージ。
+
+---
+
+## v3.0（2026-09-16〜）
+
+要求定義書 v2・要件定義書 v3.0 に対応する 30 ストーリー・107 タスク（Epic #274〜#411、Project 2 に登録済み）。書き換えストーリーのタスクフォルダは `docs/tasks/<category>/<story>-v3/`、Epic のタイトル末尾は「（v3.0）」。v1 の Epic は触らない。各タスクの「依存」欄が優先で、Phase は目安。優先度は要求定義書 3-1-11 の A（Phase 10〜12）→ B（Phase 13）→ C（下書き・報告は 11・12 に含む）。
+
+## Phase 10 — v3.0 基盤（テーブル・配色・共通部品） ⬜
+
+他のすべての v3.0 ストーリーがここに依存する。theme を最初に着手し、色を CSS 変数に集約してから画面を作る。
+
+| # | ストーリー | Epic | 状態 | 備考 |
+|---|---|---|---|---|
+| 1 | 配色とダークモード（theme） | #274 | ⬜ | `globals.css` の変数化 → ダーク変数と地図スタイル → 直書き色の置き換え（400 箇所超）。OS 追従のみ、アプリ内切替なし |
+| 2 | データテーブル一覧の整合性確保（table-catalog-v3） | #280 | ⬜ | posts に status・lat・lng・published_at、カテゴリ 7 値への移行、itineraries・itinerary_spots・itinerary_members・itinerary_invitations・spot_status_reports、rate_limits の action 追加。Task 1〜4 は並行可 |
+| 3 | 共通メニューバー（menu-bar-v3） | #287 | ⬜ | ホーム（家のアイコン）・しおり・通知・マイページの 4 項目。PC は左サイドバー。しおりの遷移先 `/itineraries` は Phase 13 まで 404 でよい |
+| 4 | ピンの表示ルール（pin-display-rules-v3） | #291 | ⬜ | 8 種別（青＝みんなの投稿・赤＝保存済み・投稿済み・下書き・フォーカス・番号・クラスタ・現在地）と凡例部品。theme Task 3 の後 |
+| 5 | 写真・動画のモーダルと投稿フォームのサムネイル（media-layout-v3） | #295 | ⬜ | `MediaModal`（全画面共通）と `PostForm` のサムネイル。Task 1・2 は独立 |
+
+## Phase 11 — 投稿（SC-03・下書き） ⬜
+
+投稿画面を「上 1/3 地図＋下 2/3 フォーム」に作り替え、SC-19 を廃止する。post-creation-v3 Task 1（API の検証）→ spot-selection-v3 → draft の順。
+
+| # | ストーリー | Epic | 状態 | 備考 |
+|---|---|---|---|---|
+| 1 | F-PO-01 投稿作成（post-creation-v3） | #302 | ⬜ | Task 1（カテゴリ 7・日付必須・位置・状態）が土台。Task 2（配置）・Task 3（1：2 レイアウト）・Task 4（MP4／MOV、ffmpeg 検証。動かなければ要件定義書 9 章 #8 へ） |
+| 2 | F-PO-01 位置とスポットの指定（spot-selection-v3） | #308 | ⬜ | `ManualSpotRegistrationModal` の地図部分を `PostLocationMap` に切り出し、50m 解決 API、投稿時のスポット確定、「変更」からの候補検索、「この付近の新しい場所」、自宅の保護の確認（受入条件 70） |
+| 3 | F-PO-01 旅行タイトル（trip-title-v3） | #323 | ⬜ | 候補にアルバム・しおりの旅行、仮タイトル「今日の投稿（M/D）」 |
+| 4 | F-PO-04 下書き（draft） | #314 | ⬜ | 保存・自動保存・上限 20 件・取得と公開処理（published_at・バッジ・通知・自動チェックの呼び出し） |
+| 5 | F-PO-02 投稿編集（post-edit-v3） | #327 | ⬜ | 編集も `PostComposeScreen` に載せ替え |
+| 6 | F-PO-01 投稿の起点（post-entry-points）Task 1 | #319 | ⬜ | `/posts/new` のクエリ解釈。Task 2（各入口の配線）は Phase 13 |
+
+## Phase 12 — 主導線（検索トップ・タイムライン・地図） ⬜
+
+着地点を検索トップに変え、投稿一覧をタイムラインに、地図をタブ無しにする。search-top Task 4（位置情報フック）と map-display-v3 Task 1（`/api/spots` の種別付与）が土台。
+
+| # | ストーリー | Epic | 状態 | 備考 |
+|---|---|---|---|---|
+| 1 | F-MP-02 検索トップ（search-top） | #330 | ⬜ | 都道府県リスト・Places Autocomplete・スポット名の候補 API、SC-00 画面、決定時の座標化、位置情報フック。v1 の `PlaceSearchBar`・地図上の検索バーは撤去 |
+| 2 | ログイン後の着地点（signup-login-v3） | #299 | ⬜ | `post-login-redirect` を `/` に、`proxy.ts` のログイン必須判定から `/` を外す。search-top Task 2 と同時 |
+| 3 | F-MP-04 投稿一覧（post-timeline） | #336 | ⬜ | 検索 API の行き先対応（都道府県／周辺 5km／スポット）、徒歩分・まだあった・ラベルの埋め込み、縦一列カード、並び替え 1 ボタン、絞り込みシート、スクロール位置の保持 |
+| 4 | F-MP-01 地図表示（map-display-v3） | #342 | ⬜ | `/api/spots` に保存済み・下書き、`MapScreen` からタブ・検索バーを撤去、凡例・戻る・ここに投稿、表示情報削減スタイル |
+| 5 | F-MP-03 ピン操作と地図からの投稿（pin-interaction-v3） | #347 | ⬜ | 吹き出し（一覧・投稿する）、長押し（500ms／右クリック）、下書きピン |
+| 6 | F-MP-05 写真の切替（photo-view） | #352 | ⬜ | `SpotPhotoGalleryScreen` を検索条件対応にして SC-04 の `?view=photos` に統合。`/spots/[id]/photos` はリダイレクト |
+| 7 | F-MP-06 探すモード（explore-mode） | #356 | ⬜ | `/api/posts/nearby`、`/map?mode=explore` の近くの声（下 1/3 横並び、徒歩圏切替、ピン連動） |
+| 8 | F-VW-04 「まだあった」報告（spot-status-report） | #363 | ⬜ | 報告 API（UPSERT・1 日 50 件）、投稿詳細の 2 ボタン、一覧・吹き出しへの埋め込み |
+
+## Phase 13 — しおり・保存 ⬜
+
+itinerary-basics Task 1（API）・Task 3（詳細画面の骨格）が土台。wishlist-v3 の保存先シートは add-spots Task 1 の後。
+
+| # | ストーリー | Epic | 状態 | 備考 |
+|---|---|---|---|---|
+| 1 | F-IT-01 しおりの作成・一覧・削除（itinerary-basics） | #379 | ⬜ | 旅行 ID と 1 対 1、旅行のオーナーだけが作成、SC-22・SC-23 の骨格、アルバム画面の「しおりを見る」 |
+| 2 | F-IT-02 期間と Day（itinerary-days） | #385 | ⬜ | 期間更新で Day 再計算（消えた日は未定へ）、Day タブ・移動ドロップダウン・トースト |
+| 3 | F-IT-04 スポットの追加と追加モード（add-spots） | #394 | ⬜ | 追加・削除 API（冪等）、`?itinerary=&day=` の追加モード（バナー・＋の直接追加・完了） |
+| 4 | F-RC-05 保存先の 2 択と「行きたい」（wishlist-v3） | #372 | ⬜ | `SaveSheet`（行きたい＋しおり＋Day）、`SaveButton`、SC-08 の一覧／地図切替としおりへ振り分け |
+| 5 | F-IT-03 到着予定時刻と並び順・メモ（arrival-time） | #389 | ⬜ | 10 分刻みピッカー、時刻順の自動整列、行 UI。提出に間に合わなければ後回し可 |
+| 6 | F-IT-05 チェック（itinerary-check） | #398 | ⬜ | 手動チェック API、投稿公開時の自動チェック（しおりのメンバーの投稿）、取り消し線表示と番号ピンの灰色 |
+| 7 | F-IT-06 しおりの地図表示と投稿（itinerary-map-and-post） | #403 | ⬜ | `/map?itinerary=&day=` の番号ピン・Day タブ・すべて、「投稿一覧」「投稿する」「投稿済み」 |
+| 8 | F-IT-07 しおりの共有・招待（itinerary-sharing） | #407 | ⬜ | アルバムと同型の招待リンク・受諾画面、メンバー管理・退出・通知 2 種、権限制御とオーナー継承。提出に間に合わなければ後回し可 |
+| 9 | F-VW-01 投稿詳細（post-detail-view-v3） | #360 | ⬜ | 見出し＝スポット名、「地図で見る」「＋」「自分も投稿する」、本人の「⋯」。wishlist-v3 Task 1 の後 |
+| 10 | F-PO-01 投稿の起点（post-entry-points）Task 2 | #319 | ⬜ | SC-00・地図・詳細・しおり・下書きからの配線。メニューの「投稿」を削除 |
+
+## Phase 14 — 記録（マイページ・マイマップ） ⬜
+
+draft Task 3・map-display-v3 Task 1 の後。
+
+| # | ストーリー | Epic | 状態 | 備考 |
+|---|---|---|---|---|
+| 1 | F-RC-01 マイページ（my-page-v3） | #368 | ⬜ | 先頭に下書き、遷移メニュー 4 つ（しおりは外す）、仮タイトルの付け直し促し |
+| 2 | F-RC-06 マイマップ（my-map-v3） | #376 | ⬜ | 投稿済み・保存済み（行きたい＋しおり）・下書きの 3 種別、切替と遷移先 |
+
+提出日（2026-10-07）までに全 Phase が終わらない場合は、Phase 10〜12 を完了させたうえで、Phase 13 は itinerary-basics・itinerary-days・add-spots・wishlist-v3・itinerary-check・itinerary-map-and-post を優先し、arrival-time・itinerary-sharing・Phase 14 を後回しにする。
 
 ---
 
