@@ -251,7 +251,7 @@ export function matchesFilters(
   return true;
 }
 
-interface SearchRow extends PostCardRow {
+export interface SearchRow extends PostCardRow {
   visibility: string;
   spots: { id: string; name: string; lat: number; lng: number; source: string; prefecture: string | null };
 }
@@ -308,7 +308,7 @@ export async function searchPostCards(
 
 // spots は POST_CARD_SELECT の spots(...) を inner join に置き換えて1回だけ埋め込む
 // （2回埋め込むと PostgREST が "specified more than once" で失敗する。#252）
-function baseQuery(admin: SupabaseClient, sort: PostSort) {
+export function baseQuery(admin: SupabaseClient, sort: PostSort) {
   let query = admin
     .from("posts")
     .select(`${POST_CARD_SELECT.replace(POST_CARD_SPOT_EMBED, "spots!inner(id, name, lat, lng, source, prefecture)")}, visibility`)
@@ -325,7 +325,7 @@ function baseQuery(admin: SupabaseClient, sort: PostSort) {
 }
 
 /** 条件を where に載せる（距離・行き先の円判定は矩形で事前に絞り、正確な判定は matchesFilters） */
-function applyFilters<Q extends ReturnType<typeof baseQuery>>(query: Q, filters: PostSearchFilters, blockedIds: string[]): Q {
+export function applyFilters<Q extends ReturnType<typeof baseQuery>>(query: Q, filters: PostSearchFilters, blockedIds: string[]): Q {
   if (blockedIds.length > 0) {
     query = query.not("user_id", "in", `(${blockedIds.join(",")})`) as Q;
   }

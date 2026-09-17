@@ -7,6 +7,7 @@ vi.mock("next/navigation", () => ({ useRouter: () => ({ replace, push: vi.fn(), 
 import { PostSearchScreen } from "./PostSearchScreen";
 import { EMPTY_SEARCH_STATE, type SearchContext } from "./post-search-query";
 import type { PostCardData } from "@/lib/posts/post-cards";
+import type { SpotMediaItem } from "@/lib/posts/search-photos";
 import { saveListState } from "@/lib/search/list-state";
 
 /**
@@ -174,5 +175,29 @@ describe("PostSearchScreen（SC-04 タイムライン）", () => {
     expect(screen.getByRole("status")).toHaveTextContent("大阪旅行");
     expect(screen.getByRole("status")).toHaveTextContent("Day 2 に追加中");
     expect(screen.getByRole("link", { name: "完了" })).toHaveAttribute("href", "/itineraries/it-1");
+  });
+
+  it("「写真」に切り替えると URL に view=photos が付き、グリッドが描画される", async () => {
+    const fetchMediaPage = vi.fn<(params: URLSearchParams) => Promise<{ items: SpotMediaItem[]; nextOffset: number | null }>>(async () => ({
+      items: [{ id: "m1", postId: "p1", mediaType: "photo" as const, thumbnailUrl: "https://example.com/m1.jpg", videoUrl: null, alt: "たこ焼き〇〇の写真 1", postedAt: "2026-09-01T00:00:00Z" }],
+      nextOffset: null,
+    }));
+    renderScreen({
+      initialPage: { posts: [card("p1")], nextOffset: null },
+      fetchMediaPage,
+      initialMediaPage: { key: "pref=%E5%A4%A7%E9%98%AA%E5%BA%9C", page: { items: [], nextOffset: 0 } },
+    });
+    fireEvent.click(screen.getByRole("radio", { name: "写真" }));
+    expect(replace).toHaveBeenCalledWith("/search?pref=%E5%A4%A7%E9%98%AA%E5%BA%9C&view=photos", { scroll: false });
+    expect(document.querySelector("[data-photo-grid]")).toBeInTheDocument();
+    expect(document.querySelector("[data-post-card='p1']")).toBeNull();
+    // 1 ページ目が未取得なら「もっと見る」で同じ条件（offset=0）を取りに行く
+    fireEvent.click(screen.getByRole("button", { name: "もっと見る" }));
+    await waitFor(() => expect(fetchMediaPage).toHaveBeenCalledTimes(1));
+    expect(Object.fromEntries(fetchMediaPage.mock.calls[0][0])).toEqual({ pref: "大阪府", offset: "0" });
+    expect(await screen.findByRole("button", { name: "たこ焼き〇〇の写真 1" })).toBeInTheDocument();
+    // 「投稿」に戻すと一覧が残っている
+    fireEvent.click(screen.getByRole("radio", { name: "投稿" }));
+    expect(document.querySelector("[data-post-card='p1']")).toBeInTheDocument();
   });
 });

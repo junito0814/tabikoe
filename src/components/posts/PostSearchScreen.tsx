@@ -10,10 +10,13 @@ import { walkMinutesBetween } from "@/lib/geo/walk-minutes";
 import { requestCurrentPosition } from "@/lib/geo/use-current-position";
 import type { PostCardData, PostCardPage, PostSort } from "@/lib/posts/post-cards";
 import { loadListState, saveListState } from "@/lib/search/list-state";
+import { PhotoGrid, type FetchMediaPage } from "@/components/media/PhotoGrid";
+import type { SpotMediaPage } from "@/lib/posts/search-photos";
 import { AddModeBanner, type AddModeInfo } from "./AddModeBanner";
 import { FilterSheet } from "./FilterSheet";
 import { PostCard } from "./PostCard";
 import { SortDropdown } from "./SortDropdown";
+import { ViewToggle, type ListView } from "./ViewToggle";
 import {
   buildPostSearchParams,
   buildSearchPageHref,
@@ -55,6 +58,8 @@ export function PostSearchScreen({
   addMode = null,
   emptyMessage = "条件に合う投稿がありません",
   fetchPage = defaultFetchPage,
+  initialMediaPage = null,
+  fetchMediaPage,
   geolocation,
   permissions,
 }: {
@@ -73,6 +78,10 @@ export function PostSearchScreen({
   emptyMessage?: string;
   /** 差し替え口（単体テスト用） */
   fetchPage?: FetchSearchPage;
+  /** 写真グリッド（?view=photos）の 1 ページ目。Server Component が取得して渡す（key は取得時の条件） */
+  initialMediaPage?: { key: string; page: SpotMediaPage } | null;
+  /** 差し替え口（単体テスト用） */
+  fetchMediaPage?: FetchMediaPage;
   geolocation?: Pick<Geolocation, "getCurrentPosition">;
   permissions?: Pick<Permissions, "query">;
 }) {
@@ -124,7 +133,7 @@ export function PostSearchScreen({
     void load(state, nextOffset, false);
   }, [isLoading, nextOffset, load, state]);
 
-  const sentinelRef = useInfiniteScroll(nextOffset !== null && !isLoading, loadMore);
+  const sentinelRef = useInfiniteScroll(nextOffset !== null && !isLoading && state.view === "posts", loadMore);
 
   // ── Task3: 「一覧に戻る」の復元 ─────────────────────────────
   // 初回だけ: 保存された状態があれば同じページ数まで読み込み、スクロール位置を戻す
@@ -201,6 +210,15 @@ export function PostSearchScreen({
 
   const activeCount = countActiveFilters(state, context);
   const onSortChange = (sort: PostSort) => applyState({ ...state, sort });
+  // 写真切替: 投稿一覧は取り直さず URL だけ変える（戻したときに一覧が残っている）
+  const onViewChange = (view: ListView) => {
+    const next = { ...state, view };
+    setState(next);
+    router.replace(buildSearchPageHref(next, context), { scroll: false });
+  };
+  // 写真グリッドに渡す条件（投稿一覧と同じ。offset と view は含めない）
+  const mediaParams = buildPostSearchParams({ ...state, view: "posts" }, context, 0);
+  const isPhotos = state.view === "photos";
 
   return (
     <div className="flex min-h-screen flex-col items-center bg-app pb-6">
@@ -225,12 +243,20 @@ export function PostSearchScreen({
             </button>
           </div>
           {header}
-          <div className="flex items-center justify-end gap-2">
+          <div className="flex items-center justify-between gap-2">
+            <ViewToggle value={state.view} onChange={onViewChange} />
             <SortDropdown value={state.sort} onChange={onSortChange} />
           </div>
         </header>
 
-        {posts.length === 0 && !isLoading && !errorMessage ? (
+        {isPhotos ? (
+          <PhotoGrid
+            key={mediaParams.toString()}
+            params={mediaParams}
+            initialPage={initialMediaPage && initialMediaPage.key === mediaParams.toString() ? initialMediaPage.page : { items: [], nextOffset: 0 }}
+            fetchPage={fetchMediaPage}
+          />
+        ) : posts.length === 0 && !isLoading && !errorMessage ? (
           <p className="py-16 text-center text-[13px] text-muted">{emptyMessage}</p>
         ) : (
           <ul className="flex flex-col gap-3">
@@ -242,7 +268,7 @@ export function PostSearchScreen({
           </ul>
         )}
 
-        {errorMessage && (
+        {!isPhotos && errorMessage && (
           <ErrorNotice
             className="mt-3"
             message={errorMessage}
@@ -251,7 +277,7 @@ export function PostSearchScreen({
         )}
 
         <div ref={sentinelRef} aria-hidden className="h-1" />
-        {nextOffset !== null && (
+        {!isPhotos && nextOffset !== null && (
           <button
             type="button"
             onClick={loadMore}

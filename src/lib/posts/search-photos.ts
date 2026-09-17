@@ -1,18 +1,25 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { getBlockedUserIds } from "@/lib/blocks/get-blocked-user-ids";
 import { createPostPhotoUrls } from "@/lib/posts/signed-url";
+import { sortPostCards, type PostSort } from "@/lib/posts/post-cards";
+import { applyFilters, baseQuery, matchesFilters, type PostSearchFilters, type SearchRow } from "@/lib/posts/search-posts";
 
 /**
- * F-MP-05 Task1: スポット写真一覧取得
+ * F-MP-05 Task1 / photo-view Task1（v3.0）: 写真・動画の一覧取得（検索条件つき）
  * 出典: docs/tasks/map-search/spot-photo-gallery/01-spot-photos-handler.md
- *       要件定義書3.4.5
+ *       docs/tasks/map-search/photo-view/01-photos-api-search-params.md
+ *       要件定義書 v3.0 3.4.2（「写真」切替。並び替えは投稿一覧と連動）
+ *
+ * 【初心者向け】投稿一覧（search-posts.ts）と同じ条件で投稿を取り、その写真・動画を 1 列に並べて 40 点ずつ返す。
+ * 並び順は「投稿の順（新着順／評価順／いいね順）→ 同じ投稿の中では添付順」。
+ * 写真単位で DB からページングするのは難しい（投稿の並び替えが先に必要）ので、投稿を上限 500 件まで取ってから
+ * メモリ上で並べて切り出す（スポット別一覧のいいね順と同じ考え方）。
  */
 
 /** 1回に返す点数 */
-export const SPOT_PHOTOS_PAGE_SIZE = 40;
-
-/** 1スポットあたり読み込む投稿の上限（横断的に集めてから並べるための安全弁） */
-const SPOT_POSTS_FETCH_CAP = 500;
+export const PHOTOS_PAGE_SIZE = 40;
+/** 横断的に集めてから並べるための、投稿件数の上限 */
+const POSTS_FETCH_CAP = 500;
 
 export interface SpotMediaItem {
   id: string;
@@ -22,7 +29,7 @@ export interface SpotMediaItem {
   thumbnailUrl: string;
   videoUrl: string | null;
   alt: string;
-  /** 元投稿の投稿日時（新着順の基準） */
+  /** 元投稿の投稿日時 */
   postedAt: string;
 }
 
@@ -42,15 +49,14 @@ export interface SpotPostMediaRow {
 }
 
 /**
- * 複数投稿の写真・動画を1つの列に統合し、投稿日時が新しい順（同一投稿内は display_order 順）に並べる。
- * 非公開投稿・保存パスの無い行は落とす。単体テストの対象。
+ * 並べ替え済みの投稿の写真・動画を 1 列に統合する（投稿の順はそのまま、同一投稿内は display_order 順）。
+ * 非公開投稿・保存パスの無い行・非公開化された写真は落とす。単体テストの対象。
  */
-export function mergeSpotMedia(
+export function mergeMedia(
   rows: SpotPostMediaRow[]
 ): { key: string; postId: string; path: string; videoUrl: string | null; mediaType: "photo" | "video"; postedAt: string; spotName: string }[] {
   return rows
     .filter((row) => row.visibility === "public")
-    .sort((a, b) => b.created_at.localeCompare(a.created_at))
     .flatMap((row) => {
       const spotName = (Array.isArray(row.spots) ? row.spots[0] : row.spots)?.name ?? "";
       return [...row.post_photos]
@@ -73,42 +79,38 @@ export function mergeSpotMedia(
     });
 }
 
+/** v1 互換: 新着順に並べてから統合する */
+export function mergeSpotMedia(rows: SpotPostMediaRow[]) {
+  return mergeMedia([...rows].sort((a, b) => b.created_at.localeCompare(a.created_at)));
+}
+
 export interface SpotMediaPage {
   items: SpotMediaItem[];
   nextOffset: number | null;
 }
 
-/** 指定スポットの公開投稿の写真・動画を新着順に1ページ（40点）返す */
-export async function getSpotMediaPage(
+/** 検索条件に合う公開投稿の写真・動画を、投稿一覧と同じ並び順で 1 ページ（40 点）返す */
+export async function searchMediaPage(
   admin: SupabaseClient,
   viewerId: string,
-  spotId: string,
+  filters: PostSearchFilters,
   offset: number,
-  limit: number = SPOT_PHOTOS_PAGE_SIZE
+  limit: number = PHOTOS_PAGE_SIZE
 ): Promise<SpotMediaPage> {
   const blockedIds = await getBlockedUserIds(admin, viewerId);
-
-  let query = admin
-    .from("posts")
-    .select("id, created_at, visibility, spots(name), post_photos(id, storage_url, video_url, media_type, display_order, hidden_at)")
-    .eq("spot_id", spotId)
-    .eq("visibility", "public")
-    // v3.0: 下書きは公開一覧に出さない
-    .eq("status", "published")
-    // F-AD-05: 非公開化された投稿は除く（写真単位の非公開化は mergeSpotMedia で落とす）
-    .is("hidden_at", null)
-    .order("created_at", { ascending: false })
-    .limit(SPOT_POSTS_FETCH_CAP);
-  if (blockedIds.length > 0) {
-    query = query.not("user_id", "in", `(${blockedIds.join(",")})`);
-  }
-
-  const { data, error } = await query;
+  const sort: PostSort = filters.sort ?? "newest";
+  const { data, error } = await applyFilters(baseQuery(admin, sort), filters, blockedIds).limit(POSTS_FETCH_CAP);
   if (error) throw error;
 
-  const merged = mergeSpotMedia((data ?? []) as unknown as SpotPostMediaRow[]);
+  const rows = ((data ?? []) as unknown as SearchRow[]).filter((row) => matchesFilters({ ...row, spot: row.spots }, filters));
+  // いいね順は DB で並べられないので、ここで並べ直す（新着順・評価順も同じ関数で揃える）
+  const ordered = sortPostCards(
+    rows.map((row) => ({ row, createdAt: row.created_at, rating: row.rating, likeCount: row.likes?.[0]?.count ?? 0 })),
+    sort
+  ).map((item) => item.row);
+
+  const merged = mergeMedia(ordered as unknown as SpotPostMediaRow[]);
   const page = merged.slice(offset, offset + limit);
-  // v3.0: 動画本体も署名付き URL にする
   const signedUrls = await createPostPhotoUrls(
     admin,
     Array.from(new Set(page.flatMap((item) => [item.path, ...(item.videoUrl ? [item.videoUrl] : [])])))

@@ -9,6 +9,7 @@ import {
   type PeriodOption,
 } from "@/lib/posts/search-posts";
 import type { AddModeParams } from "@/lib/search/build-search-href";
+import { parseListView, type ListView } from "./ViewToggle";
 
 /**
  * F-MP-04 Task2 / post-timeline Task2〜3（v3.0）: 絞り込み・並び替えの状態 ⇄ URL クエリ
@@ -36,6 +37,8 @@ export interface PostSearchState {
   from: string;
   to: string;
   sort: PostSort;
+  /** v3.0（photo-view）: 投稿一覧か写真グリッドか */
+  view: ListView;
 }
 
 export const EMPTY_SEARCH_STATE: PostSearchState = {
@@ -48,6 +51,7 @@ export const EMPTY_SEARCH_STATE: PostSearchState = {
   from: "",
   to: "",
   sort: "newest",
+  view: "posts",
 };
 
 /** 画面を開いたときに決まる条件（行き先・追加モード） */
@@ -96,6 +100,11 @@ function appendStateParams(params: URLSearchParams, state: PostSearchState, cont
   if (state.sort !== "newest") params.set("sort", state.sort);
 }
 
+/** 写真グリッドは URL に `view=photos` を付ける（API のクエリには載せない） */
+function appendViewParam(params: URLSearchParams, state: PostSearchState): void {
+  if (state.view === "photos") params.set("view", "photos");
+}
+
 function appendDestinationParams(params: URLSearchParams, context: SearchContext): void {
   const destination = context.destination;
   if (!destination) return;
@@ -131,6 +140,7 @@ export function buildSearchPageHref(state: PostSearchState, context: SearchConte
   const params = new URLSearchParams();
   appendDestinationParams(params, context);
   appendStateParams(params, state, context);
+  appendViewParam(params, state);
   if (context.addMode) {
     params.set("itinerary", context.addMode.itinerary);
     if (context.addMode.day) params.set("day", context.addMode.day);
@@ -164,5 +174,6 @@ export function parseSearchState(params: URLSearchParams, context: SearchContext
     from: date(params.get("from")),
     to: date(params.get("to")),
     sort: parsePostSort(params.get("sort")),
+    view: parseListView(params.get("view")),
   };
 }

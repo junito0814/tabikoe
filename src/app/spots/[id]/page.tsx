@@ -37,5 +37,13 @@ export default async function SpotPostsPage({
     );
   }
 
-  return <SpotPostListScreen spot={data.spot} initialState={data.initialState} initialPage={data.initialPage} addMode={data.addMode} />;
+  return (
+    <SpotPostListScreen
+      spot={data.spot}
+      initialState={data.initialState}
+      initialPage={data.initialPage}
+      initialMediaPage={data.initialMediaPage}
+      addMode={data.addMode}
+    />
+  );
 }

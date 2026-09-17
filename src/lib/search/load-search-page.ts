@@ -5,6 +5,8 @@ import type { AddModeInfo } from "@/components/posts/AddModeBanner";
 import { loadAddMode } from "@/lib/itineraries/add-mode";
 import { findLatestSpotStatuses, type PostCardPage } from "@/lib/posts/post-cards";
 import { parsePostSearchParams, searchPostCards } from "@/lib/posts/search-posts";
+import { searchMediaPage, type SpotMediaPage } from "@/lib/posts/search-photos";
+import { buildPostSearchParams } from "@/components/posts/post-search-query";
 import { resolveDestination, type ResolvedDestination } from "./resolve-destination";
 
 /**
@@ -31,6 +33,8 @@ export type SearchPageData =
       context: SearchContext;
       initialState: ReturnType<typeof parseSearchState>;
       initialPage: PostCardPage;
+      /** ?view=photos で開いたときの写真グリッドの 1 ページ目（key は条件の文字列） */
+      initialMediaPage: { key: string; page: SpotMediaPage } | null;
       addMode: AddModeInfo | null;
       spot: SpotSummary | null;
     };
@@ -79,10 +83,15 @@ export async function loadSearchPage(admin: SupabaseClient, userId: string, quer
     if (initialState.keyword) apiParams.set("q", initialState.keyword);
 
     // 見つからなかった行き先は 0 件（全件を出してしまわない）
+    const filters = parsePostSearchParams(apiParams);
+    const isPhotos = initialState.view === "photos";
     const initialPage: PostCardPage =
-      resolved.kind === "not_found"
-        ? { posts: [], nextOffset: null }
-        : await searchPostCards(admin, userId, parsePostSearchParams(apiParams), 0);
+      resolved.kind === "not_found" || isPhotos ? { posts: [], nextOffset: null } : await searchPostCards(admin, userId, filters, 0);
+    // 写真切替で開いたときは写真の 1 ページ目を取る（投稿一覧は「投稿」に戻したときにブラウザが取る）
+    const initialMediaPage =
+      isPhotos && resolved.kind !== "not_found"
+        ? { key: buildPostSearchParams({ ...initialState, view: "posts" }, context, 0).toString(), page: await searchMediaPage(admin, userId, filters, 0) }
+        : null;
 
     let spot: SpotSummary | null = null;
     if (resolved.kind === "spot") {
@@ -110,7 +119,7 @@ export async function loadSearchPage(admin: SupabaseClient, userId: string, quer
       };
     }
 
-    return { kind: "ok", resolved, context, initialState, initialPage, addMode, spot };
+    return { kind: "ok", resolved, context, initialState, initialPage, initialMediaPage, addMode, spot };
   } catch {
     return { kind: "error" };
   }

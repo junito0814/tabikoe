@@ -5,6 +5,7 @@ import { ReportLink } from "@/components/reports/ReportLink";
 import { SaveButton } from "@/components/save/SaveButton";
 import { composeHref } from "@/lib/posts/compose-initial-state";
 import type { PostCardPage } from "@/lib/posts/post-cards";
+import type { SpotMediaPage } from "@/lib/posts/search-photos";
 import { buildMapHrefWithBack } from "@/lib/search/list-state";
 import { formatStatusLabel, type LatestSpotStatus } from "@/lib/spots/format-status-label";
 import type { AddModeInfo } from "./AddModeBanner";
@@ -39,12 +40,14 @@ export function SpotPostListScreen({
   spot,
   initialState,
   initialPage,
+  initialMediaPage = null,
   addMode = null,
   fetchPage,
 }: {
   spot: SpotSummary;
   initialState: PostSearchState;
   initialPage: PostCardPage;
+  initialMediaPage?: { key: string; page: SpotMediaPage } | null;
   addMode?: AddModeInfo | null;
   /** 差し替え口（単体テスト用） */
   fetchPage?: FetchSearchPage;
@@ -98,6 +101,7 @@ export function SpotPostListScreen({
       context={context}
       initialState={initialState}
       initialPage={initialPage}
+      initialMediaPage={initialMediaPage}
       title={spot.name}
       backHref="/map"
       backLabel="地図"

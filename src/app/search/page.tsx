@@ -36,7 +36,15 @@ export default async function SearchPage({ searchParams }: { searchParams: Promi
   }
 
   if (data.spot) {
-    return <SpotPostListScreen spot={data.spot} initialState={data.initialState} initialPage={data.initialPage} addMode={data.addMode} />;
+    return (
+      <SpotPostListScreen
+        spot={data.spot}
+        initialState={data.initialState}
+        initialPage={data.initialPage}
+        initialMediaPage={data.initialMediaPage}
+        addMode={data.addMode}
+      />
+    );
   }
 
   return (
@@ -44,6 +52,7 @@ export default async function SearchPage({ searchParams }: { searchParams: Promi
       context={data.context}
       initialState={data.initialState}
       initialPage={data.initialPage}
+      initialMediaPage={data.initialMediaPage}
       title={data.resolved.title}
       backHref="/"
       backLabel="ホーム"
