@@ -34,6 +34,7 @@ const post: PostDetailData = {
   isWishlisted: false,
   isOwner: false,
   canInteract: true,
+  spotStatus: { latest: null, mine: null },
 };
 
 const noComments = { comments: [], nextOffset: null, totalCount: 0 };
