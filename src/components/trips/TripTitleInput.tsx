@@ -8,7 +8,15 @@ import { fetchWithAuthRedirect, UnauthorizedError } from "@/lib/api/fetch-with-a
 export interface TripSuggestion {
   id: string;
   title: string;
+  /** v3.0: 由来。own＝自分の旅行、album＝参加中のアルバム、itinerary＝参加中のしおり */
+  source?: "own" | "album" | "itinerary";
 }
+
+const SOURCE_LABELS: Record<NonNullable<TripSuggestion["source"]>, string> = {
+  own: "",
+  album: "アルバム",
+  itinerary: "しおり",
+};
 
 async function fetchSuggestionsFromApi(query: string): Promise<TripSuggestion[]> {
   const response = await fetchWithAuthRedirect(`/api/trips?query=${encodeURIComponent(query)}`);
@@ -119,9 +127,12 @@ export function TripTitleInput({
                   onChange(suggestion.title);
                   setIsOpen(false);
                 }}
-                className="block w-full px-3 py-2.5 text-left text-[14px] text-ink hover:bg-tint"
+                className="flex w-full items-center justify-between gap-2 px-3 py-2.5 text-left text-[14px] text-ink hover:bg-tint"
               >
-                {suggestion.title}
+                <span className="min-w-0 truncate">{suggestion.title}</span>
+                {suggestion.source && SOURCE_LABELS[suggestion.source] && (
+                  <span className="shrink-0 rounded-full bg-tint px-2 py-0.5 text-[10px] text-muted">{SOURCE_LABELS[suggestion.source]}</span>
+                )}
               </button>
             </li>
           ))}

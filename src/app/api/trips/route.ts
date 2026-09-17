@@ -16,6 +16,9 @@ const MAX_SUGGESTIONS = 10;
  * 対象は album_members の本人行に限定する。
  *
  * F-RC-02 Task1: `view=albums` を付けると、本人がメンバーのアルバム一覧（投稿1件以上）を返す。
+ *
+ * trip-title-v3 Task1（v3.0）: 本人がメンバーの**しおり**の旅行も候補に含め、由来（own / album / itinerary）の
+ * ラベルを付ける。しおりのメンバーはその旅行に投稿するとしおりのスポットが自動チェックされる（3.11.5）。
  */
 export async function GET(request: Request) {
   const supabase = await createClient();
@@ -60,13 +63,35 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: "fetch_failed" }, { status: 500 });
   }
 
-  const trips = (data ?? []).flatMap((row) => {
+  type Suggestion = { id: string; title: string; source: "own" | "album" | "itinerary" };
+  const trips: Suggestion[] = (data ?? []).flatMap((row) => {
     const trip = (Array.isArray(row.trips) ? row.trips[0] : row.trips) as
       | { id: string; title: string }
       | null
       | undefined;
-    return trip ? [{ id: trip.id, title: trip.title }] : [];
+    return trip ? [{ id: trip.id, title: trip.title, source: row.role === "owner" ? ("own" as const) : ("album" as const) }] : [];
   });
 
-  return NextResponse.json({ trips });
+  // v3.0: しおりのメンバーとして参加している旅行（自分の旅行と重複するものは除く）
+  let itineraryBuilder = admin
+    .from("itinerary_members")
+    .select("itineraries!inner(trip_id, trips!inner(id, title))")
+    .eq("user_id", user.id)
+    .limit(MAX_SUGGESTIONS);
+  if (query.length > 0) {
+    const escaped = query.replace(/[\\%_]/g, (char) => `\\${char}`);
+    itineraryBuilder = itineraryBuilder.ilike("itineraries.trips.title", `%${escaped}%`);
+  }
+  const { data: itineraryRows } = await itineraryBuilder;
+  const seen = new Set(trips.map((trip) => trip.id));
+  for (const row of (itineraryRows ?? []) as unknown as { itineraries: { trips: { id: string; title: string } | { id: string; title: string }[] } | { itineraries: unknown }[] }[]) {
+    const itinerary = Array.isArray(row.itineraries) ? row.itineraries[0] : row.itineraries;
+    const trip = itinerary && "trips" in itinerary ? (Array.isArray(itinerary.trips) ? itinerary.trips[0] : itinerary.trips) : null;
+    if (trip && !seen.has(trip.id)) {
+      seen.add(trip.id);
+      trips.push({ id: trip.id, title: trip.title, source: "itinerary" });
+    }
+  }
+
+  return NextResponse.json({ trips: trips.slice(0, MAX_SUGGESTIONS) });
 }
