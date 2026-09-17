@@ -1,14 +1,22 @@
 /**
  * 投稿の入力規則（要件定義書3.3.1）
- * DB側の制約は20260908000014_add_posts_value_constraints.sqlに対応する定義がある。
+ * DB側の制約は20260908000014_add_posts_value_constraints.sql（v3.0 では 20260917000001）に対応する定義がある。
+ * カテゴリは v3.0 で 7 つ（要件定義書 v3.0 3.3.1）。
  */
 export const POST_CATEGORIES = [
   "グルメ",
   "観光スポット",
+  "自然・景勝地",
   "体験・アクティビティ",
+  "エンタメ・イベント",
+  "ショッピング",
   "宿泊施設",
-  "イベント会場",
 ] as const;
+
+/** v3.0 で廃止したカテゴリ。DB 側は 20260917000001 で「エンタメ・イベント」へ移行済み */
+export const LEGACY_POST_CATEGORY_MAP: Record<string, PostCategory> = {
+  "イベント会場": "エンタメ・イベント",
+};
 
 export const POST_DURATIONS = [
   "30分以内",
