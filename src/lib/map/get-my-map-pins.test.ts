@@ -3,8 +3,10 @@ import { mergeMyMapPins, parseMyMapMode } from "./get-my-map-pins";
 
 /**
  * 出典: docs/tasks/records/my-map/01-my-map-pin-data-handler.md 単体テスト
- * - 投稿と「行きたい」の両方に該当するスポットが、重複せず「投稿済み」種別で1件返ることを検証する
+ * - 投稿と保存済みの両方に該当するスポットが、重複せず「投稿済み」種別で1件返ることを検証する
  * - 101件以上該当する場合に100件で打ち切られることを検証する
+ * 出典: docs/tasks/records/my-map-v3/01-fetch-and-toggle.md 単体テスト
+ * - posted＋saved が posted 1 件になること、切替に関わらず draft が含まれること
  */
 const spot = (id: string) => ({ id, name: id, lat: 35, lng: 139 });
 
@@ -17,14 +19,17 @@ describe("mergeMyMapPins", () => {
     );
     expect(pins).toHaveLength(2);
     expect(pins[0]).toMatchObject({ spotId: "both", kind: "posted", latestPostId: "p-latest", isWishlisted: true });
-    expect(pins[1]).toMatchObject({ spotId: "only-wish", kind: "wishlist", latestPostId: null });
+    expect(pins[1]).toMatchObject({ spotId: "only-wish", kind: "saved", latestPostId: null });
   });
 
-  it("mode=posted は投稿済みのみ、mode=wishlist は行きたいのみ", () => {
+  it("mode=posted は投稿済みのみ、mode=saved は保存済みのみ。下書きはどちらでも含む", () => {
     const posted = [{ spot: spot("a"), latestPostId: "p" }];
-    const wish = [{ spot: spot("b") }];
-    expect(mergeMyMapPins(posted, wish, "posted").map((pin) => pin.spotId)).toEqual(["a"]);
-    expect(mergeMyMapPins(posted, wish, "wishlist").map((pin) => pin.spotId)).toEqual(["b"]);
+    const saved = [{ spot: spot("b") }];
+    const drafts = [{ id: "d1", lat: 35, lng: 139, spot: null }];
+    expect(mergeMyMapPins(posted, saved, "posted", drafts).map((pin) => pin.id)).toEqual(["a", "draft:d1"]);
+    expect(mergeMyMapPins(posted, saved, "saved", drafts).map((pin) => pin.id)).toEqual(["b", "draft:d1"]);
+    const draftPin = mergeMyMapPins([], [], "both", drafts)[0];
+    expect(draftPin).toMatchObject({ kind: "draft", name: "名前のない場所", latestPostId: "d1", spotId: null });
   });
 
   it("101件以上は100件で打ち切る", () => {
@@ -39,6 +44,8 @@ describe("parseMyMapMode", () => {
     expect(parseMyMapMode(null)).toBe("both");
     expect(parseMyMapMode("x")).toBe("both");
     expect(parseMyMapMode("posted")).toBe("posted");
-    expect(parseMyMapMode("wishlist")).toBe("wishlist");
+    expect(parseMyMapMode("saved")).toBe("saved");
+    // v1 の値は saved として読む
+    expect(parseMyMapMode("wishlist")).toBe("saved");
   });
 });

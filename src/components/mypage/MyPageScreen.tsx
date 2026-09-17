@@ -1,5 +1,7 @@
 import Link from "next/link";
 import type { MyPageSummary, MyPostsPage } from "@/lib/users/my-page";
+import type { DraftListPage } from "@/lib/posts/drafts";
+import { DraftsSection } from "./DraftsSection";
 import { MyPageMenu } from "./MyPageMenu";
 import { MyPostsList, type FetchMyPosts } from "./MyPostsList";
 
@@ -10,23 +12,30 @@ export interface MyPageProfile {
 }
 
 /**
- * F-RC-01 Task1〜4: マイページ（SC-06）
+ * F-RC-01 Task1〜4 / my-page-v3 Task1（v3.0）: マイページ（SC-06）
  * 出典: docs/tasks/records/my-page/01-my-page-layout.md
- *       要件定義書3.6.1（プロフィール → サマリー → 遷移メニュー → 自分の投稿一覧）
+ *       docs/tasks/records/my-page-v3/01-drafts-section-and-menu.md
+ *       要件定義書 v3.0 3.6.1（プロフィール → 下書き（あるときだけ）→ サマリー → 遷移メニュー 4 つ → 自分の投稿一覧）
  *
  * 管理者（is_admin）への導線は 4.2 に従いメニューバーではなくプロフィール側に置く。
+ * 投稿数（summary.postCount）は公開済みだけを数え、下書きは含まない（lib/users/my-page.ts）。
  */
 export function MyPageScreen({
   profile,
   summary,
   initialPosts,
   tripOptions,
+  drafts,
+  wishlistCount,
   fetchPosts,
 }: {
   profile: MyPageProfile;
   summary: MyPageSummary;
   initialPosts: MyPostsPage;
   tripOptions: { id: string; title: string }[];
+  /** v3.0: 下書き（あるときだけ段を出す） */
+  drafts?: DraftListPage;
+  wishlistCount?: number;
   fetchPosts?: FetchMyPosts;
 }) {
   return (
@@ -51,6 +60,9 @@ export function MyPageScreen({
           </div>
         </section>
 
+        {/* 1.5 下書き（あるときだけ。my-page-v3 Task1） */}
+        {drafts && <DraftsSection initial={drafts} />}
+
         {/* 2. サマリー */}
         <section aria-label="サマリー" className="grid grid-cols-2 gap-2">
           <div className="rounded-[12px] border border-line bg-surface p-3 text-center">
@@ -64,7 +76,7 @@ export function MyPageScreen({
         </section>
 
         {/* 3. 遷移メニュー */}
-        <MyPageMenu />
+        <MyPageMenu wishlistCount={wishlistCount} />
 
         {/* 4. 自分の投稿一覧 */}
         <MyPostsList initialPage={initialPosts} tripOptions={tripOptions} fetchPosts={fetchPosts} />

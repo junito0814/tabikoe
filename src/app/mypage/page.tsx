@@ -6,6 +6,7 @@ import { ERROR_MESSAGES } from "@/components/notices/error-messages";
 import { MyPageScreen } from "@/components/mypage/MyPageScreen";
 import { DEFAULT_AVATAR_URL } from "@/lib/users/constants";
 import { getMyPageSummary, getMyPosts, getMyTripOptions } from "@/lib/users/my-page";
+import { getMyDrafts } from "@/lib/posts/drafts";
 
 /**
  * SC-06 マイページ
@@ -35,17 +36,22 @@ export default async function MyPage() {
       summary={data.summary}
       initialPosts={data.initialPosts}
       tripOptions={data.tripOptions}
+      drafts={data.drafts}
+      wishlistCount={data.wishlistCount}
     />
   );
 }
 
 async function loadMyPageData(admin: ReturnType<typeof createAdminClient>, userId: string) {
   try {
-    const [profile, summary, initialPosts, tripOptions] = await Promise.all([
+    const [profile, summary, initialPosts, tripOptions, drafts, wishlist] = await Promise.all([
       admin.from("users").select("display_name, avatar_url, is_admin").eq("id", userId).maybeSingle(),
       getMyPageSummary(admin, userId),
       getMyPosts(admin, userId, null, 0),
       getMyTripOptions(admin, userId),
+      // v3.0: 下書き（先頭の段）。取れなくてもページは出す
+      getMyDrafts(admin, userId).catch((): { drafts: []; total: number } => ({ drafts: [], total: 0 })),
+      admin.from("wishlist").select("id", { count: "exact", head: true }).eq("user_id", userId),
     ]);
     if (profile.error) throw profile.error;
     return {
@@ -57,6 +63,8 @@ async function loadMyPageData(admin: ReturnType<typeof createAdminClient>, userI
       summary,
       initialPosts,
       tripOptions,
+      drafts,
+      wishlistCount: wishlist.count ?? 0,
     };
   } catch {
     return null;

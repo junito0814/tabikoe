@@ -45,14 +45,15 @@ import { MyMapScreen } from "./MyMapScreen";
 const resolveCenter = () =>
   Promise.resolve({ center: { lat: 35.6812, lng: 139.7671 }, zoom: 13, source: "fallback" as const });
 
-const pin = (spotId: string, kind: "posted" | "wishlist", latestPostId: string | null) => ({
+const pin = (spotId: string, kind: "posted" | "saved" | "draft", latestPostId: string | null) => ({
+  id: kind === "draft" ? `draft:${latestPostId}` : spotId,
   spotId,
   name: spotId,
   lat: 35.65,
   lng: 139.75,
   kind,
   latestPostId,
-  isWishlisted: kind === "wishlist",
+  isWishlisted: kind === "saved",
 });
 
 beforeEach(() => {
@@ -61,7 +62,7 @@ beforeEach(() => {
 });
 
 describe("MyMapScreen（SC-12）", () => {
-  it("表示切り替えに応じて mode が both → posted → wishlist と切り替わる", async () => {
+  it("表示切り替えに応じて mode が both → posted → saved と切り替わる", async () => {
     const fetchPins = vi.fn(async () => []);
     render(<MyMapScreen fetchPins={fetchPins} resolveCenter={resolveCenter} />);
     await screen.findByTestId("map-stub");
@@ -70,24 +71,24 @@ describe("MyMapScreen（SC-12）", () => {
     });
     await waitFor(() => expect(fetchPins).toHaveBeenLastCalledWith("both", BOUNDS));
 
-    fireEvent.click(screen.getByRole("radio", { name: "自分の投稿" }));
+    fireEvent.click(screen.getByRole("radio", { name: "投稿のみ" }));
     await act(async () => {
       await vi.advanceTimersByTimeAsync(400);
     });
     await waitFor(() => expect(fetchPins).toHaveBeenLastCalledWith("posted", BOUNDS));
 
-    fireEvent.click(screen.getByRole("radio", { name: "行きたい" }));
+    fireEvent.click(screen.getByRole("radio", { name: "保存済みのみ" }));
     await act(async () => {
       await vi.advanceTimersByTimeAsync(400);
     });
-    await waitFor(() => expect(fetchPins).toHaveBeenLastCalledWith("wishlist", BOUNDS));
-    expect(screen.getByRole("radio", { name: "行きたい" })).toHaveAttribute("aria-checked", "true");
+    await waitFor(() => expect(fetchPins).toHaveBeenLastCalledWith("saved", BOUNDS));
+    expect(screen.getByRole("radio", { name: "保存済みのみ" })).toHaveAttribute("aria-checked", "true");
   });
 
-  it("投稿済みピンは posted 種別で描かれ、タップで投稿詳細へ。行きたいピンは wishlist 種別で一覧へ", async () => {
+  it("投稿済みは posted で投稿詳細へ、保存済みは saved で一覧へ、下書きは draft で続きを書くへ", async () => {
     render(
       <MyMapScreen
-        fetchPins={async () => [pin("s-posted", "posted", "post-1"), pin("s-wish", "wishlist", null)]}
+        fetchPins={async () => [pin("s-posted", "posted", "post-1"), pin("s-saved", "saved", null), pin("s-draft", "draft", "d1")]}
         resolveCenter={resolveCenter}
       />
     );
@@ -96,7 +97,9 @@ describe("MyMapScreen（SC-12）", () => {
     });
     fireEvent.click(await screen.findByRole("button", { name: "s-posted:posted" }));
     expect(push).toHaveBeenCalledWith("/posts/post-1");
-    fireEvent.click(screen.getByRole("button", { name: "s-wish:wishlist" }));
-    expect(push).toHaveBeenCalledWith("/spots/s-wish");
+    fireEvent.click(screen.getByRole("button", { name: "s-saved:saved" }));
+    expect(push).toHaveBeenCalledWith("/spots/s-saved");
+    fireEvent.click(screen.getByRole("button", { name: "draft:d1:draft" }));
+    expect(push).toHaveBeenCalledWith("/posts/new?draft=d1");
   });
 });

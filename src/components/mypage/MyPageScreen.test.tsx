@@ -51,12 +51,35 @@ describe("MyPageScreen（SC-06）", () => {
     expect(document.querySelector("[data-summary='receivedLikeCount']")).toHaveTextContent("12");
   });
 
-  it("遷移メニューの4導線がそれぞれの画面へ向く", () => {
+  it("遷移メニューは 4 導線（行きたい／アルバム／マイマップ／バッジ）でしおりが無い", () => {
     render(<MyPageScreen {...base} initialPosts={{ posts: [], nextOffset: null }} fetchPosts={vi.fn()} />);
-    expect(MY_PAGE_MENU.map((item) => item.href)).toEqual(["/albums", "/mymap", "/wishlist", "/badges"]);
+    expect(MY_PAGE_MENU.map((item) => item.href)).toEqual(["/wishlist", "/albums", "/mymap", "/badges"]);
+    expect((MY_PAGE_MENU as readonly { href: string }[]).some((item) => item.href === "/itineraries")).toBe(false);
     for (const item of MY_PAGE_MENU) {
-      expect(screen.getByRole("link", { name: item.label })).toHaveAttribute("href", item.href);
+      expect(screen.getByRole("link", { name: new RegExp(`^${item.label}`) })).toHaveAttribute("href", item.href);
     }
+  });
+
+  it("v3.0: 下書きがあるときだけ先頭に「下書き N 件」と最新 3 件、「続きを書く」は /posts/new?draft=", () => {
+    const draft = (id: string) => ({ id, spotName: `場所${id}`, lat: null, lng: null, updatedAt: "2026-09-16T05:02:00Z", thumbnailUrl: null });
+    const { unmount } = render(
+      <MyPageScreen {...base} initialPosts={{ posts: [], nextOffset: null }} fetchPosts={vi.fn()} drafts={{ drafts: [draft("d1"), draft("d2"), draft("d3"), draft("d4")], total: 4 }} />
+    );
+    const section = screen.getByRole("region", { name: "下書き" });
+    expect(section).toHaveTextContent("下書き 4 件");
+    expect(section.querySelectorAll("[data-draft]")).toHaveLength(3);
+    expect(screen.getAllByRole("link", { name: "続きを書く" })[0]).toHaveAttribute("href", "/posts/new?draft=d1");
+    unmount();
+    render(<MyPageScreen {...base} initialPosts={{ posts: [], nextOffset: null }} fetchPosts={vi.fn()} drafts={{ drafts: [], total: 0 }} />);
+    expect(screen.queryByRole("region", { name: "下書き" })).toBeNull();
+  });
+
+  it("v3.0: 仮タイトルの投稿にだけ「タイトルを付ける」の促しが出る", () => {
+    render(<MyPageScreen {...base} initialPosts={{ posts: [post("a", "今日の投稿（9/16）"), post("b", "冬旅")], nextOffset: null }} fetchPosts={vi.fn()} />);
+    expect(document.querySelector("[data-rename-prompt='a']")).toBeInTheDocument();
+    expect(document.querySelector("[data-rename-prompt='b']")).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: /この旅行にタイトルを付ける/ }));
+    expect(screen.getByRole("dialog", { name: "旅行にタイトルを付ける" })).toBeInTheDocument();
   });
 
   it("投稿一覧には旅行タイトルと非公開バッジが出て、旅行で絞り込むと trip_id 付きで取り直す", async () => {
