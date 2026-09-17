@@ -16,13 +16,15 @@ export interface AddModeInfo {
   /** 1 始まりの Day。null は「未定」 */
   day: number | null;
   title: string | null;
+  /** そのしおりに既に入っているスポット ID（カードの「＋」を ✓ にする） */
+  spotIds: string[];
 }
 
 /** URL の itinerary/day → AddModeInfo（day は 1 以上の整数だけ受け付ける） */
 export function parseAddModeParams(itinerary: string | null | undefined, day: string | null | undefined, title: string | null = null): AddModeInfo | null {
   if (!itinerary) return null;
   const dayNumber = day ? Number.parseInt(day, 10) : Number.NaN;
-  return { itineraryId: itinerary, day: Number.isInteger(dayNumber) && dayNumber >= 1 ? dayNumber : null, title };
+  return { itineraryId: itinerary, day: Number.isInteger(dayNumber) && dayNumber >= 1 ? dayNumber : null, title, spotIds: [] };
 }
 
 export function addModeDoneHref(info: AddModeInfo): string {

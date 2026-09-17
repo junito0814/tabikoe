@@ -5,6 +5,7 @@ import { LikeButton } from "@/components/likes/LikeButton";
 import { MediaGrid } from "@/components/media/MediaGrid";
 import { SaveButton } from "@/components/save/SaveButton";
 import type { PostCardData } from "@/lib/posts/post-cards";
+import type { AddModeInfo } from "./AddModeBanner";
 import { buildMapHrefWithBack } from "@/lib/search/list-state";
 import { formatStatusLabel } from "@/lib/spots/format-status-label";
 
@@ -42,7 +43,7 @@ export function PostCard({
   post,
   backHref = null,
   showSpotName = true,
-  onSavePress,
+  addMode = null,
 }: {
   post: PostCardData;
   /** 「地図で見る」から戻ってくるための今の一覧 URL（/search?…） */
@@ -50,7 +51,7 @@ export function PostCard({
   /** スポット別一覧では見出しにスポット名があるので省略できる */
   showSpotName?: boolean;
   /** 追加モード中: 「＋」でしおりに直接追加する（add-spots Task2） */
-  onSavePress?: (post: PostCardData) => void;
+  addMode?: AddModeInfo | null;
 }) {
   const visit = formatVisitDate(post.visitDate);
   const cost = formatCost(post.cost);
@@ -127,7 +128,12 @@ export function PostCard({
           </svg>
           地図で見る
         </Link>
-        <SaveButton spotId={post.spotId} initialSaved={post.viewerHasSaved} size="sm" onPress={onSavePress ? () => onSavePress(post) : undefined} />
+        <SaveButton
+          spotId={post.spotId}
+          initialSaved={post.viewerHasSaved}
+          size="sm"
+          addMode={addMode ? { itineraryId: addMode.itineraryId, day: addMode.day, initialAdded: addMode.spotIds.includes(post.spotId) } : null}
+        />
       </div>
     </article>
   );

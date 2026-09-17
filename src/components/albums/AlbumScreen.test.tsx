@@ -21,6 +21,7 @@ const album = (viewerRole: AlbumDetail["viewerRole"]): AlbumDetail => ({
     { userId: "me", role: viewerRole === "owner" ? "editor" : viewerRole, displayName: "わたし", avatarUrl: "/default-avatar.svg", isDeleted: false, joinedAt: "2026-09-02T00:00:00Z" },
   ],
   posts: [],
+  itineraryId: null,
 });
 
 const api = (overrides: Partial<AlbumApi> = {}): AlbumApi => ({
@@ -36,6 +37,14 @@ const api = (overrides: Partial<AlbumApi> = {}): AlbumApi => ({
 });
 
 describe("AlbumScreen（SC-09）", () => {
+  it("v3.0: しおりのメンバーにだけ「しおりを見る」が出る", () => {
+    const { unmount } = render(<AlbumScreen album={{ ...album("editor"), itineraryId: "it-1" }} initialInvitations={[]} viewerId="me" api={api()} />);
+    expect(screen.getByRole("link", { name: /しおりを見る/ })).toHaveAttribute("href", "/itineraries/it-1");
+    unmount();
+    render(<AlbumScreen album={album("editor")} initialInvitations={[]} viewerId="me" api={api()} />);
+    expect(screen.queryByRole("link", { name: /しおりを見る/ })).toBeNull();
+  });
+
   it("オーナーには名称変更ボタンが出る", () => {
     render(<AlbumScreen album={album("owner")} initialInvitations={[]} viewerId="owner" api={api()} />);
     expect(screen.getByRole("button", { name: "名前を変更" })).toBeInTheDocument();

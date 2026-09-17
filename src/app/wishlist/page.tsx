@@ -3,7 +3,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { requireUserOrRedirect } from "@/lib/auth/require-user-or-redirect";
 import { ErrorNotice } from "@/components/notices/ErrorNotice";
 import { ERROR_MESSAGES } from "@/components/notices/error-messages";
-import { WishlistScreen } from "@/components/wishlist/WishlistScreen";
+import { parseWishlistView, WishlistScreen } from "@/components/wishlist/WishlistScreen";
 import { getWishlistItems } from "@/lib/wishlist/get-wishlist-items";
 import type { WishlistItem } from "@/lib/wishlist/constants";
 
@@ -13,9 +13,10 @@ import type { WishlistItem } from "@/lib/wishlist/constants";
  *
  * ログイン必須（4.1）。マイページ（SC-06, Phase 7）からの導線は my-page Task4 で置く。
  */
-export default async function WishlistPage() {
+export default async function WishlistPage({ searchParams }: { searchParams: Promise<{ view?: string }> }) {
   const supabase = await createClient();
   const user = await requireUserOrRedirect(supabase, "/wishlist");
+  const { view } = await searchParams;
 
   let items: WishlistItem[] | null = null;
   try {
@@ -32,5 +33,5 @@ export default async function WishlistPage() {
     );
   }
 
-  return <WishlistScreen initialItems={items} />;
+  return <WishlistScreen initialItems={items} initialView={parseWishlistView(view)} />;
 }

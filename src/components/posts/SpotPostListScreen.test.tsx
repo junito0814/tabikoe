@@ -82,7 +82,7 @@ describe("SpotPostListScreen（SC-04 スポット別）", () => {
         spot={spot}
         initialState={EMPTY_SEARCH_STATE}
         initialPage={{ posts: [], nextOffset: null }}
-        addMode={{ itineraryId: "it-1", day: null, title: "東京旅行" }}
+        addMode={{ itineraryId: "it-1", day: null, title: "東京旅行", spotIds: [] }}
         fetchPage={vi.fn()}
       />
     );

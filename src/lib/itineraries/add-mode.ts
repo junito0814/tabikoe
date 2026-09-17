@@ -26,7 +26,9 @@ export async function loadAddMode(
   if (!membership) return null;
   const itinerary = one((membership as { itineraries: unknown }).itineraries) as { trips: unknown } | null;
   const trip = one(itinerary?.trips ?? null) as { title: string } | null;
-  return { ...info, title: trip?.title ?? null };
+  // 既に入っているスポット（カードの「＋」を ✓ にする）
+  const { data: spots } = await admin.from("itinerary_spots").select("spot_id").eq("itinerary_id", info.itineraryId);
+  return { ...info, title: trip?.title ?? null, spotIds: ((spots ?? []) as { spot_id: string }[]).map((row) => row.spot_id) };
 }
 
 function one<T>(value: T | T[] | null): T | null {

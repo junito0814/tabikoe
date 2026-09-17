@@ -216,6 +216,12 @@ export function AlbumScreen({
           <p className="text-[11px] text-muted">
             あなたの権限: {ALBUM_ROLE_LABELS[album.viewerRole]} ・ 投稿 {album.posts.length}件 ・ メンバー {members.length}人
           </p>
+          {/* itinerary-basics Task4: しおりのメンバーにだけ「しおりを見る」 */}
+          {album.itineraryId && (
+            <Link href={`/itineraries/${album.itineraryId}`} className="inline-flex h-8 w-fit items-center gap-1 rounded-full border border-line bg-surface px-3 text-[12px] font-semibold text-ink">
+              🔖 しおりを見る
+            </Link>
+          )}
         </header>
 
         {errorMessage && <ErrorNotice message={errorMessage} />}

@@ -217,7 +217,9 @@ export function MapScreen({
   const mapPins = useMemo<GoogleMapPin[]>(() => {
     if (isItinerary) return itineraryPins;
     const focusId = open.mode === "explore" ? activeNearbySpotId : open.focusSpotId;
-    const result: GoogleMapPin[] = pins.map((pin) => ({
+    // 行きたいの地図（wishlist-v3 Task2）は保存済みのピンだけ
+    const visible = open.savedOnly ? pins.filter((pin) => pin.kind === "saved") : pins;
+    const result: GoogleMapPin[] = visible.map((pin) => ({
       id: pin.id,
       lat: pin.lat,
       lng: pin.lng,
@@ -235,7 +237,7 @@ export function MapScreen({
     }
     if (tempPin) result.push({ id: TEMP_PIN_ID, lat: tempPin.lat, lng: tempPin.lng, type: "focus", title: "この地点" });
     return result;
-  }, [pins, tempPin, open.mode, open.focusSpotId, activeNearbySpotId, nearbyPosts, isItinerary, itineraryPins]);
+  }, [pins, tempPin, open.mode, open.focusSpotId, open.savedOnly, activeNearbySpotId, nearbyPosts, isItinerary, itineraryPins]);
 
   const postHereHref = currentLocation
     ? composeHref({ kind: "current", lat: currentLocation.lat, lng: currentLocation.lng })
@@ -246,7 +248,7 @@ export function MapScreen({
   const isExplore = open.mode === "explore";
 
   return (
-    <div className="relative flex h-[calc(100dvh-60px)] flex-col bg-app md:h-dvh" data-map-mode={open.mode}>
+    <div className={`relative flex flex-col bg-app ${open.savedOnly ? "h-[calc(100dvh-60px-88px)] md:h-[calc(100dvh-88px)]" : "h-[calc(100dvh-60px)] md:h-dvh"}`} data-map-mode={open.savedOnly ? "saved" : open.mode}>
       <div className={`relative ${isExplore ? "h-2/3" : "flex-1"}`}>
         {/* 上部：戻る＋凡例（地図に重ねる） */}
         <div className="pointer-events-none absolute inset-x-0 top-0 z-10 flex flex-col gap-2 p-3">

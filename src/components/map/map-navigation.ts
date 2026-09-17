@@ -24,6 +24,8 @@ export interface MapOpenOptions {
   itineraryId: string | null;
   /** しおりの地図で最初に開く Day（null＝未定、undefined＝Day 1） */
   itineraryDay?: number | null;
+  /** 行きたい（SC-08）の地図: 保存済み（赤）のピンだけを出す */
+  savedOnly?: boolean;
   back: { href: string; label: string };
 }
 
