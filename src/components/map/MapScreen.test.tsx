@@ -21,6 +21,7 @@ import { resolveMapOpen } from "./map-navigation";
 vi.mock("next/navigation", () => ({ useRouter: () => ({ push: vi.fn(), replace: vi.fn() }) }));
 
 const panTo = vi.fn();
+const fitBounds = vi.fn();
 const BOUNDS: MapBounds = { north: 35.7, south: 35.6, east: 139.8, west: 139.7 };
 let latestPins: { id: string; type: string }[] = [];
 let triggerLongPress: ((position: { lat: number; lng: number }) => void) | undefined;
@@ -43,7 +44,7 @@ vi.mock("./GoogleMap", () => ({
   }) => {
     latestPins = pins;
     triggerLongPress = onLongPress;
-    useImperativeHandle(ref, () => ({ panTo, getCenter: () => ({ lat: 35.65, lng: 139.75 }) }));
+    useImperativeHandle(ref, () => ({ panTo, fitBounds, getCenter: () => ({ lat: 35.65, lng: 139.75 }) }));
     useEffect(() => {
       onBoundsChange?.(BOUNDS, { lat: 35.65, lng: 139.75 });
       // eslint-disable-next-line react-hooks/exhaustive-deps
