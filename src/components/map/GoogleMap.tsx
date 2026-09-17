@@ -6,9 +6,10 @@ import { ErrorNotice } from "@/components/notices/ErrorNotice";
 import { ERROR_MESSAGES } from "@/components/notices/error-messages";
 import { PIN_MARKER_SIZE, pinIconDataUrl, type PinMarkerOptions } from "@/components/pins/pin-marker-icon";
 import { getPinStyle, type AnyPinType } from "@/components/pins/pin-styles";
-import { buildMapStyles, detectMapTheme, MAP_UI_OPTIONS, watchMapTheme, type MapTheme } from "./map-styles";
+import { buildMapOptions, buildMapStyles, detectMapTheme, watchMapTheme, type MapTheme } from "./map-styles";
 import type { MapBounds } from "@/lib/map/get-map-pins";
 import { useGoogleMaps } from "./use-google-maps";
+import { createLongPressDetector } from "./use-long-press";
 import type { LatLng } from "./initial-center";
 
 /** 地図に置くピン。種別は shared-ui/pin-display-rules-v3 の種別（旧名 normal / wishlist も可） */
@@ -26,8 +27,7 @@ export interface GoogleMapHandle {
   getCenter: () => LatLng | null;
 }
 
-/** 長押しと判定するまでの時間（ms）。要件定義書 v3.0 3.4.4 */
-export const LONG_PRESS_MS = 500;
+export { LONG_PRESS_MS } from "./use-long-press";
 
 interface GoogleMapProps {
   initialCenter: LatLng;
@@ -42,6 +42,10 @@ interface GoogleMapProps {
   onLongPress?: (position: LatLng) => void;
   /** 地図のタップ（長押しの一時ピンを消す用途など） */
   onMapClick?: () => void;
+  /** ドラッグ開始（吹き出しを閉じる用途など） */
+  onDragStart?: () => void;
+  /** 現在地（青い円）。精度（m）があれば円の大きさに反映する */
+  currentLocation?: { lat: number; lng: number; accuracy?: number } | null;
   ref?: Ref<GoogleMapHandle>;
   className?: string;
 }
@@ -74,6 +78,8 @@ export function GoogleMap({
   cluster = true,
   onLongPress,
   onMapClick,
+  onDragStart,
+  currentLocation = null,
   ref,
   className,
 }: GoogleMapProps) {
@@ -89,12 +95,14 @@ export function GoogleMap({
   const onBoundsChangeRef = useRef(onBoundsChange);
   const onLongPressRef = useRef(onLongPress);
   const onMapClickRef = useRef(onMapClick);
+  const onDragStartRef = useRef(onDragStart);
   useEffect(() => {
     onPinClickRef.current = onPinClick;
     onBoundsChangeRef.current = onBoundsChange;
     onLongPressRef.current = onLongPress;
     onMapClickRef.current = onMapClick;
-  }, [onPinClick, onBoundsChange, onLongPress, onMapClick]);
+    onDragStartRef.current = onDragStart;
+  }, [onPinClick, onBoundsChange, onLongPress, onMapClick, onDragStart]);
 
   // theme Task2: OS のダーク設定に合わせて地図のスタイルを切り替える（ズームで道路名の表示も変わる）
   const [theme, setTheme] = useState<MapTheme>(() => detectMapTheme());
@@ -130,10 +138,8 @@ export function GoogleMap({
       map = new google.maps.Map(containerRef.current, {
         center: initialCenter,
         zoom: initialZoom,
-        ...MAP_UI_OPTIONS,
-        zoomControl: true,
-        gestureHandling: "greedy",
-        styles: buildMapStyles(detectMapTheme(), initialZoom),
+        // 表示情報の削減（POI 非表示・道路名はズーム 16 以上）とコントロールの無効化（map-styles.ts）
+        ...buildMapOptions(detectMapTheme(), initialZoom),
       });
     } catch (error) {
       console.error("Failed to initialise Google Map", error);
@@ -153,33 +159,51 @@ export function GoogleMap({
       map.setOptions({ styles: buildMapStyles(detectMapTheme(), zoom) });
     });
 
-    // 長押し（タッチ）と右クリック（マウス）を同じ「長押し」として扱う。ドラッグ中は発火させない
-    let pressTimer: ReturnType<typeof setTimeout> | null = null;
-    const cancelPress = () => {
-      if (pressTimer) clearTimeout(pressTimer);
-      pressTimer = null;
+    // 長押し（タッチ 500ms）と右クリック（マウス）を同じ「長押し」として扱う（use-long-press.ts）。
+    // Google マップの mousedown/mouseup/dragstart と、DOM の touchmove を組み合わせ、動かしたら取り消す
+    const detector = createLongPressDetector((point) => onLongPressRef.current?.(point));
+    const toPoint = (event: google.maps.MapMouseEvent) => {
+      const latLng = event.latLng;
+      if (!latLng) return null;
+      const domEvent = event.domEvent as MouseEvent | TouchEvent | undefined;
+      const touch = domEvent && "touches" in domEvent ? domEvent.touches[0] : undefined;
+      const x = touch ? touch.clientX : domEvent && "clientX" in domEvent ? domEvent.clientX : undefined;
+      const y = touch ? touch.clientY : domEvent && "clientY" in domEvent ? domEvent.clientY : undefined;
+      return { lat: latLng.lat(), lng: latLng.lng(), x, y };
     };
     map.addListener("mousedown", (event: google.maps.MapMouseEvent) => {
-      cancelPress();
-      const latLng = event.latLng;
-      if (!latLng) return;
-      pressTimer = setTimeout(() => {
-        pressTimer = null;
-        onLongPressRef.current?.({ lat: latLng.lat(), lng: latLng.lng() });
-      }, LONG_PRESS_MS);
+      const point = toPoint(event);
+      if (point) detector.start(point);
     });
-    map.addListener("mouseup", cancelPress);
-    map.addListener("dragstart", cancelPress);
-    map.addListener("drag", cancelPress);
+    map.addListener("mousemove", (event: google.maps.MapMouseEvent) => {
+      const point = toPoint(event);
+      if (point) detector.move(point);
+    });
+    map.addListener("mouseup", () => detector.cancel());
+    map.addListener("dragstart", () => {
+      detector.cancel();
+      onDragStartRef.current?.();
+    });
+    map.addListener("drag", () => detector.cancel());
+    map.addListener("zoom_changed", () => detector.cancel());
     map.addListener("contextmenu", (event: google.maps.MapMouseEvent) => {
-      cancelPress();
-      const latLng = event.latLng;
-      if (latLng) onLongPressRef.current?.({ lat: latLng.lat(), lng: latLng.lng() });
+      const point = toPoint(event);
+      if (point) detector.trigger(point);
     });
     map.addListener("click", () => {
-      cancelPress();
+      detector.cancel();
       onMapClickRef.current?.();
     });
+    // タッチの移動は Maps API の mousemove に乗らないことがあるため DOM でも見る
+    const container = containerRef.current;
+    const onTouchMove = (event: TouchEvent) => {
+      const touch = event.touches[0];
+      if (touch) detector.move({ lat: 0, lng: 0, x: touch.clientX, y: touch.clientY });
+    };
+    const onTouchEnd = () => detector.cancel();
+    container?.addEventListener("touchmove", onTouchMove, { passive: true });
+    container?.addEventListener("touchend", onTouchEnd, { passive: true });
+    container?.addEventListener("touchcancel", onTouchEnd, { passive: true });
 
     map.addListener("idle", () => {
       const bounds = map.getBounds();
@@ -195,6 +219,45 @@ export function GoogleMap({
     // 初期位置は生成時にだけ使う（以降の移動は panTo 経由）
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mapsState]);
+
+  // 現在地の青い円（精度が悪いと円が大きくなる）。map-display-v3 Task2
+  const locationMarkerRef = useRef<{ dot: google.maps.Marker; circle: google.maps.Circle } | null>(null);
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || mapsState !== "ready") return;
+    locationMarkerRef.current?.dot.setMap(null);
+    locationMarkerRef.current?.circle.setMap(null);
+    locationMarkerRef.current = null;
+    if (!currentLocation) return;
+    const position = { lat: currentLocation.lat, lng: currentLocation.lng };
+    const dot = new google.maps.Marker({
+      map,
+      position,
+      title: "現在地",
+      clickable: false,
+      zIndex: 1000,
+      icon: {
+        path: google.maps.SymbolPath.CIRCLE,
+        scale: 7,
+        fillColor: "#2f7fd8",
+        fillOpacity: 1,
+        strokeColor: "#ffffff",
+        strokeWeight: 2,
+      },
+    });
+    const circle = new google.maps.Circle({
+      map,
+      center: position,
+      radius: Math.max(currentLocation.accuracy ?? 30, 15),
+      clickable: false,
+      fillColor: "#2f7fd8",
+      fillOpacity: 0.12,
+      strokeColor: "#2f7fd8",
+      strokeOpacity: 0.35,
+      strokeWeight: 1,
+    });
+    locationMarkerRef.current = { dot, circle };
+  }, [currentLocation, mapsState]);
 
   // ピンの描画。親が毎レンダー新しい配列を渡しても、中身（id・座標・種別）が同じなら置き直さない
   // （置き直すたびにマーカーが消えて再描画され、点滅して見えるため）
