@@ -107,15 +107,31 @@ describe("MediaGrid 動画（Task3）", () => {
     expect(screen.getAllByRole("img")[0]).toHaveAttribute("alt", "写真1");
   });
 
-  it("動画をタップするとインライン再生に切り替わる", () => {
-    const { container } = render(<MediaGrid items={makeItems(1, { videoFirst: true })} />);
-    expect(container.querySelector("video")).toBeNull();
+  it("動画をタップするとモーダルが開き、その中で再生される（v3.0 4.5.1）", () => {
+    render(<MediaGrid items={makeItems(2, { videoFirst: true })} />);
+    fireEvent.click(screen.getAllByRole("button")[0]);
+    const dialog = screen.getByRole("dialog");
+    expect(dialog.querySelector("video")).toHaveAttribute("src", "https://example.com/0.mp4");
+  });
 
-    fireEvent.click(screen.getByRole("button"));
+  it("写真をタップするとその写真を起点にモーダルが開き、矢印キーで前後に送れる（media-layout-v3 Task1）", () => {
+    render(<MediaGrid items={makeItems(3)} />);
+    fireEvent.click(screen.getAllByRole("button")[1]);
+    expect(screen.getByText("2 / 3")).toBeInTheDocument();
+    fireEvent.keyDown(window, { key: "ArrowRight" });
+    expect(screen.getByText("3 / 3")).toBeInTheDocument();
+    fireEvent.keyDown(window, { key: "ArrowRight" });
+    expect(screen.getByText("3 / 3")).toBeInTheDocument();
+    fireEvent.keyDown(window, { key: "ArrowLeft" });
+    expect(screen.getByText("2 / 3")).toBeInTheDocument();
+    fireEvent.keyDown(window, { key: "Escape" });
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  });
 
-    const video = container.querySelector("video");
-    expect(video).not.toBeNull();
-    expect(video).toHaveAttribute("src", "https://example.com/0.mp4");
+  it("postHref を渡すとモーダルに「この投稿を見る」リンクが出る", () => {
+    render(<MediaGrid items={makeItems(1)} postHref="/posts/abc" />);
+    fireEvent.click(screen.getAllByRole("button")[0]);
+    expect(screen.getByRole("link", { name: "この投稿を見る" })).toHaveAttribute("href", "/posts/abc");
   });
 
   it("写真をタップしても再生には切り替わらない", () => {

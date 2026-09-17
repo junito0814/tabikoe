@@ -1,10 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { TripTitleInput } from "@/components/trips/TripTitleInput";
 import { SpotAutocompleteInput } from "@/components/spots/SpotAutocompleteInput";
 import { UploadNotice } from "@/components/notices/UploadNotice";
+import { SelectedMediaThumbnails, useObjectUrls, type SelectedMedia } from "@/components/media/SelectedMediaThumbnails";
 import { DeletePostButton } from "./DeletePostButton";
 import { buildPostedHref, buildUpdatedHref } from "@/components/badges/badge-toast-params";
 import { ErrorNotice } from "@/components/notices/ErrorNotice";
@@ -124,6 +125,26 @@ export default function PostForm({ initialPost }: { initialPost?: PostFormInitia
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  // media-layout-v3 Task2: 選んだファイルはその場にサムネイルで並べる（file input 自体は隠して「＋」で開く）
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const selectedEntries = useObjectUrls(photos);
+  const thumbnailItems: SelectedMedia[] = [
+    ...existingPhotos.map((photo) => ({ key: `existing:${photo.id}`, url: photo.url, mediaType: "photo" as const, alt: "投稿済みの写真" })),
+    ...selectedEntries.map((entry, index) => ({
+      key: `new:${index}`,
+      url: entry.url,
+      mediaType: entry.file.type.startsWith("video/") ? ("video" as const) : ("photo" as const),
+      alt: entry.file.name,
+    })),
+  ];
+  const handleRemoveThumbnail = (key: string) => {
+    if (key.startsWith("existing:")) {
+      void handleDeleteExistingPhoto(key.slice("existing:".length));
+      return;
+    }
+    const index = Number(key.slice("new:".length));
+    setPhotos((current) => current.filter((_, i) => i !== index));
+  };
 
   // 文字数は「見た目の 1 文字」単位で数える（絵文字を 2 文字と数えないため。要件定義書 3.3.1）
   const commentLength = graphemeLength(comment);
@@ -191,7 +212,9 @@ export default function PostForm({ initialPost }: { initialPost?: PostFormInitia
       return;
     }
 
-    setPhotos(selected);
+    // 「＋」で追加するたびに末尾へ足す（選び直しではなく追加）。同じ input で再度同じファイルを選べるよう value を空に戻す
+    setPhotos((current) => [...current, ...selected]);
+    event.target.value = "";
   };
 
   const handleSubmit = async () => {
@@ -381,39 +404,22 @@ export default function PostForm({ initialPost }: { initialPost?: PostFormInitia
           <StarRating value={rating} onChange={setRating} />
         </Field>
 
-        <Field label="写真">
-          {existingPhotos.length > 0 && (
-            <ul className="mb-2 grid grid-cols-3 gap-2">
-              {existingPhotos.map((photo) => (
-                <li key={photo.id} className="relative">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={photo.url}
-                    alt="投稿済みの写真"
-                    className="aspect-square w-full rounded-[8px] object-cover"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => handleDeleteExistingPhoto(photo.id)}
-                    aria-label="この写真を削除"
-                    className="absolute right-1 top-1 flex h-6 w-6 items-center justify-center rounded-full bg-black/55 text-[13px] leading-none text-white"
-                  >
-                    ×
-                  </button>
-                </li>
-              ))}
-            </ul>
-          )}
+        <Field label="写真・動画">
+          <SelectedMediaThumbnails
+            items={thumbnailItems}
+            onRemove={handleRemoveThumbnail}
+            onAdd={() => fileInputRef.current?.click()}
+            addLabel="写真・動画を追加"
+          />
           <input
+            ref={fileInputRef}
             type="file"
             accept="image/jpeg,image/png"
             multiple
             onChange={handlePhotoChange}
-            className="text-[12px]"
+            aria-label="写真・動画を選択"
+            className="sr-only"
           />
-          {photos.length > 0 && (
-            <p className="mt-1 text-[11px] text-muted">{photos.length}点を選択中</p>
-          )}
           <div className="mt-2">
             <UploadNotice />
           </div>

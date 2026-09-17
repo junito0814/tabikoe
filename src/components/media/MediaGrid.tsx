@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { MediaModal } from "./MediaModal";
 
 /**
  * 写真・動画の表示レイアウト Task1〜3: MediaGrid共通コンポーネント
@@ -15,7 +16,7 @@ import { useState } from "react";
  *   - MediaGrid: 点数（1／2／3／4 以上）でレイアウトを切り替える親。5 点目以降は 4 枠目に「+N」を重ねる
  *   - MediaCell: 1 枠。動画はクリックでその場再生（isPlaying）に切り替わる
  *   - MediaThumbnail: サムネイル画像＋動画なら再生アイコン。写真一覧（SC-13）でも単独で使う
- * v3.0 ではクリックで開くモーダル（MediaModal）が加わる（media-layout-v3 Task 1）。
+ * v3.0（media-layout-v3 Task1）: 写真・動画のクリックで MediaModal（全画面の閲覧）を開く。動画はモーダル内で再生する。
  */
 export interface MediaItem {
   id: string;
@@ -24,35 +25,26 @@ export interface MediaItem {
   /** 代替テキスト（要件定義書7.7：画像・動画サムネイルにalt属性を設定する） */
   alt: string;
   videoUrl?: string;
+  /** モーダルで表示する大きい画像。無ければ thumbnailUrl を使う */
+  fullUrl?: string;
 }
 
 function MediaCell({
   item,
   className,
   overflowCount,
+  onOpen,
 }: {
   item: MediaItem;
   className?: string;
   overflowCount?: number;
+  onOpen: () => void;
 }) {
-  const [isPlaying, setIsPlaying] = useState(false);
-
-  if (item.mediaType === "video" && isPlaying && item.videoUrl) {
-    return (
-      <video
-        src={item.videoUrl}
-        controls
-        autoPlay
-        aria-label={item.alt}
-        className={`h-full w-full object-cover ${className ?? ""}`}
-      />
-    );
-  }
-
   return (
     <button
       type="button"
-      onClick={() => item.mediaType === "video" && setIsPlaying(true)}
+      onClick={onOpen}
+      aria-label={item.alt}
       className={`relative block h-full w-full overflow-hidden bg-line ${className ?? ""}`}
     >
       <MediaThumbnail item={item} />
@@ -94,51 +86,65 @@ export function MediaThumbnail({
   );
 }
 
-export function MediaGrid({ items }: { items: MediaItem[] }) {
+export function MediaGrid({ items, postHref }: { items: MediaItem[]; postHref?: string }) {
+  // 開いているモーダルの起点。null なら閉じている
+  const [openIndex, setOpenIndex] = useState<number | null>(null);
+
   if (items.length === 0) {
     return null;
   }
 
+  const modal =
+    openIndex !== null ? (
+      <MediaModal items={items} startIndex={openIndex} onClose={() => setOpenIndex(null)} postHref={postHref} />
+    ) : null;
+  const cell = (index: number, className?: string, overflowCount?: number) => (
+    <MediaCell key={items[index].id} item={items[index]} className={className} overflowCount={overflowCount} onOpen={() => setOpenIndex(index)} />
+  );
+
   if (items.length === 1) {
     return (
-      <div className="aspect-square w-full">
-        <MediaCell item={items[0]} />
-      </div>
+      <>
+        <div className="aspect-square w-full">{cell(0)}</div>
+        {modal}
+      </>
     );
   }
 
   if (items.length === 2) {
     return (
-      <div className="grid aspect-[2/1] w-full grid-cols-2 gap-0.5">
-        <MediaCell item={items[0]} />
-        <MediaCell item={items[1]} />
-      </div>
+      <>
+        <div className="grid aspect-[2/1] w-full grid-cols-2 gap-0.5">
+          {cell(0)}
+          {cell(1)}
+        </div>
+        {modal}
+      </>
     );
   }
 
   if (items.length === 3) {
     return (
-      <div className="grid aspect-square w-full grid-cols-2 grid-rows-2 gap-0.5">
-        <MediaCell item={items[0]} className="row-span-2" />
-        <MediaCell item={items[1]} />
-        <MediaCell item={items[2]} />
-      </div>
+      <>
+        <div className="grid aspect-square w-full grid-cols-2 grid-rows-2 gap-0.5">
+          {cell(0, "row-span-2")}
+          {cell(1)}
+          {cell(2)}
+        </div>
+        {modal}
+      </>
     );
   }
 
-  const visible = items.slice(0, 4);
   // 5点以上の場合、4枠目に「+N」を重ねる。N = 表示済み（1〜3枚目）を除いた残数
   const overflowCount = items.length > 4 ? items.length - 3 : undefined;
 
   return (
-    <div className="grid aspect-square w-full grid-cols-2 grid-rows-2 gap-0.5">
-      {visible.map((item, index) => (
-        <MediaCell
-          key={item.id}
-          item={item}
-          overflowCount={index === 3 ? overflowCount : undefined}
-        />
-      ))}
-    </div>
+    <>
+      <div className="grid aspect-square w-full grid-cols-2 grid-rows-2 gap-0.5">
+        {[0, 1, 2, 3].map((index) => cell(index, undefined, index === 3 ? overflowCount : undefined))}
+      </div>
+      {modal}
+    </>
   );
 }
