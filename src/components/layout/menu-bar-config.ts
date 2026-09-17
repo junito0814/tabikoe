@@ -1,33 +1,39 @@
 /**
- * 共通メニューバー Task1: 項目定義と表示判定
- * 出典: docs/tasks/shared-ui/menu-bar/01-menu-bar-component.md
- *       要件定義書4.2（4項目。トップページ・ログイン画面・アカウント新規作成画面・管理画面を除く）
+ * menu-bar-v3 Task1: 項目定義と表示判定（ホーム・しおり・通知・マイページ）
+ * 出典: docs/tasks/shared-ui/menu-bar-v3/01-menu-config-and-visibility.md
+ *       要件定義書 v3.0 4.2
  *
- * 遷移先のうち /map（SC-02, Phase 5）・/notifications（SC-14, Phase 9）・/mypage（SC-06, Phase 7）は
- * まだ画面が無い。パスはここで確定させ、各画面の実装時にこの定義を変えずに済むようにする。
+ * 【初心者向け】メニューの「中身」だけをここに置き、描画は AppMenuBar.tsx が担当する。
+ * こうしておくと、項目の変更はこのファイルだけで済み、判定関数は DOM 無しで単体テストできる。
+ * v3.0 で「全体マップ・新規投稿」を外し、「ホーム（検索トップ）・しおり」を入れた。
+ * 地図へはホームの「近くのスポットを探す」と投稿カードの「地図で見る」から、投稿へはホームの
+ * 「いまいる場所に投稿する」と各入口（post-entry-points）から入る。
  */
 export interface MenuItem {
-  key: "map" | "post" | "notifications" | "mypage";
+  key: "home" | "itineraries" | "notifications" | "mypage";
   label: string;
   href: string;
 }
 
 export const MENU_ITEMS: readonly MenuItem[] = [
-  { key: "map", label: "全体マップ", href: "/map" },
-  { key: "post", label: "新規投稿", href: "/posts/new" },
+  { key: "home", label: "ホーム", href: "/" },
+  { key: "itineraries", label: "しおり", href: "/itineraries" },
   { key: "notifications", label: "通知", href: "/notifications" },
   { key: "mypage", label: "マイページ", href: "/mypage" },
 ] as const;
 
 /** メニューバーを出さない画面。前方一致で判定するものは末尾に "/" を付けない */
-const HIDDEN_EXACT_PATHS = new Set(["/", "/login", "/signup"]);
+const HIDDEN_EXACT_PATHS = new Set(["/login", "/signup"]);
 const HIDDEN_PREFIXES = ["/admin", "/dev"];
 
 /**
- * 4.2の除外条件に加え、開発用プレビュー（/dev）も除外する。
- * 管理画面（SC-15〜18）は /admin 配下で、一般ユーザーには存在自体を見せない（3.10.1）。
+ * 4.2 の除外条件（未ログインのホーム・ログイン・新規作成・管理画面）に加え、開発用プレビュー（/dev）も除外する。
+ * ホーム（"/"）はログイン済みのときだけ出す（未ログインの SC-00 はサービス説明とログインボタンだけの画面）。
  */
-export function shouldShowMenuBar(pathname: string): boolean {
+export function shouldShowMenuBar(pathname: string, isAuthenticated = true): boolean {
+  if (pathname === "/") {
+    return isAuthenticated;
+  }
   if (HIDDEN_EXACT_PATHS.has(pathname)) {
     return false;
   }
@@ -36,10 +42,10 @@ export function shouldShowMenuBar(pathname: string): boolean {
   );
 }
 
-/** 現在地の判定。/posts/new と /posts/xxx/edit はどちらも「新規投稿」の系統として扱う */
+/** 現在地の判定。ホームは検索トップ（/）と検索結果（/search）を同じ系統として扱う */
 export function isMenuItemActive(item: MenuItem, pathname: string): boolean {
-  if (item.key === "post") {
-    return pathname.startsWith("/posts");
+  if (item.key === "home") {
+    return pathname === "/" || pathname === "/search" || pathname.startsWith("/search/");
   }
   return pathname === item.href || pathname.startsWith(`${item.href}/`);
 }

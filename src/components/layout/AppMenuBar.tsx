@@ -13,13 +13,13 @@ import { NOTIFICATIONS_READ_EVENT } from "@/components/notifications/notificatio
  *       docs/tasks/shared-ui/menu-bar/02-unread-notification-badge.md
  *       docs/tasks/shared-ui/menu-bar/03-admin-access-control.md
  *
- * スマートフォンでは画面下部に固定、PCでは上部に置く（2.3の両環境に対応）。
+ * スマートフォンでは画面下部に固定、PC（md 以上）では左サイドバーに縦に並べる（2.3の両環境に対応。menu-bar-v3 Task2）。
  * 管理画面への導線はここには置かない（Task3）。is_adminユーザー向けの導線は
  * プロフィール編集画面（SC-07）側にある。
  *
  * 【初心者向け】メニューの中身（項目・遷移先・どのパスで出すか）は menu-bar-config.ts に分けてある。
  * このファイルは「描画」と「未読バッジの取得」だけ。`usePathname()` で今の URL を見て、出す／出さない・選択中を決める。
- * v3.0 では項目が ホーム・しおり・通知・マイページ に変わる（menu-bar-v3）。
+ * v3.0 で項目は ホーム（家のアイコン）・しおり・通知・マイページ（menu-bar-v3 Task1）。
  */
 async function fetchUnreadCountFromApi(): Promise<number> {
   const response = await fetchWithAuthRedirect("/api/notifications/unread-count");
@@ -33,18 +33,20 @@ async function fetchUnreadCountFromApi(): Promise<number> {
 function MenuIcon({ itemKey }: { itemKey: MenuItem["key"] }) {
   const common = { width: 22, height: 22, viewBox: "0 0 24 24", fill: "none", "aria-hidden": true };
   switch (itemKey) {
-    case "map":
+    case "home":
+      // 家のアイコン（ホーム＝検索トップ）
       return (
         <svg {...common}>
-          <path d="M12 21s-6-5.3-6-11a6 6 0 0 1 12 0c0 5.7-6 11-6 11z" stroke="currentColor" strokeWidth="1.8" />
-          <circle cx="12" cy="10" r="2.2" stroke="currentColor" strokeWidth="1.8" />
+          <path d="M3 11.5L12 4l9 7.5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+          <path d="M5.5 10.5V20h13v-9.5" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round" />
+          <path d="M10 20v-6h4v6" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round" />
         </svg>
       );
-    case "post":
+    case "itineraries":
+      // ブックマーク（しおり）
       return (
         <svg {...common}>
-          <rect x="4" y="4" width="16" height="16" rx="4" stroke="currentColor" strokeWidth="1.8" />
-          <path d="M12 8v8M8 12h8" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+          <path d="M7 4h10a1 1 0 0 1 1 1v15l-6-4-6 4V5a1 1 0 0 1 1-1z" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round" />
         </svg>
       );
     case "notifications":
@@ -81,12 +83,15 @@ export function UnreadBadge({ count }: { count: number }) {
 
 export function AppMenuBar({
   fetchUnreadCount = fetchUnreadCountFromApi,
+  isAuthenticated = true,
 }: {
   /** 未読件数取得の差し替え口（単体テスト用） */
   fetchUnreadCount?: () => Promise<number>;
+  /** layout.tsx がサーバーで判定して渡す。未ログインのホーム（/）ではバーを出さない */
+  isAuthenticated?: boolean;
 }) {
   const pathname = usePathname();
-  const visible = shouldShowMenuBar(pathname);
+  const visible = shouldShowMenuBar(pathname, isAuthenticated);
   const [unreadCount, setUnreadCount] = useState(0);
 
   // 呼び出し元がインライン関数を渡しても効果が再実行されないようrefで受ける

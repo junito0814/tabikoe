@@ -9,8 +9,8 @@ import { MENU_ITEMS, isMenuItemActive, shouldShowMenuBar } from "./menu-bar-conf
 describe("MENU_ITEMS", () => {
   it("4.2の4項目を、この順で持つ", () => {
     expect(MENU_ITEMS.map((item) => item.label)).toEqual([
-      "全体マップ",
-      "新規投稿",
+      "ホーム",
+      "しおり",
       "通知",
       "マイページ",
     ]);
@@ -19,8 +19,8 @@ describe("MENU_ITEMS", () => {
   it("リンク先が各画面のパスになっている", () => {
     const byKey = Object.fromEntries(MENU_ITEMS.map((item) => [item.key, item.href]));
     expect(byKey).toEqual({
-      map: "/map",
-      post: "/posts/new",
+      home: "/",
+      itineraries: "/itineraries",
       notifications: "/notifications",
       mypage: "/mypage",
     });
@@ -32,8 +32,13 @@ describe("MENU_ITEMS", () => {
 });
 
 describe("shouldShowMenuBar", () => {
-  it.each(["/", "/login", "/signup"])("除外画面 %s では非表示", (path) => {
+  it.each(["/login", "/signup"])("除外画面 %s では非表示", (path) => {
     expect(shouldShowMenuBar(path)).toBe(false);
+  });
+
+  it("ホーム（/）はログイン済みなら表示、未ログインなら非表示（v3.0）", () => {
+    expect(shouldShowMenuBar("/", true)).toBe(true);
+    expect(shouldShowMenuBar("/", false)).toBe(false);
   });
 
   it.each(["/admin", "/admin/", "/admin/announcements", "/admin/reports/1"])(
@@ -47,7 +52,7 @@ describe("shouldShowMenuBar", () => {
     expect(shouldShowMenuBar("/dev/preview")).toBe(false);
   });
 
-  it.each(["/map", "/posts/new", "/posts/abc/edit", "/notifications", "/mypage", "/account", "/users/xyz"])(
+  it.each(["/map", "/posts/new", "/posts/abc/edit", "/notifications", "/mypage", "/account", "/users/xyz", "/itineraries", "/search"])(
     "通常画面 %s では表示",
     (path) => {
       expect(shouldShowMenuBar(path)).toBe(true);
@@ -70,9 +75,10 @@ describe("isMenuItemActive", () => {
     expect(isMenuItemActive(item("mypage"), "/map")).toBe(false);
   });
 
-  it("新規投稿は /posts 配下（編集画面を含む）で現在地になる", () => {
-    expect(isMenuItemActive(item("post"), "/posts/new")).toBe(true);
-    expect(isMenuItemActive(item("post"), "/posts/abc/edit")).toBe(true);
-    expect(isMenuItemActive(item("post"), "/account")).toBe(false);
+  it("ホームは検索トップ（/）と検索結果（/search）で現在地になる（v3.0）", () => {
+    expect(isMenuItemActive(item("home"), "/")).toBe(true);
+    expect(isMenuItemActive(item("home"), "/search")).toBe(true);
+    expect(isMenuItemActive(item("home"), "/posts/new")).toBe(false);
+    expect(isMenuItemActive(item("home"), "/account")).toBe(false);
   });
 });
