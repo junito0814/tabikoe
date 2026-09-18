@@ -1,19 +1,17 @@
 "use client";
 
+import type { ListView } from "@/lib/search/list-view";
+
 /**
  * photo-view Task2: 「投稿／写真」の切替
  * 出典: docs/tasks/map-search/photo-view/02-view-toggle-ui.md
  *       要件定義書 v3.0 3.4.2
  *
  * 【初心者向け】radio 風の 2 ボタン。選ぶと親が `?view=photos` を URL に付け外しする（状態は URL に持つ）。
- * 絞り込み・並び替えは両方の表示で共通に効く。
+ * 絞り込み・並び替えは両方の表示で共通に効く。値の型と読み取り（parseListView）は lib/search/list-view.ts
+ * （サーバーからも使うため、この "use client" ファイルには置かない）。
  */
-export type ListView = "posts" | "photos";
-
-export function parseListView(value: string | null | undefined): ListView {
-  return value === "photos" ? "photos" : "posts";
-}
-
+export type { ListView };
 export function ViewToggle({ value, onChange, className }: { value: ListView; onChange: (view: ListView) => void; className?: string }) {
   const options: { view: ListView; label: string }[] = [
     { view: "posts", label: "投稿" },

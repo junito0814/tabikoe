@@ -16,7 +16,8 @@ import { AddModeBanner, type AddModeInfo } from "./AddModeBanner";
 import { FilterSheet } from "./FilterSheet";
 import { PostCard } from "./PostCard";
 import { SortDropdown } from "./SortDropdown";
-import { ViewToggle, type ListView } from "./ViewToggle";
+import { ViewToggle } from "./ViewToggle";
+import type { ListView } from "@/lib/search/list-view";
 import {
   buildPostSearchParams,
   buildSearchPageHref,
