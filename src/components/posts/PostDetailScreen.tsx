@@ -5,6 +5,7 @@ import { LikeButton } from "@/components/likes/LikeButton";
 import { CommentSection } from "@/components/comments/CommentSection";
 import { ReportLink } from "@/components/reports/ReportLink";
 import { DeletePostButton } from "@/components/posts/DeletePostButton";
+import { SpotStatusButtons } from "@/components/spots/SpotStatusButtons";
 import type { CommentPage } from "@/lib/comments/list-comments";
 import type { PostDetailData } from "@/lib/posts/post-detail";
 import { formatCost } from "./PostCard";
@@ -133,6 +134,9 @@ export function PostDetailScreen({
             <ReportLink targetType="post" targetId={post.id} returnTo={returnTo} />
           )}
         </div>
+
+        {/* spot-status-report Task2: 「この場所、まだありますか？」（公開投稿のみ。3.5.5） */}
+        {post.canInteract && <SpotStatusButtons spotId={post.spot.id} initial={post.spotStatus} className="border-t border-line pt-3" />}
 
         <CommentSection
           postId={post.id}

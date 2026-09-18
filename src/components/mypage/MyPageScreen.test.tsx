@@ -29,7 +29,7 @@ const post = (id: string, tripTitle: string): MyPost => ({
   mediaCount: 0,
   likeCount: 1,
   commentCount: 0,
-  viewerHasLiked: false,
+  viewerHasLiked: false, isManualSpot: false, prefecture: null, spotLat: null, spotLng: null, walkMinutes: null, latestStatus: null, media: [], viewerHasSaved: false,
   visibility: "private",
   tripId: "t1",
   tripTitle,

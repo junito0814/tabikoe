@@ -1,25 +1,32 @@
+import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { requireUserOrRedirect } from "@/lib/auth/require-user-or-redirect";
 import { MapScreen } from "@/components/map/MapScreen";
+import { resolveMapOpen } from "@/components/map/map-navigation";
 import { BadgeToast } from "@/components/badges/BadgeToast";
 import { parseBadgeToastParam } from "@/components/badges/badge-toast-params";
 import { FlashNotice, resolveFlashKey } from "@/components/notices/FlashNotice";
-import { parseMapView } from "@/lib/map/get-map-pins";
 
 /**
- * SC-02 マップ画面（全体マップ）
- * 出典: docs/tasks/map-search/map-display/03-map-screen-ui.md
+ * SC-02 地図
+ * 出典: docs/tasks/map-search/map-display-v3/02-map-screen-rebuild.md
+ *       docs/tasks/browsing/explore-mode/02-explore-mode-ui.md
  *
- * ログイン後の着地点（4.1）。ログイン必須（3.5.4）で、未ログインならログイン画面へ誘導し、
- * ログイン後にここへ戻す。
- * 投稿作成・更新・削除・ブロックの完了メッセージと、獲得バッジのトースト（F-BG Task5）は
- * トップページから引き継ぎ、ここで表示する。
+ * 【初心者向け】v3.0 の着地点はホーム（/）で、地図は「近くのスポットを探す」「地図で見る」から開く。
+ *   /map?mode=explore&lat&lng（探すモード）／ /map?spot=<id>&lat&lng&back=（スポット中心）／ /map（通常）
+ * 探すモードは現在地が必須。位置情報が無い（lat/lng が付いていない）ときは検索トップへ戻す（3.4.5）。
+ * 投稿作成・更新・削除・ブロックの完了メッセージと、獲得バッジのトースト（F-BG Task5）はここで表示する。
  */
 export default async function MapPage({
   searchParams,
 }: {
   searchParams: Promise<{
-    view?: string;
+    mode?: string;
+    spot?: string;
+    lat?: string;
+    lng?: string;
+    back?: string;
+    itinerary?: string;
     posted?: string;
     updated?: string;
     deleted?: string;
@@ -31,16 +38,17 @@ export default async function MapPage({
   await requireUserOrRedirect(supabase, "/map");
 
   const params = await searchParams;
+  if (params.mode === "explore" && (params.lat === undefined || params.lng === undefined)) {
+    redirect("/");
+  }
+  const open = resolveMapOpen(params);
   const flashKey = resolveFlashKey(params);
   const newBadgeTypes = parseBadgeToastParam(params.badges);
 
   return (
     <>
       {newBadgeTypes.length > 0 && <BadgeToast badgeTypes={newBadgeTypes} />}
-      <MapScreen
-        initialView={parseMapView(params.view ?? null)}
-        notice={flashKey ? <FlashNotice flashKey={flashKey} /> : undefined}
-      />
+      <MapScreen open={open} notice={flashKey ? <FlashNotice flashKey={flashKey} /> : undefined} />
     </>
   );
 }

@@ -1,46 +1,27 @@
 import Link from "next/link";
-import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { SearchTopScreen } from "@/components/search/SearchTopScreen";
 import { outfit, lora } from "./fonts";
 
 /**
- * SC-00 トップページ
- * 出典: requirement.md 4.1（関連機能ID: ―）
+ * SC-00 検索トップ（ホーム）
+ * 出典: docs/tasks/map-search/search-top/02-search-top-screen.md
+ *       docs/tasks/account/signup-login-v3/01-post-login-redirect.md
+ *       要件定義書 v3.0 3.4.1・4.1
  *
- * 未ログインで閲覧できる唯一の画面（3.5.4）。サービス説明とログイン・アカウント作成の導線だけを持つ。
- * ログイン済みユーザーの着地点は SC-02（全体マップ、F-MP-01）なので、そちらへ送る。
- * 投稿完了などの結果を運ぶクエリ（posted=1 / badges=... 等。古いリンク互換）はそのまま引き継ぐ。
- *
- * 【初心者向け】`async function` の Server Component。ブラウザではなくサーバーで実行され、
- * Cookie からログイン状態を確認して、ログイン済みなら `redirect()` で /map へ送る（画面は描画しない）。
- * v3.0 では、この画面が「検索トップ（ハブ）」に置き換わり、ログイン済みでもここに留まる予定（search-top ストーリー）。
+ * 【初心者向け】`async function` の Server Component。Cookie からログイン状態を確認し、
+ *   - ログイン済み: 検索トップ（ハブ。SearchTopScreen）を出す。v1 の「/map へ転送」は廃止
+ *   - 未ログイン: サービス説明一文とログイン・アカウント作成の導線だけ（未ログインで閲覧できる唯一の画面。3.5.4）
+ * `?itinerary=&day=` が付いていれば、しおりの追加モード（add-spots Task2）として行き先の入力を促す。
  */
-
-const MAIN = "var(--accent)";
-
-function AppLogoIcon() {
-  return (
-    <svg width="64" height="64" viewBox="0 0 72 72" fill="none" aria-hidden>
-      <rect width="72" height="72" rx="20" fill={MAIN} />
-      <circle cx="36" cy="28" r="10" fill="rgba(255,255,255,0.25)" />
-      <circle cx="36" cy="28" r="5" fill="#FFFFFF" />
-      <path d="M36 38C36 38 26 50 26 54" stroke="rgba(255,255,255,0.5)" strokeWidth="2.5" strokeLinecap="round" />
-      <path d="M36 38C36 38 46 50 46 54" stroke="rgba(255,255,255,0.5)" strokeWidth="2.5" strokeLinecap="round" />
-      <path d="M36 38L36 54" stroke="rgba(255,255,255,0.7)" strokeWidth="2.5" strokeLinecap="round" />
-    </svg>
-  );
-}
-
-function NavLink({ href, label }: { href: string; label: string }) {
-  return (
-    <Link
-      href={href}
-      className="flex h-12 w-full items-center justify-center rounded-[10px] border border-line bg-surface text-[14px] font-semibold text-ink shadow-card"
-    >
-      {label}
-    </Link>
-  );
-}
+const NavLink = ({ href, label }: { href: string; label: string }) => (
+  <Link
+    href={href}
+    className="flex h-12 w-full items-center justify-center rounded-[10px] border border-line bg-surface text-[14px] font-semibold text-ink"
+  >
+    {label}
+  </Link>
+);
 
 export default async function Home({
   searchParams,
@@ -53,27 +34,28 @@ export default async function Home({
   } = await supabase.auth.getUser();
 
   if (user) {
-    const params = new URLSearchParams();
-    for (const [key, value] of Object.entries(await searchParams)) {
-      if (typeof value === "string") params.set(key, value);
-    }
-    const query = params.toString();
-    redirect(query ? `/map?${query}` : "/map");
+    const params = await searchParams;
+    const itinerary = typeof params.itinerary === "string" ? params.itinerary : null;
+    const day = typeof params.day === "string" ? params.day : null;
+    return <SearchTopScreen addMode={itinerary ? { itinerary, day } : null} />;
   }
 
   return (
-    <div
-      className={`${outfit.className} flex min-h-screen flex-col items-center justify-center gap-8 bg-app px-6`}
-    >
+    <div className={`${outfit.className} bg-sky flex min-h-screen flex-col items-center justify-center gap-8 px-6`}>
       <div className="flex flex-col items-center gap-3">
-        <AppLogoIcon />
-        <h1 className={`${lora.className} text-[24px] font-bold tracking-[2px] text-ink`}>
-          タビコエ
-        </h1>
+        <svg width="64" height="64" viewBox="0 0 72 72" fill="none" aria-hidden>
+          <rect width="72" height="72" rx="20" fill="var(--accent)" />
+          <circle cx="36" cy="28" r="10" fill="rgba(255,255,255,0.25)" />
+          <circle cx="36" cy="28" r="5" fill="#FFFFFF" />
+          <path d="M36 38C36 38 26 50 26 54" stroke="rgba(255,255,255,0.5)" strokeWidth="2.5" strokeLinecap="round" />
+          <path d="M36 38C36 38 46 50 46 54" stroke="rgba(255,255,255,0.5)" strokeWidth="2.5" strokeLinecap="round" />
+          <path d="M36 38L36 54" stroke="rgba(255,255,255,0.7)" strokeWidth="2.5" strokeLinecap="round" />
+        </svg>
+        <h1 className={`${lora.className} text-[24px] font-bold tracking-[2px] text-ink`}>タビコエ</h1>
         <p className="text-center text-[13px] leading-[1.7] tracking-[0.3px] text-muted">
-          みんなの旅の記録を、
+          まだ知られていない場所の、
           <br />
-          次の旅のヒントに
+          行った人のリアルな声
         </p>
       </div>
 

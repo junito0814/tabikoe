@@ -1,10 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { mergeSpotMedia, type SpotPostMediaRow } from "./spot-photos";
+import { mergeMedia, mergeSpotMedia, type SpotPostMediaRow } from "./search-photos";
 
 /**
  * 出典: docs/tasks/map-search/spot-photo-gallery/01-spot-photos-handler.md 単体テスト
  * - 複数投稿にまたがる写真・動画が正しく統合され、新着順にソートされることを検証する
  * - 非公開投稿の写真・動画が結果に含まれないことを検証する
+ * 出典: docs/tasks/map-search/photo-view/01-photos-api-search-params.md 単体テスト
+ * - 並び替えが投稿の順序に従い、同じ投稿の写真が添付順で連続すること
  */
 const row = (
   id: string,
@@ -49,5 +51,16 @@ describe("mergeSpotMedia", () => {
   it("保存パスの無い行は落とす", () => {
     const rows = [row("a", "2026-09-01T00:00:00Z", "public", [{ id: "x", order: 0, path: null }])];
     expect(mergeSpotMedia(rows)).toEqual([]);
+  });
+});
+
+describe("mergeMedia（v3.0: 投稿の順序に従う）", () => {
+  it("渡された投稿の順序を保ち、同じ投稿の写真は添付順で連続する", () => {
+    const rows = [
+      row("second", "2026-09-03T00:00:00Z", "public", [{ id: "s2", order: 1 }, { id: "s1", order: 0 }]),
+      row("first", "2026-09-01T00:00:00Z", "public", [{ id: "f1", order: 0 }]),
+    ];
+    // いいね順などで「古い投稿が先」に並んでいても、その順序を尊重する
+    expect(mergeMedia(rows).map((item) => item.key)).toEqual(["s1", "s2", "f1"]);
   });
 });

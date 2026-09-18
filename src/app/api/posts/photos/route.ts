@@ -5,6 +5,32 @@ import { getAuthenticatedUser } from "@/lib/auth/get-authenticated-user";
 import { ImageValidationError, processAndUploadImage } from "@/lib/image/process-upload";
 import { isVideoFile, isVideoUploadDisabled, processAndUploadVideo, VideoValidationError } from "@/lib/video/process-video";
 import { POST_MEDIA_BUCKET } from "@/lib/posts/constants";
+import { searchMediaPage } from "@/lib/posts/search-photos";
+import { parsePostSearchParams } from "@/lib/posts/search-posts";
+
+/**
+ * photo-view Task1: 写真・動画の一覧（検索条件つき）
+ * 出典: docs/tasks/map-search/photo-view/01-photos-api-search-params.md
+ *
+ * GET /api/posts/photos?（/api/posts/search と同じ条件）&offset=
+ * 投稿の順（並び替え）→ 添付順で 40 点ずつ返す。公開済みのみ。
+ */
+export async function GET(request: Request) {
+  const supabase = await createClient();
+  const user = await getAuthenticatedUser(supabase);
+  if (!user) {
+    return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+  }
+  const searchParams = new URL(request.url).searchParams;
+  const filters = parsePostSearchParams(searchParams);
+  const offset = Math.max(0, Number.parseInt(searchParams.get("offset") ?? "0", 10) || 0);
+  try {
+    const page = await searchMediaPage(createAdminClient(), user.id, filters, offset);
+    return NextResponse.json(page);
+  } catch {
+    return NextResponse.json({ error: "fetch_failed" }, { status: 500 });
+  }
+}
 
 /**
  * F-PO-01 Task4 / post-creation-v3 Task4: 投稿の写真・動画アップロード

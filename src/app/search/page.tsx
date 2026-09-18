@@ -1,49 +1,33 @@
+import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireUserOrRedirect } from "@/lib/auth/require-user-or-redirect";
 import { ErrorNotice } from "@/components/notices/ErrorNotice";
 import { ERROR_MESSAGES } from "@/components/notices/error-messages";
 import { PostSearchScreen } from "@/components/posts/PostSearchScreen";
-import type { PostCardPage } from "@/lib/posts/post-cards";
-import { parsePostSearchParams, searchPostCards } from "@/lib/posts/search-posts";
+import { SpotPostListScreen } from "@/components/posts/SpotPostListScreen";
+import { loadSearchPage, type SearchPageQuery } from "@/lib/search/load-search-page";
 
 /**
- * SC-04 投稿カード一覧画面（検索・絞り込みモード）
- * 出典: docs/tasks/map-search/post-filter/02-filter-ui.md
+ * SC-04 投稿一覧（タイムライン形式・検索結果）
+ * 出典: docs/tasks/map-search/post-timeline/02-timeline-ui.md
+ *       docs/tasks/map-search/post-timeline/03-scroll-and-back.md
+ *       要件定義書 v3.0 3.4.2
  *
- * 全体マップ（SC-02）の「投稿を検索」から、地図の中心座標（lat/lng）を伴って遷移する。
- * 距離の絞り込みはこの座標を基準にする（3.4.4）。座標なしで開いた場合は距離条件を使えない。
+ * 【初心者向け】検索トップ（SC-00）で行き先を決めると、ここに来る。URL が条件そのもの:
+ *   /search?pref=大阪府 ／ /search?lat=&lng=&q=大阪駅 ／ /search?spot=<id>（スポット別）
+ * 読み込みは lib/search/load-search-page.ts にまとめ、行き先の種類で画面を出し分ける。
+ * 「戻る」は検索トップ（ホーム）へ。スポット別は地図へ。
  */
-export default async function SearchPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ lat?: string; lng?: string }>;
-}) {
+export default async function SearchPage({ searchParams }: { searchParams: Promise<SearchPageQuery> }) {
   const supabase = await createClient();
-  const user = await requireUserOrRedirect(supabase, "/search");
+  const query = await searchParams;
+  const qs = new URLSearchParams(Object.entries(query).flatMap(([k, v]) => (typeof v === "string" ? [[k, v]] : []))).toString();
+  const user = await requireUserOrRedirect(supabase, `/search${qs ? `?${qs}` : ""}`);
 
-  const { lat, lng } = await searchParams;
-  const latNumber = Number(lat);
-  const lngNumber = Number(lng);
-  const center =
-    lat !== undefined && lng !== undefined && Number.isFinite(latNumber) && Number.isFinite(lngNumber)
-      ? { lat: latNumber, lng: lngNumber }
-      : null;
-
-  // 条件なし（新着順）の1ページ目。以降の検索・追加読み込みはクライアントが GET /api/posts/search で行う
-  let initialPage: PostCardPage | null = null;
-  try {
-    initialPage = await searchPostCards(
-      createAdminClient(),
-      user.id,
-      parsePostSearchParams(new URLSearchParams()),
-      0
-    );
-  } catch {
-    initialPage = null;
-  }
-
-  if (initialPage === null) {
+  const data = await loadSearchPage(createAdminClient(), user.id, query);
+  if (data.kind === "spot_missing") notFound();
+  if (data.kind === "error") {
     return (
       <div className="flex min-h-screen items-center justify-center bg-app px-6">
         <ErrorNotice message={ERROR_MESSAGES.dbLoadFailure} retryable className="w-full max-w-[360px]" />
@@ -51,5 +35,29 @@ export default async function SearchPage({
     );
   }
 
-  return <PostSearchScreen center={center} initialPage={initialPage} />;
+  if (data.spot) {
+    return (
+      <SpotPostListScreen
+        spot={data.spot}
+        initialState={data.initialState}
+        initialPage={data.initialPage}
+        initialMediaPage={data.initialMediaPage}
+        addMode={data.addMode}
+      />
+    );
+  }
+
+  return (
+    <PostSearchScreen
+      context={data.context}
+      initialState={data.initialState}
+      initialPage={data.initialPage}
+      initialMediaPage={data.initialMediaPage}
+      title={data.resolved.title}
+      backHref="/"
+      backLabel="ホーム"
+      addMode={data.addMode}
+      emptyMessage={data.resolved.kind === "not_found" ? "見つかりませんでした。都道府県名・駅名・スポット名で入力してください" : "条件に合う投稿がありません"}
+    />
+  );
 }

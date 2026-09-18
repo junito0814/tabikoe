@@ -71,6 +71,19 @@ export const MAP_UI_OPTIONS = {
   clickableIcons: false,
 } as const;
 
+/**
+ * map-display-v3 Task3: `new google.maps.Map(...)` に渡すオプション一式（単体テストの対象）
+ * 3D・建物・ストリートビュー・地図タイプ切替を無効化し、テーマとズームに応じたスタイルを付ける。
+ */
+export function buildMapOptions(theme: MapTheme, zoom: number) {
+  return {
+    ...MAP_UI_OPTIONS,
+    zoomControl: true,
+    gestureHandling: "greedy" as const,
+    styles: buildMapStyles(theme, zoom),
+  };
+}
+
 /** OS のダーク設定を読む（SSR やテストでは light） */
 export function detectMapTheme(): MapTheme {
   if (typeof window === "undefined" || typeof window.matchMedia !== "function") return "light";

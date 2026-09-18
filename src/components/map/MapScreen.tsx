@@ -2,88 +2,115 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { ErrorNotice } from "@/components/notices/ErrorNotice";
 import { ERROR_MESSAGES } from "@/components/notices/error-messages";
 import { fetchWithAuthRedirect, UnauthorizedError } from "@/lib/api/fetch-with-auth-redirect";
-import type { GeocodedPlace } from "@/lib/google/geocoding";
-import { isSameBounds, type MapBounds, type MapPinData, type MapView } from "@/lib/map/get-map-pins";
+import { requestCurrentPosition } from "@/lib/geo/use-current-position";
+import { isSameBounds, type MapBounds, type MapPinData } from "@/lib/map/get-map-pins";
+import { composeHref } from "@/lib/posts/compose-initial-state";
+import type { NearbyPost } from "@/lib/posts/nearby-posts";
 import { GoogleMap, type GoogleMapHandle, type GoogleMapPin } from "./GoogleMap";
 import { resolveInitialCenter, type InitialCenter, type LatLng } from "./initial-center";
-import { resolveMapPinType } from "./pin-type";
-import { PlaceSearchBar, PLACE_SEARCH_ZOOM } from "./PlaceSearchBar";
-
-const TABS: { view: MapView; label: string }[] = [
-  { view: "all", label: "全体" },
-  { view: "wishlist", label: "行きたい" },
-];
+import { MapLegend } from "./MapLegend";
+import type { MapOpenOptions } from "./map-navigation";
+import { NearbyVoices, type FetchNearbyPosts } from "./NearbyVoices";
+import { PinCallout, type CalloutTarget } from "./PinCallout";
 
 /** 地図の移動が連続する間はまとめて1回の取得にする */
 const FETCH_DEBOUNCE_MS = 300;
+/** 長押しの一時ピンの ID */
+const TEMP_PIN_ID = "temp";
 
-export type FetchMapPins = (view: MapView, bounds: MapBounds) => Promise<MapPinData[]>;
+export type FetchMapPins = (bounds: MapBounds) => Promise<MapPinData[]>;
 
 /**
- * F-MP-01 Task3: 全体マップ画面（SC-02）
- * 出典: docs/tasks/map-search/map-display/03-map-screen-ui.md
+ * map-display-v3 Task2 / pin-interaction-v3 Task1〜3 / explore-mode Task2（v3.0）: 地図（SC-02）
+ * 出典: docs/tasks/map-search/map-display-v3/02-map-screen-rebuild.md
+ *       docs/tasks/map-search/pin-interaction-v3/01-pin-callout.md
+ *       docs/tasks/map-search/pin-interaction-v3/02-long-press.md
+ *       docs/tasks/browsing/explore-mode/02-explore-mode-ui.md
+ *       要件定義書 v3.0 3.4.1・3.4.4・3.4.5
  *
- * - 「全体」「行きたい」タブは排他（3.4.1）。切り替えると同じ範囲でピンを取り直す
- * - 初期表示位置は現在地、拒否時は東京駅周辺（resolveInitialCenter）
- * - ピンのタップで投稿カード一覧（SC-04、F-MP-03）へ遷移する
- * - 検索バー（F-MP-02）は地図の移動のみ。投稿の絞り込み（F-MP-04）は SC-04 側にあり、ここでは持たない
- *
- * 【初心者向け】MyMapScreen と同じ骨組み（現在地 → GoogleMap → 範囲変更 → 300ms 後にピン取得）。
- * 違いは「全体／行きたい」タブと検索バーがあること。v3.0（map-display-v3）ではタブと検索バーを外し、
- * 青（みんなの投稿）・赤（保存済み）のピンを同時に出す形に作り替える。
+ * 【初心者向け】v1 のタブ（全体／行きたい）と地名検索バーは無くなり、置くのは 4 つだけ:
+ *   1. 左上の戻る（?spot= なら「一覧に戻る」、?itinerary= なら「しおりに戻る」、それ以外「ホーム」。map-navigation.ts）
+ *   2. 凡例（青＝みんなの投稿、赤＝保存済み、灰の破線＝下書き）
+ *   3. 右下の「現在地」と「＋ ここに投稿」（現在地が取れていなければ地図の中心で投稿画面を開く）
+ *   4. 探すモード（?mode=explore）のときだけ下 1/3 に「近くの声」
+ * ピンは 1 回の API（/api/spots）で 3 種別まとめて取る。ピンをタップすると吹き出し（PinCallout）、
+ * 長押しすると一時ピン＋「ここに投稿」。地図をタップ／ドラッグすると吹き出しと一時ピンは消える。
+ * 吹き出しは「地図をそのピンの位置へ寄せてから、画面中央の少し上」に出す（マーカーに追従させるより単純で壊れにくい）。
  */
 export function MapScreen({
-  initialView = "all",
+  open,
   fetchPins = defaultFetchPins,
-  resolveCenter = () =>
-    resolveInitialCenter(typeof navigator === "undefined" ? undefined : navigator.geolocation),
-  searchPlace,
+  resolveCenter = () => resolveInitialCenter(typeof navigator === "undefined" ? undefined : navigator.geolocation),
+  fetchNearby,
+  geolocation,
   notice,
 }: {
-  initialView?: MapView;
+  open: MapOpenOptions;
   /** 差し替え口（単体テスト用） */
   fetchPins?: FetchMapPins;
-  /** 差し替え口（単体テスト用） */
+  /** 差し替え口（単体テスト用）。開き方に中心が無いときだけ使う */
   resolveCenter?: () => Promise<InitialCenter>;
-  /** 差し替え口（単体テスト用）。省略時は PlaceSearchBar の既定（/api/geocode） */
-  searchPlace?: React.ComponentProps<typeof PlaceSearchBar>["searchPlace"];
+  /** 差し替え口（単体テスト用） */
+  fetchNearby?: FetchNearbyPosts;
+  /** 差し替え口（単体テスト用） */
+  geolocation?: Pick<Geolocation, "getCurrentPosition">;
   /** 投稿完了などのフラッシュ表示（Server Component から渡す） */
   notice?: ReactNode;
 }) {
-  const router = useRouter();
   const mapRef = useRef<GoogleMapHandle>(null);
-  const [view, setView] = useState<MapView>(initialView);
-  const [initial, setInitial] = useState<InitialCenter | null>(null);
+  const [initial, setInitial] = useState<InitialCenter | null>(
+    open.center ? { center: open.center, zoom: open.zoom, source: open.mode === "explore" ? "current" : "fallback" } : null
+  );
   const [pins, setPins] = useState<MapPinData[]>([]);
   const [bounds, setBounds] = useState<MapBounds | null>(null);
-  const [center, setCenter] = useState<LatLng | null>(null);
+  const [center, setCenter] = useState<LatLng | null>(open.center);
   const [fetchFailed, setFetchFailed] = useState(false);
+  const [callout, setCallout] = useState<CalloutTarget | null>(null);
+  const [tempPin, setTempPin] = useState<LatLng | null>(null);
+  const [currentLocation, setCurrentLocation] = useState<{ lat: number; lng: number; accuracy?: number } | null>(
+    open.mode === "explore" && open.center ? open.center : null
+  );
+  const [isLocating, setIsLocating] = useState(false);
+  const [activeNearbySpotId, setActiveNearbySpotId] = useState<string | null>(null);
+  const [nearbyPosts, setNearbyPosts] = useState<NearbyPost[]>([]);
 
+  // 開き方に中心が無いときだけ現在地（→東京駅）を待つ
   useEffect(() => {
+    if (initial) return;
     let cancelled = false;
     resolveCenter().then((result) => {
-      if (!cancelled) setInitial(result);
+      if (cancelled) return;
+      setInitial(result);
+      if (result.source === "current") setCurrentLocation(result.center);
     });
     return () => {
       cancelled = true;
     };
-  }, [resolveCenter]);
+  }, [initial, resolveCenter]);
 
-  // 範囲またはタブが変わったらピンを取り直す。古い応答が新しい状態を上書きしないよう世代で守る
+  // 範囲が変わったらピンを取り直す。古い応答が新しい状態を上書きしないよう世代で守る
   const requestIdRef = useRef(0);
+  const focusedOnceRef = useRef(false);
   useEffect(() => {
     if (!bounds) return;
     const requestId = ++requestIdRef.current;
     const timer = setTimeout(() => {
-      fetchPins(view, bounds)
+      fetchPins(bounds)
         .then((result) => {
           if (requestIdRef.current !== requestId) return;
           setPins(result);
           setFetchFailed(false);
+          // ?spot= で開いたとき、そのスポットのピンが取れたら吹き出しを出す（1 回だけ）
+          if (!focusedOnceRef.current && open.focusSpotId) {
+            const focused = result.find((item) => item.spotId === open.focusSpotId && item.kind !== "draft");
+            if (focused) {
+              focusedOnceRef.current = true;
+              setCallout({ kind: "pin", pin: focused });
+            }
+          }
         })
         .catch((error) => {
           if (error instanceof UnauthorizedError) return;
@@ -92,125 +119,178 @@ export function MapScreen({
         });
     }, FETCH_DEBOUNCE_MS);
     return () => clearTimeout(timer);
-  }, [view, bounds, fetchPins]);
+  }, [bounds, fetchPins, open.focusSpotId]);
 
-  // idle は地図が動いていなくても発火することがある（タイル読み込み完了など）。
-  // 範囲が同じなら state を変えず、再取得・再描画の連鎖を起こさない
   const handleBoundsChange = useCallback((next: MapBounds, nextCenter: LatLng) => {
     setBounds((current) => (current && isSameBounds(current, next) ? current : next));
-    setCenter((current) =>
-      current && current.lat === nextCenter.lat && current.lng === nextCenter.lng ? current : nextCenter
-    );
+    setCenter((current) => (current && current.lat === nextCenter.lat && current.lng === nextCenter.lng ? current : nextCenter));
+  }, []);
+
+  const closeCallout = useCallback(() => {
+    setCallout(null);
+    setTempPin(null);
   }, []);
 
   const handlePinClick = useCallback(
-    (spotId: string) => {
-      router.push(`/spots/${spotId}`);
+    (pinId: string) => {
+      if (pinId === TEMP_PIN_ID) return;
+      const pin = pins.find((item) => item.id === pinId);
+      if (!pin) return;
+      setTempPin(null);
+      mapRef.current?.panTo({ lat: pin.lat, lng: pin.lng });
+      setCallout({ kind: "pin", pin });
     },
-    [router]
+    [pins]
   );
 
-  // F-MP-02 Task2: 検索結果の緯度経度へ地図を移動する（ピンの絞り込み状態には触れない）
-  const handleLocate = useCallback((place: GeocodedPlace) => {
-    mapRef.current?.panTo({ lat: place.lat, lng: place.lng }, PLACE_SEARCH_ZOOM);
+  const handleLongPress = useCallback((position: LatLng) => {
+    setTempPin(position);
+    mapRef.current?.panTo(position);
+    setCallout({ kind: "temp", lat: position.lat, lng: position.lng });
   }, []);
 
-  const mapPins = useMemo<GoogleMapPin[]>(
-    () =>
-      pins.map((pin) => ({
-        id: pin.spotId,
-        lat: pin.lat,
-        lng: pin.lng,
-        type: resolveMapPinType(view, pin),
-        title: pin.name,
-      })),
-    [pins, view]
-  );
+  const locateMe = async () => {
+    setIsLocating(true);
+    try {
+      const result = await requestCurrentPosition(geolocation ?? (typeof navigator === "undefined" ? undefined : navigator.geolocation));
+      if (!result.ok) return;
+      setCurrentLocation({ lat: result.lat, lng: result.lng });
+      mapRef.current?.panTo({ lat: result.lat, lng: result.lng });
+    } finally {
+      setIsLocating(false);
+    }
+  };
 
-  const searchHref = center
-    ? `/search?lat=${center.lat.toFixed(5)}&lng=${center.lng.toFixed(5)}`
-    : "/search";
+  // 探すモード: 中央のカードに対応するピンを強調
+  const handleActiveNearby = useCallback((post: NearbyPost | null) => {
+    setActiveNearbySpotId(post?.spotId ?? null);
+    if (post) mapRef.current?.panTo({ lat: post.lat, lng: post.lng });
+  }, []);
+
+  const mapPins = useMemo<GoogleMapPin[]>(() => {
+    const focusId = open.mode === "explore" ? activeNearbySpotId : open.focusSpotId;
+    const result: GoogleMapPin[] = pins.map((pin) => ({
+      id: pin.id,
+      lat: pin.lat,
+      lng: pin.lng,
+      type: pin.kind !== "draft" && pin.spotId === focusId ? "focus" : pin.kind,
+      title: pin.name,
+    }));
+    // 探すモードで「近くの声」にあるスポットが範囲内のピンに無ければ（100 件上限など）補う
+    if (open.mode === "explore") {
+      const known = new Set(result.map((pin) => pin.id));
+      for (const post of nearbyPosts) {
+        if (known.has(post.spotId)) continue;
+        known.add(post.spotId);
+        result.push({ id: post.spotId, lat: post.lat, lng: post.lng, type: post.spotId === focusId ? "focus" : "post", title: post.spotName });
+      }
+    }
+    if (tempPin) result.push({ id: TEMP_PIN_ID, lat: tempPin.lat, lng: tempPin.lng, type: "focus", title: "この地点" });
+    return result;
+  }, [pins, tempPin, open.mode, open.focusSpotId, activeNearbySpotId, nearbyPosts]);
+
+  const postHereHref = currentLocation
+    ? composeHref({ kind: "current", lat: currentLocation.lat, lng: currentLocation.lng })
+    : center
+      ? composeHref({ kind: "location", lat: center.lat, lng: center.lng })
+      : composeHref({ kind: "current" });
+
+  const isExplore = open.mode === "explore";
 
   return (
-    <div className="relative flex h-[calc(100dvh-60px)] flex-col bg-app md:h-dvh">
-      {/* 上部：タブ＋検索バー（地図に重ねる） */}
-      <div className="pointer-events-none absolute inset-x-0 top-0 z-10 flex flex-col gap-2 p-3">
-        <div
-          role="tablist"
-          aria-label="表示するピン"
-          className="pointer-events-auto mx-auto flex w-full max-w-[420px] rounded-full border border-line bg-surface p-1 shadow-card"
-        >
-          {TABS.map((tab) => {
-            const selected = tab.view === view;
-            return (
-              <button
-                key={tab.view}
-                type="button"
-                role="tab"
-                aria-selected={selected}
-                onClick={() => setView(tab.view)}
-                className={`h-9 flex-1 rounded-full text-[13px] font-semibold transition-colors ${
-                  selected ? "bg-accent text-white" : "text-muted"
-                }`}
-              >
-                {tab.label}
-              </button>
-            );
-          })}
+    <div className="relative flex h-[calc(100dvh-60px)] flex-col bg-app md:h-dvh" data-map-mode={open.mode}>
+      <div className={`relative ${isExplore ? "h-2/3" : "flex-1"}`}>
+        {/* 上部：戻る＋凡例（地図に重ねる） */}
+        <div className="pointer-events-none absolute inset-x-0 top-0 z-10 flex flex-col gap-2 p-3">
+          <div className="flex items-start gap-2">
+            <Link
+              href={open.back.href}
+              className="pointer-events-auto inline-flex h-9 shrink-0 items-center gap-1 rounded-full bg-surface px-3 text-[12px] font-semibold text-ink shadow-card"
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden>
+                <path d="M15 5l-7 7 7 7" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+              {open.back.label}
+            </Link>
+            <MapLegend className="pointer-events-auto ml-auto" />
+          </div>
+          {notice && <div className="pointer-events-auto mx-auto w-full max-w-[420px]">{notice}</div>}
+          {fetchFailed && (
+            <ErrorNotice
+              message={ERROR_MESSAGES.dbLoadFailure}
+              onRetry={() => setBounds((current) => (current ? { ...current } : current))}
+              className="pointer-events-auto mx-auto w-full max-w-[420px]"
+            />
+          )}
         </div>
-        <PlaceSearchBar
-          onLocate={handleLocate}
-          searchPlace={searchPlace}
-          className="pointer-events-auto mx-auto w-full max-w-[420px]"
-        />
-        {notice && <div className="pointer-events-auto mx-auto w-full max-w-[420px]">{notice}</div>}
-        {fetchFailed && (
-          <ErrorNotice
-            message={ERROR_MESSAGES.dbLoadFailure}
-            onRetry={() => setBounds((current) => (current ? { ...current } : current))}
-            className="pointer-events-auto mx-auto w-full max-w-[420px]"
+
+        {initial ? (
+          <GoogleMap
+            ref={mapRef}
+            initialCenter={initial.center}
+            initialZoom={initial.zoom}
+            pins={mapPins}
+            onPinClick={handlePinClick}
+            onBoundsChange={handleBoundsChange}
+            onLongPress={handleLongPress}
+            onMapClick={closeCallout}
+            onDragStart={closeCallout}
+            currentLocation={currentLocation}
+            className="h-full"
           />
+        ) : (
+          <div role="region" aria-label="地図" className="flex h-full items-center justify-center bg-line">
+            <span className="text-[12px] text-muted">現在地を確認しています…</span>
+          </div>
         )}
-      </div>
 
-      {initial ? (
-        <GoogleMap
-          ref={mapRef}
-          initialCenter={initial.center}
-          initialZoom={initial.zoom}
-          pins={mapPins}
-          onPinClick={handlePinClick}
-          onBoundsChange={handleBoundsChange}
-          className="flex-1"
-        />
-      ) : (
-        <div role="region" aria-label="地図" className="flex flex-1 items-center justify-center bg-line">
-          <span className="text-[12px] text-muted">現在地を確認しています…</span>
+        {/* 吹き出し: 地図をピンへ寄せてあるので、中央の少し上に出す */}
+        {callout && (
+          <div className="pointer-events-none absolute left-1/2 top-1/2 z-20 -translate-x-1/2 -translate-y-[calc(100%+22px)]">
+            <div className="pointer-events-auto">
+              <PinCallout target={callout} onClose={closeCallout} />
+            </div>
+          </div>
+        )}
+
+        {/* 右下：現在地・ここに投稿 */}
+        <div className="pointer-events-none absolute bottom-4 right-3 z-10 flex flex-col items-end gap-2">
+          <button
+            type="button"
+            onClick={() => void locateMe()}
+            disabled={isLocating}
+            aria-label="現在地"
+            className="pointer-events-auto flex h-10 w-10 items-center justify-center rounded-full bg-surface text-ink shadow-card disabled:opacity-60"
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden>
+              <circle cx="12" cy="12" r="6" stroke="currentColor" strokeWidth="1.8" />
+              <circle cx="12" cy="12" r="1.8" fill="currentColor" />
+              <path d="M12 2v4M12 18v4M2 12h4M18 12h4" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+            </svg>
+          </button>
+          <Link
+            href={postHereHref}
+            className="pointer-events-auto flex h-11 items-center gap-1.5 rounded-full bg-accent px-4 text-[13px] font-bold text-white shadow-[0_4px_20px_rgba(47,127,216,0.30)]"
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden>
+              <path d="M12 5v14M5 12h14" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" />
+            </svg>
+            ここに投稿
+          </Link>
         </div>
-      )}
-
-      {/* 下部：投稿検索（F-MP-04）への導線。距離の基準に地図の中心を渡す */}
-      <div className="pointer-events-none absolute inset-x-0 bottom-4 z-10 flex justify-center">
-        <Link
-          href={searchHref}
-          className="pointer-events-auto flex h-10 items-center gap-1.5 rounded-full bg-ink px-4 text-[12px] font-semibold text-white shadow-card"
-        >
-          投稿を検索
-        </Link>
       </div>
 
-      {view === "wishlist" && bounds && !fetchFailed && pins.length === 0 && (
-        <p className="pointer-events-none absolute inset-x-0 bottom-16 z-10 text-center text-[12px] text-ink">
-          この範囲に「行きたい」スポットはありません
-        </p>
+      {isExplore && open.center && (
+        <div className="h-1/3 border-t border-line">
+          <NearbyVoices center={open.center} fetchPosts={fetchNearby} onActiveChange={handleActiveNearby} onPostsLoaded={setNearbyPosts} />
+        </div>
       )}
     </div>
   );
 }
 
-async function defaultFetchPins(view: MapView, bounds: MapBounds): Promise<MapPinData[]> {
+async function defaultFetchPins(bounds: MapBounds): Promise<MapPinData[]> {
   const params = new URLSearchParams({
-    view,
     north: String(bounds.north),
     south: String(bounds.south),
     east: String(bounds.east),

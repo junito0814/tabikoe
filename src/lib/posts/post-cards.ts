@@ -2,6 +2,8 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { getBlockedUserIds } from "@/lib/blocks/get-blocked-user-ids";
 import { createPostPhotoUrls } from "@/lib/posts/signed-url";
 import { DEFAULT_AVATAR_URL } from "@/lib/users/constants";
+import { walkMinutesBetween } from "@/lib/geo/walk-minutes";
+import type { MediaItem } from "@/components/media/MediaGrid";
 
 /**
  * F-MP-03 Task1: スポット別投稿一覧
@@ -30,10 +32,23 @@ export interface PostCardData {
   thumbnailUrl: string | null;
   thumbnailMediaType: "photo" | "video" | null;
   mediaCount: number;
+  /** v3.0: カードに並べる全メディア（MediaGrid 用。署名付き URL、非公開化された写真は除く） */
+  media: MediaItem[];
   likeCount: number;
   commentCount: number;
   /** 閲覧者がいいね済みか（F-VW-02 Task3 のボタン初期状態） */
   viewerHasLiked: boolean;
+  /** v3.0: 閲覧者がこのスポットを「行きたい」に保存済みか（カードの「＋」の初期状態） */
+  viewerHasSaved: boolean;
+  /** v3.0: 手動登録スポット＝「タビコエだけの場所」（post-timeline Task1） */
+  isManualSpot: boolean;
+  prefecture: string | null;
+  spotLat: number | null;
+  spotLng: number | null;
+  /** v3.0: 現在地からの徒歩分（直線距離 ÷ 80m/分、切り上げ）。現在地が無ければ null */
+  walkMinutes: number | null;
+  /** v3.0: 最新の「まだあった」報告（spot-status-report Task3） */
+  latestStatus: { status: "still_there" | "gone"; reportedAt: string } | null;
 }
 
 export const POST_SORTS = ["newest", "rating", "likes"] as const;
@@ -55,8 +70,20 @@ const EXCERPT_LENGTH = 80;
 /** DB から取る列。埋め込みの件数集計（likes/comments）は PostgREST の count 埋め込み */
 export const POST_CARD_SELECT =
   "id, spot_id, user_id, category, visit_date, duration, cost, rating, comment, created_at, " +
-  "spots(name), users(display_name, avatar_url), " +
-  "post_photos(storage_url, media_type, display_order), likes(count), comments(count)";
+  "spots(id, name, lat, lng, source, prefecture), users(display_name, avatar_url), " +
+  "post_photos(id, storage_url, video_url, media_type, display_order, hidden_at), likes(count), comments(count)";
+
+/** spots の埋め込み部分（検索では inner join に差し替える。#252） */
+export const POST_CARD_SPOT_EMBED = "spots(id, name, lat, lng, source, prefecture)";
+
+export interface PostCardSpotRow {
+  id?: string;
+  name: string;
+  lat?: number;
+  lng?: number;
+  source?: string;
+  prefecture?: string | null;
+}
 
 export interface PostCardRow {
   id: string;
@@ -69,9 +96,16 @@ export interface PostCardRow {
   rating: number | null;
   comment: string | null;
   created_at: string;
-  spots: { name: string } | { name: string }[] | null;
+  spots: PostCardSpotRow | PostCardSpotRow[] | null;
   users: { display_name: string | null; avatar_url: string | null } | { display_name: string | null; avatar_url: string | null }[] | null;
-  post_photos: { storage_url: string | null; media_type: string; display_order: number }[];
+  post_photos: {
+    id?: string;
+    storage_url: string | null;
+    video_url?: string | null;
+    media_type: string;
+    display_order: number;
+    hidden_at?: string | null;
+  }[];
   likes: { count: number }[];
   comments: { count: number }[];
 }
@@ -84,22 +118,64 @@ function one<T>(value: T | T[] | null): T | null {
 export function representativeMedia(
   photos: PostCardRow["post_photos"]
 ): { storage_url: string | null; media_type: string } | null {
-  return [...photos].sort((a, b) => a.display_order - b.display_order)[0] ?? null;
+  return visiblePhotos(photos)[0] ?? null;
+}
+
+/** F-AD-05: 非公開化された写真は一覧に出さない。表示順（display_order）に並べる */
+function visiblePhotos(photos: PostCardRow["post_photos"]): PostCardRow["post_photos"] {
+  return [...photos].filter((photo) => !photo.hidden_at).sort((a, b) => a.display_order - b.display_order);
+}
+
+/** 署名が必要なパス（写真＋動画本体） */
+function photoPaths(photos: PostCardRow["post_photos"]): string[] {
+  return visiblePhotos(photos).flatMap((photo) => [
+    ...(photo.storage_url ? [photo.storage_url] : []),
+    ...(photo.video_url ? [photo.video_url] : []),
+  ]);
+}
+
+/** v3.0: カードに足す付加情報（現在地・まだあった報告） */
+export interface PostCardExtras {
+  viewer?: { lat: number; lng: number } | null;
+  savedSpotIds?: ReadonlySet<string>;
+  latestStatusBySpot?: ReadonlyMap<string, { status: "still_there" | "gone"; reportedAt: string }>;
 }
 
 export function toPostCard(
   row: PostCardRow,
   signedUrls: Map<string, string>,
-  likedPostIds: ReadonlySet<string> = new Set()
+  likedPostIds: ReadonlySet<string> = new Set(),
+  extras: PostCardExtras = {}
 ): PostCardData {
   const spot = one(row.spots);
   const user = one(row.users);
-  const representative = representativeMedia(row.post_photos);
+  const photos = visiblePhotos(row.post_photos);
+  const representative = photos[0] ?? null;
   const path = representative?.storage_url ?? null;
+  const spotName = spot?.name ?? "";
+  // MediaGrid に渡す形（post-detail.ts と同じ組み立て）
+  const media: MediaItem[] = photos.flatMap((photo, index) => {
+    const url = photo.storage_url ? signedUrls.get(photo.storage_url) : undefined;
+    if (!url) return [];
+    const isVideo = photo.media_type === "video";
+    return [
+      {
+        id: photo.id ?? `${row.id}-${index}`,
+        mediaType: isVideo ? ("video" as const) : ("photo" as const),
+        thumbnailUrl: url,
+        alt: `${spotName || "スポット"}の${isVideo ? "動画" : "写真"} ${index + 1}`,
+        videoUrl: isVideo && photo.video_url ? signedUrls.get(photo.video_url) : undefined,
+      },
+    ];
+  });
+  const spotLat = typeof spot?.lat === "number" ? spot.lat : null;
+  const spotLng = typeof spot?.lng === "number" ? spot.lng : null;
+  // 徒歩分は現在地（extras.viewer）があるときだけ（lib/geo/walk-minutes.ts）
+  const walk = walkMinutesBetween(extras.viewer, { lat: spotLat, lng: spotLng });
   return {
     id: row.id,
     spotId: row.spot_id,
-    spotName: spot?.name ?? "",
+    spotName,
     category: row.category,
     visitDate: row.visit_date,
     duration: row.duration,
@@ -118,10 +194,18 @@ export function toPostCard(
     thumbnailUrl: path ? (signedUrls.get(path) ?? null) : null,
     thumbnailMediaType:
       representative?.media_type === "video" ? "video" : representative ? "photo" : null,
-    mediaCount: row.post_photos.length,
+    mediaCount: photos.length,
+    media,
     likeCount: row.likes?.[0]?.count ?? 0,
     commentCount: row.comments?.[0]?.count ?? 0,
     viewerHasLiked: likedPostIds.has(row.id),
+    viewerHasSaved: extras.savedSpotIds?.has(row.spot_id) ?? false,
+    isManualSpot: spot?.source === "manual",
+    prefecture: spot?.prefecture ?? null,
+    spotLat,
+    spotLng,
+    walkMinutes: walk,
+    latestStatus: extras.latestStatusBySpot?.get(row.spot_id) ?? null,
   };
 }
 
@@ -152,17 +236,45 @@ export function sortPostCards<T extends Pick<PostCardData, "createdAt" | "rating
 export async function buildPostCards(
   admin: SupabaseClient,
   viewerId: string,
-  rows: PostCardRow[]
+  rows: PostCardRow[],
+  options: { viewer?: { lat: number; lng: number } | null } = {}
 ): Promise<PostCardData[]> {
-  const paths = rows.flatMap((row) => {
-    const path = representativeMedia(row.post_photos)?.storage_url;
-    return path ? [path] : [];
-  });
-  const [signedUrls, likedPostIds] = await Promise.all([
+  // v3.0: カードに全メディアを並べるので、代表画像だけでなく全部に署名する
+  const paths = rows.flatMap((row) => photoPaths(row.post_photos));
+  const spotIds = Array.from(new Set(rows.map((row) => row.spot_id)));
+  const [signedUrls, likedPostIds, latestStatusBySpot, savedSpotIds] = await Promise.all([
     createPostPhotoUrls(admin, Array.from(new Set(paths))),
     findLikedPostIds(admin, viewerId, rows.map((row) => row.id)),
+    findLatestSpotStatuses(admin, spotIds),
+    findSavedSpotIds(admin, viewerId, spotIds),
   ]);
-  return rows.map((row) => toPostCard(row, signedUrls, likedPostIds));
+  return rows.map((row) => toPostCard(row, signedUrls, likedPostIds, { viewer: options.viewer ?? null, latestStatusBySpot, savedSpotIds }));
+}
+
+/** v3.0: 閲覧者が「行きたい」に保存済みのスポット ID（カードの「＋」の初期状態） */
+async function findSavedSpotIds(admin: SupabaseClient, viewerId: string, spotIds: string[]): Promise<Set<string>> {
+  if (spotIds.length === 0) return new Set();
+  const { data, error } = await admin.from("wishlist").select("spot_id").eq("user_id", viewerId).in("spot_id", spotIds);
+  if (error) throw error;
+  return new Set((data ?? []).map((row) => row.spot_id as string));
+}
+
+/** v3.0（spot-status-report Task3）: スポットごとの最新の「まだあった」報告。取れなくても一覧は出す */
+export async function findLatestSpotStatuses(
+  admin: SupabaseClient,
+  spotIds: string[]
+): Promise<Map<string, { status: "still_there" | "gone"; reportedAt: string }>> {
+  const map = new Map<string, { status: "still_there" | "gone"; reportedAt: string }>();
+  if (spotIds.length === 0) return map;
+  try {
+    const { data } = await admin.from("spot_latest_status").select("spot_id, status, reported_at").in("spot_id", spotIds);
+    for (const row of (data ?? []) as { spot_id: string; status: "still_there" | "gone"; reported_at: string }[]) {
+      map.set(row.spot_id, { status: row.status, reportedAt: row.reported_at });
+    }
+  } catch {
+    // ビュー未適用などでも一覧自体は出す
+  }
+  return map;
 }
 
 /** 閲覧者がいいね済みの投稿ID */

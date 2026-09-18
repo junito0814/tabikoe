@@ -43,3 +43,19 @@ describe("detectMapTheme", () => {
     expect(detectMapTheme()).toBe("light");
   });
 });
+
+describe("buildMapOptions（map-display-v3 Task3）", () => {
+  it("styles と disableDefaultUI 系の設定を含む", async () => {
+    const { buildMapOptions } = await import("./map-styles");
+    const options = buildMapOptions("light", 14);
+    expect(options.disableDefaultUI).toBe(true);
+    expect(options.mapTypeControl).toBe(false);
+    expect(options.streetViewControl).toBe(false);
+    expect(options.rotateControl).toBe(false);
+    expect(options.tilt).toBe(0);
+    expect(options.clickableIcons).toBe(false);
+    expect(options.zoomControl).toBe(true);
+    expect(Array.isArray(options.styles)).toBe(true);
+    expect(options.styles.length).toBeGreaterThan(0);
+  });
+});

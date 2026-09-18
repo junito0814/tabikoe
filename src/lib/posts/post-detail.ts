@@ -3,6 +3,7 @@ import { isBlockedEitherWay } from "@/lib/blocks/get-blocked-user-ids";
 import { createPostPhotoUrls } from "@/lib/posts/signed-url";
 import { DEACTIVATED_DISPLAY_NAME, DEFAULT_AVATAR_URL } from "@/lib/users/constants";
 import type { MediaItem } from "@/components/media/MediaGrid";
+import { getSpotStatus, type SpotStatusSummary } from "@/lib/spots/status-report";
 
 /**
  * F-VW-01 Task1: 投稿詳細の取得と非公開アクセス制御
@@ -26,6 +27,8 @@ export interface PostDetailData {
   commentCount: number;
   viewerHasLiked: boolean;
   isWishlisted: boolean;
+  /** v3.0（spot-status-report）: スポットの最新の「まだあった」報告と自分の報告 */
+  spotStatus: SpotStatusSummary;
   isOwner: boolean;
   /** いいね・コメントを付けられるか（公開投稿のみ。3.3.6） */
   canInteract: boolean;
@@ -145,7 +148,7 @@ export async function getPostDetail(
   }
   if (!canViewPost(row, viewerId, isAlbumMember)) return null;
 
-  const [signedUrls, likeCount, commentCount, viewerLike, wishlist] = await Promise.all([
+  const [signedUrls, likeCount, commentCount, viewerLike, wishlist, spotStatus] = await Promise.all([
     // v3.0: 動画本体（video_url）も非公開バケットにあるので署名付き URL にする
     createPostPhotoUrls(
       admin,
@@ -158,6 +161,8 @@ export async function getPostDetail(
     admin.from("comments").select("id", { count: "exact", head: true }).eq("post_id", row.id),
     admin.from("likes").select("id").eq("post_id", row.id).eq("user_id", viewerId).maybeSingle(),
     admin.from("wishlist").select("id").eq("user_id", viewerId).eq("spot_id", row.spot_id).maybeSingle(),
+    // 報告が取れなくても詳細は出す
+    getSpotStatus(admin, row.spot_id, viewerId).catch((): SpotStatusSummary => ({ latest: null, mine: null })),
   ]);
 
   const spot = one(row.spots);
@@ -200,6 +205,7 @@ export async function getPostDetail(
     commentCount: commentCount.count ?? 0,
     viewerHasLiked: viewerLike.data !== null,
     isWishlisted: wishlist.data !== null,
+    spotStatus,
     isOwner,
     canInteract: row.visibility === "public",
   };
