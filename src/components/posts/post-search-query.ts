@@ -9,7 +9,7 @@ import {
   type PeriodOption,
 } from "@/lib/posts/search-posts";
 import type { AddModeParams } from "@/lib/search/build-search-href";
-import { parseListView, type ListView } from "./ViewToggle";
+import { parseListView, type ListView } from "@/lib/search/list-view";
 
 /**
  * F-MP-04 Task2 / post-timeline Task2〜3（v3.0）: 絞り込み・並び替えの状態 ⇄ URL クエリ
