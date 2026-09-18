@@ -93,6 +93,7 @@ export async function getAlbumList(admin: SupabaseClient, userId: string): Promi
   const { data: latestPosts, error: postsError } = await admin
     .from("posts")
     .select("trip_id, created_at, post_photos(storage_url, media_type, display_order)")
+    .eq("status", "published")
     .in(
       "trip_id",
       withPosts.map((album) => album.tripId)
@@ -199,6 +200,7 @@ export async function getAlbumDetail(
           "post_photos(storage_url, media_type, display_order), likes(count), comments(count)"
       )
       .eq("trip_id", tripId)
+      .eq("status", "published")
       // F-AD-05: 非公開化された投稿は除く
       .is("hidden_at", null)
       .order("created_at", { ascending: false }),

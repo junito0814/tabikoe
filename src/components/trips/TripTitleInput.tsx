@@ -8,7 +8,15 @@ import { fetchWithAuthRedirect, UnauthorizedError } from "@/lib/api/fetch-with-a
 export interface TripSuggestion {
   id: string;
   title: string;
+  /** v3.0: 由来。own＝自分の旅行、album＝参加中のアルバム、itinerary＝参加中のしおり */
+  source?: "own" | "album" | "itinerary";
 }
+
+const SOURCE_LABELS: Record<NonNullable<TripSuggestion["source"]>, string> = {
+  own: "",
+  album: "アルバム",
+  itinerary: "しおり",
+};
 
 async function fetchSuggestionsFromApi(query: string): Promise<TripSuggestion[]> {
   const response = await fetchWithAuthRedirect(`/api/trips?query=${encodeURIComponent(query)}`);
@@ -27,7 +35,7 @@ async function fetchSuggestionsFromApi(query: string): Promise<TripSuggestion[]>
  * 候補は本人が過去に作成した旅行タイトルと、本人が編集者・オーナーとして参加しているアルバムの旅行（GET /api/trips）。
  * 候補にない名称を入力した場合は新規の旅行として扱われる（解決はサーバー側のresolveTripId）。
  *
- * 【初心者向け】value / onChange を親（PostForm）から受け取る「制御コンポーネント」。自分では値を持たない。
+ * 【初心者向け】value / onChange を親（PostFormFields → PostComposeScreen）から受け取る「制御コンポーネント」。自分では値を持たない。
  * 候補の取得は 250ms の debounce、候補リストは外側クリックで閉じる（document への mousedown 監視）。
  * `role="combobox"` や aria-* は、読み上げソフトに「候補付きの入力欄」だと伝えるための属性。
  */
@@ -35,11 +43,14 @@ export function TripTitleInput({
   value,
   onChange,
   fetchSuggestions = fetchSuggestionsFromApi,
+  layout = "stacked",
 }: {
   value: string;
   onChange: (value: string) => void;
   /** 候補取得の差し替え口（単体テスト・開発用プレビューでモックを注入するため） */
   fetchSuggestions?: (query: string) => Promise<TripSuggestion[]>;
+  /** v3.0（post-creation-v3 Task2）: "inline" はラベルと入力欄を横並びにする */
+  layout?: "stacked" | "inline";
 }) {
   const inputId = useId();
   const [suggestions, setSuggestions] = useState<TripSuggestion[]>([]);
@@ -80,10 +91,11 @@ export function TripTitleInput({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  const isInline = layout === "inline";
   return (
-    <div ref={containerRef} className="relative w-full">
-      <label htmlFor={inputId} className="mb-1.5 block text-[12px] font-medium text-muted">
-        旅行タイトル
+    <div ref={containerRef} className={`relative w-full ${isInline ? "flex flex-wrap items-center gap-x-2 gap-y-1" : ""}`}>
+      <label htmlFor={inputId} className={isInline ? "w-[84px] shrink-0 text-[12px] font-medium text-muted" : "mb-1.5 block text-[12px] font-medium text-muted"}>
+        旅行タイトル{isInline ? " *" : ""}
       </label>
       <input
         id={inputId}
@@ -97,7 +109,8 @@ export function TripTitleInput({
         role="combobox"
         aria-expanded={isOpen && suggestions.length > 0}
         aria-controls={`${inputId}-suggestions`}
-        className="h-11 w-full rounded-[10px] border border-line bg-surface px-3 text-[14px] text-ink focus:outline-none focus:ring-1 focus:ring-accent"
+        placeholder={isInline ? "空なら「今日の投稿」になります" : undefined}
+        className={`h-11 rounded-[10px] border border-line bg-surface px-3 text-[14px] text-ink focus:outline-none focus:ring-1 focus:ring-accent ${isInline ? "min-w-0 flex-1" : "w-full"}`}
       />
 
       {isOpen && suggestions.length > 0 && (
@@ -114,21 +127,24 @@ export function TripTitleInput({
                   onChange(suggestion.title);
                   setIsOpen(false);
                 }}
-                className="block w-full px-3 py-2.5 text-left text-[14px] text-ink hover:bg-tint"
+                className="flex w-full items-center justify-between gap-2 px-3 py-2.5 text-left text-[14px] text-ink hover:bg-tint"
               >
-                {suggestion.title}
+                <span className="min-w-0 truncate">{suggestion.title}</span>
+                {suggestion.source && SOURCE_LABELS[suggestion.source] && (
+                  <span className="shrink-0 rounded-full bg-tint px-2 py-0.5 text-[10px] text-muted">{SOURCE_LABELS[suggestion.source]}</span>
+                )}
               </button>
             </li>
           ))}
         </ul>
       )}
 
-      <div className="mt-1.5 flex items-center justify-between">
-        <span className={`text-[11px] ${isTooLong ? "text-accent" : "text-muted"}`}>
+      <div className={`mt-1 flex items-center justify-between ${isInline ? "w-full pl-[92px]" : ""}`}>
+        <span className={`text-[11px] ${isTooLong ? "text-saved" : "text-muted"}`}>
           {length} / {MAX_TRIP_TITLE_LENGTH}
         </span>
         {isTooLong && (
-          <span className="text-[11px] text-accent">
+          <span className="text-[11px] text-saved">
             {MAX_TRIP_TITLE_LENGTH}文字以内で入力してください
           </span>
         )}

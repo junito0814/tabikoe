@@ -238,6 +238,7 @@ async function findOwnPostSpotIds(
     .from("posts")
     .select("spot_id")
     .eq("user_id", userId)
+    .eq("status", "published")
     .in("spot_id", spotIds);
   if (error) throw error;
   return new Set((data ?? []).map((row) => row.spot_id as string));

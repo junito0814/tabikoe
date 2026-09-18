@@ -51,11 +51,19 @@ export function SpotAutocompleteInput({
   selectedSpot,
   onSelect,
   searchSpots = searchSpotsFromApi,
+  manualRegistration = true,
+  onCancel,
+  autoFocus = false,
 }: {
   selectedSpot: RegisteredSpot | null;
   onSelect: (spot: RegisteredSpot | null) => void;
   /** 検索の差し替え口（単体テスト・開発用プレビューでモックを注入するため） */
   searchSpots?: (query: string) => Promise<SearchResult>;
+  /** v3.0（spot-selection-v3 Task4）: SC-03 では手動登録モーダルを使わない（地図のピンが手動登録を兼ねる） */
+  manualRegistration?: boolean;
+  /** 検索をやめて元の表示に戻す（SC-03 の「変更」の取消） */
+  onCancel?: () => void;
+  autoFocus?: boolean;
 }) {
   const inputId = useId();
   const [query, setQuery] = useState("");
@@ -190,6 +198,8 @@ export function SpotAutocompleteInput({
         value={query}
         onChange={(event) => setQuery(event.target.value)}
         autoComplete="off"
+        autoFocus={autoFocus}
+        placeholder="スポット名で探す"
         role="combobox"
         aria-expanded={visibleCandidates.length > 0}
         aria-controls={`${inputId}-candidates`}
@@ -221,7 +231,7 @@ export function SpotAutocompleteInput({
       )}
       {errorMessage && <ErrorNotice className="mt-2" message={errorMessage} />}
 
-      {hasSearched && visibleCandidates.length === 0 && (
+      {hasSearched && visibleCandidates.length === 0 && manualRegistration && (
         <p className="mt-2 text-[12px] leading-[1.6] text-muted">
           候補が見つかりません。
           <button
@@ -233,8 +243,18 @@ export function SpotAutocompleteInput({
           </button>
         </p>
       )}
+      {hasSearched && visibleCandidates.length === 0 && !manualRegistration && (
+        <p className="mt-2 text-[12px] leading-[1.6] text-muted">
+          候補が見つかりません。地図でピンを合わせて「新しい場所」として投稿できます
+        </p>
+      )}
+      {onCancel && (
+        <button type="button" onClick={onCancel} className="mt-2 text-[12px] font-medium text-muted underline underline-offset-2">
+          検索をやめる
+        </button>
+      )}
 
-      {isModalOpen && (
+      {isModalOpen && manualRegistration && (
         <ManualSpotRegistrationModal
           initialName={query.trim()}
           onRegistered={(spot) => {

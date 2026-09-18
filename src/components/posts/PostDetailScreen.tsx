@@ -28,9 +28,12 @@ import { formatCost } from "./PostCard";
 export function PostDetailScreen({
   post,
   initialComments,
+  notice,
 }: {
   post: PostDetailData;
   initialComments: CommentPage;
+  /** 投稿・更新の完了メッセージ（Server Component から渡す。v3.0） */
+  notice?: React.ReactNode;
 }) {
   // 通報画面から戻ってくる先。コメントの通報でも同じ投稿詳細に戻す
   const returnTo = `/posts/${post.id}`;
@@ -39,6 +42,7 @@ export function PostDetailScreen({
   return (
     <div className="flex min-h-screen flex-col items-center bg-app px-4 py-6">
       <article className="flex w-full max-w-[520px] flex-col gap-4">
+        {notice}
         <header className="flex flex-col gap-2">
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">

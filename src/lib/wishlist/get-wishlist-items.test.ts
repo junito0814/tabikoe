@@ -46,6 +46,7 @@ function fakeAdmin({
   const postsQuery = {
     select: () => postsQuery,
     in: () => postsQuery,
+    eq: () => postsQuery,
     or: () => postsQuery,
     not: () => postsQuery,
     order: async () => ({ data: postRows, error: null }),

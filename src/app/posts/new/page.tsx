@@ -1,16 +1,45 @@
+import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { requireUserOrRedirect } from "@/lib/auth/require-user-or-redirect";
-import PostForm from "@/components/posts/PostForm";
+import { buildComposeInitialState, type ComposeQuery } from "@/lib/posts/compose-initial-state";
+import { loadExistingPostForCompose, loadSpotForCompose, loadItineraryForCompose } from "@/lib/posts/load-compose-data";
+import { PostComposeScreen } from "@/components/posts/PostComposeScreen";
 
 /**
- * SC-03 投稿作成画面（新規作成モード）
- * 出典: docs/tasks/posts/post-creation/02-post-form-ui.md
+ * SC-03 投稿画面（新規作成・下書きの続き）
+ * 出典: docs/tasks/posts/post-creation-v3/03-split-screen-layout.md
+ *       docs/tasks/posts/post-entry-points/01-compose-initial-state.md
  *
+ * 【初心者向け】Server Component。URL のクエリ（?lat&lng / ?spot= / ?itinerary= / ?draft=）を読み、
+ * 必要なものをサーバーで DB から引いてから、画面（PostComposeScreen、クライアント）に初期値として渡す。
  * 投稿作成はログイン必須（要件定義書3.3.1）。
  */
-export default async function NewPostPage() {
+export default async function NewPostPage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
   const supabase = await createClient();
-  await requireUserOrRedirect(supabase, "/posts/new");
+  const params = await searchParams;
+  const query: ComposeQuery = Object.fromEntries(
+    Object.entries(params).map(([key, value]) => [key, typeof value === "string" ? value : null])
+  );
+  const currentPath = `/posts/new${Object.keys(params).length ? `?${new URLSearchParams(query as Record<string, string>).toString()}` : ""}`;
+  const user = await requireUserOrRedirect(supabase, currentPath);
+  const admin = createAdminClient();
 
-  return <PostForm />;
+  // 下書きの続き: 本人の下書きだけを開ける
+  if (query.draft) {
+    const existing = await loadExistingPostForCompose(admin, query.draft, user.id);
+    if (!existing || existing.status !== "draft") notFound();
+    return <PostComposeScreen initial={buildComposeInitialState(query)} existing={existing} />;
+  }
+
+  const [spot, itinerary] = await Promise.all([
+    query.spot ? loadSpotForCompose(admin, query.spot) : Promise.resolve(null),
+    query.itinerary ? loadItineraryForCompose(admin, query.itinerary, user.id, query.day) : Promise.resolve(null),
+  ]);
+  const initial = buildComposeInitialState(query, { spot, itinerary });
+  return <PostComposeScreen initial={initial} />;
 }

@@ -65,6 +65,8 @@ export function presentAuthor(user: {
 export interface PostDetailRow {
   id: string;
   user_id: string;
+  /** v3.0: draft は詳細を返さない */
+  status?: string;
   trip_id: string;
   spot_id: string;
   category: string;
@@ -108,7 +110,7 @@ export async function getPostDetail(
   const { data, error } = await admin
     .from("posts")
     .select(
-      "id, user_id, trip_id, spot_id, category, visit_date, duration, cost, rating, comment, visibility, created_at, hidden_at, review_hidden_at, " +
+      "id, user_id, trip_id, spot_id, category, visit_date, duration, cost, rating, comment, visibility, status, created_at, hidden_at, review_hidden_at, " +
         "spots(id, name, prefecture), users(id, display_name, avatar_url, is_deleted), " +
         "post_photos(id, storage_url, video_url, media_type, display_order, hidden_at)"
     )
@@ -119,6 +121,9 @@ export async function getPostDetail(
 
   const row = data as unknown as PostDetailRow;
   const isOwner = row.user_id === viewerId;
+
+  // v3.0: 下書きは本人にも詳細を見せない（続きは SC-03 で書く）。他人には存在しない扱い
+  if (row.status === "draft") return null;
 
   // F-AD-05: 通報対応で非公開化された投稿は本人以外に見せない（存在しない扱い）
   if (row.hidden_at && !isOwner) return null;
@@ -141,9 +146,13 @@ export async function getPostDetail(
   if (!canViewPost(row, viewerId, isAlbumMember)) return null;
 
   const [signedUrls, likeCount, commentCount, viewerLike, wishlist] = await Promise.all([
+    // v3.0: 動画本体（video_url）も非公開バケットにあるので署名付き URL にする
     createPostPhotoUrls(
       admin,
-      row.post_photos.flatMap((photo) => (photo.storage_url ? [photo.storage_url] : []))
+      row.post_photos.flatMap((photo) => [
+        ...(photo.storage_url ? [photo.storage_url] : []),
+        ...(photo.video_url ? [photo.video_url] : []),
+      ])
     ),
     admin.from("likes").select("id", { count: "exact", head: true }).eq("post_id", row.id),
     admin.from("comments").select("id", { count: "exact", head: true }).eq("post_id", row.id),
@@ -166,7 +175,7 @@ export async function getPostDetail(
           mediaType: isVideo ? ("video" as const) : ("photo" as const),
           thumbnailUrl: url,
           alt: `${spot?.name ?? "スポット"}の${isVideo ? "動画" : "写真"} ${index + 1}`,
-          videoUrl: isVideo ? (photo.video_url ?? undefined) : undefined,
+          videoUrl: isVideo && photo.video_url ? signedUrls.get(photo.video_url) : undefined,
         },
       ];
     });

@@ -9,7 +9,7 @@ import { getMyPageSummary, getMyPosts, matchesTripFilter } from "./my-page";
  * - trip_id 指定時に、当該旅行の投稿のみが返ることを検証する
  */
 describe("getMyPageSummary", () => {
-  it("posts は visibility で絞らず user_id だけで数え、likes は自分の投稿群で数える", async () => {
+  it("posts は visibility で絞らず user_id と status（下書き除外）で数え、likes は自分の投稿群で数える", async () => {
     const filters: Record<string, [string, unknown][]> = {};
     const admin = {
       from: (table: string) => {
@@ -27,7 +27,7 @@ describe("getMyPageSummary", () => {
 
     const summary = await getMyPageSummary(admin, "me");
     expect(summary).toEqual({ postCount: 7, receivedLikeCount: 12 });
-    expect(filters.posts).toEqual([["user_id", "me"]]);
+    expect(filters.posts).toEqual([["user_id", "me"], ["status", "published"]]);
     expect(filters.posts.some(([column]) => column === "visibility")).toBe(false);
     expect(filters.likes).toEqual([["post.user_id", "me"]]);
   });
