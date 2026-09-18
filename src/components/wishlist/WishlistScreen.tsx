@@ -9,14 +9,9 @@ import type { SaveSheetApi } from "@/components/save/SaveSheet";
 import { Toast, type ToastMessage } from "@/components/ui/Toast";
 import { fetchWithAuthRedirect, UnauthorizedError } from "@/lib/api/fetch-with-auth-redirect";
 import type { WishlistItem } from "@/lib/wishlist/constants";
+import type { WishlistView } from "@/lib/wishlist/wishlist-view";
 import { MapScreen } from "@/components/map/MapScreen";
 import { resolveMapOpen } from "@/components/map/map-navigation";
-
-export type WishlistView = "list" | "map";
-
-export function parseWishlistView(value: string | null | undefined): WishlistView {
-  return value === "map" ? "map" : "list";
-}
 
 /**
  * F-RC-05 Task2 / wishlist-v3 Task2（v3.0）: 「行きたい」（SC-08。一覧／地図の切替）
