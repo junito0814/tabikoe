@@ -126,8 +126,8 @@ export function CommentSection({
 
   return (
     <section aria-labelledby="comments-heading" className="flex flex-col gap-3">
-      <h2 id="comments-heading" className="text-[14px] font-bold text-[#3D3A35]">
-        コメント <span className="text-[12px] font-medium text-[#9C9488]">{totalCount}件</span>
+      <h2 id="comments-heading" className="text-[14px] font-bold text-ink">
+        コメント <span className="text-[12px] font-medium text-muted">{totalCount}件</span>
       </h2>
 
       {canComment ? (
@@ -138,11 +138,11 @@ export function CommentSection({
             rows={3}
             placeholder="コメントを書く"
             aria-label="コメント本文"
-            className="w-full rounded-[10px] border border-[#E8E1D8] bg-white px-3 py-2 text-[14px] text-[#3D3A35] focus:outline-none focus:ring-1 focus:ring-[#C4703F]"
+            className="w-full rounded-[10px] border border-line bg-surface px-3 py-2 text-[14px] text-ink focus:outline-none focus:ring-1 focus:ring-accent"
           />
           <div className="flex items-center justify-between">
             <span
-              className={`text-[11px] ${remaining < 0 ? "text-[#C4703F]" : "text-[#9C9488]"}`}
+              className={`text-[11px] ${remaining < 0 ? "text-accent" : "text-muted"}`}
               aria-live="polite"
             >
               残り{remaining.toLocaleString("ja-JP")}文字（{MAX_COMMENT_LENGTH.toLocaleString("ja-JP")}文字まで）
@@ -150,31 +150,31 @@ export function CommentSection({
             <button
               type="submit"
               disabled={!canSubmit}
-              className="h-9 rounded-[8px] bg-[#C4703F] px-4 text-[12px] font-semibold text-white disabled:cursor-not-allowed disabled:opacity-45"
+              className="h-9 rounded-[8px] bg-accent px-4 text-[12px] font-semibold text-white disabled:cursor-not-allowed disabled:opacity-45"
             >
               {isSubmitting ? "投稿中…" : "コメントする"}
             </button>
           </div>
         </form>
       ) : (
-        <p className="text-[12px] text-[#9C9488]">非公開の投稿にはコメントできません</p>
+        <p className="text-[12px] text-muted">非公開の投稿にはコメントできません</p>
       )}
 
       {errorMessage && <ErrorNotice message={errorMessage} />}
 
       {comments.length === 0 ? (
-        <p className="py-6 text-center text-[12px] text-[#9C9488]">まだコメントはありません</p>
+        <p className="py-6 text-center text-[12px] text-muted">まだコメントはありません</p>
       ) : (
         <ul className="flex flex-col gap-2">
           {comments.map((comment) => (
-            <li key={comment.id} className="rounded-[10px] border border-[#E8E1D8] bg-white p-3" data-comment={comment.id}>
-              <div className="mb-1 flex items-center gap-2 text-[11px] text-[#9C9488]">
+            <li key={comment.id} className="rounded-[10px] border border-line bg-surface p-3" data-comment={comment.id}>
+              <div className="mb-1 flex items-center gap-2 text-[11px] text-muted">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src={comment.author.avatarUrl} alt="" className="h-5 w-5 rounded-full object-cover" />
                 {comment.author.isDeleted ? (
                   <span>{comment.author.displayName}</span>
                 ) : (
-                  <Link href={`/users/${comment.author.id}`} className="font-medium text-[#3D3A35]">
+                  <Link href={`/users/${comment.author.id}`} className="font-medium text-ink">
                     {comment.author.displayName}
                   </Link>
                 )}
@@ -186,7 +186,7 @@ export function CommentSection({
                       onClick={() => handleDelete(comment.id)}
                       disabled={pendingDeleteId !== null}
                       aria-label="このコメントを削除"
-                      className="text-[11px] font-medium text-[#C4703F] underline underline-offset-2 disabled:opacity-45"
+                      className="text-[11px] font-medium text-accent underline underline-offset-2 disabled:opacity-45"
                     >
                       {pendingDeleteId === comment.id ? "削除中…" : "削除"}
                     </button>
@@ -195,7 +195,7 @@ export function CommentSection({
                   )}
                 </span>
               </div>
-              <p className="whitespace-pre-wrap break-words text-[13px] leading-[1.7] text-[#3D3A35]">{comment.body}</p>
+              <p className="whitespace-pre-wrap break-words text-[13px] leading-[1.7] text-ink">{comment.body}</p>
             </li>
           ))}
         </ul>
@@ -206,7 +206,7 @@ export function CommentSection({
           type="button"
           onClick={() => void handleLoadMore()}
           disabled={isLoadingMore}
-          className="h-10 w-full rounded-[10px] border border-[#E8E1D8] bg-white text-[13px] font-semibold text-[#3D3A35] disabled:opacity-45"
+          className="h-10 w-full rounded-[10px] border border-line bg-surface text-[13px] font-semibold text-ink disabled:opacity-45"
         >
           {isLoadingMore ? "読み込み中…" : "もっと見る"}
         </button>

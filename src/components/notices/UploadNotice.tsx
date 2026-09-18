@@ -8,7 +8,7 @@
  */
 export function UploadNotice() {
   return (
-    <ul className="list-disc space-y-1 pl-4 text-[11px] leading-[1.6] text-[#9C9488]">
+    <ul className="list-disc space-y-1 pl-4 text-[11px] leading-[1.6] text-muted">
       <li>他人が写り込んだ写真・動画は、本人の同意を得てから投稿してください</li>
       <li>個人が特定できる情報（車のナンバー等）が写っていないか確認してください</li>
     </ul>

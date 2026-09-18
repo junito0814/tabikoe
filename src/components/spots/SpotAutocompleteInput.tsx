@@ -162,16 +162,16 @@ export function SpotAutocompleteInput({
   if (selectedSpot) {
     return (
       <div className="w-full">
-        <span className="mb-1.5 block text-[12px] font-medium text-[#9C9488]">スポット</span>
-        <div className="flex items-center justify-between rounded-[10px] border border-[#E8E1D8] bg-white px-3 py-2.5">
-          <span className="text-[14px] text-[#3D3A35]">{selectedSpot.name}</span>
+        <span className="mb-1.5 block text-[12px] font-medium text-muted">スポット</span>
+        <div className="flex items-center justify-between rounded-[10px] border border-line bg-surface px-3 py-2.5">
+          <span className="text-[14px] text-ink">{selectedSpot.name}</span>
           <button
             type="button"
             onClick={() => {
               onSelect(null);
               setQuery("");
             }}
-            className="text-[12px] font-medium text-[#C4703F] underline underline-offset-2"
+            className="text-[12px] font-medium text-accent underline underline-offset-2"
           >
             変更
           </button>
@@ -182,7 +182,7 @@ export function SpotAutocompleteInput({
 
   return (
     <div className="w-full">
-      <label htmlFor={inputId} className="mb-1.5 block text-[12px] font-medium text-[#9C9488]">
+      <label htmlFor={inputId} className="mb-1.5 block text-[12px] font-medium text-muted">
         スポット
       </label>
       <input
@@ -193,21 +193,21 @@ export function SpotAutocompleteInput({
         role="combobox"
         aria-expanded={visibleCandidates.length > 0}
         aria-controls={`${inputId}-candidates`}
-        className="h-11 w-full rounded-[10px] border border-[#E8E1D8] bg-white px-3 text-[14px] text-[#3D3A35] focus:outline-none focus:ring-1 focus:ring-[#C4703F]"
+        className="h-11 w-full rounded-[10px] border border-line bg-surface px-3 text-[14px] text-ink focus:outline-none focus:ring-1 focus:ring-accent"
       />
 
       {visibleCandidates.length > 0 && (
         <ul
           id={`${inputId}-candidates`}
           role="listbox"
-          className="mt-1 overflow-hidden rounded-[10px] border border-[#E8E1D8] bg-white"
+          className="mt-1 overflow-hidden rounded-[10px] border border-line bg-surface"
         >
           {visibleCandidates.map((candidate) => (
             <li key={`${candidate.source}-${candidate.id ?? candidate.name}`} role="option" aria-selected={false}>
               <button
                 type="button"
                 onClick={() => handleSelectCandidate(candidate)}
-                className="block w-full px-3 py-2.5 text-left text-[14px] text-[#3D3A35] hover:bg-[#FBF6F0]"
+                className="block w-full px-3 py-2.5 text-left text-[14px] text-ink hover:bg-tint"
               >
                 {candidate.name}
               </button>
@@ -222,12 +222,12 @@ export function SpotAutocompleteInput({
       {errorMessage && <ErrorNotice className="mt-2" message={errorMessage} />}
 
       {hasSearched && visibleCandidates.length === 0 && (
-        <p className="mt-2 text-[12px] leading-[1.6] text-[#9C9488]">
+        <p className="mt-2 text-[12px] leading-[1.6] text-muted">
           候補が見つかりません。
           <button
             type="button"
             onClick={() => setIsModalOpen(true)}
-            className="font-medium text-[#C4703F] underline underline-offset-2"
+            className="font-medium text-accent underline underline-offset-2"
           >
             地図でスポットを登録する
           </button>

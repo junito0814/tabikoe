@@ -86,14 +86,14 @@ export function ReportForm({
 
   if (isDone) {
     return (
-      <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-[#FBF6F0] px-6">
-        <h1 className="text-[16px] font-bold text-[#3D3A35]">通報を受け付けました</h1>
-        <p className="max-w-[360px] text-center text-[13px] leading-[1.7] text-[#3D3A35]">
+      <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-app px-6">
+        <h1 className="text-[16px] font-bold text-ink">通報を受け付けました</h1>
+        <p className="max-w-[360px] text-center text-[13px] leading-[1.7] text-ink">
           内容を確認し、必要に応じて対応します。対応が完了するまで、対象は通常どおり表示されます。
         </p>
         <Link
           href={returnTo}
-          className="mt-2 text-[13px] font-medium text-[#C4703F] underline underline-offset-2"
+          className="mt-2 text-[13px] font-medium text-accent underline underline-offset-2"
         >
           元の画面に戻る
         </Link>
@@ -102,22 +102,22 @@ export function ReportForm({
   }
 
   return (
-    <div className="flex min-h-screen flex-col items-center gap-5 bg-[#FBF6F0] px-6 py-12">
-      <h1 className="text-[16px] font-bold text-[#3D3A35]">
+    <div className="flex min-h-screen flex-col items-center gap-5 bg-app px-6 py-12">
+      <h1 className="text-[16px] font-bold text-ink">
         {REPORT_TARGET_LABELS[targetType]}を通報
       </h1>
 
       <div className="flex w-full max-w-[360px] flex-col gap-5">
         <fieldset className="w-full">
-          <legend className="mb-1.5 block text-[12px] font-medium text-[#9C9488]">
+          <legend className="mb-1.5 block text-[12px] font-medium text-muted">
             通報理由（必須）
           </legend>
           <div className="flex flex-col gap-1.5" role="radiogroup" aria-label="通報理由">
             {reasonsForTarget(targetType).map((item) => (
               <label
                 key={item}
-                className={`flex h-11 cursor-pointer items-center gap-2.5 rounded-[10px] border bg-white px-3 text-[14px] text-[#3D3A35] ${
-                  reason === item ? "border-[#C4703F]" : "border-[#E8E1D8]"
+                className={`flex h-11 cursor-pointer items-center gap-2.5 rounded-[10px] border bg-surface px-3 text-[14px] text-ink ${
+                  reason === item ? "border-accent" : "border-line"
                 }`}
               >
                 <input
@@ -126,7 +126,7 @@ export function ReportForm({
                   value={item}
                   checked={reason === item}
                   onChange={() => setReason(item)}
-                  className="accent-[#C4703F]"
+                  className="accent-accent"
                 />
                 {REPORT_REASON_LABELS[item]}
               </label>
@@ -137,7 +137,7 @@ export function ReportForm({
         <div className="w-full">
           <label
             htmlFor="report-detail"
-            className="mb-1.5 block text-[12px] font-medium text-[#9C9488]"
+            className="mb-1.5 block text-[12px] font-medium text-muted"
           >
             詳細（任意）
           </label>
@@ -146,10 +146,10 @@ export function ReportForm({
             value={detail}
             onChange={(event) => setDetail(event.target.value)}
             rows={5}
-            className="w-full rounded-[10px] border border-[#E8E1D8] bg-white px-3 py-2.5 text-[14px] leading-[1.7] text-[#3D3A35] focus:outline-none focus:ring-1 focus:ring-[#C4703F]"
+            className="w-full rounded-[10px] border border-line bg-surface px-3 py-2.5 text-[14px] leading-[1.7] text-ink focus:outline-none focus:ring-1 focus:ring-accent"
           />
           <p
-            className={`mt-1 text-[11px] ${isDetailTooLong ? "text-[#C4703F]" : "text-[#9C9488]"}`}
+            className={`mt-1 text-[11px] ${isDetailTooLong ? "text-accent" : "text-muted"}`}
           >
             {detailLength} / {MAX_REPORT_DETAIL_LENGTH}
           </p>
@@ -161,14 +161,14 @@ export function ReportForm({
           type="button"
           onClick={handleSubmit}
           disabled={!canSubmit}
-          className="h-12 w-full rounded-[10px] bg-[#C4703F] text-[15px] font-semibold text-white disabled:cursor-not-allowed disabled:opacity-45"
+          className="h-12 w-full rounded-[10px] bg-accent text-[15px] font-semibold text-white disabled:cursor-not-allowed disabled:opacity-45"
         >
           {isSubmitting ? "送信中..." : "通報する"}
         </button>
 
         <Link
           href={returnTo}
-          className="text-center text-[13px] font-medium text-[#9C9488] underline underline-offset-2"
+          className="text-center text-[13px] font-medium text-muted underline underline-offset-2"
         >
           キャンセル
         </Link>

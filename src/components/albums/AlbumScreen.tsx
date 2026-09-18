@@ -174,10 +174,10 @@ export function AlbumScreen({
   const origin = typeof window !== "undefined" ? window.location.origin : "";
 
   return (
-    <div className="flex min-h-screen flex-col items-center bg-[#FBF6F0] px-4 py-6">
+    <div className="flex min-h-screen flex-col items-center bg-app px-4 py-6">
       <div className="flex w-full max-w-[560px] flex-col gap-5">
         <header className="flex flex-col gap-2">
-          <Link href="/albums" className="text-[12px] text-[#9C9488] underline underline-offset-2">
+          <Link href="/albums" className="text-[12px] text-muted underline underline-offset-2">
             アルバム一覧へ
           </Link>
           {isRenaming ? (
@@ -187,18 +187,18 @@ export function AlbumScreen({
                 onChange={(event) => setDraftTitle(event.target.value)}
                 maxLength={MAX_TRIP_TITLE_LENGTH * 2}
                 aria-label="アルバム名"
-                className="h-10 min-w-0 flex-1 rounded-[8px] border border-[#E8E1D8] bg-white px-3 text-[14px] text-[#3D3A35]"
+                className="h-10 min-w-0 flex-1 rounded-[8px] border border-line bg-surface px-3 text-[14px] text-ink"
               />
-              <button type="submit" disabled={busy !== null} className="h-10 rounded-[8px] bg-[#C4703F] px-3 text-[12px] font-semibold text-white disabled:opacity-45">
+              <button type="submit" disabled={busy !== null} className="h-10 rounded-[8px] bg-accent px-3 text-[12px] font-semibold text-white disabled:opacity-45">
                 保存
               </button>
-              <button type="button" onClick={() => setIsRenaming(false)} className="h-10 rounded-[8px] border border-[#E8E1D8] bg-white px-3 text-[12px] text-[#3D3A35]">
+              <button type="button" onClick={() => setIsRenaming(false)} className="h-10 rounded-[8px] border border-line bg-surface px-3 text-[12px] text-ink">
                 取消
               </button>
             </form>
           ) : (
             <div className="flex items-start justify-between gap-3">
-              <h1 className="min-w-0 break-words text-[20px] font-bold text-[#3D3A35]">{title}</h1>
+              <h1 className="min-w-0 break-words text-[20px] font-bold text-ink">{title}</h1>
               {isOwner && (
                 <button
                   type="button"
@@ -206,30 +206,30 @@ export function AlbumScreen({
                     setDraftTitle(title);
                     setIsRenaming(true);
                   }}
-                  className="shrink-0 text-[12px] font-medium text-[#C4703F] underline underline-offset-2"
+                  className="shrink-0 text-[12px] font-medium text-accent underline underline-offset-2"
                 >
                   名前を変更
                 </button>
               )}
             </div>
           )}
-          <p className="text-[11px] text-[#9C9488]">
+          <p className="text-[11px] text-muted">
             あなたの権限: {ALBUM_ROLE_LABELS[album.viewerRole]} ・ 投稿 {album.posts.length}件 ・ メンバー {members.length}人
           </p>
         </header>
 
         {errorMessage && <ErrorNotice message={errorMessage} />}
 
-        <section aria-labelledby="members-heading" className="rounded-[12px] border border-[#E8E1D8] bg-white p-4">
-          <h2 id="members-heading" className="mb-2 text-[13px] font-bold text-[#3D3A35]">メンバー</h2>
+        <section aria-labelledby="members-heading" className="rounded-[12px] border border-line bg-surface p-4">
+          <h2 id="members-heading" className="mb-2 text-[13px] font-bold text-ink">メンバー</h2>
           <ul className="flex flex-col gap-2">
             {members.map((member) => (
               <li key={member.userId} className="flex items-center gap-2 text-[12px]" data-member={member.userId}>
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src={member.avatarUrl} alt="" className="h-6 w-6 rounded-full object-cover" />
-                <span className="min-w-0 flex-1 truncate text-[#3D3A35]">
+                <span className="min-w-0 flex-1 truncate text-ink">
                   {member.displayName}
-                  {member.userId === viewerId && <span className="ml-1 text-[#9C9488]">（あなた）</span>}
+                  {member.userId === viewerId && <span className="ml-1 text-muted">（あなた）</span>}
                 </span>
                 {isOwner && member.role !== "owner" ? (
                   <>
@@ -238,7 +238,7 @@ export function AlbumScreen({
                       aria-label={`${member.displayName}の権限`}
                       onChange={(event) => void handleChangeRole(member.userId, event.target.value as InvitableRole)}
                       disabled={busy !== null}
-                      className="h-8 rounded-[6px] border border-[#E8E1D8] bg-white px-2 text-[12px]"
+                      className="h-8 rounded-[6px] border border-line bg-surface px-2 text-[12px]"
                     >
                       {INVITABLE_ROLES.map((role) => (
                         <option key={role} value={role}>
@@ -251,13 +251,13 @@ export function AlbumScreen({
                       onClick={() => handleRemove(member)}
                       disabled={busy !== null}
                       aria-label={`${member.displayName}を削除`}
-                      className="text-[11px] font-medium text-[#C4703F] underline underline-offset-2 disabled:opacity-45"
+                      className="text-[11px] font-medium text-accent underline underline-offset-2 disabled:opacity-45"
                     >
                       削除
                     </button>
                   </>
                 ) : (
-                  <span className="rounded-full bg-[#FBF6F0] px-2 py-0.5 text-[11px] text-[#9C9488]">{ALBUM_ROLE_LABELS[member.role]}</span>
+                  <span className="rounded-full bg-tint px-2 py-0.5 text-[11px] text-muted">{ALBUM_ROLE_LABELS[member.role]}</span>
                 )}
               </li>
             ))}
@@ -267,7 +267,7 @@ export function AlbumScreen({
               type="button"
               onClick={handleLeave}
               disabled={busy !== null}
-              className="mt-3 text-[12px] font-medium text-[#9C9488] underline underline-offset-2 disabled:opacity-45"
+              className="mt-3 text-[12px] font-medium text-muted underline underline-offset-2 disabled:opacity-45"
             >
               このアルバムから退出
             </button>
@@ -275,14 +275,14 @@ export function AlbumScreen({
         </section>
 
         {isOwner && (
-          <section aria-labelledby="invite-heading" className="rounded-[12px] border border-[#E8E1D8] bg-white p-4">
-            <h2 id="invite-heading" className="mb-2 text-[13px] font-bold text-[#3D3A35]">招待リンク</h2>
+          <section aria-labelledby="invite-heading" className="rounded-[12px] border border-line bg-surface p-4">
+            <h2 id="invite-heading" className="mb-2 text-[13px] font-bold text-ink">招待リンク</h2>
             <div className="flex items-center gap-2">
               <select
                 value={inviteRole}
                 aria-label="付与する権限"
                 onChange={(event) => setInviteRole(event.target.value as InvitableRole)}
-                className="h-9 rounded-[6px] border border-[#E8E1D8] bg-white px-2 text-[12px]"
+                className="h-9 rounded-[6px] border border-line bg-surface px-2 text-[12px]"
               >
                 {INVITABLE_ROLES.map((role) => (
                   <option key={role} value={role}>
@@ -294,21 +294,21 @@ export function AlbumScreen({
                 type="button"
                 onClick={() => void handleIssue()}
                 disabled={busy !== null}
-                className="h-9 rounded-[8px] bg-[#3D3A35] px-3 text-[12px] font-semibold text-white disabled:opacity-45"
+                className="h-9 rounded-[8px] bg-ink px-3 text-[12px] font-semibold text-white disabled:opacity-45"
               >
                 {busy === "issue" ? "発行中…" : "リンクを発行（7日間有効）"}
               </button>
             </div>
             {issuedPath && (
-              <div className="mt-2 rounded-[8px] bg-[#FBF6F0] p-2.5 text-[12px] text-[#3D3A35]">
-                <p className="mb-1 text-[11px] text-[#9C9488]">このリンクを共有してください（再表示はできません）</p>
+              <div className="mt-2 rounded-[8px] bg-tint p-2.5 text-[12px] text-ink">
+                <p className="mb-1 text-[11px] text-muted">このリンクを共有してください（再表示はできません）</p>
                 <code className="break-all" data-invitation-url>{`${origin}${issuedPath}`}</code>
               </div>
             )}
             {invitations.length > 0 && (
               <ul className="mt-3 flex flex-col gap-1.5">
                 {invitations.map((invitation) => (
-                  <li key={invitation.id} className="flex items-center gap-2 text-[11px] text-[#9C9488]">
+                  <li key={invitation.id} className="flex items-center gap-2 text-[11px] text-muted">
                     <span>{ALBUM_ROLE_LABELS[invitation.role as InvitableRole] ?? invitation.role}</span>
                     <span>期限 {new Date(invitation.expiresAt).toLocaleDateString("ja-JP")}</span>
                     <span className="ml-auto">
@@ -317,7 +317,7 @@ export function AlbumScreen({
                           type="button"
                           onClick={() => void handleRevoke(invitation.id)}
                           disabled={busy !== null}
-                          className="font-medium text-[#C4703F] underline underline-offset-2 disabled:opacity-45"
+                          className="font-medium text-accent underline underline-offset-2 disabled:opacity-45"
                         >
                           無効化
                         </button>
@@ -335,12 +335,12 @@ export function AlbumScreen({
         )}
 
         <section aria-labelledby="posts-heading" className="flex flex-col gap-3">
-          <h2 id="posts-heading" className="text-[13px] font-bold text-[#3D3A35]">投稿</h2>
+          <h2 id="posts-heading" className="text-[13px] font-bold text-ink">投稿</h2>
           {album.posts.length === 0 ? (
-            <p className="py-8 text-center text-[12px] text-[#9C9488]">まだ投稿がありません</p>
+            <p className="py-8 text-center text-[12px] text-muted">まだ投稿がありません</p>
           ) : (
             album.posts.map((post) => (
-              <article key={post.id} className="overflow-hidden rounded-[12px] border border-[#E8E1D8] bg-white" data-album-post={post.id}>
+              <article key={post.id} className="overflow-hidden rounded-[12px] border border-line bg-surface" data-album-post={post.id}>
                 {post.thumbnailUrl && (
                   <MediaGrid
                     items={[
@@ -354,19 +354,19 @@ export function AlbumScreen({
                   />
                 )}
                 <Link href={`/posts/${post.id}`} className="flex flex-col gap-1 p-3">
-                  <span className="flex items-center gap-2 text-[13px] font-semibold text-[#3D3A35]">
+                  <span className="flex items-center gap-2 text-[13px] font-semibold text-ink">
                     {post.spotName}
                     {post.visibility === "private" && (
-                      <span className="rounded-full bg-[#E8E1D8] px-2 py-0.5 text-[10px] font-medium text-[#3D3A35]">非公開</span>
+                      <span className="rounded-full bg-line px-2 py-0.5 text-[10px] font-medium text-ink">非公開</span>
                     )}
                   </span>
-                  <span className="text-[11px] text-[#9C9488]">
+                  <span className="text-[11px] text-muted">
                     {post.category}
                     {post.duration && ` ・ ${post.duration}`}
                     {formatCost(post.cost) && ` ・ ${formatCost(post.cost)}`}
                     {post.mediaCount > 1 && ` ・ ${post.mediaCount}点`}
                   </span>
-                  <span className="text-[11px] text-[#9C9488]">
+                  <span className="text-[11px] text-muted">
                     {post.author.displayName} ・ {new Date(post.createdAt).toLocaleDateString("ja-JP")}
                   </span>
                 </Link>

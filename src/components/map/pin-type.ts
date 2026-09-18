@@ -1,4 +1,4 @@
-import type { PinType } from "@/components/pins/pin-styles";
+import type { AnyPinType } from "@/components/pins/pin-styles";
 import type { MapPinData, MapView } from "@/lib/map/get-map-pins";
 
 /**
@@ -15,7 +15,7 @@ import type { MapPinData, MapView } from "@/lib/map/get-map-pins";
 export function resolveMapPinType(
   view: MapView,
   pin: Pick<MapPinData, "hasOwnPost" | "isWishlisted">
-): PinType {
+): AnyPinType {
   if (view === "wishlist") {
     return "wishlist";
   }

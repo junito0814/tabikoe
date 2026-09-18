@@ -59,10 +59,10 @@ export function PlaceSearchBar({
 
   return (
     <form role="search" onSubmit={handleSubmit} className={className}>
-      <div className="flex h-11 items-center gap-2 rounded-full border border-[#E8E1D8] bg-white px-3.5 shadow-[0_2px_16px_rgba(61,58,53,0.10)]">
+      <div className="flex h-11 items-center gap-2 rounded-full border border-line bg-surface px-3.5 shadow-card">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden className="shrink-0">
-          <circle cx="11" cy="11" r="7" stroke="#9C9488" strokeWidth="2" />
-          <path d="M16.5 16.5L21 21" stroke="#9C9488" strokeWidth="2" strokeLinecap="round" />
+          <circle cx="11" cy="11" r="7" stroke="var(--muted)" strokeWidth="2" />
+          <path d="M16.5 16.5L21 21" stroke="var(--muted)" strokeWidth="2" strokeLinecap="round" />
         </svg>
         <input
           type="search"
@@ -71,18 +71,18 @@ export function PlaceSearchBar({
           placeholder="地名で地図を移動"
           aria-label="地名検索"
           enterKeyHint="search"
-          className="min-w-0 flex-1 bg-transparent text-[14px] text-[#3D3A35] placeholder:text-[#9C9488] focus:outline-none"
+          className="min-w-0 flex-1 bg-transparent text-[14px] text-ink placeholder:text-muted focus:outline-none"
         />
         <button
           type="submit"
           disabled={isSearching || query.trim().length === 0}
-          className="shrink-0 text-[12px] font-semibold text-[#C4703F] disabled:opacity-45"
+          className="shrink-0 text-[12px] font-semibold text-accent disabled:opacity-45"
         >
           {isSearching ? "検索中…" : "移動"}
         </button>
       </div>
       {message && (
-        <p role="status" className="mt-1.5 px-3 text-[11px] text-[#C4703F]">
+        <p role="status" className="mt-1.5 px-3 text-[11px] text-accent">
           {message}
         </p>
       )}

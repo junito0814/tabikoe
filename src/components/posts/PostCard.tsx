@@ -21,13 +21,13 @@ export function formatCost(cost: number | null): string | null {
 
 export function PostCard({ post, showSpotName = false }: { post: PostCardData; showSpotName?: boolean }) {
   return (
-    <article className="rounded-[12px] border border-[#E8E1D8] bg-white shadow-[0_2px_16px_rgba(61,58,53,0.04)]">
+    <article className="rounded-[12px] border border-line bg-surface shadow-card">
     <Link
       href={`/posts/${post.id}`}
       className="flex gap-3 p-2.5"
       data-post-card={post.id}
     >
-      <span className="relative block h-24 w-24 shrink-0 overflow-hidden rounded-[8px] bg-[#E8E1D8]">
+      <span className="relative block h-24 w-24 shrink-0 overflow-hidden rounded-[8px] bg-line">
         {post.thumbnailUrl && (
           // eslint-disable-next-line @next/next/no-img-element
           <img
@@ -53,26 +53,26 @@ export function PostCard({ post, showSpotName = false }: { post: PostCardData; s
 
       <span className="flex min-w-0 flex-1 flex-col gap-1">
         {showSpotName && (
-          <span className="truncate text-[13px] font-semibold text-[#3D3A35]">{post.spotName}</span>
+          <span className="truncate text-[13px] font-semibold text-ink">{post.spotName}</span>
         )}
-        <span className="flex items-center gap-1.5 text-[11px] text-[#9C9488]">
-          <span className="rounded-full bg-[#FBF6F0] px-2 py-0.5 text-[#C4703F]">{post.category}</span>
+        <span className="flex items-center gap-1.5 text-[11px] text-muted">
+          <span className="rounded-full bg-tint px-2 py-0.5 text-accent">{post.category}</span>
           {post.rating !== null && (
             <span aria-label={`星${post.rating}`}>
               {"★".repeat(post.rating)}
-              <span className="text-[#E8E1D8]">{"★".repeat(5 - post.rating)}</span>
+              <span className="text-line">{"★".repeat(5 - post.rating)}</span>
             </span>
           )}
         </span>
         {post.commentExcerpt && (
-          <span className="line-clamp-2 text-[12px] leading-[1.6] text-[#3D3A35]">{post.commentExcerpt}</span>
+          <span className="line-clamp-2 text-[12px] leading-[1.6] text-ink">{post.commentExcerpt}</span>
         )}
-        <span className="mt-auto flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[11px] text-[#9C9488]">
+        <span className="mt-auto flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[11px] text-muted">
           {post.duration && <span>{post.duration}</span>}
           {formatCost(post.cost) && <span>{formatCost(post.cost)}</span>}
           <span aria-label={`コメント${post.commentCount}件`}>💬 {post.commentCount}</span>
         </span>
-        <span className="flex items-center gap-1.5 text-[11px] text-[#9C9488]">
+        <span className="flex items-center gap-1.5 text-[11px] text-muted">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src={post.author.avatarUrl} alt="" className="h-4 w-4 rounded-full object-cover" />
           <span className="truncate">{post.author.displayName}</span>
@@ -80,7 +80,7 @@ export function PostCard({ post, showSpotName = false }: { post: PostCardData; s
         </span>
       </span>
     </Link>
-    <div className="flex items-center justify-end border-t border-[#E8E1D8] px-2.5 py-1.5">
+    <div className="flex items-center justify-end border-t border-line px-2.5 py-1.5">
       <LikeButton postId={post.id} initialLiked={post.viewerHasLiked} initialCount={post.likeCount} className="h-8" />
     </div>
     </article>

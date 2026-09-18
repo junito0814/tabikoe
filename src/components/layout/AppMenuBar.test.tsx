@@ -22,13 +22,13 @@ describe("AppMenuBar 表示制御（Task1）", () => {
     render(<AppMenuBar fetchUnreadCount={async () => 0} />);
     const nav = screen.getByRole("navigation", { name: "メインメニュー" });
     expect(nav).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: /全体マップ/ })).toHaveAttribute("href", "/map");
-    expect(screen.getByRole("link", { name: /新規投稿/ })).toHaveAttribute("href", "/posts/new");
+    expect(screen.getByRole("link", { name: /ホーム/ })).toHaveAttribute("href", "/");
+    expect(screen.getByRole("link", { name: /しおり/ })).toHaveAttribute("href", "/itineraries");
     expect(screen.getByRole("link", { name: /通知/ })).toHaveAttribute("href", "/notifications");
     expect(screen.getByRole("link", { name: /マイページ/ })).toHaveAttribute("href", "/mypage");
   });
 
-  it.each(["/", "/login", "/signup", "/admin", "/admin/reports"])(
+  it.each(["/login", "/signup", "/admin", "/admin/reports"])(
     "%s では何も描画しない",
     (path) => {
       pathname = path;
@@ -37,10 +37,19 @@ describe("AppMenuBar 表示制御（Task1）", () => {
     }
   );
 
+  it("未ログインのホーム（/）では何も描画せず、ログイン済みなら描画する（v3.0）", () => {
+    pathname = "/";
+    const { container, unmount } = render(<AppMenuBar fetchUnreadCount={async () => 0} isAuthenticated={false} />);
+    expect(container).toBeEmptyDOMElement();
+    unmount();
+    render(<AppMenuBar fetchUnreadCount={async () => 0} isAuthenticated />);
+    expect(screen.getByRole("link", { name: /ホーム/ })).toHaveAttribute("aria-current", "page");
+  });
+
   it("現在地の項目に aria-current=page が付く", () => {
-    pathname = "/posts/new";
+    pathname = "/itineraries/abc";
     render(<AppMenuBar fetchUnreadCount={async () => 0} />);
-    expect(screen.getByRole("link", { name: /新規投稿/ })).toHaveAttribute("aria-current", "page");
+    expect(screen.getByRole("link", { name: /しおり/ })).toHaveAttribute("aria-current", "page");
     expect(screen.getByRole("link", { name: /マイページ/ })).not.toHaveAttribute("aria-current");
   });
 });

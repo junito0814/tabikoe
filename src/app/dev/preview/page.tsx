@@ -28,7 +28,7 @@ function makeItems(count: number, withVideo = false): MediaItem[] {
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <section className="w-full max-w-[420px]">
-      <h2 className="mb-3 text-[14px] font-bold text-[#3D3A35]">{title}</h2>
+      <h2 className="mb-3 text-[14px] font-bold text-ink">{title}</h2>
       {children}
     </section>
   );
@@ -36,8 +36,8 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 
 export default function ComponentPreviewPage() {
   return (
-    <div className="flex min-h-screen flex-col items-center gap-10 bg-[#FBF6F0] px-6 py-12">
-      <p className="w-full max-w-[420px] rounded-lg bg-[#3D3A35] px-3 py-2 text-[11px] text-white">
+    <div className="flex min-h-screen flex-col items-center gap-10 bg-app px-6 py-12">
+      <p className="w-full max-w-[420px] rounded-lg bg-ink px-3 py-2 text-[11px] text-white">
         開発用プレビューページ（本番画面には組み込まれていません）
       </p>
 
@@ -46,7 +46,7 @@ export default function ComponentPreviewPage() {
       </Section>
 
       <Section title="pin-display-rules: MapPin">
-        <div className="flex items-center gap-6 rounded-lg border border-[#E8E1D8] bg-white p-6">
+        <div className="flex items-center gap-6 rounded-lg border border-line bg-surface p-6">
           <MapPin type="normal" />
           <MapPin type="wishlist" />
           <MapPin type="posted" />
@@ -57,12 +57,12 @@ export default function ComponentPreviewPage() {
         <div className="flex flex-col gap-4">
           {[1, 2, 3, 4, 6].map((count) => (
             <div key={count}>
-              <p className="mb-1 text-[11px] text-[#9C9488]">{count}点</p>
+              <p className="mb-1 text-[11px] text-muted">{count}点</p>
               <MediaGrid items={makeItems(count)} />
             </div>
           ))}
           <div>
-            <p className="mb-1 text-[11px] text-[#9C9488]">動画を含む3点</p>
+            <p className="mb-1 text-[11px] text-muted">動画を含む3点</p>
             <MediaGrid items={makeItems(3, true)} />
           </div>
         </div>
@@ -84,7 +84,7 @@ export default function ComponentPreviewPage() {
       </Section>
 
       <Section title="upload-notice: UploadNotice">
-        <div className="rounded-lg border border-[#E8E1D8] bg-white p-4">
+        <div className="rounded-lg border border-line bg-surface p-4">
           <UploadNotice />
         </div>
       </Section>

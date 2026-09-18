@@ -98,18 +98,18 @@ export function NotificationListScreen({
   const sentinelRef = useInfiniteScroll(nextOffset !== null && !isLoading, () => void loadMore());
 
   return (
-    <div className="flex min-h-screen flex-col items-center bg-[#FBF6F0] px-4 py-6">
+    <div className="flex min-h-screen flex-col items-center bg-app px-4 py-6">
       <div className="flex w-full max-w-[520px] flex-col gap-3">
-        <h1 className="text-[18px] font-bold text-[#3D3A35]">通知</h1>
+        <h1 className="text-[18px] font-bold text-ink">通知</h1>
 
         {fallbackNotice && (
-          <p role="status" className="rounded-lg border border-[#E8E1D8] bg-white px-3.5 py-2.5 text-[12px] text-[#3D3A35]">
+          <p role="status" className="rounded-lg border border-line bg-surface px-3.5 py-2.5 text-[12px] text-ink">
             {fallbackNotice}
           </p>
         )}
 
         {items.length === 0 ? (
-          <p className="py-16 text-center text-[13px] text-[#9C9488]">通知はありません</p>
+          <p className="py-16 text-center text-[13px] text-muted">通知はありません</p>
         ) : (
           <ul className="flex flex-col gap-2">
             {items.map((item) =>
@@ -120,31 +120,31 @@ export function NotificationListScreen({
                     onClick={() => setOpenAnnouncement(item)}
                     data-announcement={item.id}
                     data-new={item.isNew ? "true" : undefined}
-                    className={`flex w-full items-start gap-3 rounded-[12px] border bg-white p-3 text-left ${
-                      item.isNew ? "border-[#C4703F]" : "border-[#E8E1D8]"
+                    className={`flex w-full items-start gap-3 rounded-[12px] border bg-surface p-3 text-left ${
+                      item.isNew ? "border-accent" : "border-line"
                     }`}
                   >
                     <span className="mt-0.5 shrink-0" aria-hidden>
                       <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-                        <path d="M4 10v4a1 1 0 0 0 1 1h3l6 4V5L8 9H5a1 1 0 0 0-1 1z" stroke="#C4703F" strokeWidth="1.8" strokeLinejoin="round" />
-                        <path d="M17 9a4 4 0 0 1 0 6" stroke="#C4703F" strokeWidth="1.8" strokeLinecap="round" />
+                        <path d="M4 10v4a1 1 0 0 0 1 1h3l6 4V5L8 9H5a1 1 0 0 0-1 1z" stroke="var(--accent)" strokeWidth="1.8" strokeLinejoin="round" />
+                        <path d="M17 9a4 4 0 0 1 0 6" stroke="var(--accent)" strokeWidth="1.8" strokeLinecap="round" />
                       </svg>
                     </span>
                     <span className="min-w-0 flex-1">
                       <span className="flex items-center gap-1.5 text-[11px]">
-                        <span className="rounded-full bg-[#C4703F] px-2 py-0.5 font-semibold text-white">お知らせ</span>
+                        <span className="rounded-full bg-accent px-2 py-0.5 font-semibold text-white">お知らせ</span>
                         {item.isNew && (
-                          <span className="inline-flex items-center gap-0.5 font-bold text-[#C4703F]" data-new-badge>
+                          <span className="inline-flex items-center gap-0.5 font-bold text-accent" data-new-badge>
                             <svg width="12" height="12" viewBox="0 0 24 24" aria-hidden>
                               <path d="M12 2l2.9 6.6 7.1.7-5.4 4.8 1.6 7L12 17.5 5.8 21l1.6-7L2 9.3l7.1-.7z" fill="currentColor" />
                             </svg>
                             NEW
                           </span>
                         )}
-                        <span className="ml-auto text-[#9C9488]">{new Date(item.publishedAt).toLocaleDateString("ja-JP")}</span>
+                        <span className="ml-auto text-muted">{new Date(item.publishedAt).toLocaleDateString("ja-JP")}</span>
                       </span>
-                      <span className="mt-1 block truncate text-[13px] font-semibold text-[#3D3A35]">{item.title}</span>
-                      <span className="mt-0.5 line-clamp-2 block text-[12px] leading-[1.6] text-[#9C9488]">{item.body}</span>
+                      <span className="mt-1 block truncate text-[13px] font-semibold text-ink">{item.title}</span>
+                      <span className="mt-0.5 line-clamp-2 block text-[12px] leading-[1.6] text-muted">{item.body}</span>
                     </span>
                   </button>
                 </li>
@@ -154,8 +154,8 @@ export function NotificationListScreen({
                     <Link
                       href={item.href}
                       data-notification={item.id}
-                      className={`flex items-start gap-3 rounded-[12px] border border-[#E8E1D8] bg-white p-3 ${
-                        item.isRead ? "" : "shadow-[0_2px_16px_rgba(61,58,53,0.08)]"
+                      className={`flex items-start gap-3 rounded-[12px] border border-line bg-surface p-3 ${
+                        item.isRead ? "" : "shadow-card"
                       }`}
                     >
                       <NotificationBody item={item} />
@@ -165,7 +165,7 @@ export function NotificationListScreen({
                       type="button"
                       data-notification={item.id}
                       onClick={() => setFallbackNotice(item.fallbackMessage ?? "対象が見つかりません")}
-                      className="flex w-full items-start gap-3 rounded-[12px] border border-[#E8E1D8] bg-white p-3 text-left"
+                      className="flex w-full items-start gap-3 rounded-[12px] border border-line bg-surface p-3 text-left"
                     >
                       <NotificationBody item={item} />
                     </button>
@@ -184,7 +184,7 @@ export function NotificationListScreen({
             type="button"
             onClick={() => void loadMore()}
             disabled={isLoading}
-            className="h-10 w-full rounded-[10px] border border-[#E8E1D8] bg-white text-[13px] font-semibold text-[#3D3A35] disabled:opacity-45"
+            className="h-10 w-full rounded-[10px] border border-line bg-surface text-[13px] font-semibold text-ink disabled:opacity-45"
           >
             {isLoading ? "読み込み中…" : "もっと見る"}
           </button>
@@ -199,16 +199,16 @@ export function NotificationListScreen({
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-6"
           onClick={() => setOpenAnnouncement(null)}
         >
-          <div className="max-h-[80vh] w-full max-w-[420px] overflow-y-auto rounded-[14px] bg-white p-5 shadow-xl" onClick={(event) => event.stopPropagation()}>
-            <p className="mb-1 text-[11px] text-[#9C9488]">
+          <div className="max-h-[80vh] w-full max-w-[420px] overflow-y-auto rounded-[14px] bg-surface p-5 shadow-xl" onClick={(event) => event.stopPropagation()}>
+            <p className="mb-1 text-[11px] text-muted">
               お知らせ ・ {new Date(openAnnouncement.publishedAt).toLocaleString("ja-JP")}
             </p>
-            <h2 id="announcement-title" className="mb-3 text-[16px] font-bold text-[#3D3A35]">{openAnnouncement.title}</h2>
-            <p className="whitespace-pre-wrap text-[13px] leading-[1.8] text-[#3D3A35]">{openAnnouncement.body}</p>
+            <h2 id="announcement-title" className="mb-3 text-[16px] font-bold text-ink">{openAnnouncement.title}</h2>
+            <p className="whitespace-pre-wrap text-[13px] leading-[1.8] text-ink">{openAnnouncement.body}</p>
             <button
               type="button"
               onClick={() => setOpenAnnouncement(null)}
-              className="mt-4 h-10 w-full rounded-[10px] border border-[#E8E1D8] text-[13px] font-medium text-[#3D3A35]"
+              className="mt-4 h-10 w-full rounded-[10px] border border-line text-[13px] font-medium text-ink"
             >
               閉じる
             </button>
@@ -223,14 +223,14 @@ function NotificationBody({ item }: { item: Extract<FeedItem, { kind: "notificat
   return (
     <>
       <span className="mt-1 shrink-0" aria-hidden>
-        <span className={`block h-2.5 w-2.5 rounded-full ${item.isRead ? "bg-[#E8E1D8]" : "bg-[#C4703F]"}`} />
+        <span className={`block h-2.5 w-2.5 rounded-full ${item.isRead ? "bg-line" : "bg-accent"}`} />
       </span>
       <span className="min-w-0 flex-1">
-        <span className={`block text-[13px] ${item.isRead ? "text-[#3D3A35]" : "font-semibold text-[#3D3A35]"}`}>
+        <span className={`block text-[13px] ${item.isRead ? "text-ink" : "font-semibold text-ink"}`}>
           {item.message}
           {!item.isRead && <span className="sr-only">（未読）</span>}
         </span>
-        <span className="mt-0.5 block text-[11px] text-[#9C9488]">
+        <span className="mt-0.5 block text-[11px] text-muted">
           {new Date(item.createdAt).toLocaleString("ja-JP")}
           {item.fallbackMessage && ` ・ ${item.fallbackMessage}`}
         </span>

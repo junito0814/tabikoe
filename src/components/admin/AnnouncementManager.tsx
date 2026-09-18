@@ -136,49 +136,49 @@ export function AnnouncementManager({
   };
 
   return (
-    <div className="flex min-h-screen flex-col items-center bg-[#FBF6F0] px-4 py-6">
+    <div className="flex min-h-screen flex-col items-center bg-app px-4 py-6">
       <div className="flex w-full max-w-[640px] flex-col gap-5">
         <header className="flex items-center justify-between">
-          <h1 className="text-[18px] font-bold text-[#3D3A35]">お知らせ管理</h1>
-          <Link href="/admin" className="text-[12px] text-[#9C9488] underline underline-offset-2">
+          <h1 className="text-[18px] font-bold text-ink">お知らせ管理</h1>
+          <Link href="/admin" className="text-[12px] text-muted underline underline-offset-2">
             ダッシュボードへ
           </Link>
         </header>
 
-        <form onSubmit={handleSubmit} className="flex flex-col gap-3 rounded-[12px] border border-[#E8E1D8] bg-white p-4">
-          <h2 className="text-[13px] font-bold text-[#3D3A35]">{editingId ? "お知らせを編集" : "新しいお知らせ"}</h2>
-          <label className="text-[12px] font-medium text-[#9C9488]">
+        <form onSubmit={handleSubmit} className="flex flex-col gap-3 rounded-[12px] border border-line bg-surface p-4">
+          <h2 className="text-[13px] font-bold text-ink">{editingId ? "お知らせを編集" : "新しいお知らせ"}</h2>
+          <label className="text-[12px] font-medium text-muted">
             タイトル
             <input
               value={title}
               onChange={(event) => setTitle(event.target.value)}
               aria-invalid={titleTooLong}
-              className="mt-1 h-10 w-full rounded-[8px] border border-[#E8E1D8] px-3 text-[14px] text-[#3D3A35]"
+              className="mt-1 h-10 w-full rounded-[8px] border border-line px-3 text-[14px] text-ink"
             />
-            <span className={`mt-0.5 block text-[11px] ${titleTooLong ? "text-[#C4703F]" : "text-[#9C9488]"}`}>
+            <span className={`mt-0.5 block text-[11px] ${titleTooLong ? "text-accent" : "text-muted"}`}>
               {titleLength}/{MAX_ANNOUNCEMENT_TITLE_LENGTH}
             </span>
           </label>
-          <label className="text-[12px] font-medium text-[#9C9488]">
+          <label className="text-[12px] font-medium text-muted">
             本文
             <textarea
               value={body}
               onChange={(event) => setBody(event.target.value)}
               rows={6}
               aria-invalid={bodyTooLong}
-              className="mt-1 w-full rounded-[8px] border border-[#E8E1D8] px-3 py-2 text-[14px] text-[#3D3A35]"
+              className="mt-1 w-full rounded-[8px] border border-line px-3 py-2 text-[14px] text-ink"
             />
-            <span className={`mt-0.5 block text-[11px] ${bodyTooLong ? "text-[#C4703F]" : "text-[#9C9488]"}`}>
+            <span className={`mt-0.5 block text-[11px] ${bodyTooLong ? "text-accent" : "text-muted"}`}>
               {bodyLength.toLocaleString("ja-JP")}/{MAX_ANNOUNCEMENT_BODY_LENGTH.toLocaleString("ja-JP")}
             </span>
           </label>
-          <label className="text-[12px] font-medium text-[#9C9488]">
+          <label className="text-[12px] font-medium text-muted">
             公開日時
             <input
               type="datetime-local"
               value={publishedAt}
               onChange={(event) => setPublishedAt(event.target.value)}
-              className="mt-1 h-10 w-full rounded-[8px] border border-[#E8E1D8] px-3 text-[14px] text-[#3D3A35]"
+              className="mt-1 h-10 w-full rounded-[8px] border border-line px-3 text-[14px] text-ink"
             />
           </label>
 
@@ -188,12 +188,12 @@ export function AnnouncementManager({
             <button
               type="submit"
               disabled={isSubmitting}
-              className="h-10 rounded-[8px] bg-[#C4703F] px-4 text-[13px] font-semibold text-white disabled:opacity-45"
+              className="h-10 rounded-[8px] bg-accent px-4 text-[13px] font-semibold text-white disabled:opacity-45"
             >
               {isSubmitting ? "保存中…" : editingId ? "更新する" : "作成する"}
             </button>
             {editingId && (
-              <button type="button" onClick={resetForm} className="h-10 rounded-[8px] border border-[#E8E1D8] bg-white px-4 text-[13px] text-[#3D3A35]">
+              <button type="button" onClick={resetForm} className="h-10 rounded-[8px] border border-line bg-surface px-4 text-[13px] text-ink">
                 編集をやめる
               </button>
             )}
@@ -201,31 +201,31 @@ export function AnnouncementManager({
         </form>
 
         <section aria-labelledby="announcements-heading">
-          <h2 id="announcements-heading" className="mb-2 text-[13px] font-bold text-[#3D3A35]">配信済み・予約中のお知らせ</h2>
+          <h2 id="announcements-heading" className="mb-2 text-[13px] font-bold text-ink">配信済み・予約中のお知らせ</h2>
           {announcements.length === 0 ? (
-            <p className="py-8 text-center text-[12px] text-[#9C9488]">お知らせはまだありません</p>
+            <p className="py-8 text-center text-[12px] text-muted">お知らせはまだありません</p>
           ) : (
             <ul className="flex flex-col gap-2">
               {announcements.map((announcement) => (
-                <li key={announcement.id} className="rounded-[12px] border border-[#E8E1D8] bg-white p-3" data-announcement={announcement.id}>
+                <li key={announcement.id} className="rounded-[12px] border border-line bg-surface p-3" data-announcement={announcement.id}>
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
-                      <p className="truncate text-[13px] font-semibold text-[#3D3A35]">{announcement.title}</p>
-                      <p className="text-[11px] text-[#9C9488]">
+                      <p className="truncate text-[13px] font-semibold text-ink">{announcement.title}</p>
+                      <p className="text-[11px] text-muted">
                         公開 {new Date(announcement.published_at).toLocaleString("ja-JP")}
                         {Date.parse(announcement.published_at) > now && "（予約）"}
                       </p>
                     </div>
                     <span className="flex shrink-0 gap-3 text-[12px]">
-                      <button type="button" onClick={() => startEdit(announcement)} className="font-medium text-[#3D3A35] underline underline-offset-2">
+                      <button type="button" onClick={() => startEdit(announcement)} className="font-medium text-ink underline underline-offset-2">
                         編集
                       </button>
-                      <button type="button" onClick={() => void handleDelete(announcement)} className="font-medium text-[#C4703F] underline underline-offset-2">
+                      <button type="button" onClick={() => void handleDelete(announcement)} className="font-medium text-accent underline underline-offset-2">
                         削除
                       </button>
                     </span>
                   </div>
-                  <p className="mt-1.5 line-clamp-3 whitespace-pre-wrap text-[12px] leading-[1.6] text-[#3D3A35]">{announcement.body}</p>
+                  <p className="mt-1.5 line-clamp-3 whitespace-pre-wrap text-[12px] leading-[1.6] text-ink">{announcement.body}</p>
                 </li>
               ))}
             </ul>

@@ -61,7 +61,7 @@ export function BlockUserButton({
       <button
         type="button"
         onClick={() => setIsConfirming(true)}
-        className="text-[13px] font-medium text-[#9C9488] underline underline-offset-2"
+        className="text-[13px] font-medium text-muted underline underline-offset-2"
       >
         このユーザーをブロック
       </button>
@@ -70,11 +70,11 @@ export function BlockUserButton({
 
       {isConfirming && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-6">
-          <div className="w-full max-w-[380px] rounded-[14px] bg-white p-6 shadow-xl">
-            <h2 className="mb-3 text-[16px] font-bold text-[#3D3A35]">
+          <div className="w-full max-w-[380px] rounded-[14px] bg-surface p-6 shadow-xl">
+            <h2 className="mb-3 text-[16px] font-bold text-ink">
               {targetDisplayName} をブロックしますか
             </h2>
-            <ul className="mb-4 list-disc space-y-1.5 pl-4 text-[13px] leading-[1.6] text-[#3D3A35]">
+            <ul className="mb-4 list-disc space-y-1.5 pl-4 text-[13px] leading-[1.6] text-ink">
               <li>お互いの投稿・コメント・プロフィール・アルバムが表示されなくなります</li>
               <li>同じアルバムのメンバー同士の場合、アルバム内では相手の投稿が表示されます</li>
               <li>ブロックはいつでも解除できます（アカウント画面から）</li>
@@ -85,7 +85,7 @@ export function BlockUserButton({
                 type="button"
                 onClick={() => setIsConfirming(false)}
                 disabled={isSubmitting}
-                className="h-11 flex-1 rounded-[10px] border border-[#E8E1D8] text-[14px] font-medium text-[#3D3A35]"
+                className="h-11 flex-1 rounded-[10px] border border-line text-[14px] font-medium text-ink"
               >
                 キャンセル
               </button>
@@ -93,7 +93,7 @@ export function BlockUserButton({
                 type="button"
                 onClick={handleBlock}
                 disabled={isSubmitting}
-                className="h-11 flex-1 rounded-[10px] bg-[#C4703F] text-[14px] font-semibold text-white disabled:cursor-not-allowed disabled:opacity-45"
+                className="h-11 flex-1 rounded-[10px] bg-accent text-[14px] font-semibold text-white disabled:cursor-not-allowed disabled:opacity-45"
               >
                 {isSubmitting ? "処理中..." : "ブロックする"}
               </button>

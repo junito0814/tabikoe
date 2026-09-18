@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 
-const MAIN = "#C4703F";
+const MAIN = "var(--accent)";
 
 /**
  * F-AC-05 Task4: 退会確認ダイアログUI
@@ -62,23 +62,23 @@ export default function DeleteAccountDialog({ isAdmin }: { isAdmin: boolean }) {
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="text-[13px] font-medium text-[#C4703F] underline underline-offset-2"
+        className="text-[13px] font-medium text-accent underline underline-offset-2"
       >
         退会する
       </button>
 
       {open && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-6">
-          <div className="w-full max-w-[380px] rounded-[14px] bg-white p-6 shadow-xl">
-            <h2 className="mb-3 text-[16px] font-bold text-[#3D3A35]">
+          <div className="w-full max-w-[380px] rounded-[14px] bg-surface p-6 shadow-xl">
+            <h2 className="mb-3 text-[16px] font-bold text-ink">
               退会前にご確認ください
             </h2>
-            <ul className="mb-4 list-disc space-y-1.5 pl-4 text-[13px] leading-[1.6] text-[#3D3A35]">
+            <ul className="mb-4 list-disc space-y-1.5 pl-4 text-[13px] leading-[1.6] text-ink">
               <li>投稿・コメントは残りますが、ユーザー名は「退会済みユーザー」として匿名化されます</li>
               <li>オーナーを務めているアルバムがある場合、オーナー権限は自動的に他のメンバーへ移譲されます</li>
             </ul>
 
-            <label className="mb-3 flex cursor-pointer items-start gap-2 text-[13px] text-[#3D3A35]">
+            <label className="mb-3 flex cursor-pointer items-start gap-2 text-[13px] text-ink">
               <input
                 type="checkbox"
                 checked={acknowledged}
@@ -89,7 +89,7 @@ export default function DeleteAccountDialog({ isAdmin }: { isAdmin: boolean }) {
             </label>
 
             {isAdmin && (
-              <label className="mb-3 flex cursor-pointer items-start gap-2 text-[13px] text-[#3D3A35]">
+              <label className="mb-3 flex cursor-pointer items-start gap-2 text-[13px] text-ink">
                 <input
                   type="checkbox"
                   checked={handoverConfirmed}
@@ -101,7 +101,7 @@ export default function DeleteAccountDialog({ isAdmin }: { isAdmin: boolean }) {
             )}
 
             {errorMessage && (
-              <p className="mb-3 text-[12px] text-[#C4703F]">{errorMessage}</p>
+              <p className="mb-3 text-[12px] text-accent">{errorMessage}</p>
             )}
 
             <div className="flex gap-2">
@@ -109,7 +109,7 @@ export default function DeleteAccountDialog({ isAdmin }: { isAdmin: boolean }) {
                 type="button"
                 onClick={closeDialog}
                 disabled={isSubmitting}
-                className="h-11 flex-1 rounded-[10px] border border-[#E8E1D8] text-[14px] font-medium text-[#3D3A35]"
+                className="h-11 flex-1 rounded-[10px] border border-line text-[14px] font-medium text-ink"
               >
                 キャンセル
               </button>

@@ -1,10 +1,10 @@
 "use client";
 
 import { PinIcon } from "./PinIcon";
-import { PIN_STYLES, type PinType } from "./pin-styles";
+import { getPinStyle, type AnyPinType } from "./pin-styles";
 
 export interface MapPinProps {
-  type: PinType;
+  type: AnyPinType;
   onClick?: () => void;
 }
 
@@ -21,7 +21,7 @@ export function MapPin({ type, onClick }: MapPinProps) {
     <button
       type="button"
       onClick={onClick}
-      aria-label={PIN_STYLES[type].label}
+      aria-label={getPinStyle(type).label}
       className="cursor-pointer border-none bg-transparent p-0"
     >
       <PinIcon type={type} />

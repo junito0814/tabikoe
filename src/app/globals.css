@@ -1,26 +1,90 @@
 @import "tailwindcss";
 
+/*
+ * theme Task1〜2: 配色の CSS 変数（要件定義書 v3.0 4.5.5、docs/wireframes.md「配色」）
+ * 出典: docs/tasks/shared-ui/theme/01-css-variables-light.md
+ *       docs/tasks/shared-ui/theme/02-dark-mode-variables-and-map-style.md
+ *
+ * 【初心者向け】色はここに 1 か所だけ書き、コンポーネントは `bg-app` `text-ink` `border-line` のような
+ * Tailwind のクラス（下の @theme で定義）で参照する。ダークモードは OS の設定（prefers-color-scheme）に
+ * 追従して、同じ変数を夜の値に差し替えるだけ。コンポーネント側は何も変えなくてよい。
+ *
+ *   --app      下地（ホーム以外の全画面の背景）
+ *   --surface  面（カード・入力欄・シート・メニューバー）
+ *   --tint     淡い面（カテゴリチップ・選択中の並び替え・ホバー）
+ *   --ink      文字
+ *   --muted    薄い文字（補足・プレースホルダ・非選択のメニュー）
+ *   --line     罫線
+ *   --accent   アクセント（主要ボタン・リンク・バッジ・選択状態・みんなの投稿のピン）
+ *   --saved    保存済みのピン（行きたい・しおり）
+ *   --done     完了・チェック
+ *   --star     星評価
+ *   --sky      ホーム（SC-00）の背景グラデーション
+ */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --app: #ffffff;
+  --surface: #ffffff;
+  --tint: #f3f8fd;
+  --ink: #1e2a38;
+  --muted: #7b8794;
+  --line: #d9e4ef;
+  --accent: #2f7fd8;
+  --accent-pressed: #1f65b8;
+  --saved: #d9414a;
+  --done: #3d7a5c;
+  --star: #f2b233;
+  --sky: linear-gradient(180deg, #bfddf7 0%, #e4f1fc 38%, #f3f8fd 62%, #ffffff 100%);
+  --map-placeholder: #dce3ea;
+  --shadow-card: 0 2px 16px rgba(30, 42, 56, 0.1);
+  color-scheme: light;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --app: #0b1220;
+    --surface: #161e2b;
+    --tint: #1c2634;
+    --ink: #e6edf5;
+    --muted: #8b97a6;
+    --line: #263142;
+    --accent: #5aa2f0;
+    --accent-pressed: #3f8be0;
+    --saved: #f06b72;
+    --done: #4caf7d;
+    --star: #f2b233;
+    --sky: linear-gradient(180deg, #0e1e3d 0%, #0c172c 38%, #0b1220 62%, #0b1220 100%);
+    --map-placeholder: #2a3442;
+    --shadow-card: 0 2px 16px rgba(0, 0, 0, 0.45);
+    color-scheme: dark;
   }
 }
 
+/* Tailwind v4: ここで定義した名前が bg-app / text-ink / border-line / ring-accent などのクラスになる */
+@theme inline {
+  --color-app: var(--app);
+  --color-surface: var(--surface);
+  --color-tint: var(--tint);
+  --color-ink: var(--ink);
+  --color-muted: var(--muted);
+  --color-line: var(--line);
+  --color-accent: var(--accent);
+  --color-accent-pressed: var(--accent-pressed);
+  --color-saved: var(--saved);
+  --color-done: var(--done);
+  --color-star: var(--star);
+  --color-map-placeholder: var(--map-placeholder);
+  --shadow-card: var(--shadow-card);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
 body {
-  background: var(--background);
-  color: var(--foreground);
+  background: var(--app);
+  color: var(--ink);
   font-family: Arial, Helvetica, sans-serif;
+}
+
+/* ホーム（SC-00）だけに敷く空のグラデーション */
+.bg-sky {
+  background: var(--sky);
 }

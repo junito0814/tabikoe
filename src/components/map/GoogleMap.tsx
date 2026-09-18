@@ -4,18 +4,19 @@ import { useEffect, useImperativeHandle, useRef, useState, type Ref } from "reac
 import { MarkerClusterer } from "@googlemaps/markerclusterer";
 import { ErrorNotice } from "@/components/notices/ErrorNotice";
 import { ERROR_MESSAGES } from "@/components/notices/error-messages";
-import { PIN_MARKER_SIZE, pinIconDataUrl } from "@/components/pins/pin-marker-icon";
-import { PIN_STYLES, type PinType } from "@/components/pins/pin-styles";
+import { PIN_MARKER_SIZE, pinIconDataUrl, type PinMarkerOptions } from "@/components/pins/pin-marker-icon";
+import { getPinStyle, type AnyPinType } from "@/components/pins/pin-styles";
+import { buildMapStyles, detectMapTheme, MAP_UI_OPTIONS, watchMapTheme, type MapTheme } from "./map-styles";
 import type { MapBounds } from "@/lib/map/get-map-pins";
 import { useGoogleMaps } from "./use-google-maps";
 import type { LatLng } from "./initial-center";
 
-/** 地図に置くピン。種別は shared-ui/pin-display-rules の3種別 */
-export interface GoogleMapPin {
+/** 地図に置くピン。種別は shared-ui/pin-display-rules-v3 の種別（旧名 normal / wishlist も可） */
+export interface GoogleMapPin extends PinMarkerOptions {
   id: string;
   lat: number;
   lng: number;
-  type: PinType;
+  type: AnyPinType;
   title?: string;
 }
 
@@ -24,6 +25,9 @@ export interface GoogleMapHandle {
   panTo: (center: LatLng, zoom?: number) => void;
   getCenter: () => LatLng | null;
 }
+
+/** 長押しと判定するまでの時間（ms）。要件定義書 v3.0 3.4.4 */
+export const LONG_PRESS_MS = 500;
 
 interface GoogleMapProps {
   initialCenter: LatLng;
@@ -34,6 +38,10 @@ interface GoogleMapProps {
   onBoundsChange?: (bounds: MapBounds, center: LatLng) => void;
   /** 同一エリアにピンが集中する場合にまとめて表示する（要件3.4.1） */
   cluster?: boolean;
+  /** 地図の長押し（タッチ 500ms／マウス右クリック）。pin-interaction-v3 Task2 */
+  onLongPress?: (position: LatLng) => void;
+  /** 地図のタップ（長押しの一時ピンを消す用途など） */
+  onMapClick?: () => void;
   ref?: Ref<GoogleMapHandle>;
   className?: string;
 }
@@ -64,6 +72,8 @@ export function GoogleMap({
   onPinClick,
   onBoundsChange,
   cluster = true,
+  onLongPress,
+  onMapClick,
   ref,
   className,
 }: GoogleMapProps) {
@@ -77,10 +87,24 @@ export function GoogleMap({
   // コールバックはrefで持ち、親が毎レンダー新しい関数を渡してもリスナーを張り直さない
   const onPinClickRef = useRef(onPinClick);
   const onBoundsChangeRef = useRef(onBoundsChange);
+  const onLongPressRef = useRef(onLongPress);
+  const onMapClickRef = useRef(onMapClick);
   useEffect(() => {
     onPinClickRef.current = onPinClick;
     onBoundsChangeRef.current = onBoundsChange;
-  }, [onPinClick, onBoundsChange]);
+    onLongPressRef.current = onLongPress;
+    onMapClickRef.current = onMapClick;
+  }, [onPinClick, onBoundsChange, onLongPress, onMapClick]);
+
+  // theme Task2: OS のダーク設定に合わせて地図のスタイルを切り替える（ズームで道路名の表示も変わる）
+  const [theme, setTheme] = useState<MapTheme>(() => detectMapTheme());
+  useEffect(() => watchMapTheme(setTheme), []);
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || mapsState !== "ready") return;
+    map.setOptions({ styles: buildMapStyles(theme, map.getZoom() ?? initialZoom) });
+    // 地図の再描画はマーカーにも影響するため、テーマが変わったらマーカーの色も作り直す（pinsSignature に theme を含める）
+  }, [theme, mapsState, initialZoom]);
 
   useImperativeHandle(ref, () => ({
     panTo: (center, zoom) => {
@@ -106,10 +130,10 @@ export function GoogleMap({
       map = new google.maps.Map(containerRef.current, {
         center: initialCenter,
         zoom: initialZoom,
-        disableDefaultUI: true,
+        ...MAP_UI_OPTIONS,
         zoomControl: true,
         gestureHandling: "greedy",
-        clickableIcons: false,
+        styles: buildMapStyles(detectMapTheme(), initialZoom),
       });
     } catch (error) {
       console.error("Failed to initialise Google Map", error);
@@ -118,6 +142,44 @@ export function GoogleMap({
       return;
     }
     mapRef.current = map;
+
+    // 道路名はズーム 16 以上でだけ出す（表示情報の削減）
+    let lastRoadVisible: boolean | null = null;
+    map.addListener("zoom_changed", () => {
+      const zoom = map.getZoom() ?? initialZoom;
+      const roadVisible = zoom >= 16;
+      if (roadVisible === lastRoadVisible) return;
+      lastRoadVisible = roadVisible;
+      map.setOptions({ styles: buildMapStyles(detectMapTheme(), zoom) });
+    });
+
+    // 長押し（タッチ）と右クリック（マウス）を同じ「長押し」として扱う。ドラッグ中は発火させない
+    let pressTimer: ReturnType<typeof setTimeout> | null = null;
+    const cancelPress = () => {
+      if (pressTimer) clearTimeout(pressTimer);
+      pressTimer = null;
+    };
+    map.addListener("mousedown", (event: google.maps.MapMouseEvent) => {
+      cancelPress();
+      const latLng = event.latLng;
+      if (!latLng) return;
+      pressTimer = setTimeout(() => {
+        pressTimer = null;
+        onLongPressRef.current?.({ lat: latLng.lat(), lng: latLng.lng() });
+      }, LONG_PRESS_MS);
+    });
+    map.addListener("mouseup", cancelPress);
+    map.addListener("dragstart", cancelPress);
+    map.addListener("drag", cancelPress);
+    map.addListener("contextmenu", (event: google.maps.MapMouseEvent) => {
+      cancelPress();
+      const latLng = event.latLng;
+      if (latLng) onLongPressRef.current?.({ lat: latLng.lat(), lng: latLng.lng() });
+    });
+    map.addListener("click", () => {
+      cancelPress();
+      onMapClickRef.current?.();
+    });
 
     map.addListener("idle", () => {
       const bounds = map.getBounds();
@@ -136,7 +198,9 @@ export function GoogleMap({
 
   // ピンの描画。親が毎レンダー新しい配列を渡しても、中身（id・座標・種別）が同じなら置き直さない
   // （置き直すたびにマーカーが消えて再描画され、点滅して見えるため）
-  const pinsSignature = pins.map((pin) => `${pin.id}:${pin.lat}:${pin.lng}:${pin.type}`).join("|");
+  const pinsSignature =
+    pins.map((pin) => `${pin.id}:${pin.lat}:${pin.lng}:${pin.type}:${pin.label ?? ""}:${pin.dayIndex ?? ""}:${pin.done ? 1 : 0}`).join("|") +
+    `#${theme}`;
   const pinsRef = useRef(pins);
   useEffect(() => {
     pinsRef.current = pins;
@@ -151,9 +215,9 @@ export function GoogleMap({
     const markers = pinsRef.current.map((pin) => {
       const marker = new google.maps.Marker({
         position: { lat: pin.lat, lng: pin.lng },
-        title: pin.title ?? PIN_STYLES[pin.type].label,
+        title: pin.title ?? getPinStyle(pin.type).label,
         icon: {
-          url: pinIconDataUrl(pin.type),
+          url: pinIconDataUrl(pin.type, { label: pin.label, dayIndex: pin.dayIndex, done: pin.done }),
           scaledSize: new google.maps.Size(PIN_MARKER_SIZE, PIN_MARKER_SIZE),
           anchor: new google.maps.Point(PIN_MARKER_SIZE / 2, PIN_MARKER_SIZE / 2),
         },
@@ -180,7 +244,7 @@ export function GoogleMap({
       <div
         role="region"
         aria-label="地図"
-        className={`flex items-center justify-center bg-[#E8E1D8] p-4 ${className ?? ""}`}
+        className={`flex items-center justify-center bg-line p-4 ${className ?? ""}`}
       >
         <ErrorNotice message={ERROR_MESSAGES.mapLoadFailure} retryable className="w-full max-w-[360px]" />
       </div>
@@ -188,11 +252,11 @@ export function GoogleMap({
   }
 
   return (
-    <div role="region" aria-label="地図" className={`relative bg-[#E8E1D8] ${className ?? ""}`}>
+    <div role="region" aria-label="地図" className={`relative bg-line ${className ?? ""}`}>
       <div ref={containerRef} className="h-full w-full" />
       {mapsState === "loading" && (
         <div className="absolute inset-0 flex items-center justify-center">
-          <span className="text-[12px] text-[#9C9488]">地図を読み込んでいます…</span>
+          <span className="text-[12px] text-muted">地図を読み込んでいます…</span>
         </div>
       )}
     </div>

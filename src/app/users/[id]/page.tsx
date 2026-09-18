@@ -55,14 +55,14 @@ export default async function UserProfilePage({
   const displayName = profile.display_name ?? "ユーザー";
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-[#FBF6F0] px-6">
+    <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-app px-6">
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
         src={profile.avatar_url ?? DEFAULT_AVATAR_URL}
         alt={`${displayName}のアイコン画像`}
         className="h-24 w-24 rounded-full object-cover"
       />
-      <p className="text-[15px] font-semibold text-[#3D3A35]">{displayName}</p>
+      <p className="text-[15px] font-semibold text-ink">{displayName}</p>
 
       {!isSelf && (
         <div className="mt-4 flex w-full max-w-[360px] items-center justify-center gap-4">

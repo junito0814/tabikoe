@@ -76,20 +76,20 @@ export function ReportListScreen({
     void load(EMPTY_REPORT_LIST_STATE, 0, true);
   };
 
-  const selectClass = "h-9 rounded-[8px] border border-[#E8E1D8] bg-white px-2 text-[12px] text-[#3D3A35]";
+  const selectClass = "h-9 rounded-[8px] border border-line bg-surface px-2 text-[12px] text-ink";
 
   return (
-    <div className="flex min-h-screen flex-col items-center bg-[#FBF6F0] px-4 py-6">
+    <div className="flex min-h-screen flex-col items-center bg-app px-4 py-6">
       <div className="flex w-full max-w-[760px] flex-col gap-4">
         <header className="flex items-center justify-between">
-          <h1 className="text-[18px] font-bold text-[#3D3A35]">通報一覧</h1>
-          <Link href="/admin" className="text-[12px] text-[#9C9488] underline underline-offset-2">
+          <h1 className="text-[18px] font-bold text-ink">通報一覧</h1>
+          <Link href="/admin" className="text-[12px] text-muted underline underline-offset-2">
             ダッシュボードへ
           </Link>
         </header>
 
-        <form onSubmit={handleSubmit} className="flex flex-wrap items-end gap-2 rounded-[12px] border border-[#E8E1D8] bg-white p-3">
-          <label className="text-[11px] text-[#9C9488]">
+        <form onSubmit={handleSubmit} className="flex flex-wrap items-end gap-2 rounded-[12px] border border-line bg-surface p-3">
+          <label className="text-[11px] text-muted">
             対応状態
             <select value={draft.status} onChange={(e) => setDraft({ ...draft, status: e.target.value as ReportStatus | "" })} className={`${selectClass} mt-0.5 block`}>
               <option value="">すべて</option>
@@ -98,7 +98,7 @@ export function ReportListScreen({
               ))}
             </select>
           </label>
-          <label className="text-[11px] text-[#9C9488]">
+          <label className="text-[11px] text-muted">
             通報理由
             <select value={draft.reason} onChange={(e) => setDraft({ ...draft, reason: e.target.value as ReportReason | "" })} className={`${selectClass} mt-0.5 block`}>
               <option value="">すべて</option>
@@ -107,7 +107,7 @@ export function ReportListScreen({
               ))}
             </select>
           </label>
-          <label className="text-[11px] text-[#9C9488]">
+          <label className="text-[11px] text-muted">
             対象種別
             <select value={draft.targetType} onChange={(e) => setDraft({ ...draft, targetType: e.target.value as ReportTargetType | "" })} className={`${selectClass} mt-0.5 block`}>
               <option value="">すべて</option>
@@ -116,18 +116,18 @@ export function ReportListScreen({
               ))}
             </select>
           </label>
-          <label className="text-[11px] text-[#9C9488]">
+          <label className="text-[11px] text-muted">
             通報日（から）
             <input type="date" value={draft.from} onChange={(e) => setDraft({ ...draft, from: e.target.value })} className={`${selectClass} mt-0.5 block`} />
           </label>
-          <label className="text-[11px] text-[#9C9488]">
+          <label className="text-[11px] text-muted">
             通報日（まで）
             <input type="date" value={draft.to} onChange={(e) => setDraft({ ...draft, to: e.target.value })} className={`${selectClass} mt-0.5 block`} />
           </label>
-          <button type="submit" disabled={isLoading} className="h-9 rounded-[8px] bg-[#3D3A35] px-4 text-[12px] font-semibold text-white disabled:opacity-45">
+          <button type="submit" disabled={isLoading} className="h-9 rounded-[8px] bg-ink px-4 text-[12px] font-semibold text-white disabled:opacity-45">
             絞り込む
           </button>
-          <button type="button" onClick={handleReset} className="h-9 text-[12px] text-[#9C9488] underline underline-offset-2">
+          <button type="button" onClick={handleReset} className="h-9 text-[12px] text-muted underline underline-offset-2">
             クリア
           </button>
         </form>
@@ -135,23 +135,23 @@ export function ReportListScreen({
         {errorMessage && <ErrorNotice message={errorMessage} onRetry={() => void load(applied, 0, true)} />}
 
         {reports.length === 0 && !isLoading ? (
-          <p className="py-12 text-center text-[13px] text-[#9C9488]">該当する通報はありません</p>
+          <p className="py-12 text-center text-[13px] text-muted">該当する通報はありません</p>
         ) : (
           <ul className="flex flex-col gap-2">
             {reports.map((report) => (
               <li key={report.id}>
                 <Link
                   href={`/admin/reports/${report.id}`}
-                  className="flex flex-col gap-1 rounded-[12px] border border-[#E8E1D8] bg-white p-3 text-[12px]"
+                  className="flex flex-col gap-1 rounded-[12px] border border-line bg-surface p-3 text-[12px]"
                   data-report={report.id}
                 >
                   <span className="flex flex-wrap items-center gap-2">
-                    <span className="rounded-full bg-[#FBF6F0] px-2 py-0.5 font-semibold text-[#C4703F]">{REPORT_STATUS_LABELS[report.status]}</span>
-                    <span className="font-semibold text-[#3D3A35]">{REPORT_TARGET_LABELS[report.targetType]}</span>
-                    <span className="text-[#3D3A35]">{REPORT_REASON_LABELS[report.reason]}</span>
-                    <span className="ml-auto text-[11px] text-[#9C9488]">{new Date(report.createdAt).toLocaleString("ja-JP")}</span>
+                    <span className="rounded-full bg-tint px-2 py-0.5 font-semibold text-accent">{REPORT_STATUS_LABELS[report.status]}</span>
+                    <span className="font-semibold text-ink">{REPORT_TARGET_LABELS[report.targetType]}</span>
+                    <span className="text-ink">{REPORT_REASON_LABELS[report.reason]}</span>
+                    <span className="ml-auto text-[11px] text-muted">{new Date(report.createdAt).toLocaleString("ja-JP")}</span>
                   </span>
-                  {report.detail && <span className="line-clamp-2 text-[#9C9488]">{report.detail}</span>}
+                  {report.detail && <span className="line-clamp-2 text-muted">{report.detail}</span>}
                 </Link>
               </li>
             ))}
@@ -163,7 +163,7 @@ export function ReportListScreen({
             type="button"
             onClick={() => void load(applied, nextOffset, false)}
             disabled={isLoading}
-            className="h-10 w-full rounded-[10px] border border-[#E8E1D8] bg-white text-[13px] font-semibold text-[#3D3A35] disabled:opacity-45"
+            className="h-10 w-full rounded-[10px] border border-line bg-surface text-[13px] font-semibold text-ink disabled:opacity-45"
           >
             {isLoading ? "読み込み中…" : "もっと見る"}
           </button>
