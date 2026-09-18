@@ -16,6 +16,10 @@ import { NOTIFICATIONS_READ_EVENT } from "@/components/notifications/notificatio
  * スマートフォンでは画面下部に固定、PCでは上部に置く（2.3の両環境に対応）。
  * 管理画面への導線はここには置かない（Task3）。is_adminユーザー向けの導線は
  * プロフィール編集画面（SC-07）側にある。
+ *
+ * 【初心者向け】メニューの中身（項目・遷移先・どのパスで出すか）は menu-bar-config.ts に分けてある。
+ * このファイルは「描画」と「未読バッジの取得」だけ。`usePathname()` で今の URL を見て、出す／出さない・選択中を決める。
+ * v3.0 では項目が ホーム・しおり・通知・マイページ に変わる（menu-bar-v3）。
  */
 async function fetchUnreadCountFromApi(): Promise<number> {
   const response = await fetchWithAuthRedirect("/api/notifications/unread-count");

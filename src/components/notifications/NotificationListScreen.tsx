@@ -24,6 +24,11 @@ export interface NotificationApi {
  *   新着お知らせは「NEW」の文字とアイコンで強調（色だけに依存しない。7.7）
  * - 表示した未読の個人通知は既読化し、メニューバーの未読バッジを更新する
  * - タップで関連画面へ。対象が消えていればその旨を表示。お知らせは画面内モーダルで本文を表示
+ *
+ * 【初心者向け】一覧の要素は `kind` で 2 種類に分かれる（"notification"＝個人向け、"announcement"＝お知らせ）。
+ * 既読化は「画面に出した瞬間」に行い、`markedRef`（Set）で同じ id を二度送らないようにしている。
+ * 既読化に成功したら `dispatchNotificationsRead()` でカスタムイベントを飛ばし、メニューバーの未読バッジが
+ * それを聞いて件数を取り直す（親子関係のないコンポーネント同士の連絡手段）。
  */
 export function NotificationListScreen({
   initialPage,
@@ -75,6 +80,7 @@ export function NotificationListScreen({
     setErrorMessage(null);
     try {
       const page = await api.fetchPage(nextOffset);
+      // 追加読み込み中に新しい通知が増えるとページがずれて同じ通知が二度届くことがあるので、id で重複を除く
       setItems((current) => {
         const seen = new Set(current.map((item) => `${item.kind}:${item.id}`));
         return [...current, ...page.items.filter((item) => !seen.has(`${item.kind}:${item.id}`))];

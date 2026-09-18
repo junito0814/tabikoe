@@ -8,6 +8,10 @@ import { DEFAULT_AVATAR_URL } from "@/lib/users/constants";
  * 出典: docs/tasks/map-search/pin-interaction/01-spot-posts-handler.md
  *
  * 投稿カード一覧（SC-04）に載せる1件分。スポット別一覧（F-MP-03）と検索・絞り込み（F-MP-04）で共通。
+ *
+ * 【初心者向け】DB の行（snake_case、埋め込みの配列）をそのまま画面に渡さず、画面が使いやすい形（camelCase、
+ * サムネイル URL は署名付きに変換済み、いいね数は数値）に整形するのがこのファイルの役割。
+ * `POST_CARD_SELECT` は PostgREST の埋め込み記法で、`spots(name)` は結合、`likes(count)` は件数集計。
  */
 export interface PostCardData {
   id: string;

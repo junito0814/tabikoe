@@ -28,6 +28,10 @@ export type FetchReports = (params: URLSearchParams) => Promise<{ reports: Repor
  * 出典: docs/tasks/admin/report-list/02-report-list-ui.md
  *
  * 対応状態・通報理由・対象種別・通報日時で絞り込む。各行から通報詳細（対応操作、F-AD-05）へ遷移する。
+ *
+ * 【初心者向け】絞り込みフォームは `draft`（入力中の条件）と `applied`（検索に使った条件）を分けて持つ。
+ * 分けないと、入力欄を触るたびに検索が走ったり、「もっと見る」が入力途中の条件で続きを取ったりしてしまう。
+ * 「絞り込む」で draft → applied にコピーして 1 ページ目から取り直し、「もっと見る」は applied で続きを取る。
  */
 export function ReportListScreen({
   initialPage,
@@ -44,6 +48,7 @@ export function ReportListScreen({
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
+  // replace=true は 1 ページ目から入れ替え、false は末尾に継ぎ足す（もっと見る）
   const load = async (state: ReportListState, offset: number, replace: boolean) => {
     setIsLoading(true);
     setErrorMessage(null);

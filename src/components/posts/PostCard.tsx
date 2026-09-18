@@ -10,6 +10,9 @@ import type { PostCardData } from "@/lib/posts/post-cards";
  * カード本体が投稿詳細（SC-05、/posts/[id]）へのリンク。いいねボタン（F-VW-02 Task3）は
  * リンクの外（フッター）に置く（リンク内にボタンを入れ子にしない）。
  * 検索結果（F-MP-04）ではスポット名も出す（`showSpotName`）。
+ *
+ * 【初心者向け】state を持たない表示専用の部品。表示に必要な値は `PostCardData`（lib/posts/post-cards.ts）に
+ * サーバー側で整形済みなので、ここでは並べるだけ。v3.0 ではスポット名を見出しにした縦一列のカードに作り替える（post-timeline）。
  */
 export function formatCost(cost: number | null): string | null {
   if (cost === null) return null;

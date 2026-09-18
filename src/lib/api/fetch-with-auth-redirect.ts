@@ -6,6 +6,10 @@
  * リフレッシュされるため、フロントエンドが個別にリトライする必要はない。
  * ここで扱うのは、リフレッシュトークン自体が失効した（F-AC-02 Task3の30日ルール等）場合のみ：
  * その場合だけAPIが401を返すので、ログイン画面へ誘導する。それ以外は呼び出し元に委ねる。
+ *
+ * 【初心者向け】ブラウザ側で API を呼ぶときは `fetch` の代わりに必ずこれを使う。401（未ログイン）が返ったら
+ * ログイン画面へ飛ばし、`UnauthorizedError` を投げる。呼び出し側は catch でこのエラーなら何もしない
+ * （画面はもう遷移しているため）。各コンポーネントに `if (error instanceof UnauthorizedError) return;` があるのはそのため。
  */
 export class UnauthorizedError extends Error {}
 

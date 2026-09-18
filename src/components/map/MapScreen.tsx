@@ -31,6 +31,10 @@ export type FetchMapPins = (view: MapView, bounds: MapBounds) => Promise<MapPinD
  * - 初期表示位置は現在地、拒否時は東京駅周辺（resolveInitialCenter）
  * - ピンのタップで投稿カード一覧（SC-04、F-MP-03）へ遷移する
  * - 検索バー（F-MP-02）は地図の移動のみ。投稿の絞り込み（F-MP-04）は SC-04 側にあり、ここでは持たない
+ *
+ * 【初心者向け】MyMapScreen と同じ骨組み（現在地 → GoogleMap → 範囲変更 → 300ms 後にピン取得）。
+ * 違いは「全体／行きたい」タブと検索バーがあること。v3.0（map-display-v3）ではタブと検索バーを外し、
+ * 青（みんなの投稿）・赤（保存済み）のピンを同時に出す形に作り替える。
  */
 export function MapScreen({
   initialView = "all",

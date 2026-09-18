@@ -10,6 +10,9 @@ import type { SupabaseClient } from "@supabase/supabase-js";
  *
  * ログの書き込み失敗で本来の操作（投稿・ログイン等）を失敗させてはならないため、
  * この関数は例外を投げない。失敗は console.error に残すだけにする。
+ *
+ * 【初心者向け】「誰が・いつ・何をしたか」の監査ログ。要件 7.5 で対象の操作が決まっているので、
+ * 新しい種類を足すときは OPERATION_ACTION_TYPES に追加してから使う（型で守られる）。
  */
 export const OPERATION_ACTION_TYPES = [
   "login_success",

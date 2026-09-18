@@ -15,6 +15,12 @@ import {
  * 出典: docs/tasks/records/album-collaboration/02-invitation-issue-handler.md
  *
  * 付与する権限（editor / viewer）を受け取り、7日後を期限とするトークンを発行する。
+ *
+ * 【初心者向け】URL の `[id]` は Next.js の動的ルートで、`params`（Promise）から取り出す。
+ * 権限チェックは「ログイン → アルバムのメンバーか（404）→ オーナーか（403）」の順。
+ * 404 と 403 を分けるのは、メンバー以外にはアルバムの存在自体を教えないため。
+ * トークンは推測できない乱数（generateInvitationToken）で、URL に含めて相手に渡す。
+ * しおりの招待（v3.0、itinerary-sharing）はこのファイルと同じ形で作る。
  */
 export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;

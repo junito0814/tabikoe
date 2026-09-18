@@ -8,6 +8,10 @@ import type { ReportListItem } from "./report-filters";
  * 出典: docs/tasks/admin/report-list/01-report-list-handler.md
  *
  * 種別ごとに必要最小限の内容を取り、既に消えている場合は `exists: false`。
+ *
+ * 【初心者向け】通報の対象は 7 種類（投稿・感想・写真・コメント・ユーザー・スポット・アルバム）あり、
+ * それぞれテーブルも「非公開化された」の判定列も違う。`loadTargetContent` の switch で種別ごとに取り方を分け、
+ * 画面には共通の形（ReportTargetContent）で渡す。写真の URL は非公開バケットなので署名付き URL に変換する。
  */
 export interface ReportTargetContent {
   exists: boolean;

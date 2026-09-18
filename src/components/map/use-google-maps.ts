@@ -18,6 +18,10 @@ import { useEffect, useSyncExternalStore } from "react";
  * `google.maps.Map`はここから非同期に読み込まれる本体が来るまで存在しない。
  * スクリプトタグのloadイベントではその完了を捉えられず、
  * このローダーは`importLibrary`も提供しないため、callbackで待つ必要がある。
+ *
+ * 【初心者向け】使い方は `const state = useGoogleMaps();` だけ。戻り値は "loading"／"ready"／"error" の 3 つで、
+ * "ready" になってから `google.maps.*` を触る。API キーは NEXT_PUBLIC_GOOGLE_MAPS_API_KEY（表示専用・リファラー制限付き）。
+ * 何度呼んでも <script> は 1 つしか挿入されない（hasStarted で防止）。
  */
 const SCRIPT_ID = "google-maps-js-api";
 const CALLBACK_NAME = "__tabikoeGoogleMapsReady";

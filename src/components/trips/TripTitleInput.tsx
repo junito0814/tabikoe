@@ -26,6 +26,10 @@ async function fetchSuggestionsFromApi(query: string): Promise<TripSuggestion[]>
  * 投稿作成画面（SC-03）へ組み込むためのコンポーネント。
  * 候補は本人が過去に作成した旅行タイトルと、本人が編集者・オーナーとして参加しているアルバムの旅行（GET /api/trips）。
  * 候補にない名称を入力した場合は新規の旅行として扱われる（解決はサーバー側のresolveTripId）。
+ *
+ * 【初心者向け】value / onChange を親（PostForm）から受け取る「制御コンポーネント」。自分では値を持たない。
+ * 候補の取得は 250ms の debounce、候補リストは外側クリックで閉じる（document への mousedown 監視）。
+ * `role="combobox"` や aria-* は、読み上げソフトに「候補付きの入力欄」だと伝えるための属性。
  */
 export function TripTitleInput({
   value,

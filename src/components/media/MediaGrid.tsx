@@ -10,6 +10,12 @@ import { useState } from "react";
  *
  * 投稿カード一覧・投稿詳細・スポット写真一覧など複数画面で共通利用する想定（7.6 保守性準拠）。
  * 1点目を常に代表画像とし、各レイアウトで最初に配置する。
+ *
+ * 【初心者向け】3 つの部品でできている。
+ *   - MediaGrid: 点数（1／2／3／4 以上）でレイアウトを切り替える親。5 点目以降は 4 枠目に「+N」を重ねる
+ *   - MediaCell: 1 枠。動画はクリックでその場再生（isPlaying）に切り替わる
+ *   - MediaThumbnail: サムネイル画像＋動画なら再生アイコン。写真一覧（SC-13）でも単独で使う
+ * v3.0 ではクリックで開くモーダル（MediaModal）が加わる（media-layout-v3 Task 1）。
  */
 export interface MediaItem {
   id: string;

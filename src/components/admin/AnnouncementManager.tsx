@@ -37,6 +37,11 @@ function toLocalInputValue(iso: string): string {
  * 出典: docs/tasks/admin/announcement-management/03-announcement-management-ui.md
  *
  * 一覧・新規作成フォーム・編集・削除。文字数超過時は送信をブロックしてエラーを表示する。
+ *
+ * 【初心者向け】1 つのフォームを「新規作成」と「編集」で使い回す。`editingId` が null なら新規、
+ * 値があればその id のお知らせを編集中。保存後は一覧の state を直接書き換えて再取得を省いている。
+ * 公開日時は `<input type="datetime-local">` が「ローカル時刻の文字列」しか扱えないため、
+ * 表示時は toLocalInputValue で ISO → ローカル文字列に、保存時は new Date(...).toISOString() で戻す。
  */
 export function AnnouncementManager({
   initialAnnouncements,
@@ -112,6 +117,7 @@ export function AnnouncementManager({
     }
   };
 
+  // 削除はブラウザ標準の confirm で確認してから API を呼ぶ。編集中のものを消したらフォームも空に戻す
   const handleDelete = async (announcement: Announcement) => {
     if (!window.confirm(`「${announcement.title}」を削除しますか？`)) return;
     setErrorMessage(null);

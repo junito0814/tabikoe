@@ -29,6 +29,10 @@ export type FetchMyMapPins = (mode: MyMapMode, bounds: MapBounds) => Promise<MyM
  *
  * SC-02 と同じ GoogleMap を使い、取得条件（GET /api/users/me/map-spots）と種別だけ差し替える。
  * 投稿済み＝posted ピン、「行きたい」＝wishlist ピン（3.6.5、両方該当は posted）。
+ *
+ * 【初心者向け】地図画面の流れ: ①現在地を調べて初期位置を決める（resolveCenter）→ ②GoogleMap を描く →
+ * ③地図が動くたび `onBoundsChange` で表示範囲（北南東西の緯度経度）を受け取る → ④300ms 待ってから範囲内のピンを API で取る。
+ * 300ms 待つのは、ドラッグ中に何十回も API を呼ばないため。`requestIdRef` は古い応答を捨てるための番号。
  */
 export function MyMapScreen({
   initialMode = "both",
@@ -59,6 +63,7 @@ export function MyMapScreen({
     };
   }, [resolveCenter]);
 
+  // 表示範囲か表示モードが変わったらピンを取り直す（debounce 付き）
   const requestIdRef = useRef(0);
   useEffect(() => {
     if (!bounds) return;

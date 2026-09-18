@@ -19,6 +19,11 @@ import { formatCost } from "./PostCard";
  * 写真・動画は shared-ui/media-layout（MediaGrid）、コメント欄は F-VW-03（CommentSection）、
  * 「行きたい」は F-RC-05（WishlistButton）、いいねは F-VW-02（LikeButton）を組み込む。
  * 削除ボタン（F-PO-03 Task4）と編集への導線は投稿者本人にだけ出す。
+ *
+ * 【初心者向け】このファイルには "use client" が無い＝Server Component。state や onClick を持たず、
+ * サーバーで取ってきた `post`（PostDetailData）をそのまま並べるだけ。ボタンの動き（いいね・コメント・削除）は
+ * それぞれ子コンポーネント（"use client"）に閉じ込めてある。誰が見ているかによる出し分けは
+ * `post.isOwner`（本人）・`post.canInteract`（公開投稿でいいね・コメント可）をサーバー側で計算して渡している。
  */
 export function PostDetailScreen({
   post,
@@ -27,6 +32,7 @@ export function PostDetailScreen({
   post: PostDetailData;
   initialComments: CommentPage;
 }) {
+  // 通報画面から戻ってくる先。コメントの通報でも同じ投稿詳細に戻す
   const returnTo = `/posts/${post.id}`;
   const cost = formatCost(post.cost);
 

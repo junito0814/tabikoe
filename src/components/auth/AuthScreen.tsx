@@ -19,6 +19,11 @@ const MAIN = "#C4703F";
  * 2画面はロゴ・OAuth呼び出し・redirect_toの引き継ぎが共通で、
  * 違いは同意欄の有無と文言・遷移先だけのため、mode で切り替える1コンポーネントにしている。
  * 同意欄はSC-20にのみ表示する（要件定義書3.2.1、v2.8）。
+ *
+ * 【初心者向け】ボタンを押すと `supabase.auth.signInWithOAuth` が Google の認証ページへ移動させる。
+ * 戻り先（redirectTo）に /api/auth/callback を指定し、そこに「どの画面から来たか（mode）」「同意したか（consent）」
+ * 「ログイン後に戻る場所（redirect_to）」をクエリで乗せておく。判定はすべてコールバック側（サーバー）で行う。
+ * `?error=` の値でエラーメッセージを出し分けているのは、コールバックが失敗時にこの画面へ戻すため。
  */
 export type AuthMode = "login" | "signup";
 
