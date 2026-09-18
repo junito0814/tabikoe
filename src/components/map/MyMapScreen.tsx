@@ -11,11 +11,12 @@ import type { MyMapMode, MyMapPin } from "@/lib/map/get-my-map-pins";
 import { GoogleMap, type GoogleMapPin } from "./GoogleMap";
 import { resolveInitialCenter, type InitialCenter } from "./initial-center";
 import { myMapPinHref } from "./my-map-navigation";
+import { MapLegend } from "./MapLegend";
 
 const MODES: { mode: MyMapMode; label: string }[] = [
   { mode: "both", label: "両方" },
-  { mode: "posted", label: "自分の投稿" },
-  { mode: "wishlist", label: "行きたい" },
+  { mode: "posted", label: "投稿のみ" },
+  { mode: "saved", label: "保存済みのみ" },
 ];
 
 const FETCH_DEBOUNCE_MS = 300;
@@ -28,7 +29,8 @@ export type FetchMyMapPins = (mode: MyMapMode, bounds: MapBounds) => Promise<MyM
  *       docs/tasks/records/my-map/03-pin-tap-navigation.md
  *
  * SC-02 と同じ GoogleMap を使い、取得条件（GET /api/users/me/map-spots）と種別だけ差し替える。
- * 投稿済み＝posted ピン、「行きたい」＝wishlist ピン（3.6.5、両方該当は posted）。
+ * 投稿済み＝posted ピン、保存済み（行きたい＋しおり）＝saved ピン、下書き＝draft ピン（3.6.5、両方該当は posted）。
+ * v3.0（my-map-v3 Task1）: 切替は「両方／投稿のみ／保存済みのみ」。下書きは切替に関わらず常に出す。
  *
  * 【初心者向け】地図画面の流れ: ①現在地を調べて初期位置を決める（resolveCenter）→ ②GoogleMap を描く →
  * ③地図が動くたび `onBoundsChange` で表示範囲（北南東西の緯度経度）を受け取る → ④300ms 待ってから範囲内のピンを API で取る。
@@ -89,10 +91,10 @@ export function MyMapScreen({
     setBounds((current) => (current && isSameBounds(current, next) ? current : next));
   }, []);
 
-  const pinById = new Map(pins.map((pin) => [pin.spotId, pin]));
+  const pinById = new Map(pins.map((pin) => [pin.id, pin]));
   const handlePinClick = useCallback(
-    (spotId: string) => {
-      const pin = pinById.get(spotId);
+    (pinId: string) => {
+      const pin = pinById.get(pinId);
       if (pin) router.push(myMapPinHref(pin));
     },
     // pins が変わるたびに Map を作り直すため、pins を依存にする
@@ -101,7 +103,7 @@ export function MyMapScreen({
   );
 
   const mapPins = useMemo<GoogleMapPin[]>(
-    () => pins.map((pin) => ({ id: pin.spotId, lat: pin.lat, lng: pin.lng, type: pin.kind, title: pin.name })),
+    () => pins.map((pin) => ({ id: pin.id, lat: pin.lat, lng: pin.lng, type: pin.kind, title: pin.name })),
     [pins]
   );
 
@@ -139,6 +141,7 @@ export function MyMapScreen({
             })}
           </div>
         </div>
+        <MapLegend mode="mymap" className="pointer-events-auto mx-auto w-fit" />
         {fetchFailed && (
           <ErrorNotice
             message={ERROR_MESSAGES.dbLoadFailure}

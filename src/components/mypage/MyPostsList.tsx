@@ -7,6 +7,8 @@ import { ERROR_MESSAGES } from "@/components/notices/error-messages";
 import { fetchWithAuthRedirect, UnauthorizedError } from "@/lib/api/fetch-with-auth-redirect";
 import type { MyPost, MyPostsPage } from "@/lib/users/my-page";
 import { useInfiniteScroll } from "@/components/posts/use-infinite-scroll";
+import { isProvisionalTripTitle } from "@/lib/trips/provisional-title";
+import { RenameTripDialog } from "@/components/trips/RenameTripDialog";
 
 export type FetchMyPosts = (tripId: string | null, offset: number) => Promise<MyPostsPage>;
 
@@ -18,6 +20,8 @@ export type FetchMyPosts = (tripId: string | null, offset: number) => Promise<My
  * 【初心者向け】SpotPostListScreen と同じ「1 ページ目は props、以降は fetch」型。絞り込みは旅行（trip_id）の
  * ドロップダウンだけで、変更すると 1 ページ目から取り直す。`isFirstRender` は「初回描画時に useEffect が走って
  * 1 ページ目を二重に取ってしまう」のを避けるための旗。旅行タイトルを表示してよい数少ない画面の 1 つ（3.3.4）。
+ * v3.0（my-page-v3 Task2）: 仮タイトル「今日の投稿（M/D）」のままの旅行には「タイトルを付ける」の促しを出し、
+ * RenameTripDialog で付け直せる（同じ旅行の投稿の表示も更新する）。
  */
 export function MyPostsList({
   initialPage,
@@ -34,6 +38,7 @@ export function MyPostsList({
   const [nextOffset, setNextOffset] = useState<number | null>(initialPage.nextOffset);
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [renaming, setRenaming] = useState<{ tripId: string; title: string } | null>(null);
   const requestIdRef = useRef(0);
 
   const load = useCallback(
@@ -98,6 +103,17 @@ export function MyPostsList({
         <ul className="flex flex-col gap-2">
           {posts.map((post) => (
             <li key={post.id}>
+              {isProvisionalTripTitle(post.tripTitle) && (
+                <button
+                  type="button"
+                  onClick={() => setRenaming({ tripId: post.tripId, title: post.tripTitle })}
+                  data-rename-prompt={post.id}
+                  className="mb-1 flex w-full items-center justify-between rounded-[8px] bg-tint px-3 py-1.5 text-[11px] font-semibold text-accent"
+                >
+                  この旅行にタイトルを付ける
+                  <span aria-hidden>›</span>
+                </button>
+              )}
               <Link
                 href={`/posts/${post.id}`}
                 className="flex gap-3 rounded-[12px] border border-line bg-surface p-2.5"
@@ -141,6 +157,16 @@ export function MyPostsList({
         >
           {isLoading ? "読み込み中…" : "もっと見る"}
         </button>
+      )}
+
+      {renaming && (
+        <RenameTripDialog
+          open
+          tripId={renaming.tripId}
+          currentTitle={renaming.title}
+          onClose={() => setRenaming(null)}
+          onRenamed={(title) => setPosts((current) => current.map((post) => (post.tripId === renaming.tripId ? { ...post, tripTitle: title } : post)))}
+        />
       )}
     </section>
   );
