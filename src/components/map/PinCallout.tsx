@@ -4,6 +4,7 @@ import Link from "next/link";
 import type { MapPinData } from "@/lib/map/get-map-pins";
 import { composeHref } from "@/lib/posts/compose-initial-state";
 import { formatStatusLabel } from "@/lib/spots/format-status-label";
+import { SaveButton } from "@/components/save/SaveButton";
 
 /**
  * pin-interaction-v3 Task1・Task3: ピンの吹き出し
@@ -76,10 +77,12 @@ function SpotBody({ pin, backHref }: { pin: MapPinData; backHref: string | null 
           </>
         )}
       </p>
-      <div className="mt-0.5 flex gap-2">
+      <div className="mt-0.5 flex items-center gap-2">
         <Link href={listHref} className="inline-flex h-8 flex-1 items-center justify-center rounded-full border border-line bg-surface text-[12px] font-semibold">
           一覧
         </Link>
+        {/* wishlist-v3 Task1: 吹き出しにも「＋」（保存先シート）。赤ピン＝保存済みなので ✓ で出す */}
+        {pin.spotId && <SaveButton spotId={pin.spotId} initialSaved={pin.kind === "saved"} size="sm" />}
         {pin.spotId && (
           <Link
             href={composeHref({ kind: "spot", spotId: pin.spotId })}

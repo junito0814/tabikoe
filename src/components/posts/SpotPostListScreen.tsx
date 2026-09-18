@@ -84,7 +84,11 @@ export function SpotPostListScreen({
           </svg>
           地図で見る
         </Link>
-        <SaveButton spotId={spot.id} initialSaved={spot.isWishlisted} />
+        <SaveButton
+          spotId={spot.id}
+          initialSaved={spot.isWishlisted}
+          addMode={addMode ? { itineraryId: addMode.itineraryId, day: addMode.day, initialAdded: addMode.spotIds.includes(spot.id) } : null}
+        />
         <Link
           href={composeHref({ kind: "spot", spotId: spot.id })}
           className="inline-flex h-9 items-center rounded-full bg-accent px-4 text-[12px] font-bold text-white"

@@ -22,6 +22,10 @@ export interface MapOpenOptions {
   zoom: number;
   focusSpotId: string | null;
   itineraryId: string | null;
+  /** しおりの地図で最初に開く Day（null＝未定、undefined＝Day 1） */
+  itineraryDay?: number | null;
+  /** 行きたい（SC-08）の地図: 保存済み（赤）のピンだけを出す */
+  savedOnly?: boolean;
   back: { href: string; label: string };
 }
 
@@ -41,6 +45,7 @@ export function resolveMapOpen(params: {
   lng?: string | null;
   back?: string | null;
   itinerary?: string | null;
+  day?: string | null;
 }): MapOpenOptions {
   const lat = num(params.lat);
   const lng = num(params.lng);
@@ -58,12 +63,14 @@ export function resolveMapOpen(params: {
     };
   }
   if (params.itinerary) {
+    const dayNumber = params.day ? Number.parseInt(params.day, 10) : Number.NaN;
     return {
       mode: "itinerary",
       center,
       zoom: CURRENT_LOCATION_ZOOM,
       focusSpotId: null,
       itineraryId: params.itinerary,
+      itineraryDay: params.day === "undecided" ? null : Number.isInteger(dayNumber) && dayNumber >= 1 ? dayNumber : undefined,
       back: { href: `/itineraries/${params.itinerary}`, label: "しおりに戻る" },
     };
   }

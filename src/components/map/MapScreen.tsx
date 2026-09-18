@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { ErrorNotice } from "@/components/notices/ErrorNotice";
 import { ERROR_MESSAGES } from "@/components/notices/error-messages";
 import { fetchWithAuthRedirect, UnauthorizedError } from "@/lib/api/fetch-with-auth-redirect";
@@ -10,11 +11,13 @@ import { isSameBounds, type MapBounds, type MapPinData } from "@/lib/map/get-map
 import { composeHref } from "@/lib/posts/compose-initial-state";
 import type { NearbyPost } from "@/lib/posts/nearby-posts";
 import { GoogleMap, type GoogleMapHandle, type GoogleMapPin } from "./GoogleMap";
-import { resolveInitialCenter, type InitialCenter, type LatLng } from "./initial-center";
+import { resolveInitialCenter, TOKYO_STATION, type InitialCenter, type LatLng } from "./initial-center";
 import { MapLegend } from "./MapLegend";
 import type { MapOpenOptions } from "./map-navigation";
 import { NearbyVoices, type FetchNearbyPosts } from "./NearbyVoices";
 import { PinCallout, type CalloutTarget } from "./PinCallout";
+import { ALL_DAYS, buildItineraryPins, ItineraryMapOverlay, useItineraryForMap, type ItineraryMapDay } from "./ItineraryMapOverlay";
+import type { ItineraryApi } from "@/components/itineraries/itinerary-api";
 
 /** 地図の移動が連続する間はまとめて1回の取得にする */
 const FETCH_DEBOUNCE_MS = 300;
@@ -45,6 +48,7 @@ export function MapScreen({
   fetchPins = defaultFetchPins,
   resolveCenter = () => resolveInitialCenter(typeof navigator === "undefined" ? undefined : navigator.geolocation),
   fetchNearby,
+  itineraryApi,
   geolocation,
   notice,
 }: {
@@ -55,11 +59,14 @@ export function MapScreen({
   resolveCenter?: () => Promise<InitialCenter>;
   /** 差し替え口（単体テスト用） */
   fetchNearby?: FetchNearbyPosts;
+  /** 差し替え口（単体テスト用）。しおりの地図（?itinerary=）で使う */
+  itineraryApi?: ItineraryApi;
   /** 差し替え口（単体テスト用） */
   geolocation?: Pick<Geolocation, "getCurrentPosition">;
   /** 投稿完了などのフラッシュ表示（Server Component から渡す） */
   notice?: ReactNode;
 }) {
+  const router = useRouter();
   const mapRef = useRef<GoogleMapHandle>(null);
   const [initial, setInitial] = useState<InitialCenter | null>(
     open.center ? { center: open.center, zoom: open.zoom, source: open.mode === "explore" ? "current" : "fallback" } : null
@@ -77,9 +84,37 @@ export function MapScreen({
   const [activeNearbySpotId, setActiveNearbySpotId] = useState<string | null>(null);
   const [nearbyPosts, setNearbyPosts] = useState<NearbyPost[]>([]);
 
+  // ── しおりの地図（itinerary-map-and-post Task1）──
+  const isItinerary = open.mode === "itinerary";
+  const [itineraryDay, setItineraryDay] = useState<ItineraryMapDay>(open.itineraryDay === undefined ? 1 : open.itineraryDay);
+  // しおりが読めたら: 現在地を待たず最初のスポット（無ければ東京駅）で開き、期間未設定なら未定タブにする
+  const onItineraryLoaded = useCallback(
+    (loaded: NonNullable<ReturnType<typeof useItineraryForMap>["itinerary"]>) => {
+      const first = loaded.spots[0];
+      setInitial((current) => current ?? { center: first ? { lat: first.lat, lng: first.lng } : TOKYO_STATION, zoom: 13, source: "fallback" });
+      if (loaded.dayCount === 0) setItineraryDay((current) => (current === ALL_DAYS ? current : null));
+    },
+    []
+  );
+  const { itinerary, failed: itineraryFailed } = useItineraryForMap(isItinerary ? open.itineraryId : null, itineraryApi, onItineraryLoaded);
+  const itineraryPins = useMemo(() => (itinerary ? buildItineraryPins(itinerary, itineraryDay) : []), [itinerary, itineraryDay]);
+  // Day を切り替えるたび、そのピンが全部収まる範囲にする。地図がまだ無ければ最初の idle で行う（pendingFitRef）
+  const fitKey = itineraryPins.map((pin) => pin.id).join(",");
+  const pendingFitRef = useRef(false);
+  useEffect(() => {
+    if (!isItinerary || !fitKey) return;
+    pendingFitRef.current = true;
+    if (mapRef.current) {
+      pendingFitRef.current = false;
+      mapRef.current.fitBounds(itineraryPins.map((pin) => ({ lat: pin.lat, lng: pin.lng })));
+    }
+    // itineraryPins の中身は fitKey で判定する
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isItinerary, fitKey]);
+
   // 開き方に中心が無いときだけ現在地（→東京駅）を待つ
   useEffect(() => {
-    if (initial) return;
+    if (initial || open.mode === "itinerary") return;
     let cancelled = false;
     resolveCenter().then((result) => {
       if (cancelled) return;
@@ -89,13 +124,13 @@ export function MapScreen({
     return () => {
       cancelled = true;
     };
-  }, [initial, resolveCenter]);
+  }, [initial, resolveCenter, open.mode]);
 
   // 範囲が変わったらピンを取り直す。古い応答が新しい状態を上書きしないよう世代で守る
   const requestIdRef = useRef(0);
   const focusedOnceRef = useRef(false);
   useEffect(() => {
-    if (!bounds) return;
+    if (!bounds || isItinerary) return;
     const requestId = ++requestIdRef.current;
     const timer = setTimeout(() => {
       fetchPins(bounds)
@@ -119,12 +154,17 @@ export function MapScreen({
         });
     }, FETCH_DEBOUNCE_MS);
     return () => clearTimeout(timer);
-  }, [bounds, fetchPins, open.focusSpotId]);
+  }, [bounds, fetchPins, open.focusSpotId, isItinerary]);
 
   const handleBoundsChange = useCallback((next: MapBounds, nextCenter: LatLng) => {
+    if (pendingFitRef.current && mapRef.current) {
+      pendingFitRef.current = false;
+      mapRef.current.fitBounds(itineraryPins.map((pin) => ({ lat: pin.lat, lng: pin.lng })));
+    }
     setBounds((current) => (current && isSameBounds(current, next) ? current : next));
     setCenter((current) => (current && current.lat === nextCenter.lat && current.lng === nextCenter.lng ? current : nextCenter));
-  }, []);
+    // itineraryPins は fit の対象。ref 経由なので依存に入れる必要は無いが、最新の配列を使うために入れる
+  }, [itineraryPins]);
 
   const closeCallout = useCallback(() => {
     setCallout(null);
@@ -134,13 +174,20 @@ export function MapScreen({
   const handlePinClick = useCallback(
     (pinId: string) => {
       if (pinId === TEMP_PIN_ID) return;
+      // しおりの番号ピン → しおり詳細のその行へ
+      if (isItinerary && open.itineraryId) {
+        const spot = itinerary?.spots.find((item) => item.spotId === pinId);
+        const dayParam = spot ? (spot.dayIndex === null ? "undecided" : String(spot.dayIndex)) : null;
+        router.push(`/itineraries/${open.itineraryId}?${dayParam ? `day=${dayParam}&` : ""}spot=${pinId}`);
+        return;
+      }
       const pin = pins.find((item) => item.id === pinId);
       if (!pin) return;
       setTempPin(null);
       mapRef.current?.panTo({ lat: pin.lat, lng: pin.lng });
       setCallout({ kind: "pin", pin });
     },
-    [pins]
+    [pins, isItinerary, open.itineraryId, itinerary, router]
   );
 
   const handleLongPress = useCallback((position: LatLng) => {
@@ -168,8 +215,11 @@ export function MapScreen({
   }, []);
 
   const mapPins = useMemo<GoogleMapPin[]>(() => {
+    if (isItinerary) return itineraryPins;
     const focusId = open.mode === "explore" ? activeNearbySpotId : open.focusSpotId;
-    const result: GoogleMapPin[] = pins.map((pin) => ({
+    // 行きたいの地図（wishlist-v3 Task2）は保存済みのピンだけ
+    const visible = open.savedOnly ? pins.filter((pin) => pin.kind === "saved") : pins;
+    const result: GoogleMapPin[] = visible.map((pin) => ({
       id: pin.id,
       lat: pin.lat,
       lng: pin.lng,
@@ -187,7 +237,7 @@ export function MapScreen({
     }
     if (tempPin) result.push({ id: TEMP_PIN_ID, lat: tempPin.lat, lng: tempPin.lng, type: "focus", title: "この地点" });
     return result;
-  }, [pins, tempPin, open.mode, open.focusSpotId, activeNearbySpotId, nearbyPosts]);
+  }, [pins, tempPin, open.mode, open.focusSpotId, open.savedOnly, activeNearbySpotId, nearbyPosts, isItinerary, itineraryPins]);
 
   const postHereHref = currentLocation
     ? composeHref({ kind: "current", lat: currentLocation.lat, lng: currentLocation.lng })
@@ -198,7 +248,7 @@ export function MapScreen({
   const isExplore = open.mode === "explore";
 
   return (
-    <div className="relative flex h-[calc(100dvh-60px)] flex-col bg-app md:h-dvh" data-map-mode={open.mode}>
+    <div className={`relative flex flex-col bg-app ${open.savedOnly ? "h-[calc(100dvh-60px-88px)] md:h-[calc(100dvh-88px)]" : "h-[calc(100dvh-60px)] md:h-dvh"}`} data-map-mode={open.savedOnly ? "saved" : open.mode}>
       <div className={`relative ${isExplore ? "h-2/3" : "flex-1"}`}>
         {/* 上部：戻る＋凡例（地図に重ねる） */}
         <div className="pointer-events-none absolute inset-x-0 top-0 z-10 flex flex-col gap-2 p-3">
@@ -212,8 +262,19 @@ export function MapScreen({
               </svg>
               {open.back.label}
             </Link>
-            <MapLegend className="pointer-events-auto ml-auto" />
+            {isItinerary && itinerary ? (
+              <span className="pointer-events-auto ml-auto max-w-[45%] truncate rounded-full bg-surface px-3 py-1.5 text-[12px] font-bold text-ink shadow-card">{itinerary.title}</span>
+            ) : (
+              <MapLegend className="pointer-events-auto ml-auto" />
+            )}
           </div>
+          {isItinerary && itinerary && (
+            <div className="flex flex-col gap-2">
+              <ItineraryMapOverlay itinerary={itinerary} day={itineraryDay} onChange={setItineraryDay} />
+              {itineraryDay === ALL_DAYS && <MapLegend mode="itinerary" dayCount={itinerary.dayCount} className="pointer-events-auto w-fit" />}
+            </div>
+          )}
+          {isItinerary && itineraryFailed && <ErrorNotice message={ERROR_MESSAGES.dbLoadFailure} className="pointer-events-auto mx-auto w-full max-w-[420px]" />}
           {notice && <div className="pointer-events-auto mx-auto w-full max-w-[420px]">{notice}</div>}
           {fetchFailed && (
             <ErrorNotice

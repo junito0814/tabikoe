@@ -171,7 +171,7 @@ describe("PostSearchScreen（SC-04 タイムライン）", () => {
   });
 
   it("追加モードならバナーが出て「完了」でしおりへ戻る", () => {
-    renderScreen({ addMode: { itineraryId: "it-1", day: 2, title: "大阪旅行" } });
+    renderScreen({ addMode: { itineraryId: "it-1", day: 2, title: "大阪旅行", spotIds: [] } });
     expect(screen.getByRole("status")).toHaveTextContent("大阪旅行");
     expect(screen.getByRole("status")).toHaveTextContent("Day 2 に追加中");
     expect(screen.getByRole("link", { name: "完了" })).toHaveAttribute("href", "/itineraries/it-1");

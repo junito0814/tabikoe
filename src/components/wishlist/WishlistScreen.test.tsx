@@ -1,5 +1,9 @@
 import { describe, expect, it, vi } from "vitest";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+const replace = vi.fn();
+vi.mock("next/navigation", () => ({ useRouter: () => ({ replace, push: vi.fn(), refresh: vi.fn() }) }));
+vi.mock("@/components/map/MapScreen", () => ({ MapScreen: ({ open }: { open: { savedOnly?: boolean } }) => <div data-testid="map-stub" data-saved-only={open.savedOnly ? "true" : "false"} /> }));
+
 import { WishlistScreen } from "./WishlistScreen";
 import { SPOT_PLACEHOLDER_IMAGE_URL, type WishlistItem } from "@/lib/wishlist/constants";
 
@@ -18,6 +22,8 @@ const items: WishlistItem[] = [
     savedAt: "2026-09-12T00:00:00Z",
     thumbnailUrl: "https://example.com/a.jpg",
     hasPost: true,
+    postCount: 3,
+    itineraries: [{ id: "it-1", title: "大阪旅行", dayIndex: 1 }],
   },
   {
     spotId: "b",
@@ -28,6 +34,8 @@ const items: WishlistItem[] = [
     savedAt: "2026-09-11T00:00:00Z",
     thumbnailUrl: SPOT_PLACEHOLDER_IMAGE_URL,
     hasPost: false,
+    postCount: 0,
+    itineraries: [],
   },
 ];
 
@@ -65,5 +73,38 @@ describe("WishlistScreen", () => {
 
     await waitFor(() => expect(screen.getByText("保存を解除できませんでした")).toBeInTheDocument());
     expect(screen.getByText("浅草寺")).toBeInTheDocument();
+  });
+
+  it("v3.0: 一覧／地図の切替で URL と表示が変わり、地図は保存済みのピンだけ", () => {
+    render(<WishlistScreen initialItems={items} submitRemove={vi.fn()} />);
+    expect(screen.getByText(/投稿 3 件/)).toBeInTheDocument();
+    expect(screen.getByText(/大阪旅行 Day 1/)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("radio", { name: "地図" }));
+    expect(replace).toHaveBeenCalledWith("/wishlist?view=map", { scroll: false });
+    expect(screen.getByTestId("map-stub")).toHaveAttribute("data-saved-only", "true");
+    fireEvent.click(screen.getByRole("radio", { name: "一覧" }));
+    expect(replace).toHaveBeenLastCalledWith("/wishlist", { scroll: false });
+    expect(screen.queryByTestId("map-stub")).toBeNull();
+  });
+
+  it("v3.0: 「＋」でしおり選択シートが開き、追加後も行が残る", async () => {
+    const api = {
+      itineraries: {
+        list: vi.fn(async () => ({ items: [{ id: "it-1", tripId: "t1", title: "大阪旅行", startDate: null, endDate: null, dayCount: 0, spotCount: 1, checkedCount: 0, updatedAt: "", role: "owner" as const, hasAlbumPosts: false, containsSpot: false, spotDayIndex: null }] })),
+        addSpot: vi.fn(async () => Response.json({}, { status: 201 })),
+      },
+      wishlistCount: vi.fn(async () => 2),
+      toggleWishlist: vi.fn(),
+    } as unknown as import("@/components/save/SaveSheet").SaveSheetApi;
+    render(<WishlistScreen initialItems={items} submitRemove={vi.fn()} saveSheetApi={api} />);
+    fireEvent.click(screen.getByRole("button", { name: "浅草寺をしおりへ" }));
+    expect(await screen.findByRole("dialog", { name: "浅草寺 をしおりへ" })).toBeInTheDocument();
+    // 「行きたい」の段は出さない
+    expect(screen.queryByRole("checkbox", { name: /行きたいスポット/ })).toBeNull();
+    fireEvent.click(await screen.findByRole("checkbox", { name: /大阪旅行/ }));
+    await waitFor(() => expect(api.itineraries.addSpot).toHaveBeenCalledWith("it-1", "a", null));
+    fireEvent.click(screen.getByRole("button", { name: "完了" }));
+    expect(document.querySelector("[data-wishlist-item='a']")).toBeInTheDocument();
+    expect(await screen.findByRole("status")).toHaveTextContent("大阪旅行 に保存しました");
   });
 });

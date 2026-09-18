@@ -41,6 +41,8 @@ export interface AlbumDetail {
   members: AlbumMember[];
   /** 公開・非公開を問わない全投稿（3.6.3） */
   posts: (PostCardData & { visibility: "public" | "private"; tripTitle: string })[];
+  /** v3.0（itinerary-basics Task4）: 同じ旅行にしおりがあり、閲覧者がそのメンバーのときだけ ID。それ以外は null */
+  itineraryId: string | null;
 }
 
 interface AlbumListRow {
@@ -190,7 +192,7 @@ export async function getAlbumDetail(
   // F-AD-05: 非公開化されたアルバムはオーナー以外に見せない
   if (trip.hidden_at && trip.user_id !== viewerId) return null;
 
-  const [members, postsResult] = await Promise.all([
+  const [members, postsResult, itineraryMembership] = await Promise.all([
     getAlbumMembers(admin, tripId),
     admin
       .from("posts")
@@ -204,6 +206,8 @@ export async function getAlbumDetail(
       // F-AD-05: 非公開化された投稿は除く
       .is("hidden_at", null)
       .order("created_at", { ascending: false }),
+    // しおりのメンバーは アルバムのメンバーとは別（3.11.7）。両方に該当するときだけ「しおりを見る」を出す
+    admin.from("itinerary_members").select("itinerary_id, itineraries!inner(trip_id)").eq("user_id", viewerId).eq("itineraries.trip_id", tripId).maybeSingle(),
   ]);
   if (postsResult.error) throw postsResult.error;
 
@@ -216,6 +220,7 @@ export async function getAlbumDetail(
     ownerId: trip.user_id,
     viewerRole: role,
     members,
+    itineraryId: (itineraryMembership.data as { itinerary_id: string } | null)?.itinerary_id ?? null,
     posts: cards.map((card, index) => ({
       ...card,
       visibility: rows[index].visibility === "private" ? "private" : "public",

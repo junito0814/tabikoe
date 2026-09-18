@@ -27,6 +27,7 @@ export default async function MapPage({
     lng?: string;
     back?: string;
     itinerary?: string;
+    day?: string;
     posted?: string;
     updated?: string;
     deleted?: string;

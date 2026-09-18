@@ -263,7 +263,7 @@ export function PostSearchScreen({
           <ul className="flex flex-col gap-3">
             {posts.map((post) => (
               <li key={post.id}>
-                <PostCard post={withWalk(post)} backHref={pageHref} showSpotName={context.destination?.kind !== "spot"} />
+                <PostCard post={withWalk(post)} backHref={pageHref} showSpotName={context.destination?.kind !== "spot"} addMode={addMode} />
               </li>
             ))}
           </ul>

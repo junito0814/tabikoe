@@ -12,7 +12,7 @@ import { getSpotStatus, type SpotStatusSummary } from "@/lib/spots/status-report
  */
 export interface PostDetailData {
   id: string;
-  spot: { id: string; name: string; prefecture: string | null };
+  spot: { id: string; name: string; prefecture: string | null; lat: number | null; lng: number | null; isManualSpot: boolean };
   category: string;
   visitDate: string | null;
   duration: string | null;
@@ -82,7 +82,10 @@ export interface PostDetailRow {
   created_at: string;
   hidden_at?: string | null;
   review_hidden_at?: string | null;
-  spots: { id: string; name: string; prefecture: string | null } | { id: string; name: string; prefecture: string | null }[] | null;
+  spots:
+    | { id: string; name: string; prefecture: string | null; lat?: number; lng?: number; source?: string }
+    | { id: string; name: string; prefecture: string | null; lat?: number; lng?: number; source?: string }[]
+    | null;
   users:
     | { id: string; display_name: string | null; avatar_url: string | null; is_deleted: boolean }
     | { id: string; display_name: string | null; avatar_url: string | null; is_deleted: boolean }[]
@@ -114,7 +117,7 @@ export async function getPostDetail(
     .from("posts")
     .select(
       "id, user_id, trip_id, spot_id, category, visit_date, duration, cost, rating, comment, visibility, status, created_at, hidden_at, review_hidden_at, " +
-        "spots(id, name, prefecture), users(id, display_name, avatar_url, is_deleted), " +
+        "spots(id, name, prefecture, lat, lng, source), users(id, display_name, avatar_url, is_deleted), " +
         "post_photos(id, storage_url, video_url, media_type, display_order, hidden_at)"
     )
     .eq("id", postId)
@@ -187,7 +190,14 @@ export async function getPostDetail(
 
   return {
     id: row.id,
-    spot: { id: spot?.id ?? row.spot_id, name: spot?.name ?? "", prefecture: spot?.prefecture ?? null },
+    spot: {
+      id: spot?.id ?? row.spot_id,
+      name: spot?.name ?? "",
+      prefecture: spot?.prefecture ?? null,
+      lat: typeof spot?.lat === "number" ? spot.lat : null,
+      lng: typeof spot?.lng === "number" ? spot.lng : null,
+      isManualSpot: spot?.source === "manual",
+    },
     category: row.category,
     visitDate: row.visit_date,
     duration: row.duration,

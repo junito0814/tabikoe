@@ -18,6 +18,10 @@ export interface WishlistItem {
   thumbnailUrl: string;
   /** サムネイルがプレースホルダかどうか（画面側で alt を切り替える） */
   hasPost: boolean;
+  /** v3.0: 閲覧できる投稿の件数 */
+  postCount: number;
+  /** v3.0: 入っている自分のしおり（「大阪旅行 Day 1」の表示用） */
+  itineraries: { id: string; title: string; dayIndex: number | null }[];
 }
 
 /**
