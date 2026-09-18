@@ -19,6 +19,12 @@ alter table public.posts
 -- 既存行はすべて公開済みとして扱い、公開日時には作成日時を入れる（新着順の基準を変えない）
 update public.posts set published_at = created_at where published_at is null and status = 'published';
 
+-- v1 では訪問日が任意だったため、既存の公開投稿で NULL のものは投稿日（日本時間の日付）で埋める。
+-- これを忘れると、下の posts_published_required_check（公開投稿は visit_date 必須）で既存行が違反して失敗する（#418）
+update public.posts
+  set visit_date = (created_at at time zone 'Asia/Tokyo')::date
+  where visit_date is null and status = 'published';
+
 -- 既存投稿の位置はスポットの座標で埋める
 update public.posts p
   set lat = s.lat, lng = s.lng
