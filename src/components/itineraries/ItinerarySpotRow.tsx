@@ -5,7 +5,6 @@ import Link from "next/link";
 import { TimePicker10 } from "@/components/ui/TimePicker10";
 import type { ItinerarySpotItem } from "@/lib/itineraries/get-itinerary";
 import { composeHref } from "@/lib/posts/compose-initial-state";
-import { formatCost } from "@/components/posts/PostCard";
 import { DayMoveDropdown } from "./DayMoveDropdown";
 import type { DayKey } from "./DayTabs";
 
@@ -23,7 +22,8 @@ export const MEMO_MAX_LENGTH = 500;
  *   - チェック: 済みはスポット名に取り消し線＋薄字。位置は動かさない。確認は出さない
  *   - メモ: インライン編集（blur で保存）
  *   - 「投稿一覧」→ /spots/[id]、「投稿する」→ /posts/new?itinerary=&spot=、投稿済みなら「投稿済み ✓」
- *   - 「Day n ▾」で移動、「▲▼」で手動順（時刻の無い行のみ）、「削除」
+ *   - 「Day n ▾」で移動、取っ手「≡」のドラッグで手動順（時刻の無い行のみ。v3.1。use-row-drag.ts）、「削除」
+ *   - 値段（費用の平均）は出さない（v3.1）
  * 保存はすべて親の `onUpdate`（API 呼び出し）に任せ、この行は表示と入力だけを持つ。
  */
 export function ItinerarySpotRow({
@@ -31,11 +31,12 @@ export function ItinerarySpotRow({
   index,
   itineraryId,
   dayCount,
-  canMoveUp,
-  canMoveDown,
   highlighted = false,
+  dragHandleProps = null,
+  isDragging = false,
+  isDropTarget = false,
+  rowRef,
   onUpdate,
-  onMove,
   onRemove,
   onMoveDay,
 }: {
@@ -44,12 +45,14 @@ export function ItinerarySpotRow({
   index: number;
   itineraryId: string;
   dayCount: number;
-  canMoveUp: boolean;
-  canMoveDown: boolean;
   /** 地図の番号ピンから来たときの強調 */
   highlighted?: boolean;
+  /** v3.1: 取っ手 ≡ に付けるイベント（時刻の無い行だけ渡す。null なら取っ手を出さない） */
+  dragHandleProps?: Record<string, unknown> | null;
+  isDragging?: boolean;
+  isDropTarget?: boolean;
+  rowRef?: (element: HTMLLIElement | null) => void;
   onUpdate: (spotId: string, patch: { arrivalTime?: string | null; memo?: string | null; checked?: boolean }) => Promise<void>;
-  onMove: (spotId: string, direction: "up" | "down") => void;
   onRemove: (spotId: string) => void;
   onMoveDay: (spotId: string, day: DayKey) => void;
 }) {
@@ -58,7 +61,6 @@ export function ItinerarySpotRow({
   const [isEditingMemo, setIsEditingMemo] = useState(false);
   const checked = spot.checkedAt !== null;
   const hasTime = spot.arrivalTime !== null;
-  const cost = formatCost(spot.costAverage);
 
   const saveMemo = () => {
     setIsEditingMemo(false);
@@ -69,9 +71,12 @@ export function ItinerarySpotRow({
 
   return (
     <li
+      ref={rowRef}
       data-itinerary-spot={spot.spotId}
       data-checked={checked ? "true" : "false"}
-      className={`flex gap-3 rounded-[12px] border bg-surface p-3 shadow-card ${highlighted ? "border-accent ring-1 ring-accent" : "border-line"}`}
+      className={`flex gap-3 rounded-[12px] border bg-surface p-3 shadow-card ${highlighted ? "border-accent ring-1 ring-accent" : "border-line"} ${
+        isDragging ? "opacity-60" : ""
+      } ${isDropTarget ? "border-accent" : ""}`}
     >
       {/* 左の列: 時刻／チェック */}
       <div className="flex w-14 shrink-0 flex-col items-center gap-2">
@@ -120,7 +125,6 @@ export function ItinerarySpotRow({
                 {spot.ratingAverage}
               </span>
             )}
-            {cost && <span>{cost}</span>}
           </span>
         </div>
 
@@ -157,27 +161,21 @@ export function ItinerarySpotRow({
           )}
           <span className="ml-auto flex items-center gap-1">
             <DayMoveDropdown value={spot.dayIndex} dayCount={dayCount} onChange={(day) => onMoveDay(spot.spotId, day)} />
-            <button
-              type="button"
-              onClick={() => onMove(spot.spotId, "up")}
-              disabled={hasTime || !canMoveUp}
-              aria-label="上へ"
-              className="h-7 w-7 rounded-full border border-line text-[11px] text-ink disabled:opacity-35"
-            >
-              ▲
-            </button>
-            <button
-              type="button"
-              onClick={() => onMove(spot.spotId, "down")}
-              disabled={hasTime || !canMoveDown}
-              aria-label="下へ"
-              className="h-7 w-7 rounded-full border border-line text-[11px] text-ink disabled:opacity-35"
-            >
-              ▼
-            </button>
             <button type="button" onClick={() => onRemove(spot.spotId)} className="h-7 rounded-full px-2 text-[11px] font-medium text-saved">
               削除
             </button>
+            {/* v3.1: 時刻の無い行だけ取っ手 ≡（ドラッグで並べ替え。↑↓ キーでも動く） */}
+            {!hasTime && dragHandleProps && (
+              <button
+                type="button"
+                {...dragHandleProps}
+                aria-label={`${spot.name} を並べ替え`}
+                data-drag-handle
+                className="h-7 w-7 cursor-grab touch-none rounded-full border border-line text-[13px] text-muted active:cursor-grabbing"
+              >
+                ≡
+              </button>
+            )}
           </span>
         </div>
       </div>

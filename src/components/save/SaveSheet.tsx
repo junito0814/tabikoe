@@ -5,7 +5,7 @@ import { Sheet } from "@/components/ui/Sheet";
 import { ErrorNotice } from "@/components/notices/ErrorNotice";
 import { fetchWithAuthRedirect, UnauthorizedError } from "@/lib/api/fetch-with-auth-redirect";
 import type { ItineraryListItem } from "@/lib/itineraries/get-itinerary";
-import { dayTabKeys, type DayKey } from "@/components/itineraries/DayTabs";
+import { dayKeys, type DayKey } from "@/components/itineraries/DayTabs";
 import { dayLabel } from "@/components/itineraries/DayMoveDropdown";
 import { defaultItineraryApi, type ItineraryApi } from "@/components/itineraries/itinerary-api";
 import { MAX_TRIP_TITLE_LENGTH } from "@/lib/trips/constants";
@@ -215,7 +215,7 @@ function SaveSheetBody({
                   </label>
                   {item.containsSpot && item.dayCount > 0 && (
                     <div role="radiogroup" aria-label={`${item.title} の Day`} className="mt-2 flex flex-wrap gap-1.5 pl-8">
-                      {dayTabKeys(item.dayCount).map((day) => {
+                      {dayKeys(item.dayCount).map((day) => {
                         const selected = (item.spotDayIndex ?? null) === day;
                         return (
                           <button

@@ -25,7 +25,6 @@ const spot = (spotId: string, overrides: Partial<ItinerarySpotItem> = {}): Itine
   checkedBy: null,
   hasPosted: false,
   ratingAverage: null,
-  costAverage: null,
   postCount: 0,
   ...overrides,
 });
@@ -47,7 +46,6 @@ const itinerary: ItineraryDetail = {
   ],
   members: [],
   albumPostCount: 0,
-  budgetEstimate: null,
   updatedAt: "2026-09-01T00:00:00Z",
 };
 
@@ -60,10 +58,9 @@ describe("buildItineraryPins", () => {
     ]);
     expect(pins[0]).toMatchObject({ type: "numbered", dayIndex: 1 });
     expect(buildItineraryPins(itinerary, 2).map((pin) => pin.id)).toEqual(["c"]);
-    expect(buildItineraryPins(itinerary, null).map((pin) => pin.id)).toEqual(["d"]);
   });
 
-  it("「すべて」では全日を Day ごとの色（dayIndex）で", () => {
+  it("ALL では全日を Day ごとの色（dayIndex）で。日付なしは ALL にだけ出る（v3.1）", () => {
     const pins = buildItineraryPins(itinerary, ALL_DAYS);
     expect(pins.map((pin) => [pin.id, pin.dayIndex])).toEqual([
       ["b", 1],
@@ -75,13 +72,12 @@ describe("buildItineraryPins", () => {
 });
 
 describe("ItineraryMapOverlay", () => {
-  it("Day タブ＋日付なし＋すべて。押すと onChange", () => {
+  it("v3.1: 左端が ALL、続いて Day タブ。「日付なし」タブは無い。押すと onChange", () => {
     const onChange = vi.fn();
     render(<ItineraryMapOverlay itinerary={itinerary} day={1} onChange={onChange} />);
-    expect(screen.getAllByRole("tab").map((tab) => tab.textContent)).toEqual(["Day 1", "Day 2", "日付なし", "すべて"]);
-    fireEvent.click(screen.getByRole("tab", { name: "すべて" }));
+    expect(screen.getAllByRole("tab").map((tab) => tab.textContent)).toEqual(["ALL", "Day 1", "Day 2"]);
+    fireEvent.click(screen.getByRole("tab", { name: "ALL" }));
     expect(onChange).toHaveBeenCalledWith(ALL_DAYS);
-    fireEvent.click(screen.getByRole("tab", { name: "日付なし" }));
-    expect(onChange).toHaveBeenCalledWith(null);
+    expect(screen.queryByRole("tab", { name: "日付なし" })).toBeNull();
   });
 });

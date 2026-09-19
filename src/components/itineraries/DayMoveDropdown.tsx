@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useId, useRef, useState } from "react";
-import { dayTabKeys, type DayKey } from "./DayTabs";
+import { dayKeys, type DayKey } from "./DayTabs";
 
 /**
  * itinerary-days Task2: 行の「Day n ▾」ドロップダウン（Day の移動）
@@ -54,7 +54,7 @@ export function DayMoveDropdown({ value, dayCount, onChange, disabled = false }:
       </button>
       {isOpen && (
         <ul id={listId} role="listbox" aria-label="移動先の Day" className="absolute right-0 z-20 mt-1 min-w-[120px] overflow-hidden rounded-[10px] border border-line bg-surface py-1 shadow-card">
-          {dayTabKeys(dayCount).map((day) => {
+          {dayKeys(dayCount).map((day) => {
             const selected = day === value;
             return (
               <li key={day ?? "undecided"} role="presentation">

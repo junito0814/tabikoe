@@ -7,13 +7,15 @@ import { ErrorNotice } from "@/components/notices/ErrorNotice";
 import { Toast, type ToastMessage } from "@/components/ui/Toast";
 import { UnauthorizedError } from "@/lib/api/fetch-with-auth-redirect";
 import { addSpotsHref } from "@/lib/itineraries/add-mode";
-import { formatDayLabel } from "@/lib/itineraries/day-utils";
-import type { ItineraryDetail } from "@/lib/itineraries/get-itinerary";
+import { formatPeriodLabel } from "@/lib/itineraries/day-utils";
+import type { ItineraryDetail, ItinerarySpotItem } from "@/lib/itineraries/get-itinerary";
 import { can } from "@/lib/itineraries/membership";
 import { orderSpots } from "@/lib/itineraries/order-spots";
-import { formatCost } from "@/components/posts/PostCard";
+import { MapSheetLayout } from "@/components/layout/MapSheetLayout";
+import { ItineraryStaticMap } from "@/components/map/ItineraryStaticMap";
 import { dayLabel } from "./DayMoveDropdown";
-import { DayTabs, type DayKey } from "./DayTabs";
+import { ALL_TAB, DayTabs, daysInTab, type DayKey, type DayTab } from "./DayTabs";
+import { moveItem, useRowDrag } from "./use-row-drag";
 import { InviteDialog } from "./InviteDialog";
 import { ItinerarySpotRow } from "./ItinerarySpotRow";
 import { MembersDialog } from "./MembersDialog";
@@ -28,32 +30,34 @@ import { defaultItineraryApi, type ItineraryApi } from "./itinerary-api";
  *       docs/tasks/itinerary/itinerary-check/03-row-display-and-map-pins.md
  *       要件定義書 v3.0 3.11
  *
- * 【初心者向け】上から順に:
- *   1. ヘッダー（戻る・旅行タイトル・「地図で見る」）と「⋯」（招待・メンバー・しおりを削除。オーナーのみ）
- *   2. 期間行（「期間を変更」／未設定なら「期間を設定」）、スポット数・予算目安、「アルバムを見る」（投稿があるとき）
- *   3. Day タブ（日数＋未定）
- *   4. その Day のスポット行（時刻順→手動順。ItinerarySpotRow）
+ * 【初心者向け】上から順に（v3.1 mentoring-7 Task8 で簡略化）:
+ *   1. ヘッダー（戻る・タイトル ✎（タップで名前変更）・「地図で見る」）と「⋯」（招待・メンバー・しおりを削除。オーナーのみ）
+ *   2. 期間（年つき。タップでカレンダー）、スポット数・メンバー数、「アルバムを見る」（投稿があるとき）。値段は出さない
+ *   3. Day タブ（左端が ALL、続いて Day 1〜n。「未定」タブは無く、日付なしは ALL にだけ出る）
+ *   4. そのタブのスポット行（時刻順→手動順。ItinerarySpotRow）。ALL では Day ごとの見出しを挟む。時刻の無い行は取っ手 ≡ でドラッグ並べ替え
  *   5. 「＋ スポットを追加」（追加モードで投稿一覧へ。行き先は最多の都道府県）、右下「しおりを削除」
+ * 「地図で見る」を押すと別画面へ飛ばず、上 1/3 に地図（ItineraryStaticMap）を出して下に一覧を残す（MapSheetLayout）。
  * サーバーから受け取った `initial` を state に持ち、操作のたびに API を呼んで `api.get` で取り直す（表示は常にサーバーの並び順）。
  * `?day=&spot=` で開かれたら（地図の番号ピンから）その Day を開き、該当行を強調する。
  */
 export function ItineraryDetailScreen({
   initial,
   viewerId,
-  initialDay,
+  initialDay = ALL_TAB,
   highlightSpotId = null,
   api = defaultItineraryApi,
 }: {
   initial: ItineraryDetail;
   viewerId: string;
-  /** 最初に開く Day（undefined なら Day 1、期間が無ければ未定） */
-  initialDay?: DayKey;
+  /** 最初に開くタブ（既定は ALL。地図の番号ピンからはその Day） */
+  initialDay?: DayTab;
   highlightSpotId?: string | null;
   api?: ItineraryApi;
 }) {
   const router = useRouter();
   const [itinerary, setItinerary] = useState<ItineraryDetail>(initial);
-  const [day, setDay] = useState<DayKey>(initialDay === undefined ? (initial.dayCount > 0 ? 1 : null) : initialDay);
+  const [day, setDay] = useState<DayTab>(initialDay);
+  const [showMap, setShowMap] = useState(false);
   const [toast, setToast] = useState<ToastMessage | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [dialog, setDialog] = useState<"period" | "invite" | "members" | "rename" | null>(null);
@@ -99,7 +103,11 @@ export function ItineraryDetailScreen({
   };
 
   // ── スポット行の操作 ──
-  const spotsInDay = orderSpots(itinerary.spots.filter((spot) => spot.dayIndex === day));
+  // 表示する行を Day ごとにまとめる（ALL なら Day 1 → … → 日付なし の順。各 Day の中は時刻順→手動順）
+  const groups: { day: DayKey; spots: ItinerarySpotItem[] }[] = daysInTab(day, itinerary.dayCount)
+    .map((key) => ({ day: key, spots: orderSpots(itinerary.spots.filter((spot) => spot.dayIndex === key)) }))
+    .filter((group) => day === ALL_TAB ? group.spots.length > 0 : true);
+  const visibleCount = groups.reduce((sum, group) => sum + group.spots.length, 0);
 
   const updateSpot = async (spotId: string, patch: { arrivalTime?: string | null; memo?: string | null; checked?: boolean }) => {
     // チェックと時刻は楽観的に反映（並び順の再計算は reload に任せる）
@@ -119,19 +127,21 @@ export function ItineraryDetailScreen({
     await run(() => api.updateSpot(itinerary.id, spotId, patch), patch.memo !== undefined ? "メモを保存できませんでした（500 文字まで）" : "保存できませんでした");
   };
 
-  const moveSpot = async (spotId: string, direction: "up" | "down") => {
-    // 時刻の無い行だけを手動順で入れ替える。sort_order を隣と交換する
-    const untimed = spotsInDay.filter((spot) => spot.arrivalTime === null);
-    const index = untimed.findIndex((spot) => spot.spotId === spotId);
-    const swapWith = untimed[direction === "up" ? index - 1 : index + 1];
-    if (index < 0 || !swapWith) return;
-    const me = untimed[index];
-    const [a, b] = me.sortOrder === swapWith.sortOrder ? [me.sortOrder + 1, me.sortOrder] : [swapWith.sortOrder, me.sortOrder];
+  /**
+   * v3.1: ドラッグで時刻の無い行を並べ替える。同じ Day の時刻の無い行の並び（手動順）の中で from → to に動かし、
+   * 並び直した順に sort_order を 0,1,2… と振り直す（変わった行だけ API を呼ぶ）。時刻のある行は動かさない。
+   */
+  const reorderUntimed = async (dayKey: DayKey, from: number, to: number) => {
+    const untimed = orderSpots(itinerary.spots.filter((spot) => spot.dayIndex === dayKey)).filter((spot) => spot.arrivalTime === null);
+    if (from === to || !untimed[from] || !untimed[to]) return;
+    const next = moveItem(untimed, from, to);
+    // 楽観的に反映（sortOrder を振り直す）
+    const orders = new Map(next.map((spot, index) => [spot.spotId, index]));
+    setItinerary((current) => ({ ...current, spots: current.spots.map((spot) => (orders.has(spot.spotId) ? { ...spot, sortOrder: orders.get(spot.spotId) as number } : spot)) }));
     setError(null);
     try {
-      const first = await api.updateSpot(itinerary.id, me.spotId, { sortOrder: a });
-      const second = await api.updateSpot(itinerary.id, swapWith.spotId, { sortOrder: b });
-      if (!first.ok || !second.ok) setError("並び替えできませんでした");
+      const results = await Promise.all(next.flatMap((spot, index) => (spot.sortOrder === index ? [] : [api.updateSpot(itinerary.id, spot.spotId, { sortOrder: index })])));
+      if (results.some((response) => !response.ok)) setError("並び替えできませんでした");
     } catch (caught) {
       if (caught instanceof UnauthorizedError) return;
       setError("並び替えできませんでした");
@@ -147,7 +157,7 @@ export function ItineraryDetailScreen({
 
   const moveDay = async (spotId: string, target: DayKey) => {
     const ok = await run(() => api.updateSpot(itinerary.id, spotId, { dayIndex: target }), "移動できませんでした");
-    if (ok) setToast({ text: `${dayLabel(target)} に移動しました`, action: { label: `${dayLabel(target)} を見る`, onClick: () => setDay(target) } });
+    if (ok) setToast({ text: `${dayLabel(target)} に移動しました`, action: { label: `${dayLabel(target)} を見る`, onClick: () => setDay(target ?? ALL_TAB) } });
   };
 
   const deleteItinerary = async () => {
@@ -167,13 +177,11 @@ export function ItineraryDetailScreen({
     await run(() => api.rename(itinerary.id, next.trim()), "タイトルを変更できませんでした");
   };
 
-  const periodLabel =
-    itinerary.startDate && itinerary.endDate ? `${formatDayLabel(itinerary.startDate)} 〜 ${formatDayLabel(itinerary.endDate)}` : "期間未設定";
-  const budget = formatCost(itinerary.budgetEstimate);
-  const mapHref = `/map?itinerary=${itinerary.id}${day !== null ? `&day=${day}` : ""}`;
+  const periodLabel = formatPeriodLabel(itinerary.startDate, itinerary.endDate);
+  const canEdit = can(itinerary.role, "change_period");
 
-  return (
-    <div className="flex min-h-screen flex-col items-center bg-app px-4 pt-4 pb-24" data-itinerary-detail>
+  const content = (
+    <div className="flex flex-col items-center px-4 pt-4 pb-24" data-itinerary-detail data-day-tab={String(day)}>
       <div className="w-full max-w-[520px]">
         <header className="flex flex-col gap-2.5">
           <div className="flex items-center gap-2">
@@ -183,10 +191,22 @@ export function ItineraryDetailScreen({
               </svg>
               しおり
             </Link>
-            <h1 className="min-w-0 flex-1 truncate text-center text-[16px] font-bold text-ink">{itinerary.title}</h1>
-            <Link href={mapHref} className="inline-flex h-8 shrink-0 items-center gap-1 rounded-full border border-line bg-surface px-3 text-[12px] font-semibold text-ink">
-              🗺 地図で見る
-            </Link>
+            {/* v3.1: タイトルをタップ（✎）で名前を変更。「名前を変更」ボタンは置かない */}
+            {isOwner ? (
+              <button type="button" onClick={() => void rename()} aria-label={`${itinerary.title}（名前を変更）`} className="min-w-0 flex-1 truncate text-center text-[16px] font-bold text-ink">
+                {itinerary.title} <span aria-hidden className="text-[12px] font-normal text-muted">✎</span>
+              </button>
+            ) : (
+              <h1 className="min-w-0 flex-1 truncate text-center text-[16px] font-bold text-ink">{itinerary.title}</h1>
+            )}
+            <button
+              type="button"
+              onClick={() => setShowMap((current) => !current)}
+              aria-pressed={showMap}
+              className={`inline-flex h-8 shrink-0 items-center gap-1 rounded-full border px-3 text-[12px] font-semibold ${showMap ? "border-accent bg-accent text-white" : "border-line bg-surface text-ink"}`}
+            >
+              🗺 {showMap ? "地図を閉じる" : "地図で見る"}
+            </button>
             <div ref={menuRef} className="relative">
               <button
                 type="button"
@@ -218,15 +238,6 @@ export function ItineraryDetailScreen({
                   />
                   {isOwner && (
                     <MenuItem
-                      label="名前を変更"
-                      onClick={() => {
-                        setIsMenuOpen(false);
-                        void rename();
-                      }}
-                    />
-                  )}
-                  {isOwner && (
-                    <MenuItem
                       label="しおりを削除"
                       danger
                       onClick={() => {
@@ -240,17 +251,18 @@ export function ItineraryDetailScreen({
             </div>
           </div>
 
-          <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[12px] text-ink">
-            <span>📅 {periodLabel}</span>
-            {can(itinerary.role, "change_period") && (
-              <button type="button" onClick={() => setDialog("period")} className="rounded-full border border-line bg-surface px-2.5 py-0.5 text-[11px] font-semibold">
-                {itinerary.startDate ? "期間を変更" : "期間を設定"}
-              </button>
-            )}
-          </div>
+          {/* v3.1: 期間は年つき。表示そのものをタップするとカレンダー（オーナーのみ）。「期間を変更」ボタンは置かない */}
+          {canEdit ? (
+            <button type="button" onClick={() => setDialog("period")} aria-label={itinerary.startDate ? `期間 ${periodLabel}（変更）` : "期間を設定"} className="flex w-fit items-center gap-1 text-[12px] text-ink" data-period>
+              📅 {itinerary.startDate ? periodLabel : "期間を設定"} <span aria-hidden className="text-muted">✎</span>
+            </button>
+          ) : (
+            <p className="text-[12px] text-ink" data-period>
+              📅 {periodLabel}
+            </p>
+          )}
           <p className="text-[12px] text-muted">
             {itinerary.spots.length} スポット
-            {budget && ` ・ 予算目安 ${budget}`}
             {itinerary.members.length > 1 && ` ・ メンバー ${itinerary.members.length} 人`}
           </p>
           {itinerary.albumPostCount > 0 && (
@@ -264,38 +276,32 @@ export function ItineraryDetailScreen({
 
         {error && <ErrorNotice className="mt-2" message={error} />}
 
-        {spotsInDay.length === 0 ? (
-          <p className="py-12 text-center text-[13px] text-muted">{day === null ? "日付なしのスポットはありません" : "この日のスポットはまだありません"}</p>
+        {visibleCount === 0 ? (
+          <p className="py-12 text-center text-[13px] text-muted">{day === ALL_TAB ? "スポットはまだありません" : "この日のスポットはまだありません"}</p>
         ) : (
-          <ul className="mt-2 flex flex-col gap-2">
-            {spotsInDay.map((spot, index) => {
-              const untimed = spotsInDay.filter((item) => item.arrivalTime === null);
-              const position = untimed.findIndex((item) => item.spotId === spot.spotId);
-              return (
-                <ItinerarySpotRow
-                  key={spot.id}
-                  spot={spot}
-                  index={index + 1}
-                  itineraryId={itinerary.id}
-                  dayCount={itinerary.dayCount}
-                  canMoveUp={position > 0}
-                  canMoveDown={position >= 0 && position < untimed.length - 1}
-                  highlighted={spot.spotId === highlightSpotId}
-                  onUpdate={updateSpot}
-                  onMove={(spotId, direction) => void moveSpot(spotId, direction)}
-                  onRemove={(spotId) => void removeSpot(spotId)}
-                  onMoveDay={(spotId, target) => void moveDay(spotId, target)}
-                />
-              );
-            })}
-          </ul>
+          groups.map((group) => (
+            <DayGroup
+              key={String(group.day)}
+              day={group.day}
+              spots={group.spots}
+              showHeading={day === ALL_TAB && itinerary.dayCount > 0}
+              itineraryId={itinerary.id}
+              dayCount={itinerary.dayCount}
+              highlightSpotId={highlightSpotId}
+              onUpdate={updateSpot}
+              onRemove={(spotId) => void removeSpot(spotId)}
+              onMoveDay={(spotId, target) => void moveDay(spotId, target)}
+              onReorder={(from, to) => void reorderUntimed(group.day, from, to)}
+            />
+          ))
         )}
 
         <div className="mt-4 flex items-center justify-between">
           <Link
             href={addSpotsHref(
               itinerary.id,
-              day,
+              // ALL タブから追加するときは日付なしへ
+              day === ALL_TAB ? null : day,
               itinerary.spots.map((spot) => spot.prefecture)
             )}
             className="inline-flex h-11 items-center gap-1.5 rounded-full bg-accent px-5 text-[13px] font-bold text-white"
@@ -321,8 +327,8 @@ export function ItineraryDetailScreen({
           if (response.ok) {
             const data = (await response.json()) as { movedToUndecided?: number; dayCount?: number };
             await reload();
-            if (day !== null && (data.dayCount ?? 0) < day) setDay(null);
-            if (data.movedToUndecided) setToast({ text: `${data.movedToUndecided} 件のスポットを日付なしに移しました`, action: { label: "未定を見る", onClick: () => setDay(null) } });
+            if (day !== ALL_TAB && (data.dayCount ?? 0) < day) setDay(ALL_TAB);
+            if (data.movedToUndecided) setToast({ text: `${data.movedToUndecided} 件のスポットを日付なしに移しました`, action: { label: "ALL を見る", onClick: () => setDay(ALL_TAB) } });
           }
           return response;
         }}
@@ -340,6 +346,73 @@ export function ItineraryDetailScreen({
       />
       <Toast toast={toast} onClose={() => setToast(null)} />
     </div>
+  );
+
+  // v3.1: 「地図で見る」中は上 1/3 に地図（開いている Day の番号ピン）、下 2/3 に一覧。押していなければ一覧だけ
+  return showMap ? <MapSheetLayout map={<ItineraryStaticMap itinerary={itinerary} day={day} className="h-full w-full" />}>{content}</MapSheetLayout> : <div className="min-h-screen bg-app">{content}</div>;
+}
+
+/**
+ * 1 つの Day の行の並び（ALL では Day ごとの見出しを付ける）。ドラッグ並べ替え（useRowDrag）は Day ごとに独立させる。
+ * 【初心者向け】並べ替えの対象は「時刻の無い行」だけなので、取っ手のインデックスは時刻の無い行の中での順番（untimedIndex）で数える。
+ */
+function DayGroup({
+  day,
+  spots,
+  showHeading,
+  itineraryId,
+  dayCount,
+  highlightSpotId,
+  onUpdate,
+  onRemove,
+  onMoveDay,
+  onReorder,
+}: {
+  day: DayKey;
+  spots: ItinerarySpotItem[];
+  showHeading: boolean;
+  itineraryId: string;
+  dayCount: number;
+  highlightSpotId: string | null;
+  onUpdate: (spotId: string, patch: { arrivalTime?: string | null; memo?: string | null; checked?: boolean }) => Promise<void>;
+  onRemove: (spotId: string) => void;
+  onMoveDay: (spotId: string, target: DayKey) => void;
+  onReorder: (from: number, to: number) => void;
+}) {
+  const { dragging, registerRow, handleProps } = useRowDrag(onReorder);
+  // 時刻の無い行の中での順番（取っ手のインデックス）。時刻のある行は -1
+  const positions = spots.reduce<number[]>((acc, spot) => {
+    const previous = acc.length > 0 ? Math.max(...acc) : -1;
+    acc.push(spot.arrivalTime === null ? previous + 1 : -1);
+    return acc;
+  }, []);
+  return (
+    <section aria-label={dayLabel(day)} data-day-group={String(day ?? "none")} className="mt-2">
+      {showHeading && <h2 className="mb-1.5 text-[12px] font-bold text-muted">{dayLabel(day)}</h2>}
+      <ul className="flex flex-col gap-2">
+        {spots.map((spot, index) => {
+          const untimed = spot.arrivalTime === null;
+          const position = positions[index];
+          return (
+            <ItinerarySpotRow
+              key={spot.id}
+              spot={spot}
+              index={index + 1}
+              itineraryId={itineraryId}
+              dayCount={dayCount}
+              highlighted={spot.spotId === highlightSpotId}
+              dragHandleProps={untimed ? handleProps(position) : null}
+              rowRef={untimed ? registerRow(position) : undefined}
+              isDragging={dragging?.from === position && untimed}
+              isDropTarget={dragging !== null && dragging.over === position && dragging.from !== position && untimed}
+              onUpdate={onUpdate}
+              onRemove={onRemove}
+              onMoveDay={onMoveDay}
+            />
+          );
+        })}
+      </ul>
+    </section>
   );
 }
 
