@@ -16,13 +16,17 @@ export async function createPostPhotoUrls(
   storagePaths: string[]
 ): Promise<Map<string, string>> {
   const urls = new Map<string, string>();
-  if (storagePaths.length === 0) {
+  // 絶対 URL（http/https）はバケットの外の画像なので署名せずそのまま返す（ダミーデータの picsum など）
+  const external = storagePaths.filter((path) => /^https?:\/\//.test(path));
+  for (const path of external) urls.set(path, path);
+  const bucketPaths = storagePaths.filter((path) => !urls.has(path));
+  if (bucketPaths.length === 0) {
     return urls;
   }
 
   const { data, error } = await admin.storage
     .from(POST_MEDIA_BUCKET)
-    .createSignedUrls(storagePaths, SIGNED_URL_EXPIRES_IN);
+    .createSignedUrls(bucketPaths, SIGNED_URL_EXPIRES_IN);
 
   if (error || !data) {
     return urls;

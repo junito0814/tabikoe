@@ -1,83 +1,64 @@
 "use client";
 
-import { useCallback, useRef, useState, type ReactNode } from "react";
+import { useCallback, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ErrorNotice } from "@/components/notices/ErrorNotice";
 import { ERROR_MESSAGES } from "@/components/notices/error-messages";
 import { fetchWithAuthRedirect, UnauthorizedError } from "@/lib/api/fetch-with-auth-redirect";
 import { walkMinutesBetween } from "@/lib/geo/walk-minutes";
-import type { PostCardData, PostCardPage, PostSort } from "@/lib/posts/post-cards";
+import { SPOT_SORT_LABELS, SPOT_SORTS, type SpotCardData, type SpotCardPage, type SpotSort } from "@/lib/spots/search-spots";
 import { PhotoGrid, type FetchMediaPage } from "@/components/media/PhotoGrid";
 import type { SpotMediaPage } from "@/lib/posts/search-photos";
+import type { ListView } from "@/lib/search/list-view";
 import { AddModeBanner, type AddModeInfo } from "./AddModeBanner";
 import { FilterSheet } from "./FilterSheet";
-import { PostCard } from "./PostCard";
 import { SortDropdown } from "./SortDropdown";
+import { SpotCard } from "./SpotCard";
 import { ViewToggle } from "./ViewToggle";
-import type { ListView } from "@/lib/search/list-view";
-import {
-  buildPostSearchParams,
-  buildSearchPageHref,
-  countActiveFilters,
-  distanceCenter,
-  type PostSearchState,
-  type SearchContext,
-} from "./post-search-query";
+import { buildPostSearchParams, buildSearchPageHref, countActiveFilters, distanceCenter, type PostSearchState, type SearchContext } from "./post-search-query";
 import { useInfiniteScroll } from "./use-infinite-scroll";
 import { useListRestore, useViewerPosition } from "./use-search-list";
 
-export type FetchSearchPage = (params: URLSearchParams) => Promise<PostCardPage>;
+export type FetchSpotPage = (params: URLSearchParams) => Promise<SpotCardPage>;
 
 /**
- * post-timeline Task2〜4（v3.0）: 投稿一覧（SC-04、タイムライン形式）
- * 出典: docs/tasks/map-search/post-timeline/02-timeline-ui.md
- *       docs/tasks/map-search/post-timeline/03-scroll-and-back.md
- *       docs/tasks/map-search/post-timeline/04-spot-list-header-and-add-mode.md
- *       要件定義書 v3.0 3.4.2・3.4.3
+ * mentoring-7 Task3（v3.1）: 検索結果（都道府県・駅・市区町村）のスポットカード一覧（SC-04）
+ * 出典: docs/tasks/shared-ui/mentoring-7/03-spot-cards.md
+ *       要件定義書 v3.1 3.4.2（検索結果はスポット単位のカード。並び替え 新着順／評価順／投稿数順）
  *
- * 【初心者向け】検索結果（都道府県・駅・スポット別）で共通の画面。
- *   - 行き先は `context`（開いたときに決まる）。絞り込み・並び替えは `state`
- *   - state を変えると URL も書き換える（router.replace）。URL がそのまま条件なので、リロードや「一覧に戻る」で再現できる
- *   - スクロール位置と読み込み済みページ数は sessionStorage（lib/search/list-state.ts）に保存し、同じ URL で開き直したら復元する
- *   - 「徒歩 N 分」は位置情報の許可が既に出ているときだけ、画面側で計算して足す（許可ダイアログはここでは出さない）
- *   - `requestIdRef` は古い応答で画面を上書きしないための番号（並び替えを素早く 2 回変えたときなど）
- * スポット別一覧の見出し（SpotPostListScreen）は `header` に差し込む。
+ * 【初心者向け】PostSearchScreen（投稿カードの一覧）と同じ骨組みで、並べるものがスポットカードになっただけ。
+ *   - 条件（絞り込み・並び替え・投稿／写真）は URL に持ち、変えると router.replace で書き換える
+ *   - 2 ページ目以降は /api/spots/search で取る（1 ページ目は Server Component が渡す）
+ *   - 写真タブは PhotoGrid をそのまま使う（条件は同じで、写真は投稿単位のまま）
+ *   - スクロール位置の復元と「徒歩 N 分」は use-search-list.ts のフック
+ * スポット別（/search?spot=）は従来どおり PostSearchScreen（SpotPostListScreen）が受け持つ。
  */
-export function PostSearchScreen({
+export function SpotSearchScreen({
   context,
   initialState,
   initialPage,
   title,
   backHref,
   backLabel,
-  header,
   addMode = null,
   emptyMessage = "条件に合う投稿がありません",
-  fetchPage = defaultFetchPage,
+  fetchPage = defaultFetchSpotPage,
   initialMediaPage = null,
   fetchMediaPage,
   geolocation,
   permissions,
 }: {
   context: SearchContext;
-  /** URL から読んだ絞り込み・並び替え */
   initialState: PostSearchState;
-  /** 1 ページ目。Server Component が取得して渡す */
-  initialPage: PostCardPage;
-  /** 見出し（大阪府／大阪駅／スポット名） */
+  initialPage: SpotCardPage;
   title: string;
   backHref: string;
   backLabel: string;
-  /** 見出しの下に差し込む要素（スポット別の情報行など） */
-  header?: ReactNode;
   addMode?: AddModeInfo | null;
   emptyMessage?: string;
-  /** 差し替え口（単体テスト用） */
-  fetchPage?: FetchSearchPage;
-  /** 写真グリッド（?view=photos）の 1 ページ目。Server Component が取得して渡す（key は取得時の条件） */
+  fetchPage?: FetchSpotPage;
   initialMediaPage?: { key: string; page: SpotMediaPage } | null;
-  /** 差し替え口（単体テスト用） */
   fetchMediaPage?: FetchMediaPage;
   geolocation?: Pick<Geolocation, "getCurrentPosition">;
   permissions?: Pick<Permissions, "query">;
@@ -85,7 +66,7 @@ export function PostSearchScreen({
   const router = useRouter();
   const [state, setState] = useState<PostSearchState>(initialState);
   const [isSheetOpen, setIsSheetOpen] = useState(false);
-  const [posts, setPosts] = useState<PostCardData[]>(initialPage.posts);
+  const [spots, setSpots] = useState<SpotCardData[]>(initialPage.spots);
   const [nextOffset, setNextOffset] = useState<number | null>(initialPage.nextOffset);
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -93,14 +74,14 @@ export function PostSearchScreen({
   const pageHref = buildSearchPageHref(state, context);
 
   const load = useCallback(
-    async (nextState: PostSearchState, offset: number, replace: boolean): Promise<PostCardPage | null> => {
+    async (nextState: PostSearchState, offset: number, replace: boolean): Promise<SpotCardPage | null> => {
       const requestId = ++requestIdRef.current;
       setIsLoading(true);
       setErrorMessage(null);
       try {
         const page = await fetchPage(buildPostSearchParams(nextState, context, offset));
         if (requestIdRef.current !== requestId) return null;
-        setPosts((current) => (replace ? page.posts : [...current, ...page.posts]));
+        setSpots((current) => (replace ? page.spots : [...current, ...page.spots]));
         setNextOffset(page.nextOffset);
         return page;
       } catch (error) {
@@ -115,7 +96,6 @@ export function PostSearchScreen({
     [fetchPage, context]
   );
 
-  // 条件が変わったら URL を書き換えて 1 ページ目から取り直す
   const applyState = (next: PostSearchState) => {
     setState(next);
     setIsSheetOpen(false);
@@ -131,24 +111,19 @@ export function PostSearchScreen({
 
   const sentinelRef = useInfiniteScroll(nextOffset !== null && !isLoading && state.view === "posts", loadMore);
 
-  // ── Task3: 「一覧に戻る」の復元と保存、「徒歩 N 分」の現在地（use-search-list.ts に共通化。v3.1） ──
   const loadPage = useCallback(async (offset: number) => (await load(initialState, offset, false))?.nextOffset ?? null, [load, initialState]);
-  useListRestore({ pageHref, itemCount: posts.length, initialNextOffset: initialPage.nextOffset, loadPage });
+  useListRestore({ pageHref, itemCount: spots.length, initialNextOffset: initialPage.nextOffset, loadPage });
   const viewer = useViewerPosition(geolocation, permissions);
 
-  const withWalk = (post: PostCardData): PostCardData =>
-    viewer ? { ...post, walkMinutes: walkMinutesBetween(viewer, { lat: post.spotLat, lng: post.spotLng }) } : post;
+  const withWalk = (spot: SpotCardData): SpotCardData => (viewer ? { ...spot, walkMinutes: walkMinutesBetween(viewer, { lat: spot.lat, lng: spot.lng }) } : spot);
 
   const activeCount = countActiveFilters(state, context);
-  const onSortChange = (sort: PostSort) => applyState({ ...state, sort });
-  // スポット別の並び替え（新着順／評価順／いいね順）。検索結果のスポットカードは SpotSearchScreen 側
-  // 写真切替: 投稿一覧は取り直さず URL だけ変える（戻したときに一覧が残っている）
+  const onSortChange = (sort: SpotSort) => applyState({ ...state, sort });
   const onViewChange = (view: ListView) => {
     const next = { ...state, view };
     setState(next);
     router.replace(buildSearchPageHref(next, context), { scroll: false });
   };
-  // 写真グリッドに渡す条件（投稿一覧と同じ。offset と view は含めない）
   const mediaParams = buildPostSearchParams({ ...state, view: "posts" }, context, 0);
   const isPhotos = state.view === "photos";
 
@@ -174,10 +149,9 @@ export function PostSearchScreen({
               絞り込み{activeCount > 0 && `（${activeCount}）`}
             </button>
           </div>
-          {header}
           <div className="flex items-center justify-between gap-2">
             <ViewToggle value={state.view} onChange={onViewChange} />
-            <SortDropdown value={state.sort as PostSort} onChange={onSortChange} />
+            <SortDropdown<SpotSort> value={state.sort as SpotSort} onChange={onSortChange} options={SPOT_SORTS} labels={SPOT_SORT_LABELS} />
           </div>
         </header>
 
@@ -188,24 +162,20 @@ export function PostSearchScreen({
             initialPage={initialMediaPage && initialMediaPage.key === mediaParams.toString() ? initialMediaPage.page : { items: [], nextOffset: 0 }}
             fetchPage={fetchMediaPage}
           />
-        ) : posts.length === 0 && !isLoading && !errorMessage ? (
+        ) : spots.length === 0 && !isLoading && !errorMessage ? (
           <p className="py-16 text-center text-[13px] text-muted">{emptyMessage}</p>
         ) : (
-          <ul className="flex flex-col gap-3">
-            {posts.map((post) => (
-              <li key={post.id}>
-                <PostCard post={withWalk(post)} backHref={pageHref} showSpotName={context.destination?.kind !== "spot"} addMode={addMode} />
+          <ul className="flex flex-col gap-3" data-spot-list>
+            {spots.map((spot) => (
+              <li key={spot.id}>
+                <SpotCard spot={withWalk(spot)} addMode={addMode} />
               </li>
             ))}
           </ul>
         )}
 
         {!isPhotos && errorMessage && (
-          <ErrorNotice
-            className="mt-3"
-            message={errorMessage}
-            onRetry={() => void load(state, posts.length === 0 ? 0 : (nextOffset ?? 0), posts.length === 0)}
-          />
+          <ErrorNotice className="mt-3" message={errorMessage} onRetry={() => void load(state, spots.length === 0 ? 0 : (nextOffset ?? 0), spots.length === 0)} />
         )}
 
         <div ref={sentinelRef} aria-hidden className="h-1" />
@@ -221,22 +191,16 @@ export function PostSearchScreen({
         )}
       </div>
 
-      <FilterSheet
-        open={isSheetOpen}
-        value={state}
-        hasDistanceCenter={distanceCenter(context) !== null}
-        onApply={applyState}
-        onClose={() => setIsSheetOpen(false)}
-      />
+      <FilterSheet open={isSheetOpen} value={state} hasDistanceCenter={distanceCenter(context) !== null} onApply={applyState} onClose={() => setIsSheetOpen(false)} />
     </div>
   );
 }
 
-async function defaultFetchPage(params: URLSearchParams): Promise<PostCardPage> {
+async function defaultFetchSpotPage(params: URLSearchParams): Promise<SpotCardPage> {
   const query = params.toString();
-  const response = await fetchWithAuthRedirect(`/api/posts/search${query ? `?${query}` : ""}`);
+  const response = await fetchWithAuthRedirect(`/api/spots/search${query ? `?${query}` : ""}`);
   if (!response.ok) {
-    throw new Error(`Failed to search posts: ${response.status}`);
+    throw new Error(`Failed to search spots: ${response.status}`);
   }
-  return (await response.json()) as PostCardPage;
+  return (await response.json()) as SpotCardPage;
 }

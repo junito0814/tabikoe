@@ -4,7 +4,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { requireUserOrRedirect } from "@/lib/auth/require-user-or-redirect";
 import { ErrorNotice } from "@/components/notices/ErrorNotice";
 import { ERROR_MESSAGES } from "@/components/notices/error-messages";
-import { PostSearchScreen } from "@/components/posts/PostSearchScreen";
+import { SpotSearchScreen } from "@/components/posts/SpotSearchScreen";
 import { SpotPostListScreen } from "@/components/posts/SpotPostListScreen";
 import { loadSearchPage, type SearchPageQuery } from "@/lib/search/load-search-page";
 
@@ -47,11 +47,12 @@ export default async function SearchPage({ searchParams }: { searchParams: Promi
     );
   }
 
+  // v3.1（mentoring-7 Task3）: 検索結果（都道府県・駅・市区町村）はスポット単位のカード
   return (
-    <PostSearchScreen
+    <SpotSearchScreen
       context={data.context}
       initialState={data.initialState}
-      initialPage={data.initialPage}
+      initialPage={data.initialSpotPage}
       initialMediaPage={data.initialMediaPage}
       title={data.resolved.title}
       backHref="/"

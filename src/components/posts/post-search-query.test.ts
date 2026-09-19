@@ -56,7 +56,8 @@ describe("buildPostSearchParams", () => {
 
 describe("buildSearchPageHref / parseSearchState", () => {
   it("URL に書いた条件をそのまま読み戻せる（往復）", () => {
-    const state = { ...EMPTY_SEARCH_STATE, categories: ["グルメ" as const], cost: "1000" as const, period: "last_month" as const, sort: "likes" as const };
+    // v3.1: 都道府県の検索結果はスポット単位なので並び替えは 新着順／評価順／投稿数順（いいね順はスポット別だけ）
+    const state = { ...EMPTY_SEARCH_STATE, categories: ["グルメ" as const], cost: "1000" as const, period: "last_month" as const, sort: "count" as const };
     const href = buildSearchPageHref(state, { ...pref, addMode: { itinerary: "it-1", day: "2" } });
     expect(href).toContain("/search?pref=");
     expect(href).toContain("itinerary=it-1");

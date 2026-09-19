@@ -2,93 +2,36 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getAuthenticatedUser } from "@/lib/auth/get-authenticated-user";
-import { PlacesApiError, searchPlaces } from "@/lib/google/places";
-
-const MAX_RESULTS = 5;
-
-export interface SpotSearchCandidate {
-  /** 既に`spots`に存在する場合のみ入る。Google由来の未登録候補ではnull */
-  id: string | null;
-  name: string;
-  lat: number;
-  lng: number;
-  source: "places" | "manual";
-  postCount: number;
-}
+import { parsePostSearchParams } from "@/lib/posts/search-posts";
+import { parseSpotSort, searchSpotCards } from "@/lib/spots/search-spots";
 
 /**
- * F-PO-01 スポット指定 Task2: スポット候補検索
- * 出典: docs/tasks/posts/spot-selection/02-spot-search-handler.md
+ * mentoring-7 Task3（v3.1）: スポット単位の検索 Route Handler
+ * 出典: docs/tasks/shared-ui/mentoring-7/03-spot-cards.md
+ *       要件定義書 v3.1 3.4.2
  *
- * Google Places APIの検索結果と、Supabase上の登録済みスポットを統合し、
- * 投稿数が多い順に最大5件返す（要件定義書3.3.5）。
- * Places APIが落ちていても登録済みスポットの候補と手動登録の導線は維持する（要件6.2）。
+ * クエリは /api/posts/search と同じ（行き先・絞り込み・vlat/vlng・offset）。違いは
+ *   並び替え: sort=newest|rating|count（新着順／評価順／投稿数順）
+ *   応答: { spots: SpotCardData[], nextOffset }
+ * 検索トップから都道府県・駅・市区町村で検索したときの一覧（スポットカード）がこれを使う。
+ * スポット別（spot=<id>）は従来どおり /api/posts/search。
  */
 export async function GET(request: Request) {
   const supabase = await createClient();
   const user = await getAuthenticatedUser(supabase);
-
   if (!user) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
 
-  const query = new URL(request.url).searchParams.get("query")?.trim() ?? "";
-  if (query.length === 0) {
-    return NextResponse.json({ candidates: [], placesUnavailable: false });
-  }
+  const searchParams = new URL(request.url).searchParams;
+  const filters = parsePostSearchParams(searchParams);
+  const sort = parseSpotSort(searchParams.get("sort"));
+  const offset = Math.max(0, Number.parseInt(searchParams.get("offset") ?? "0", 10) || 0);
 
-  // 登録済みスポットは投稿数つきで取得する。
-  // 投稿数の集計は他ユーザーの投稿も含むためRLSを回避する必要があり、Adminクライアントを使う。
-  const admin = createAdminClient();
-  const escaped = query.replace(/[\\%_]/g, (char) => `\\${char}`);
-  const { data: storedSpots, error: storedError } = await admin
-    .from("spots")
-    .select("id, name, lat, lng, source, posts(count)")
-    // F-AD-05: 非公開化されたスポットは候補に出さない
-    .is("hidden_at", null)
-    .ilike("name", `%${escaped}%`)
-    .limit(MAX_RESULTS);
-
-  if (storedError) {
+  try {
+    const page = await searchSpotCards(createAdminClient(), user.id, filters, sort, offset);
+    return NextResponse.json(page);
+  } catch {
     return NextResponse.json({ error: "fetch_failed" }, { status: 500 });
   }
-
-  const stored: SpotSearchCandidate[] = (storedSpots ?? []).map((spot) => ({
-    id: spot.id,
-    name: spot.name,
-    lat: spot.lat,
-    lng: spot.lng,
-    source: spot.source,
-    postCount: spot.posts?.[0]?.count ?? 0,
-  }));
-
-  let placesUnavailable = false;
-  let placeCandidates: SpotSearchCandidate[] = [];
-  try {
-    const places = await searchPlaces(query, MAX_RESULTS);
-    // 既に登録済みのスポットと同名のGoogle候補は重複表示しない
-    const storedNames = new Set(stored.map((spot) => spot.name));
-    placeCandidates = places
-      .filter((place) => !storedNames.has(place.name))
-      .map((place) => ({
-        id: null,
-        name: place.name,
-        lat: place.lat,
-        lng: place.lng,
-        source: "places" as const,
-        postCount: 0,
-      }));
-  } catch (error) {
-    if (!(error instanceof PlacesApiError)) {
-      throw error;
-    }
-    placesUnavailable = true;
-  }
-
-  // 投稿数が多い順。Google由来の未登録候補は投稿数0なので自然と後ろに並ぶ
-  const candidates = [...stored, ...placeCandidates]
-    .sort((a, b) => b.postCount - a.postCount)
-    .slice(0, MAX_RESULTS);
-
-  return NextResponse.json({ candidates, placesUnavailable });
 }

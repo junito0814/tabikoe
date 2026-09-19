@@ -5,6 +5,7 @@ import type { AddModeInfo } from "@/components/posts/AddModeBanner";
 import { loadAddMode } from "@/lib/itineraries/add-mode";
 import { findLatestSpotStatuses, type PostCardPage } from "@/lib/posts/post-cards";
 import { parsePostSearchParams, searchPostCards } from "@/lib/posts/search-posts";
+import { parseSpotSort, searchSpotCards, type SpotCardPage } from "@/lib/spots/search-spots";
 import { searchMediaPage, type SpotMediaPage } from "@/lib/posts/search-photos";
 import { buildPostSearchParams } from "@/components/posts/post-search-query";
 import { resolveDestination, type ResolvedDestination } from "./resolve-destination";
@@ -32,7 +33,10 @@ export type SearchPageData =
       resolved: Exclude<ResolvedDestination, { kind: "spot_missing" }>;
       context: SearchContext;
       initialState: ReturnType<typeof parseSearchState>;
+      /** スポット別（spot）のときの投稿カードの 1 ページ目。検索結果（prefecture／nearby）では空 */
       initialPage: PostCardPage;
+      /** v3.1: 検索結果（prefecture／nearby）のときのスポットカードの 1 ページ目。スポット別では空 */
+      initialSpotPage: SpotCardPage;
       /** ?view=photos で開いたときの写真グリッドの 1 ページ目（key は条件の文字列） */
       initialMediaPage: { key: string; page: SpotMediaPage } | null;
       addMode: AddModeInfo | null;
@@ -85,8 +89,12 @@ export async function loadSearchPage(admin: SupabaseClient, userId: string, quer
     // 見つからなかった行き先は 0 件（全件を出してしまわない）
     const filters = parsePostSearchParams(apiParams);
     const isPhotos = initialState.view === "photos";
-    const initialPage: PostCardPage =
-      resolved.kind === "not_found" || isPhotos ? { posts: [], nextOffset: null } : await searchPostCards(admin, userId, filters, 0);
+    // v3.1: 検索結果（都道府県・駅）はスポット単位、スポット別は投稿単位で 1 ページ目を取る
+    const isSpotResult = resolved.kind !== "spot";
+    const empty = resolved.kind === "not_found" || isPhotos;
+    const initialPage: PostCardPage = empty || isSpotResult ? { posts: [], nextOffset: null } : await searchPostCards(admin, userId, filters, 0);
+    const initialSpotPage: SpotCardPage =
+      empty || !isSpotResult ? { spots: [], nextOffset: null } : await searchSpotCards(admin, userId, filters, parseSpotSort(apiParams.get("sort")), 0);
     // 写真切替で開いたときは写真の 1 ページ目を取る（投稿一覧は「投稿」に戻したときにブラウザが取る）
     const initialMediaPage =
       isPhotos && resolved.kind !== "not_found"
@@ -119,7 +127,7 @@ export async function loadSearchPage(admin: SupabaseClient, userId: string, quer
       };
     }
 
-    return { kind: "ok", resolved, context, initialState, initialPage, initialMediaPage, addMode, spot };
+    return { kind: "ok", resolved, context, initialState, initialPage, initialSpotPage, initialMediaPage, addMode, spot };
   } catch {
     return { kind: "error" };
   }
