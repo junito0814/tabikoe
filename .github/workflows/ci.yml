@@ -40,6 +40,10 @@ jobs:
       - name: Install
         run: npm ci
 
+      # LayoutProps などの Next.js が生成する型（.next/types）を先に作る。手元では next dev/build が作っているので気づきにくい
+      - name: Generate Next.js types
+        run: npx next typegen
+
       - name: Type check
         run: npx tsc --noEmit
 
