@@ -14,6 +14,7 @@ import type { RegisteredSpot } from "@/lib/spots/types";
 import { isVideoFile } from "@/lib/video/media-kind";
 import { EMPTY_POST_FORM_VALUES, hasAnyPostInput, isPostFormComplete, PostFormFields, type PostFormValues } from "./PostFormFields";
 import { PostLocationMap } from "./PostLocationMap";
+import { useSheetDrag } from "@/components/layout/use-sheet-drag";
 import { SpotField } from "./SpotField";
 import { useDraftAutosave } from "./use-draft-autosave";
 import { buildComposePayload, type UploadedMedia } from "./compose-payload";
@@ -129,6 +130,10 @@ export function PostComposeScreen({
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [confirmingHome, setConfirmingHome] = useState(false);
   const [sheetExpanded, setSheetExpanded] = useState(false);
+  const sheetDrag = useSheetDrag(
+    (snap) => setSheetExpanded(snap === "expand"),
+    () => setSheetExpanded((current) => !current)
+  );
 
   const handleFilesSelected = (event: React.ChangeEvent<HTMLInputElement>) => {
     const selected = Array.from(event.target.files ?? []);
@@ -324,11 +329,15 @@ export function PostComposeScreen({
 
       {/* 下 2/3（パソコンでは右 2/3）: フォーム */}
       <div className="flex min-h-0 flex-1 flex-col rounded-t-[16px] border-t border-line bg-app shadow-card md:rounded-none md:border-l md:border-t-0">
+        {/* v3.1（mentoring-7 Task11）: 取っ手を上にスライドで全画面、下にスライドで 1：2（use-sheet-drag.ts）。タップでも切り替わる */}
         <button
           type="button"
+          {...sheetDrag}
           onClick={() => setSheetExpanded((current) => !current)}
           aria-label={sheetExpanded ? "地図を表示" : "フォームを広げる"}
-          className="flex h-6 w-full items-center justify-center md:hidden"
+          aria-expanded={sheetExpanded}
+          data-sheet-handle
+          className="flex h-6 w-full touch-none items-center justify-center md:hidden"
         >
           <span className="h-1 w-10 rounded-full bg-line" />
         </button>
