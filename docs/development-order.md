@@ -238,6 +238,22 @@ draft Task 3・map-display-v3 Task 1 の後。
 
 提出日（2026-10-07）までに全 Phase が終わらない場合は、Phase 10〜12 を完了させたうえで、Phase 13 は itinerary-basics・itinerary-days・add-spots・wishlist-v3・itinerary-check・itinerary-map-and-post を優先し、arrival-time・itinerary-sharing・Phase 14 を後回しにする。
 
+## Phase 15 — メンタリング 7 回目の反映（v3.1） 🔷
+
+Phase 10〜14 の PR（#413〜#417）がマージされた後。Epic #421 の Task 1〜11 を「依存」欄の順（1 → 2・3 → 4〜9 → 11 → 10）に行う。
+
+| # | ストーリー | Epic | 状態 | 備考 |
+|---|---|---|---|---|
+| 1 | mentoring-7（v3.1） | #421 | 🔷 | 用語統一・日常アルバム・スポットカード・上 1/3 地図・写真タブ・地図の吹き出しと復元・しおり詳細と一覧。Task 11（シートのドラッグの共通部品）は 2026-09-19 に追加 |
+
+## Phase 16 — 画面遷移マップの見直しで出た追加要望（v3.2） 🔷
+
+Phase 15 の後。Epic「feedback-0919（v3.2）」の Task 1〜8。Task 3 は Phase 15 の Task 5、Task 7 は Phase 15 の Task 7 の後。
+
+| # | ストーリー | Epic | 状態 | 備考 |
+|---|---|---|---|---|
+| 1 | feedback-0919（v3.2） | （Issue 化時に記入） | 🔷 | 滞在時間 7 択・スポット登録バッジ・写真タブのモーダル・コメントの返信とプレビュー・アプリ内招待・移動手段 |
+
 ---
 
 ## 計画と実際の順序が異なった理由
