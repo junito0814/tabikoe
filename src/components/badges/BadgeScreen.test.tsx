@@ -8,13 +8,13 @@ import { mergeBadgeStatus } from "@/lib/badges/badge-status";
  * - 獲得済み・未獲得のバッジが一覧確認でき、描き分けられること
  */
 describe("BadgeScreen", () => {
-  it("獲得済みは獲得日つき、未獲得は「未獲得」で全56種を表示する", () => {
+  it("獲得済みは獲得日つき、未獲得は「未獲得」で全63種を表示する（v3.2）", () => {
     const badges = mergeBadgeStatus([
       { badge_type: "post_count:1", acquired_at: "2026-09-01T03:00:00Z" },
     ]);
     render(<BadgeScreen badges={badges} />);
 
-    expect(screen.getByText("1 / 56 個を獲得")).toBeInTheDocument();
+    expect(screen.getByText("1 / 63 個を獲得")).toBeInTheDocument();
 
     const acquired = screen.getByLabelText("投稿1件（獲得済み）");
     expect(acquired).toHaveAttribute("data-acquired", "true");
@@ -24,7 +24,7 @@ describe("BadgeScreen", () => {
     expect(notYet).toHaveAttribute("data-acquired", "false");
     expect(notYet).toHaveTextContent("未獲得");
 
-    expect(screen.getAllByRole("listitem")).toHaveLength(56);
+    expect(screen.getAllByRole("listitem")).toHaveLength(63);
   });
 
   it("都道府県セクションには未投稿の県も含めて47件並ぶ", () => {

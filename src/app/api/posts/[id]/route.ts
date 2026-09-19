@@ -152,7 +152,7 @@ export async function PATCH(
   if (!isDraft) {
     const finalized = await finalizeSpotForPost(
       admin,
-      spotId ? { spotId } : { lat: fields.lat, lng: fields.lng, name: typeof body.spotName === "string" ? body.spotName : null }
+      spotId ? { spotId } : { lat: fields.lat, lng: fields.lng, name: typeof body.spotName === "string" ? body.spotName : null, createdBy: user.id }
     );
     if (!finalized.ok) {
       const status = finalized.error === "nearby_lookup_failed" ? 503 : finalized.error === "insert_failed" ? 500 : 400;

@@ -18,10 +18,13 @@ function fakeAdmin({
   postCount = 0,
   likeCount = 0,
   owned = [] as string[],
+  spotCount = 0,
 }: {
   postCount?: number;
   likeCount?: number;
   owned?: string[];
+  /** v3.2: 自分が登録した manual スポットの数 */
+  spotCount?: number;
 }) {
   const upsert = vi.fn((rows: { badge_type: string }[]) => ({
     select: async () => ({
@@ -42,6 +45,11 @@ function fakeAdmin({
         return { select: () => query };
       }
       if (table === "likes") return { select: () => ({ eq: likesEq }) };
+      if (table === "spots") {
+        // v3.2: created_by・source・posts.user_id・posts.status の 4 段の eq
+        const query = { eq: () => query, then: (resolve: (v: unknown) => void) => resolve({ count: spotCount, error: null }) };
+        return { select: () => query };
+      }
       throw new Error(`unexpected table ${table}`);
     },
   } as unknown as SupabaseClient;
@@ -70,6 +78,13 @@ describe("evaluatePostBadges（投稿数・都道府県）", () => {
       "post_count:1",
       "prefecture:沖縄県",
     ]);
+  });
+
+  it("v3.2: 自分が登録した manual スポットが 3 件なら spot_registration:1・3 が付き、5 は付かない。0 件なら付かない", async () => {
+    const { admin } = fakeAdmin({ postCount: 5, spotCount: 3, owned: ["post_count:1", "prefecture:東京都"] });
+    expect(await evaluatePostBadges(admin, "me", "東京都")).toEqual(["spot_registration:1", "spot_registration:3"]);
+    const none = fakeAdmin({ postCount: 5, spotCount: 0, owned: ["post_count:1", "prefecture:東京都"] });
+    expect(await evaluatePostBadges(none.admin, "me", "東京都")).toEqual([]);
   });
 
   it("同一都道府県への2件目の投稿では都道府県バッジが重複付与されない", async () => {

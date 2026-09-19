@@ -3,6 +3,7 @@ import {
   badgeTypeForPrefecture,
   reachedLikeCountBadgeTypes,
   reachedPostCountBadgeTypes,
+  reachedSpotRegistrationBadgeTypes,
 } from "./catalog";
 
 /**
@@ -67,7 +68,24 @@ export async function evaluatePostBadges(
   const prefectureBadge = badgeTypeForPrefecture(spotPrefecture);
   if (prefectureBadge) candidates.push(prefectureBadge);
 
+  // v3.2（feedback-0919 Task2）: スポット登録バッジ。自分が最初に登録した manual スポットのうち、
+  // 自分の公開投稿があるもの（下書きだけのスポットは数えない）
+  candidates.push(...reachedSpotRegistrationBadgeTypes(await countRegisteredSpots(admin, userId)));
+
   return awardBadges(admin, userId, candidates);
+}
+
+/** v3.2: 「タビコエだけの場所」を自分が登録し（spots.created_by）、自分の公開投稿があるスポットの数 */
+export async function countRegisteredSpots(admin: SupabaseClient, userId: string): Promise<number> {
+  const { count, error } = await admin
+    .from("spots")
+    .select("id, posts!inner(id)", { count: "exact", head: true })
+    .eq("created_by", userId)
+    .eq("source", "manual")
+    .eq("posts.user_id", userId)
+    .eq("posts.status", "published");
+  if (error) throw error;
+  return count ?? 0;
 }
 
 /**

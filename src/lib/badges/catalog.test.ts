@@ -56,9 +56,12 @@ describe("badge_type の生成", () => {
 });
 
 describe("BADGE_CATALOG", () => {
-  it("投稿数4 + いいね数5 + 都道府県47 = 56種で、type は重複しない", () => {
-    expect(BADGE_CATALOG).toHaveLength(56);
-    expect(new Set(BADGE_CATALOG.map((badge) => badge.type)).size).toBe(56);
+  it("投稿数4 + いいね数5 + スポット登録7（v3.2） + 都道府県47 = 63種で、type は重複しない", () => {
+    expect(BADGE_CATALOG).toHaveLength(63);
+    expect(new Set(BADGE_CATALOG.map((badge) => badge.type)).size).toBe(63);
+    expect(BADGE_CATALOG.filter((badge) => badge.category === "spot_registration").map((badge) => badge.type)).toEqual([
+      "spot_registration:1", "spot_registration:3", "spot_registration:5", "spot_registration:10", "spot_registration:20", "spot_registration:30", "spot_registration:50",
+    ]);
   });
 
   it("badge_type から定義を引ける", () => {
