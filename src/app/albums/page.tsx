@@ -46,7 +46,7 @@ export default async function AlbumsPage() {
           <p className="py-16 text-center text-[13px] leading-[1.8] text-muted">
             まだアルバムがありません
             <br />
-            投稿すると旅行タイトルごとにアルバムができます
+            投稿するとアルバムごとにまとまります
           </p>
         ) : (
           <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3">

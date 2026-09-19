@@ -7,13 +7,13 @@ import Link from "next/link";
  *       要件定義書 v3.0 3.7.4
  *
  * 【初心者向け】`/search?…&itinerary=<id>&day=<n>` で開かれたとき、一覧の上に固定で出す帯。
- * 「〈旅行タイトル〉 Day n に追加中 [完了]」。「完了」でしおり詳細（/itineraries/[id]）へ戻る。
- * Day が無い（未定タブから来た）ときは「未定に追加中」。タイトルが取れなければ「しおり」と出す。
+ * 「〈アルバム名〉 Day n に追加中 [完了]」。「完了」でしおり詳細（/itineraries/[id]）へ戻る。
+ * Day が無い（日付なしのタブから来た）ときは「日付なし に追加中」。タイトルが取れなければ「しおり」と出す。
  * state を持たない表示だけの部品なので Server Component からもそのまま使える。
  */
 export interface AddModeInfo {
   itineraryId: string;
-  /** 1 始まりの Day。null は「未定」 */
+  /** 1 始まりの Day。null は「日付なし」 */
   day: number | null;
   title: string | null;
   /** そのしおりに既に入っているスポット ID（カードの「＋」を ✓ にする） */
@@ -40,7 +40,7 @@ export function AddModeBanner({ info }: { info: AddModeInfo }) {
     >
       <span className="min-w-0 truncate">
         {info.title ?? "しおり"}
-        <span className="ml-1.5 font-medium">{info.day === null ? "未定" : `Day ${info.day}`} に追加中</span>
+        <span className="ml-1.5 font-medium">{info.day === null ? "日付なし" : `Day ${info.day}`} に追加中</span>
       </span>
       <Link href={addModeDoneHref(info)} className="shrink-0 rounded-full bg-white/20 px-3 py-1 text-[12px] font-bold text-white">
         完了

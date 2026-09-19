@@ -63,7 +63,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
     return NextResponse.json({ error: "update_failed" }, { status: 500 });
   }
 
-  // 範囲外になった Day のスポットを未定へ（消さない）
+  // 範囲外になった Day のスポットを日付なしへ（消さない）
   const count = dayCount(period.startDate, period.endDate);
   const { data: spots } = await context.admin.from("itinerary_spots").select("id, day_index").eq("itinerary_id", id).not("day_index", "is", null);
   const outOfRange = ((spots ?? []) as { id: string; day_index: number | null }[]).filter((row) => clampDayIndex(row.day_index, count) === null);

@@ -167,7 +167,7 @@ describe("MapScreen（SC-02 v3.0）", () => {
     expect(await screen.findByRole("dialog", { name: "スポットspot-1" })).toBeInTheDocument();
   });
 
-  it("探すモード: 近くの声が出て、半径切替で再取得、カード切替でフォーカスピンが変わる", async () => {
+  it("探すモード: 近くのスポットが出て、半径切替で再取得、カード切替でフォーカスピンが変わる", async () => {
     const fetchNearby = vi.fn(async () => [
       { id: "p1", spotId: "s1", spotName: "展望台", commentExcerpt: "夕日", thumbnailUrl: null, lat: 35.66, lng: 139.76, distanceMeters: 480, walkMinutes: 6 },
       { id: "p2", spotId: "s2", spotName: "直売所", commentExcerpt: "トマト", thumbnailUrl: null, lat: 35.67, lng: 139.77, distanceMeters: 900, walkMinutes: 12 },
@@ -175,7 +175,7 @@ describe("MapScreen（SC-02 v3.0）", () => {
     const open = resolveMapOpen({ mode: "explore", lat: "35.65", lng: "139.75" });
     render(<MapScreen open={open} fetchPins={async () => [pin("s1"), pin("s2")]} fetchNearby={fetchNearby} resolveCenter={resolveCenter} />);
     await settle();
-    expect(screen.getByRole("heading", { name: "近くの声" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "近くのスポット" })).toBeInTheDocument();
     await waitFor(() => expect(fetchNearby).toHaveBeenCalledWith({ lat: 35.65, lng: 139.75 }, 1000));
     await waitFor(() => expect(latestPins).toEqual([expect.objectContaining({ id: "s1", type: "focus" }), expect.objectContaining({ id: "s2", type: "post" })]));
 

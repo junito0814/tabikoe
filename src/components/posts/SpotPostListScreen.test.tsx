@@ -87,7 +87,7 @@ describe("SpotPostListScreen（SC-04 スポット別）", () => {
       />
     );
     expect(screen.getByRole("status")).toHaveTextContent("東京旅行");
-    expect(screen.getByRole("status")).toHaveTextContent("未定 に追加中");
+    expect(screen.getByRole("status")).toHaveTextContent("日付なし に追加中");
     expect(screen.getByRole("link", { name: "完了" })).toHaveAttribute("href", "/itineraries/it-1");
   });
 });

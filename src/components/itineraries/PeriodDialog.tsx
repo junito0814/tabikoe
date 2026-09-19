@@ -69,7 +69,7 @@ export function PeriodDialog({
             <input type="date" value={end} onChange={(event) => setEnd(event.target.value)} className="h-11 rounded-[10px] border border-line bg-surface px-2 text-[13px] text-ink" />
           </label>
         </div>
-        <p className="text-[11px] leading-[1.6] text-muted">期間を短くすると、消える日のスポットは「未定」に移ります（消えません）。両方空にすると期間を解除します。</p>
+        <p className="text-[11px] leading-[1.6] text-muted">期間を短くすると、消える日のスポットは「日付なし」に移ります（消えません）。両方空にすると期間を解除します。</p>
         {error && <ErrorNotice message={error} />}
         <div className="flex justify-between">
           <button
