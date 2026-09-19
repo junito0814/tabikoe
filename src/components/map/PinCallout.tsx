@@ -13,7 +13,7 @@ import { SaveButton } from "@/components/save/SaveButton";
  *       要件定義書 v3.0 3.4.4
  *
  * 【初心者向け】ピンの種別で中身が変わる。
- *   - post / saved: スポット名・星平均・投稿件数・最新の「まだあった」・「一覧」「投稿する」
+ *   - post / saved: スポット名・星平均・投稿件数・最新の「まだあった」（本体のタップで一覧へ）・「＋」「投稿する」
  *   - draft       : 「下書き: 〈スポット名または名前のない場所〉 [続きを書く]」→ /posts/new?draft=<id>
  *   - 長押しの一時ピン（temp）: 「この地点 [ここに投稿]」→ /posts/new?lat&lng
  * 吹き出しの位置決め（地図のどこに出すか）は MapScreen が担当し、ここは中身だけ。
@@ -58,7 +58,12 @@ function SpotBody({ pin, backHref }: { pin: MapPinData; backHref: string | null 
   const listHref = pin.spotId ? `/spots/${pin.spotId}` : "/search";
   return (
     <div className="flex flex-col gap-1.5 pr-5">
-      <p className="truncate text-[14px] font-bold">{pin.name}</p>
+      {/* v3.1（mentoring-7 Task6）: 「一覧」ボタンは無く、本体（スポット名〜件数）のタップでスポット別の投稿一覧へ */}
+      <Link href={listHref} className="flex flex-col gap-1" data-callout-body>
+      <p className="flex items-center gap-1 truncate text-[14px] font-bold">
+        <span className="min-w-0 truncate">{pin.name}</span>
+        <span aria-hidden className="text-muted">›</span>
+      </p>
       <p className="flex flex-wrap items-center gap-x-1.5 text-[11px] text-muted">
         {pin.ratingAverage !== null && (
           <span>
@@ -77,10 +82,8 @@ function SpotBody({ pin, backHref }: { pin: MapPinData; backHref: string | null 
           </>
         )}
       </p>
+      </Link>
       <div className="mt-0.5 flex items-center gap-2">
-        <Link href={listHref} className="inline-flex h-8 flex-1 items-center justify-center rounded-full border border-line bg-surface text-[12px] font-semibold">
-          一覧
-        </Link>
         {/* wishlist-v3 Task1: 吹き出しにも「＋」（保存先シート）。赤ピン＝保存済みなので ✓ で出す */}
         {pin.spotId && <SaveButton spotId={pin.spotId} initialSaved={pin.kind === "saved"} size="sm" />}
         {pin.spotId && (

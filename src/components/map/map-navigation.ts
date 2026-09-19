@@ -1,4 +1,5 @@
 import { parseBackHref } from "@/lib/search/list-state";
+import { backLabelFor, classifyBackHref } from "@/lib/map/back-label";
 import { CURRENT_LOCATION_ZOOM, TOKYO_STATION, type LatLng } from "./initial-center";
 
 /**
@@ -9,8 +10,8 @@ import { CURRENT_LOCATION_ZOOM, TOKYO_STATION, type LatLng } from "./initial-cen
  *
  * 【初心者向け】同じ地図画面を 3 通りで開く。純粋関数にして単体テストで確かめる。
  *   - /map?mode=explore&lat&lng     : 探すモード（現在地中心、下に「近くの声」）。戻るは「ホーム」
- *   - /map?spot=<id>&lat&lng&back=  : スポット中心（フォーカスピン＋吹き出し）。戻るは「一覧に戻る」（back の URL）
- *   - /map?itinerary=<id>           : しおりの地図（Phase 13）。戻るは「しおりに戻る」
+ *   - /map?spot=<id>&lat&lng&back=  : スポット中心（フォーカスピン＋吹き出し）。戻るは戻り先の画面名（back の URL から。v3.1）
+ *   - /map?itinerary=<id>           : しおりの地図（Phase 13）。戻るは「しおり」
  *   - /map                          : 通常。戻るは「ホーム」
  */
 export type MapMode = "default" | "explore" | "spot" | "itinerary";
@@ -46,6 +47,8 @@ export function resolveMapOpen(params: {
   back?: string | null;
   itinerary?: string | null;
   day?: string | null;
+  /** v3.1: back がスポット別・投稿詳細のときのスポット名（page.tsx がサーバーで引く） */
+  backSpotName?: string | null;
 }): MapOpenOptions {
   const lat = num(params.lat);
   const lng = num(params.lng);
@@ -59,7 +62,8 @@ export function resolveMapOpen(params: {
       zoom: SPOT_FOCUS_ZOOM,
       focusSpotId: params.spot,
       itineraryId: null,
-      back: back ? { href: back, label: "一覧に戻る" } : { href: "/", label: "ホーム" },
+      // v3.1（mentoring-7 Task6）: 「一覧に戻る」ではなく戻り先の画面名（大阪府／大阪駅／スポット名／しおり／ホーム）
+      back: back ? { href: back, label: backLabelFor(classifyBackHref(back), params.backSpotName ?? null) } : { href: "/", label: "ホーム" },
     };
   }
   if (params.itinerary) {
@@ -71,7 +75,7 @@ export function resolveMapOpen(params: {
       focusSpotId: null,
       itineraryId: params.itinerary,
       itineraryDay: params.day === "undecided" ? null : Number.isInteger(dayNumber) && dayNumber >= 1 ? dayNumber : undefined,
-      back: { href: `/itineraries/${params.itinerary}`, label: "しおりに戻る" },
+      back: { href: `/itineraries/${params.itinerary}`, label: "しおり" },
     };
   }
   if (params.mode === "explore") {
