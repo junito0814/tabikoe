@@ -162,7 +162,7 @@ export function ItineraryDetailScreen({
   };
 
   const rename = async () => {
-    const next = window.prompt("旅行タイトル", itinerary.title);
+    const next = window.prompt("アルバム名", itinerary.title);
     if (next === null || next.trim() === itinerary.title) return;
     await run(() => api.rename(itinerary.id, next.trim()), "タイトルを変更できませんでした");
   };
@@ -265,7 +265,7 @@ export function ItineraryDetailScreen({
         {error && <ErrorNotice className="mt-2" message={error} />}
 
         {spotsInDay.length === 0 ? (
-          <p className="py-12 text-center text-[13px] text-muted">{day === null ? "未定のスポットはありません" : "この日のスポットはまだありません"}</p>
+          <p className="py-12 text-center text-[13px] text-muted">{day === null ? "日付なしのスポットはありません" : "この日のスポットはまだありません"}</p>
         ) : (
           <ul className="mt-2 flex flex-col gap-2">
             {spotsInDay.map((spot, index) => {
@@ -322,7 +322,7 @@ export function ItineraryDetailScreen({
             const data = (await response.json()) as { movedToUndecided?: number; dayCount?: number };
             await reload();
             if (day !== null && (data.dayCount ?? 0) < day) setDay(null);
-            if (data.movedToUndecided) setToast({ text: `${data.movedToUndecided} 件のスポットを未定に移しました`, action: { label: "未定を見る", onClick: () => setDay(null) } });
+            if (data.movedToUndecided) setToast({ text: `${data.movedToUndecided} 件のスポットを日付なしに移しました`, action: { label: "未定を見る", onClick: () => setDay(null) } });
           }
           return response;
         }}

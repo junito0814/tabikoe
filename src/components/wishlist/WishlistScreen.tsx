@@ -21,7 +21,7 @@ import { resolveMapOpen } from "@/components/map/map-navigation";
  *
  * 【初心者向け】マイページの「行きたい」から開く。上部の「一覧／地図」で切り替え、状態は URL（?view=map）に持つ。
  *   - 一覧: スポット単位（スポット名・代表写真またはプレースホルダ・都道府県・投稿件数・入っているしおりと Day）。押すとスポット別一覧
- *     各行の「＋」→ しおりと Day を選ぶシート（ItineraryPickerSheet）。追加しても行きたいからは消えない。「解除」で行きたいから外す
+ *     各行の「＋」→ しおりと Day を選ぶシート（ItineraryPickerSheet）。追加しても行きたいからは消えない。ゴミ箱マークで行きたいから外す（v3.1）
  *   - 地図: 同じ地図（MapScreen）を「保存済みのピンだけ」で開く。ピンの吹き出しにも「＋」がある
  */
 export function WishlistScreen({
@@ -148,14 +148,22 @@ export function WishlistScreen({
                     <path d="M12 5v14M5 12h14" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" />
                   </svg>
                 </button>
+                {/* v3.1（mentoring-7 Task1）: 「解除」の文字ではなくゴミ箱マーク。読み上げ用の名前は aria-label に残す */}
                 <button
                   type="button"
                   onClick={() => handleRemove(item.spotId)}
                   disabled={pendingId !== null}
                   aria-label={`${item.name}の保存を解除`}
-                  className="shrink-0 text-[12px] font-medium text-accent underline underline-offset-2 disabled:opacity-45"
+                  title="行きたいから外す"
+                  className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-muted hover:text-saved disabled:opacity-45"
                 >
-                  {pendingId === item.spotId ? "解除中..." : "解除"}
+                  {pendingId === item.spotId ? (
+                    <span className="text-[11px]">…</span>
+                  ) : (
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                      <path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3" />
+                    </svg>
+                  )}
                 </button>
               </li>
             ))}

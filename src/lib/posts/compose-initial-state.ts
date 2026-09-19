@@ -81,7 +81,7 @@ export function buildComposeInitialState(query: ComposeQuery, context: ComposeCo
       center: context.spot ? { lat: context.spot.lat, lng: context.spot.lng } : null,
       centerFromCurrentLocation: false,
       tripTitle: context.itinerary.tripTitle,
-      // 未定・期間未設定なら今日。未来の Day なら今日（未来日は選べないため）
+      // 日付なし・期間未設定なら今日。未来の Day なら今日（未来日は選べないため）
       visitDate: context.itinerary.dayDate && context.itinerary.dayDate <= today ? context.itinerary.dayDate : today,
     };
   }

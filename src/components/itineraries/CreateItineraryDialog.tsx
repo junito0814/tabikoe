@@ -48,7 +48,7 @@ export function CreateItineraryDialog({
       return;
     }
     if (!title.trim()) {
-      setError("旅行タイトルを入力してください");
+      setError("アルバム名を入力してください");
       return;
     }
     setIsSubmitting(true);
@@ -76,7 +76,7 @@ export function CreateItineraryDialog({
     <Sheet open={open} title="新しいしおり" onClose={onClose}>
       <form onSubmit={(event) => void handleSubmit(event)} className="flex flex-col gap-3" data-create-itinerary>
         <label className="flex flex-col gap-1 text-[12px] font-medium text-muted">
-          旅行タイトル
+          アルバム
           <input
             value={title}
             onChange={(event) => setTitle(event.target.value)}

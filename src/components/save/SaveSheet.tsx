@@ -137,7 +137,7 @@ function SaveSheetBody({
         if (!response.ok) throw new Error("remove");
         setItems((current) => (current ?? []).map((it) => (it.id === item.id ? { ...it, containsSpot: false, spotDayIndex: null, spotCount: it.spotCount - 1 } : it)));
       } else {
-        // 既定は「未定」（Day は後から選べる）
+        // 既定は「日付なし」（Day は後から選べる）
         const response = await api.itineraries.addSpot(item.id, spotId, null);
         if (!response.ok) throw new Error("add");
         setItems((current) => (current ?? []).map((it) => (it.id === item.id ? { ...it, containsSpot: true, spotDayIndex: null, spotCount: it.spotCount + 1 } : it)));
@@ -244,8 +244,8 @@ function SaveSheetBody({
                 value={newTitle}
                 onChange={(event) => setNewTitle(event.target.value)}
                 maxLength={MAX_TRIP_TITLE_LENGTH}
-                placeholder="旅行タイトル（例: 大阪旅行）"
-                aria-label="旅行タイトル"
+                placeholder="アルバム名（例: 大阪旅行）"
+                aria-label="アルバム名"
                 autoFocus
                 className="h-10 min-w-0 flex-1 rounded-[10px] border border-line bg-surface px-3 text-[13px] text-ink focus:outline-none focus:ring-1 focus:ring-accent"
               />

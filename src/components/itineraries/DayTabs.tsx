@@ -4,12 +4,12 @@ import { formatDayLabel } from "@/lib/itineraries/day-utils";
 import type { ItinerarySpotItem } from "@/lib/itineraries/get-itinerary";
 
 /**
- * itinerary-days Task2 / itinerary-check Task3: Day タブ（Day 1／…／未定。各タブに「済み／全体」）
+ * itinerary-days Task2 / itinerary-check Task3: Day タブ（Day 1／…／日付なし。各タブに「済み／全体」）
  * 出典: docs/tasks/itinerary/itinerary-days/02-day-tabs-and-move-ui.md
  *       docs/tasks/itinerary/itinerary-check/03-row-display-and-map-pins.md
  *
- * 【初心者向け】タブの数は「日数＋1（未定）」。期間未設定なら未定だけ。
- * `value` は選択中の Day（null＝未定）。件数はスポット一覧から数える（純粋関数 countByDay）。
+ * 【初心者向け】タブの数は「日数＋1（日付なし）」。期間未設定なら日付なしだけ（v3.1 の ALL タブは Task 8 で入れる）。
+ * `value` は選択中の Day（null＝日付なし）。件数はスポット一覧から数える（純粋関数 countByDay）。
  */
 export type DayKey = number | null;
 
@@ -42,7 +42,7 @@ export function DayTabs({
       {dayTabKeys(dayCount).map((day) => {
         const selected = day === value;
         const count = countByDay(spots, day);
-        const label = day === null ? "未定" : `Day ${day}`;
+        const label = day === null ? "日付なし" : `Day ${day}`;
         const date = day === null ? "" : formatDayLabel(dayDates[day - 1] ?? null);
         return (
           <button

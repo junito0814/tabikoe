@@ -54,6 +54,13 @@ describe("WishlistScreen", () => {
     expect(placeholder).toHaveAttribute("data-placeholder", "true");
   });
 
+  it("v3.1: 解除はゴミ箱マークのボタン（文字の「解除」は出ない）", () => {
+    render(<WishlistScreen initialItems={items} submitRemove={vi.fn()} />);
+    const button = screen.getByRole("button", { name: "浅草寺の保存を解除" });
+    expect(button.querySelector("svg")).not.toBeNull();
+    expect(button.textContent).not.toContain("解除");
+  });
+
   it("解除すると取消APIを呼び、その行だけ消える", async () => {
     const submitRemove = vi.fn().mockResolvedValue(new Response(null, { status: 200 }));
     render(<WishlistScreen initialItems={items} submitRemove={submitRemove} />);

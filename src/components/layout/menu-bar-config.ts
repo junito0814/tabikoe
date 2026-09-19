@@ -7,7 +7,7 @@
  * こうしておくと、項目の変更はこのファイルだけで済み、判定関数は DOM 無しで単体テストできる。
  * v3.0 で「全体マップ・新規投稿」を外し、「ホーム（検索トップ）・しおり」を入れた。
  * 地図へはホームの「近くのスポットを探す」と投稿カードの「地図で見る」から、投稿へはホームの
- * 「いまいる場所に投稿する」と各入口（post-entry-points）から入る。
+ * 「ここを投稿」と各入口（post-entry-points）から入る。
  */
 export interface MenuItem {
   key: "home" | "itineraries" | "notifications" | "mypage";

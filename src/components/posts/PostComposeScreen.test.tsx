@@ -40,7 +40,7 @@ function makeApi(overrides: Partial<ComposeApi> = {}): ComposeApi {
 const currentLocation = buildComposeInitialState({ lat: "35.6", lng: "139.7", from: "current" });
 
 async function fillRequired() {
-  fireEvent.change(screen.getByLabelText("旅行タイトル *"), { target: { value: "大阪旅行" } });
+  fireEvent.change(screen.getByLabelText("アルバム *"), { target: { value: "大阪旅行" } });
   fireEvent.change(screen.getByLabelText("カテゴリ *"), { target: { value: "グルメ" } });
   fireEvent.change(screen.getByLabelText("滞在時間 *"), { target: { value: "1時間以内" } });
   fireEvent.click(screen.getByRole("radio", { name: "4" }));

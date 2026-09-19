@@ -75,13 +75,13 @@ describe("buildItineraryPins", () => {
 });
 
 describe("ItineraryMapOverlay", () => {
-  it("Day タブ＋未定＋すべて。押すと onChange", () => {
+  it("Day タブ＋日付なし＋すべて。押すと onChange", () => {
     const onChange = vi.fn();
     render(<ItineraryMapOverlay itinerary={itinerary} day={1} onChange={onChange} />);
-    expect(screen.getAllByRole("tab").map((tab) => tab.textContent)).toEqual(["Day 1", "Day 2", "未定", "すべて"]);
+    expect(screen.getAllByRole("tab").map((tab) => tab.textContent)).toEqual(["Day 1", "Day 2", "日付なし", "すべて"]);
     fireEvent.click(screen.getByRole("tab", { name: "すべて" }));
     expect(onChange).toHaveBeenCalledWith(ALL_DAYS);
-    fireEvent.click(screen.getByRole("tab", { name: "未定" }));
+    fireEvent.click(screen.getByRole("tab", { name: "日付なし" }));
     expect(onChange).toHaveBeenCalledWith(null);
   });
 });

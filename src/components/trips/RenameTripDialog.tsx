@@ -70,7 +70,7 @@ export function RenameTripDialog({
           onChange={(event) => setTitle(event.target.value)}
           maxLength={MAX_TRIP_TITLE_LENGTH}
           placeholder="例: 大阪旅行"
-          aria-label="旅行タイトル"
+          aria-label="アルバム名"
           autoFocus
           className="h-11 rounded-[10px] border border-line bg-surface px-3 text-[14px] text-ink focus:outline-none focus:ring-1 focus:ring-accent"
         />
