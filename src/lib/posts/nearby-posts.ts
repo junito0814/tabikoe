@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { getBlockedUserIds } from "@/lib/blocks/get-blocked-user-ids";
 import { haversineMeters, walkMinutes } from "@/lib/geo/walk-minutes";
+import { travelMinutes, TRAVEL_RADIUS_METERS, type TravelMode } from "@/lib/geo/travel-time";
 import { createPostPhotoUrls } from "@/lib/posts/signed-url";
 import { boundsAround } from "@/lib/posts/search-posts";
 
@@ -13,11 +14,15 @@ import { boundsAround } from "@/lib/posts/search-posts";
  * 距離の絞り込みは post-timeline と同じ 2 段階（矩形で DB を絞る → Haversine で円判定）。
  * 並び順は「近い順」。同じスポットに複数の投稿があっても、それぞれ別のカードにする（声を見せる画面なので）。
  */
-export const NEARBY_RADIUS_OPTIONS = [500, 1000, 3000] as const;
+/** v3.0 の徒歩圏（500m／1km／3km）。v3.2 で「移動手段」（徒歩 1km／自転車 3km／車 10km）に置き換わり、radius= は互換のために残す */
+export const NEARBY_RADIUS_OPTIONS = [500, 1000, 3000, 10000] as const;
 export type NearbyRadius = (typeof NEARBY_RADIUS_OPTIONS)[number];
 export const DEFAULT_NEARBY_RADIUS: NearbyRadius = 1000;
-export const NEARBY_RADIUS_LABELS: Record<NearbyRadius, string> = { 500: "500m", 1000: "1km", 3000: "3km" };
 export const NEARBY_POSTS_LIMIT = 20;
+/** v3.2: 移動手段 → 半径（NearbyRadius の値に揃える） */
+export function radiusForTravelMode(mode: TravelMode): NearbyRadius {
+  return TRAVEL_RADIUS_METERS[mode] as NearbyRadius;
+}
 /** 円判定の前に DB から取る上限（矩形の中には円の外も含まれるため多めに） */
 const NEARBY_FETCH_CAP = 200;
 
@@ -35,7 +40,11 @@ export interface NearbyPost {
   lat: number;
   lng: number;
   distanceMeters: number;
+  /** 徒歩の分（v3.0。互換のため残す） */
   walkMinutes: number;
+  /** v3.2: 選んだ移動手段での所要時間の目安（分） */
+  minutes: number;
+  mode: TravelMode;
 }
 
 export interface NearbyPostRow {
@@ -53,7 +62,8 @@ export function selectNearbyPosts(
   rows: NearbyPostRow[],
   center: { lat: number; lng: number },
   radiusMeters: number,
-  limit: number = NEARBY_POSTS_LIMIT
+  limit: number = NEARBY_POSTS_LIMIT,
+  mode: TravelMode = "walk"
 ): (Omit<NearbyPost, "thumbnailUrl"> & { thumbnailPath: string | null })[] {
   return rows
     .flatMap((row) => {
@@ -75,6 +85,8 @@ export function selectNearbyPosts(
           lng: spot.lng,
           distanceMeters: Math.round(distance),
           walkMinutes: walkMinutes(distance),
+          minutes: travelMinutes(distance, mode),
+          mode,
         },
       ];
     })
@@ -86,7 +98,8 @@ export async function getNearbyPosts(
   admin: SupabaseClient,
   viewerId: string,
   center: { lat: number; lng: number },
-  radiusMeters: NearbyRadius
+  radiusMeters: NearbyRadius,
+  mode: TravelMode = "walk"
 ): Promise<NearbyPost[]> {
   const blockedIds = await getBlockedUserIds(admin, viewerId);
   const box = boundsAround(center, radiusMeters);
@@ -107,7 +120,7 @@ export async function getNearbyPosts(
   const { data, error } = await query;
   if (error) throw error;
 
-  const selected = selectNearbyPosts((data ?? []) as unknown as NearbyPostRow[], center, radiusMeters);
+  const selected = selectNearbyPosts((data ?? []) as unknown as NearbyPostRow[], center, radiusMeters, NEARBY_POSTS_LIMIT, mode);
   const signed = await createPostPhotoUrls(admin, selected.flatMap((post) => (post.thumbnailPath ? [post.thumbnailPath] : [])));
   return selected.map(({ thumbnailPath, ...post }) => ({ ...post, thumbnailUrl: thumbnailPath ? (signed.get(thumbnailPath) ?? null) : null }));
 }

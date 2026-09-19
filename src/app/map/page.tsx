@@ -30,6 +30,7 @@ export default async function MapPage({
     back?: string;
     itinerary?: string;
     day?: string;
+    travel?: string;
     posted?: string;
     updated?: string;
     deleted?: string;

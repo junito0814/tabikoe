@@ -170,18 +170,20 @@ describe("MapScreen（SC-02 v3.0）", () => {
 
   it("探すモード: 近くのスポットが出て、半径切替で再取得、カード切替でフォーカスピンが変わる", async () => {
     const fetchNearby = vi.fn(async () => [
-      { id: "p1", spotId: "s1", spotName: "展望台", commentExcerpt: "夕日", thumbnailUrl: null, lat: 35.66, lng: 139.76, distanceMeters: 480, walkMinutes: 6 },
-      { id: "p2", spotId: "s2", spotName: "直売所", commentExcerpt: "トマト", thumbnailUrl: null, lat: 35.67, lng: 139.77, distanceMeters: 900, walkMinutes: 12 },
+      { id: "p1", spotId: "s1", spotName: "展望台", commentExcerpt: "夕日", thumbnailUrl: null, lat: 35.66, lng: 139.76, distanceMeters: 480, walkMinutes: 6, minutes: 6, mode: "walk" as const },
+      { id: "p2", spotId: "s2", spotName: "直売所", commentExcerpt: "トマト", thumbnailUrl: null, lat: 35.67, lng: 139.77, distanceMeters: 900, walkMinutes: 12, minutes: 12, mode: "walk" as const },
     ]);
     const open = resolveMapOpen({ mode: "explore", lat: "35.65", lng: "139.75" });
     render(<MapScreen open={open} fetchPins={async () => [pin("s1"), pin("s2")]} fetchNearby={fetchNearby} resolveCenter={resolveCenter} />);
     await settle();
     expect(screen.getByRole("heading", { name: "近くのスポット" })).toBeInTheDocument();
-    await waitFor(() => expect(fetchNearby).toHaveBeenCalledWith({ lat: 35.65, lng: 139.75 }, 1000));
+    await waitFor(() => expect(fetchNearby).toHaveBeenCalledWith({ lat: 35.65, lng: 139.75 }, "walk"));
+    expect(screen.getAllByText("徒歩 6分")[0]).toBeInTheDocument();
     await waitFor(() => expect(latestPins).toEqual([expect.objectContaining({ id: "s1", type: "focus" }), expect.objectContaining({ id: "s2", type: "post" })]));
 
-    fireEvent.change(screen.getByRole("combobox", { name: "徒歩圏" }), { target: { value: "3000" } });
-    await waitFor(() => expect(fetchNearby).toHaveBeenLastCalledWith({ lat: 35.65, lng: 139.75 }, 3000));
+    // v3.2: 「移動手段」を車にすると mode=car で取り直す
+    fireEvent.change(screen.getByRole("combobox", { name: "移動手段" }), { target: { value: "car" } });
+    await waitFor(() => expect(fetchNearby).toHaveBeenLastCalledWith({ lat: 35.65, lng: 139.75 }, "car"));
 
     // 2 枚目までスクロールしたことにする（カード幅 176 + 間隔 10）
     const scroller = screen.getByRole("link", { name: /展望台/ }).parentElement as HTMLElement;
@@ -203,16 +205,16 @@ describe("v3.1（mentoring-7 Task7）: 地図の状態の復元", () => {
     expect(saved).toMatchObject({ entry: "spot:spot-1", mode: "spot", center: { lat: 35.65, lng: 139.75 }, zoom: 14 });
   });
 
-  it("素の /map で開くと、直前の探すモード（中心・徒歩圏）を復元する", async () => {
+  it("素の /map で開くと、直前の探すモード（中心・移動手段）を復元する", async () => {
     window.sessionStorage.setItem(
       "tabikoe:map-state",
-      JSON.stringify({ entry: "explore", mode: "explore", center: { lat: 34.7, lng: 135.5 }, zoom: 15, radius: 3000, savedAt: Date.now() })
+      JSON.stringify({ entry: "explore", mode: "explore", center: { lat: 34.7, lng: 135.5 }, zoom: 15, travel: "bicycle", savedAt: Date.now() })
     );
     const fetchNearby = vi.fn(async () => []);
     render(<MapScreen open={resolveMapOpen({})} fetchPins={async () => []} resolveCenter={resolveCenter} fetchNearby={fetchNearby} />);
     await settle();
     expect(document.querySelector("[data-map-mode='explore']")).toBeInTheDocument();
-    await waitFor(() => expect(fetchNearby).toHaveBeenCalledWith({ lat: 34.7, lng: 135.5 }, 3000));
+    await waitFor(() => expect(fetchNearby).toHaveBeenCalledWith({ lat: 34.7, lng: 135.5 }, "bicycle"));
   });
 
   it("別の入口（他のスポットの地図）から開いたときは復元しない", async () => {

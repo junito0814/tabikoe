@@ -1,5 +1,6 @@
 import { parseBackHref } from "@/lib/search/list-state";
 import { backLabelFor, classifyBackHref } from "@/lib/map/back-label";
+import { parseTravelMode, type TravelMode } from "@/lib/geo/travel-time";
 import { CURRENT_LOCATION_ZOOM, TOKYO_STATION, type LatLng } from "./initial-center";
 
 /**
@@ -27,6 +28,8 @@ export interface MapOpenOptions {
   itineraryDay?: number;
   /** 行きたい（SC-08）の地図: 保存済み（赤）のピンだけを出す */
   savedOnly?: boolean;
+  /** v3.2: 探すモードの移動手段（?travel=walk|bicycle|car。無ければ徒歩） */
+  travel?: TravelMode;
   back: { href: string; label: string };
 }
 
@@ -47,6 +50,7 @@ export function resolveMapOpen(params: {
   back?: string | null;
   itinerary?: string | null;
   day?: string | null;
+  travel?: string | null;
   /** v3.1: back がスポット別・投稿詳細のときのスポット名（page.tsx がサーバーで引く） */
   backSpotName?: string | null;
 }): MapOpenOptions {
@@ -87,6 +91,7 @@ export function resolveMapOpen(params: {
       zoom: CURRENT_LOCATION_ZOOM + 1,
       focusSpotId: null,
       itineraryId: null,
+      travel: parseTravelMode(params.travel),
       back: { href: "/", label: "ホーム" },
     };
   }
