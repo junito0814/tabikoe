@@ -14,6 +14,8 @@ export const RATE_LIMIT_ACTIONS = {
   draftSave: { actionType: "draft_save", windowSeconds: 3600, limit: 60 },
   /** 「まだあった」報告：1 ユーザーにつき 1 日 50 件 */
   spotStatusReport: { actionType: "spot_status_report", windowSeconds: 86400, limit: 50 },
+  /** v3.2: ユーザー名の検索（アプリ内招待）：1 ユーザーにつき 1 分 30 回 */
+  userSearch: { actionType: "user_search", windowSeconds: 60, limit: 30 },
 } as const;
 
 export type RateLimitActionKey = keyof typeof RATE_LIMIT_ACTIONS;

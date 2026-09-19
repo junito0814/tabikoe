@@ -4,6 +4,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { getAuthenticatedUser } from "@/lib/auth/get-authenticated-user";
 import { getAlbumRole, isInvitableRole } from "@/lib/albums/membership";
 import { isDailyTrip } from "@/lib/trips/daily-album";
+import { sendInAppInvitation } from "@/lib/invitations/in-app";
 import {
   buildInvitationPath,
   computeInvitationExpiry,
@@ -53,6 +54,17 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   // v3.1（mentoring-7 Task2）: 「日常」には招待できない
   if (await isDailyTrip(admin, id)) {
     return NextResponse.json({ error: "daily_album" }, { status: 400 });
+  }
+
+  // v3.2（feedback-0919 Task6）: inviteeUserId があればアプリ内招待（宛先に通知）
+  const inviteeUserId = typeof (body as { inviteeUserId?: unknown }).inviteeUserId === "string" ? ((body as { inviteeUserId: string }).inviteeUserId || null) : null;
+  if (inviteeUserId) {
+    const sent = await sendInAppInvitation(admin, { kind: "album", targetId: id, inviterId: user.id, inviteeId: inviteeUserId, role: body.role });
+    if (!sent.ok) {
+      const status = sent.error === "insert_failed" ? 500 : sent.error === "invitee_not_found" ? 404 : 409;
+      return NextResponse.json({ error: sent.error }, { status });
+    }
+    return NextResponse.json({ invitation: { id: sent.invitationId, inviteeUserId, role: body.role } }, { status: 201 });
   }
 
   const issuedAt = new Date();

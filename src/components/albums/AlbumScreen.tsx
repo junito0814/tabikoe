@@ -1,7 +1,10 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useState, type FormEvent, useMemo } from "react";
 import Link from "next/link";
+import { InAppInvitePanel, searchUsersRequest, type InAppInviteApi } from "@/components/invitations/InAppInvitePanel";
+import type { InviteCandidate } from "@/lib/invitations/in-app";
+import type { UserSummary } from "@/lib/users/search-users";
 import { useRouter } from "next/navigation";
 import { MediaGrid } from "@/components/media/MediaGrid";
 import { ErrorNotice } from "@/components/notices/ErrorNotice";
@@ -26,6 +29,10 @@ export interface AlbumApi {
   rename: (tripId: string, title: string) => Promise<Response>;
   issueInvitation: (tripId: string, role: InvitableRole) => Promise<Response>;
   revokeInvitation: (tripId: string, invitationId: string) => Promise<Response>;
+  /** v3.2: アプリ内招待（候補・検索・送信）。省略時はアプリ内招待の段を出さない（単体テスト用） */
+  fetchInviteCandidates?: (tripId: string) => Promise<{ candidates: InviteCandidate[] }>;
+  searchUsers?: (query: string) => Promise<{ users: UserSummary[] }>;
+  sendInvitation?: (tripId: string, inviteeUserId: string, role: InvitableRole) => Promise<Response>;
   changeRole: (tripId: string, userId: string, role: InvitableRole) => Promise<Response>;
   removeMember: (tripId: string, userId: string) => Promise<Response>;
   leave: (tripId: string) => Promise<Response>;
@@ -174,6 +181,17 @@ export function AlbumScreen({
 
   // 招待リンクは相対パスで返ってくるので、表示用にブラウザの origin（https://…）を前に付ける
   const origin = typeof window !== "undefined" ? window.location.origin : "";
+  const inAppApi = useMemo<InAppInviteApi | null>(
+    () =>
+      api.fetchInviteCandidates && api.searchUsers && api.sendInvitation
+        ? {
+            fetchCandidates: () => api.fetchInviteCandidates!(album.tripId),
+            searchUsers: api.searchUsers,
+            send: (userId) => api.sendInvitation!(album.tripId, userId, inviteRole),
+          }
+        : null,
+    [api, album.tripId, inviteRole]
+  );
 
   return (
     <div className="flex min-h-screen flex-col items-center bg-app px-4 py-6">
@@ -287,13 +305,14 @@ export function AlbumScreen({
 
         {canManage && (
           <section aria-labelledby="invite-heading" className="rounded-[12px] border border-line bg-surface p-4">
-            <h2 id="invite-heading" className="mb-2 text-[13px] font-bold text-ink">招待リンク</h2>
-            <div className="flex items-center gap-2">
+            <h2 id="invite-heading" className="mb-2 text-[13px] font-bold text-ink">招待</h2>
+            <label className="mb-2 flex items-center gap-2 text-[12px] text-muted">
+              付与する権限
               <select
                 value={inviteRole}
                 aria-label="付与する権限"
                 onChange={(event) => setInviteRole(event.target.value as InvitableRole)}
-                className="h-9 rounded-[6px] border border-line bg-surface px-2 text-[12px]"
+                className="h-9 rounded-[6px] border border-line bg-surface px-2 text-[12px] text-ink"
               >
                 {INVITABLE_ROLES.map((role) => (
                   <option key={role} value={role}>
@@ -301,6 +320,13 @@ export function AlbumScreen({
                   </option>
                 ))}
               </select>
+            </label>
+            {/* v3.2（feedback-0919 Task6）: アプリ内招待（一緒だった人・ユーザー名検索）。選んだ権限で送る */}
+            {inAppApi && <InAppInvitePanel api={inAppApi} className="mb-3" />}
+            <h3 className="mb-1 text-[12px] font-bold text-ink">
+              リンクで招待 <span className="font-normal text-muted">（アプリを使っていない人向け）</span>
+            </h3>
+            <div className="flex items-center gap-2">
               <button
                 type="button"
                 onClick={() => void handleIssue()}
@@ -409,6 +435,18 @@ const defaultApi: AlbumApi = {
     }),
   revokeInvitation: (tripId, invitationId) =>
     fetchWithAuthRedirect(`/api/trips/${tripId}/invitations/${invitationId}`, { method: "DELETE" }),
+  fetchInviteCandidates: async (tripId) => {
+    const response = await fetchWithAuthRedirect(`/api/trips/${tripId}/invite-candidates`);
+    if (!response.ok) throw new Error(`Failed to fetch candidates: ${response.status}`);
+    return (await response.json()) as { candidates: InviteCandidate[] };
+  },
+  searchUsers: searchUsersRequest,
+  sendInvitation: (tripId, inviteeUserId, role) =>
+    fetchWithAuthRedirect(`/api/trips/${tripId}/invitations`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ role, inviteeUserId }),
+    }),
   changeRole: (tripId, userId, role) =>
     fetchWithAuthRedirect(`/api/trips/${tripId}/members/${userId}`, {
       method: "PATCH",

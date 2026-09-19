@@ -88,7 +88,7 @@ describe("POST /api/trips/[id]/invitations", () => {
 describe("DELETE /api/trips/[id]/invitations/[invitationId]", () => {
   it("オーナーは無効化できる（revoked_at を設定）", async () => {
     expect((await revoke()).status).toBe(200);
-    expect(revokeUpdate).toHaveBeenCalledWith({ revoked_at: expect.any(String) });
+    expect(revokeUpdate).toHaveBeenCalledWith({ revoked_at: expect.any(String), status: "revoked" });
   });
 
   it("オーナー以外は403", async () => {

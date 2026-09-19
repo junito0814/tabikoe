@@ -1,3 +1,6 @@
+import type { InviteCandidate } from "@/lib/invitations/in-app";
+import type { UserSummary } from "@/lib/users/search-users";
+import { searchUsersRequest } from "@/components/invitations/InAppInvitePanel";
 import { fetchWithAuthRedirect } from "@/lib/api/fetch-with-auth-redirect";
 import type { ItineraryDetail, ItineraryListItem } from "@/lib/itineraries/get-itinerary";
 
@@ -23,8 +26,12 @@ export interface ItineraryApi {
   ) => Promise<Response>;
   removeSpot: (id: string, spotId: string) => Promise<Response>;
   issueInvitation: (id: string) => Promise<Response>;
-  listInvitations: (id: string) => Promise<{ invitations: { id: string; path: string; expiresAt: string; createdAt: string }[] }>;
+  listInvitations: (id: string) => Promise<{ invitations: { id: string; path: string; expiresAt: string; createdAt: string }[]; pending?: { id: string; inviteeUserId: string; inviteeName: string; expiresAt: string }[] }>;
   revokeInvitation: (id: string, invitationId: string) => Promise<Response>;
+  /** v3.2: アプリ内招待（候補・検索・送信） */
+  fetchInviteCandidates: (id: string) => Promise<{ candidates: InviteCandidate[] }>;
+  searchUsers: (query: string) => Promise<{ users: UserSummary[] }>;
+  sendInvitation: (id: string, inviteeUserId: string) => Promise<Response>;
   removeMember: (id: string, userId: string) => Promise<Response>;
   leave: (id: string) => Promise<Response>;
 }
@@ -50,6 +57,10 @@ export const defaultItineraryApi: ItineraryApi = {
   issueInvitation: (id) => fetchWithAuthRedirect(`/api/itineraries/${id}/invitations`, { method: "POST" }),
   listInvitations: async (id) => readJson(await fetchWithAuthRedirect(`/api/itineraries/${id}/invitations`)),
   revokeInvitation: (id, invitationId) => fetchWithAuthRedirect(`/api/itineraries/${id}/invitations/${invitationId}`, { method: "DELETE" }),
+  fetchInviteCandidates: async (id) => readJson(await fetchWithAuthRedirect(`/api/itineraries/${id}/invite-candidates`)),
+  searchUsers: searchUsersRequest,
+  sendInvitation: (id, inviteeUserId) =>
+    fetchWithAuthRedirect(`/api/itineraries/${id}/invitations`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ inviteeUserId }) }),
   removeMember: (id, userId) => fetchWithAuthRedirect(`/api/itineraries/${id}/members/${userId}`, { method: "DELETE" }),
   leave: (id) => fetchWithAuthRedirect(`/api/itineraries/${id}/members/me`, { method: "DELETE" }),
 };
