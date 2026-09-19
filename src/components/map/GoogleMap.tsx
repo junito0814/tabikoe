@@ -25,6 +25,8 @@ export interface GoogleMapPin extends PinMarkerOptions {
 export interface GoogleMapHandle {
   panTo: (center: LatLng, zoom?: number) => void;
   getCenter: () => LatLng | null;
+  /** v3.1: 地図の状態の保存用 */
+  getZoom: () => number | null;
   /** 複数の点が全部収まるように表示範囲を合わせる（しおりの地図） */
   fitBounds: (points: LatLng[]) => void;
 }
@@ -130,6 +132,7 @@ export function GoogleMap({
       const center = mapRef.current?.getCenter();
       return center ? { lat: center.lat(), lng: center.lng() } : null;
     },
+    getZoom: () => mapRef.current?.getZoom() ?? null,
     fitBounds: (points) => {
       const map = mapRef.current;
       if (!map || points.length === 0) return;
