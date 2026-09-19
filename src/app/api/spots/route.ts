@@ -101,7 +101,8 @@ export async function POST(request: Request) {
 
   const { data: spot, error: insertError } = await admin
     .from("spots")
-    .insert({ name, lat, lng, source })
+    // v3.2: 手動登録なら登録者を記録する（スポット登録バッジ）
+    .insert({ name, lat, lng, source, ...(source === "manual" ? { created_by: user.id } : {}) })
     .select("id, name, lat, lng, prefecture, source")
     .single();
 

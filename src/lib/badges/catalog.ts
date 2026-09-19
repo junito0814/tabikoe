@@ -8,6 +8,8 @@
  */
 export const POST_COUNT_THRESHOLDS = [1, 10, 50, 100] as const;
 export const LIKE_COUNT_THRESHOLDS = [1, 10, 50, 100, 200] as const;
+/** v3.2（feedback-0919 Task2）: 「タビコエだけの場所」を最初に登録した件数 */
+export const SPOT_REGISTRATION_THRESHOLDS = [1, 3, 5, 10, 20, 30, 50] as const;
 
 /** 都道府県バッジの対象。Geocoding API（language=ja）の administrative_area_level_1 と同じ表記 */
 export const PREFECTURES = [
@@ -23,7 +25,7 @@ export const PREFECTURES = [
 ] as const;
 
 export type Prefecture = (typeof PREFECTURES)[number];
-export type BadgeCategory = "prefecture" | "post_count" | "like_count";
+export type BadgeCategory = "prefecture" | "post_count" | "like_count" | "spot_registration";
 
 export interface BadgeDefinition {
   /** badges.badge_type に保存する文字列 */
@@ -65,7 +67,12 @@ export function reachedLikeCountBadgeTypes(count: number): string[] {
   return LIKE_COUNT_THRESHOLDS.filter((t) => t <= count).map((t) => `like_count:${t}`);
 }
 
-/** SC-10 の一覧順: 投稿数 → いいね数 → 都道府県（北から） */
+/** v3.2: 登録したスポット数以下の閾値すべての badge_type */
+export function reachedSpotRegistrationBadgeTypes(count: number): string[] {
+  return SPOT_REGISTRATION_THRESHOLDS.filter((t) => t <= count).map((t) => `spot_registration:${t}`);
+}
+
+/** SC-10 の一覧順: 投稿数 → いいね数 → スポット登録（v3.2） → 都道府県（北から） */
 export const BADGE_CATALOG: readonly BadgeDefinition[] = [
   ...POST_COUNT_THRESHOLDS.map<BadgeDefinition>((threshold) => ({
     type: `post_count:${threshold}`,
@@ -78,6 +85,12 @@ export const BADGE_CATALOG: readonly BadgeDefinition[] = [
     category: "like_count",
     label: `いいね${threshold}件`,
     description: `累計${threshold}件のいいねを獲得`,
+  })),
+  ...SPOT_REGISTRATION_THRESHOLDS.map<BadgeDefinition>((threshold) => ({
+    type: `spot_registration:${threshold}`,
+    category: "spot_registration",
+    label: `スポット登録${threshold}件`,
+    description: `タビコエだけの場所を${threshold}件登録`,
   })),
   ...PREFECTURES.map<BadgeDefinition>((prefecture) => ({
     type: `prefecture:${prefecture}`,

@@ -11,7 +11,7 @@ export const UNNAMED_SPOT_NAME = "名前のない場所";
 
 export type FinalizeSpotInput =
   | { spotId: string; lat?: undefined; lng?: undefined; name?: undefined }
-  | { spotId?: null; lat: number; lng: number; name?: string | null };
+  | { spotId?: null; lat: number; lng: number; name?: string | null; /** v3.2: 新しく作るときの登録者（spots.created_by） */ createdBy?: string | null };
 
 export type FinalizeSpotResult =
   | { ok: true; spot: RegisteredSpot; created: boolean }
@@ -65,7 +65,7 @@ export async function finalizeSpotForPost(admin: SupabaseClient, input: Finalize
 
   const { data: inserted, error: insertError } = await admin
     .from("spots")
-    .insert({ name, lat, lng, source: "manual" })
+    .insert({ name, lat, lng, source: "manual", created_by: ("createdBy" in input ? input.createdBy : null) ?? null })
     .select("id, name, lat, lng, prefecture, source")
     .single();
   if (insertError || !inserted) {

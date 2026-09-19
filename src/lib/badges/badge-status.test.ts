@@ -19,9 +19,9 @@ describe("mergeBadgeStatus", () => {
     expect(byType.get("prefecture:北海道")?.acquiredAt).toBeNull();
   });
 
-  it("未投稿の都道府県も含めてカタログ全件（56種）を返す", () => {
+  it("未投稿の都道府県も含めてカタログ全件（63種。v3.2 でスポット登録 7 種を追加）を返す", () => {
     const statuses = mergeBadgeStatus([]);
-    expect(statuses).toHaveLength(56);
+    expect(statuses).toHaveLength(63);
     expect(statuses.every((badge) => badge.acquiredAt === null)).toBe(true);
     expect(statuses.filter((badge) => badge.category === "prefecture")).toHaveLength(47);
   });

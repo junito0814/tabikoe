@@ -12,6 +12,8 @@ import type { BadgeCategory } from "@/lib/badges/catalog";
 const SECTIONS: { category: BadgeCategory; title: string; note: string }[] = [
   { category: "post_count", title: "投稿数バッジ", note: "累計投稿数 1／10／50／100件" },
   { category: "like_count", title: "いいね数バッジ", note: "累計獲得いいね数 1／10／50／100／200件" },
+  // v3.2（feedback-0919 Task2）
+  { category: "spot_registration", title: "スポット登録バッジ", note: "「タビコエだけの場所」を最初に登録した件数 1／3／5／10／20／30／50件" },
   { category: "prefecture", title: "都道府県バッジ", note: "各都道府県で1件以上投稿" },
 ];
 
