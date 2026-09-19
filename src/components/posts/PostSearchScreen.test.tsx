@@ -50,6 +50,7 @@ const card = (id: string, overrides: Partial<PostCardData> = {}): PostCardData =
   spotLng: 135.5,
   walkMinutes: 8,
   latestStatus: { status: "still_there", reportedAt: "2026-09-10T00:00:00Z" },
+  latestComment: null,
   ...overrides,
 });
 
@@ -91,6 +92,8 @@ describe("PostSearchScreen（SC-04 タイムライン）", () => {
     expect(article).toHaveTextContent("9月にまだあった");
     // v3.1: カードの「地図で見る」ボタンは廃止（上 1/3 の地図が兼ねる）
     expect(screen.queryByRole("link", { name: "地図で見る" })).toBeNull();
+    // v3.2: コメントが無ければプレビューは出ない
+    expect(document.querySelector("[data-comment-preview]")).toBeNull();
     expect(screen.getByRole("button", { name: "保存する" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "コメント3件" })).toHaveAttribute("href", "/posts/p1#comments");
     expect(screen.getByRole("link", { name: "たこ焼き〇〇の写真 1" })).toHaveAttribute("href", "/posts/p1"); // v3.1: カードの写真は投稿詳細へ直接
@@ -195,5 +198,16 @@ describe("PostSearchScreen（SC-04 タイムライン）", () => {
     // 「投稿」に戻すと一覧が残っている
     fireEvent.click(screen.getByRole("radio", { name: "投稿" }));
     expect(document.querySelector("[data-post-card='p1']")).toBeInTheDocument();
+  });
+});
+
+describe("PostCard（v3.2: コメントのプレビュー）", () => {
+  it("コメントがあれば最新 1 件と「コメント N 件をすべて見る」が出て、投稿詳細のコメント欄へのリンク", () => {
+    const item = card("p1", { commentCount: 3, latestComment: { authorName: "けんた", excerpt: "行列すごかった" } });
+    render(<PostSearchScreen context={{ destination: { kind: "spot", spotId: "spot-1" } }} initialState={EMPTY_SEARCH_STATE} initialPage={{ posts: [item], nextOffset: null }} title="たこ焼き〇〇" backHref="/" backLabel="ホーム" />);
+    const preview = document.querySelector("[data-comment-preview]") as HTMLElement;
+    expect(preview).toHaveTextContent("けんた 行列すごかった");
+    expect(preview).toHaveTextContent("コメント 3 件をすべて見る");
+    expect(preview).toHaveAttribute("href", "/posts/p1#comments");
   });
 });

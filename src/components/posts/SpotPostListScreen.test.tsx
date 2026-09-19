@@ -51,6 +51,7 @@ const card = (id: string): PostCardData => ({
   spotLng: 139.76,
   walkMinutes: null,
   latestStatus: null,
+  latestComment: null,
 });
 
 describe("SpotPostListScreen（SC-04 スポット別）", () => {

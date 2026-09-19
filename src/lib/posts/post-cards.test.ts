@@ -90,3 +90,10 @@ describe("toPostCard", () => {
     expect(toPostCard(row, new Map()).commentExcerpt).toBe("とても良かった");
   });
 });
+
+describe("commentExcerpt（v3.2）", () => {
+  it("冒頭 1 行だけ、エスケープを戻す", async () => {
+    const { commentExcerpt } = await import("./post-cards");
+    expect(commentExcerpt("&lt;b&gt;行列&lt;/b&gt;すごかった\n2 行目")).toBe("<b>行列</b>すごかった");
+  });
+});
