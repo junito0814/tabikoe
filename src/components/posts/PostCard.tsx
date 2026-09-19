@@ -40,7 +40,6 @@ export function formatVisitDate(visitDate: string | null): string | null {
 
 export function PostCard({
   post,
-  backHref = null,
   showSpotName = true,
   addMode = null,
 }: {

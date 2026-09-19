@@ -77,8 +77,6 @@ export function useRowDrag(onReorder: (from: number, to: number) => void) {
         if (to >= 0 && rowsRef.current.has(to)) onReorder(index, to);
       },
     }),
-    // onReorder は毎回同じ扱いでよい（最新を使う）
-    // eslint-disable-next-line react-hooks/exhaustive-deps
     [onReorder]
   );
 
