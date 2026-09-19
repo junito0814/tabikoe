@@ -60,15 +60,18 @@ describe("PostDetailScreen（SC-05）", () => {
     expect(screen.getByRole("heading", { name: /コメント/ })).toBeInTheDocument();
   });
 
-  it("v3.0: 見出しはスポット名でスポット別一覧へのリンク。タビコエだけの場所・地図で見る・自分も投稿する", () => {
+  it("v3.0/v3.1: 見出しはスポット名でスポット別一覧へのリンク。タビコエだけの場所・上 1/3 の地図・自分も投稿する", () => {
     render(<PostDetailScreen post={post} initialComments={noComments} />);
     const heading = screen.getByRole("heading", { level: 1 });
     expect(heading).toHaveTextContent("東京駅 グランスタ");
     expect(heading).toHaveTextContent("タビコエだけの場所");
     expect(heading.querySelector("a")).toHaveAttribute("href", "/spots/s1");
-    const mapHref = new URL(screen.getByRole("link", { name: /地図で見る/ }).getAttribute("href") ?? "", "https://example.com");
+    // v3.1: 「地図で見る」ボタンは無く、上 1/3 の地図（StaticSpotMap）が SC-02 へのリンク
+    expect(document.querySelector("[data-static-spot-map]")).toBeInTheDocument();
+    const mapHref = new URL(screen.getByRole("link", { name: "東京駅 グランスタを地図で見る" }).getAttribute("href") ?? "", "https://example.com");
     expect(mapHref.pathname).toBe("/map");
     expect(mapHref.searchParams.get("spot")).toBe("s1");
+    expect(screen.queryByRole("link", { name: "🗺 地図で見る" })).toBeNull();
     expect(screen.getByRole("link", { name: /自分も投稿する/ })).toHaveAttribute("href", "/posts/new?spot=s1");
   });
 

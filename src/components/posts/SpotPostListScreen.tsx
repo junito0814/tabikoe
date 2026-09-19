@@ -10,6 +10,8 @@ import { buildMapHrefWithBack } from "@/lib/search/list-state";
 import { formatStatusLabel, type LatestSpotStatus } from "@/lib/spots/format-status-label";
 import type { AddModeInfo } from "./AddModeBanner";
 import { PostSearchScreen, type FetchSearchPage } from "./PostSearchScreen";
+import { MapSheetLayout } from "@/components/layout/MapSheetLayout";
+import { StaticSpotMap } from "@/components/map/StaticSpotMap";
 import { buildSearchPageHref, type PostSearchState, type SearchContext } from "./post-search-query";
 
 export interface SpotSummary {
@@ -32,7 +34,7 @@ export interface SpotSummary {
  *
  * 【初心者向け】一覧本体は検索結果と同じ PostSearchScreen（行き先＝スポット）で、この部品は見出しだけを足す。
  *   1 行目: 都道府県 ・ 投稿 N 件 ・ 9月にまだあった（報告があるときだけ）
- *   2 行目: [地図で見る] (＋) [投稿する]（→ SC-03、スポット確定で開く）
+ *   2 行目: (＋) [投稿する]（→ SC-03、スポット確定で開く）。「地図で見る」は上 1/3 の地図が兼ねる（v3.1）
  * 投稿が無ければ「まだ投稿がありません」。追加モード（?itinerary=）ならバナーが上に出る。
  * 「戻る」は地図へ（地図のピンやスポット名検索から来る画面のため）。
  */
@@ -74,16 +76,6 @@ export function SpotPostListScreen({
         )}
       </p>
       <div className="flex flex-wrap items-center gap-2">
-        <Link
-          href={buildMapHrefWithBack({ spot: spot.id, lat: spot.lat, lng: spot.lng }, listHref)}
-          className="inline-flex h-9 items-center gap-1 rounded-full border border-line bg-surface px-3 text-[12px] font-semibold text-ink"
-        >
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden>
-            <path d="M12 21s-6-5.2-6-10a6 6 0 1 1 12 0c0 4.8-6 10-6 10z" stroke="currentColor" strokeWidth="1.8" />
-            <circle cx="12" cy="11" r="2.2" fill="currentColor" />
-          </svg>
-          地図で見る
-        </Link>
         <SaveButton
           spotId={spot.id}
           initialSaved={spot.isWishlisted}
@@ -100,19 +92,30 @@ export function SpotPostListScreen({
     </div>
   );
 
+  // v3.1（mentoring-7 Task4）: 上 1/3 に見るだけの地図（タップで SC-02）、下 2/3 に一覧。「地図で見る」ボタンは置かない
+  const mapHref = buildMapHrefWithBack({ spot: spot.id, lat: spot.lat, lng: spot.lng }, listHref);
+  const map =
+    spot.lat !== null && spot.lng !== null ? (
+      <StaticSpotMap spot={{ id: spot.id, name: spot.name, lat: spot.lat, lng: spot.lng }} href={mapHref} className="h-full w-full" />
+    ) : (
+      <div className="flex h-full w-full items-center justify-center bg-line text-[12px] text-muted">位置情報のないスポット</div>
+    );
+
   return (
-    <PostSearchScreen
-      context={context}
-      initialState={initialState}
-      initialPage={initialPage}
-      initialMediaPage={initialMediaPage}
-      title={spot.name}
-      backHref="/map"
-      backLabel="地図"
-      header={header}
-      addMode={addMode}
-      emptyMessage="まだ投稿がありません"
-      fetchPage={fetchPage}
-    />
+    <MapSheetLayout map={map}>
+      <PostSearchScreen
+        context={context}
+        initialState={initialState}
+        initialPage={initialPage}
+        initialMediaPage={initialMediaPage}
+        title={spot.name}
+        backHref="/map"
+        backLabel="地図"
+        header={header}
+        addMode={addMode}
+        emptyMessage="まだ投稿がありません"
+        fetchPage={fetchPage}
+      />
+    </MapSheetLayout>
   );
 }

@@ -6,7 +6,6 @@ import { MediaGrid } from "@/components/media/MediaGrid";
 import { SaveButton } from "@/components/save/SaveButton";
 import type { PostCardData } from "@/lib/posts/post-cards";
 import type { AddModeInfo } from "./AddModeBanner";
-import { buildMapHrefWithBack } from "@/lib/search/list-state";
 import { formatStatusLabel } from "@/lib/spots/format-status-label";
 
 /**
@@ -22,9 +21,8 @@ import { formatStatusLabel } from "@/lib/spots/format-status-label";
  *   4. 星評価（黄＋「星4」）・予算（¥1,200/人）・カテゴリ
  *   5. 写真・動画（MediaGrid。5 点目以降は「+N」）
  *   6. 「9月にまだあった」（最新の報告があるときだけ）
- *   7. いいね・コメント件数・「地図で見る」・「＋」
+ *   7. いいね・コメント件数・「＋」（「地図で見る」は v3.1 で廃止。上 1/3 の地図が兼ねる）
  * state を持たない表示専用の部品。表示に必要な値は `PostCardData`（lib/posts/post-cards.ts）に整形済み。
- * 「地図で見る」は地図（SC-02）をそのスポット中心で開き、`back` に今の一覧 URL を持たせて「一覧に戻る」を可能にする。
  */
 export function formatCost(cost: number | null): string | null {
   if (cost === null) return null;
@@ -46,7 +44,7 @@ export function PostCard({
   addMode = null,
 }: {
   post: PostCardData;
-  /** 「地図で見る」から戻ってくるための今の一覧 URL（/search?…） */
+  /** 今の一覧 URL（/search?…）。v3.1 でカードの「地図で見る」を外したため今は未使用（互換のため残す） */
   backHref?: string | null;
   /** スポット別一覧では見出しにスポット名があるので省略できる */
   showSpotName?: boolean;
@@ -56,7 +54,6 @@ export function PostCard({
   const visit = formatVisitDate(post.visitDate);
   const cost = formatCost(post.cost);
   const statusLabel = formatStatusLabel(post.latestStatus);
-  const mapHref = buildMapHrefWithBack({ spot: post.spotId, lat: post.spotLat, lng: post.spotLng }, backHref);
 
   return (
     <article className="flex flex-col gap-2 rounded-[12px] border border-line bg-surface p-3 shadow-card" data-post-card={post.id}>
@@ -118,16 +115,7 @@ export function PostCard({
           <span aria-hidden>💬</span>
           {post.commentCount}
         </Link>
-        <Link
-          href={mapHref}
-          className="ml-auto inline-flex h-8 items-center gap-1 rounded-full border border-line bg-surface px-3 text-[12px] font-semibold text-ink"
-        >
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden>
-            <path d="M12 21s-6-5.2-6-10a6 6 0 1 1 12 0c0 4.8-6 10-6 10z" stroke="currentColor" strokeWidth="1.8" />
-            <circle cx="12" cy="11" r="2.2" fill="currentColor" />
-          </svg>
-          地図で見る
-        </Link>
+        <span className="ml-auto" />
         <SaveButton
           spotId={post.spotId}
           initialSaved={post.viewerHasSaved}
