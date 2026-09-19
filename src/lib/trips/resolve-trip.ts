@@ -1,7 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { graphemeLength } from "@/lib/text/grapheme-length";
 import { MAX_TRIP_TITLE_LENGTH } from "./constants";
-import { provisionalTripTitle } from "./provisional-title";
+import { DAILY_ALBUM_TITLE, getOrCreateDailyTripId } from "./daily-album";
 
 /**
  * F-PO-01 旅行タイトル Task2: 旅行タイトル作成・紐付けロジック
@@ -15,7 +15,8 @@ import { provisionalTripTitle } from "./provisional-title";
  * アルバム（album_members）の旅行をタイトル一致で探す。編集者は「そのアルバムに自分の投稿を
  * 追加できる」（3.6.3）ため、投稿フォームの候補（GET /api/trips）にもそれらが出る。
  *
- * trip-title-v3 Task2: タイトルが空のときは仮タイトル「今日の投稿（M/D）」で解決する（`allowProvisional`）。
+ * mentoring-7 Task2（v3.1）: タイトルが空（または「日常」）のときは、その利用者の「日常」アルバムで解決する（`allowDaily`）。
+ * v3.0 の仮タイトル「今日の投稿（M/D）」は廃止した。
  */
 export class TripTitleValidationError extends Error {}
 
@@ -36,11 +37,11 @@ export async function resolveTripId(
   supabase: SupabaseClient,
   userId: string,
   rawTitle: string,
-  options: { allowProvisional?: boolean } = {}
+  options: { allowDaily?: boolean } = {}
 ): Promise<string> {
-  let title = normalizeTripTitle(rawTitle);
-  if (title.length === 0 && options.allowProvisional) {
-    title = provisionalTripTitle();
+  const title = normalizeTripTitle(rawTitle);
+  if (options.allowDaily && (title.length === 0 || title === DAILY_ALBUM_TITLE)) {
+    return getOrCreateDailyTripId(supabase, userId);
   }
   assertValidTripTitle(title);
 

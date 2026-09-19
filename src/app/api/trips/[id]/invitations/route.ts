@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getAuthenticatedUser } from "@/lib/auth/get-authenticated-user";
 import { getAlbumRole, isInvitableRole } from "@/lib/albums/membership";
+import { isDailyTrip } from "@/lib/trips/daily-album";
 import {
   buildInvitationPath,
   computeInvitationExpiry,
@@ -48,6 +49,10 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   }
   if (role !== "owner") {
     return NextResponse.json({ error: "forbidden" }, { status: 403 });
+  }
+  // v3.1（mentoring-7 Task2）: 「日常」には招待できない
+  if (await isDailyTrip(admin, id)) {
+    return NextResponse.json({ error: "daily_album" }, { status: 400 });
   }
 
   const issuedAt = new Date();

@@ -109,7 +109,7 @@ export function TripTitleInput({
         role="combobox"
         aria-expanded={isOpen && suggestions.length > 0}
         aria-controls={`${inputId}-suggestions`}
-        placeholder={isInline ? "空なら「今日の投稿」になります" : undefined}
+        placeholder={isInline ? "空なら「日常」に入ります" : undefined}
         className={`h-11 rounded-[10px] border border-line bg-surface px-3 text-[14px] text-ink focus:outline-none focus:ring-1 focus:ring-accent ${isInline ? "min-w-0 flex-1" : "w-full"}`}
       />
 

@@ -60,7 +60,10 @@ export default async function AlbumsPage() {
                     className="aspect-square w-full object-cover"
                   />
                   <span className="block p-2.5">
-                    <span className="block truncate text-[13px] font-semibold text-ink">{album.title}</span>
+                    <span className="block truncate text-[13px] font-semibold text-ink">
+                      {album.title}
+                      {album.isDaily && <span className="ml-1.5 rounded-full bg-tint px-1.5 py-0.5 text-[10px] font-medium text-muted">旅行ではない投稿</span>}
+                    </span>
                     <span className="block text-[11px] text-muted">
                       {album.postCount}件 ・ {album.memberCount}人 ・ {ALBUM_ROLE_LABELS[album.role]}
                     </span>

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { isDailyTrip } from "@/lib/trips/daily-album";
 import { getAuthenticatedUser } from "@/lib/auth/get-authenticated-user";
 import { getAlbumDetail } from "@/lib/albums/get-album";
 import {
@@ -75,6 +76,11 @@ export async function PATCH(
       return NextResponse.json({ error: error.message }, { status: 400 });
     }
     throw error;
+  }
+
+  // v3.1（mentoring-7 Task2）: 「日常」は名前を変えられない
+  if (await isDailyTrip(createAdminClient(), id)) {
+    return NextResponse.json({ error: "daily_album" }, { status: 400 });
   }
 
   // オーナー（作成者）のみ変更可能。user_id条件とRLSの二重で担保する

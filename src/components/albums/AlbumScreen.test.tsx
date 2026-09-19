@@ -22,6 +22,7 @@ const album = (viewerRole: AlbumDetail["viewerRole"]): AlbumDetail => ({
   ],
   posts: [],
   itineraryId: null,
+  isDaily: false,
 });
 
 const api = (overrides: Partial<AlbumApi> = {}): AlbumApi => ({
@@ -37,6 +38,12 @@ const api = (overrides: Partial<AlbumApi> = {}): AlbumApi => ({
 });
 
 describe("AlbumScreen（SC-09）", () => {
+  it("v3.1: 「日常」ではオーナーでも名前の変更と招待リンクが出ない", () => {
+    render(<AlbumScreen album={{ ...album("owner"), title: "日常", isDaily: true }} initialInvitations={[]} viewerId="me" api={api()} />);
+    expect(screen.queryByRole("button", { name: "名前を変更" })).toBeNull();
+    expect(screen.queryByRole("heading", { name: "招待リンク" })).toBeNull();
+  });
+
   it("v3.0: しおりのメンバーにだけ「しおりを見る」が出る", () => {
     const { unmount } = render(<AlbumScreen album={{ ...album("editor"), itineraryId: "it-1" }} initialInvitations={[]} viewerId="me" api={api()} />);
     expect(screen.getByRole("link", { name: /しおりを見る/ })).toHaveAttribute("href", "/itineraries/it-1");

@@ -22,6 +22,8 @@ export interface AlbumSummary {
   coverUrl: string | null;
   /** 最新投稿の日時 */
   updatedAt: string | null;
+  /** v3.1: 「日常」アルバム（1 人 1 つ。一覧の先頭に固定、投稿 0 件でも出す） */
+  isDaily: boolean;
 }
 
 export interface AlbumMember {
@@ -43,29 +45,40 @@ export interface AlbumDetail {
   posts: (PostCardData & { visibility: "public" | "private"; tripTitle: string })[];
   /** v3.0（itinerary-basics Task4）: 同じ旅行にしおりがあり、閲覧者がそのメンバーのときだけ ID。それ以外は null */
   itineraryId: string | null;
+  /** v3.1: 「日常」なら名前変更・招待・しおりの操作を出さない */
+  isDaily: boolean;
 }
 
 interface AlbumListRow {
   role: string;
   trips:
-    | { id: string; title: string; user_id: string; posts: { count: number }[]; album_members: { count: number }[] }
-    | { id: string; title: string; user_id: string; posts: { count: number }[]; album_members: { count: number }[] }[]
+    | { id: string; title: string; user_id: string; is_daily: boolean | null; posts: { count: number }[]; album_members: { count: number }[] }
+    | { id: string; title: string; user_id: string; is_daily: boolean | null; posts: { count: number }[]; album_members: { count: number }[] }[]
     | null;
 }
 
 /**
  * post-delete Task2: 投稿が1件以上あるアルバムだけを残す（`HAVING COUNT(posts) > 0` 相当）。
  * 純粋関数として切り出し、単体テストの対象にする。
+ * v3.1（mentoring-7 Task2）: 「日常」（isDaily）は投稿 0 件でも残す。
  */
-export function filterAlbumsWithPosts<T extends { postCount: number }>(albums: T[]): T[] {
-  return albums.filter((album) => album.postCount > 0);
+export function filterAlbumsWithPosts<T extends { postCount: number; isDaily?: boolean }>(albums: T[]): T[] {
+  return albums.filter((album) => album.postCount > 0 || album.isDaily === true);
+}
+
+/** v3.1: 「日常」を先頭に固定し、残りは最新投稿順（純粋関数） */
+export function sortAlbumsDailyFirst<T extends { isDaily: boolean; updatedAt: string | null }>(albums: T[]): T[] {
+  return [...albums].sort((a, b) => {
+    if (a.isDaily !== b.isDaily) return a.isDaily ? -1 : 1;
+    return (b.updatedAt ?? "").localeCompare(a.updatedAt ?? "");
+  });
 }
 
 /** 本人がメンバーのアルバム一覧（投稿1件以上、最新投稿順） */
 export async function getAlbumList(admin: SupabaseClient, userId: string): Promise<AlbumSummary[]> {
   const { data, error } = await admin
     .from("album_members")
-    .select("role, trips!inner(id, title, user_id, posts(count), album_members(count))")
+    .select("role, trips!inner(id, title, user_id, is_daily, posts(count), album_members(count))")
     .eq("user_id", userId)
     // F-AD-05: 非公開化されたアルバムは一覧に出さない
     .is("trips.hidden_at", null);
@@ -84,6 +97,7 @@ export async function getAlbumList(admin: SupabaseClient, userId: string): Promi
         memberCount: trip.album_members?.[0]?.count ?? 0,
         coverUrl: null as string | null,
         updatedAt: null as string | null,
+        isDaily: trip.is_daily === true,
       },
     ];
   });
@@ -120,8 +134,8 @@ export async function getAlbumList(admin: SupabaseClient, userId: string): Promi
     Array.from(new Set(Array.from(coverPathByTrip.values()).map((item) => item.path)))
   );
 
-  return withPosts
-    .map((album) => {
+  return sortAlbumsDailyFirst(
+    withPosts.map((album) => {
       const cover = coverPathByTrip.get(album.tripId);
       return {
         ...album,
@@ -129,7 +143,7 @@ export async function getAlbumList(admin: SupabaseClient, userId: string): Promi
         updatedAt: cover?.createdAt ?? null,
       };
     })
-    .sort((a, b) => (b.updatedAt ?? "").localeCompare(a.updatedAt ?? ""));
+  );
 }
 
 interface MemberRow {
@@ -184,7 +198,7 @@ export async function getAlbumDetail(
 
   const { data: trip, error: tripError } = await admin
     .from("trips")
-    .select("id, title, user_id, hidden_at")
+    .select("id, title, user_id, hidden_at, is_daily")
     .eq("id", tripId)
     .maybeSingle();
   if (tripError) throw tripError;
@@ -221,6 +235,7 @@ export async function getAlbumDetail(
     viewerRole: role,
     members,
     itineraryId: (itineraryMembership.data as { itinerary_id: string } | null)?.itinerary_id ?? null,
+    isDaily: (trip as { is_daily?: boolean | null }).is_daily === true,
     posts: cards.map((card, index) => ({
       ...card,
       visibility: rows[index].visibility === "private" ? "private" : "public",
