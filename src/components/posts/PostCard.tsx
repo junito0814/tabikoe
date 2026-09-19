@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { appendBackHref } from "@/lib/search/list-state";
 import { LikeButton } from "@/components/likes/LikeButton";
 import { MediaGrid } from "@/components/media/MediaGrid";
 import { SaveButton } from "@/components/save/SaveButton";
@@ -40,11 +41,12 @@ export function formatVisitDate(visitDate: string | null): string | null {
 
 export function PostCard({
   post,
+  backHref = null,
   showSpotName = true,
   addMode = null,
 }: {
   post: PostCardData;
-  /** 今の一覧 URL（/search?…）。v3.1 でカードの「地図で見る」を外したため今は未使用（互換のため残す） */
+  /** 今の一覧 URL（/search?…）。Bug #469: 投稿詳細に `back=` で渡し、詳細の戻るがこの一覧に戻るようにする */
   backHref?: string | null;
   /** スポット別一覧では見出しにスポット名があるので省略できる */
   showSpotName?: boolean;
@@ -79,7 +81,7 @@ export function PostCard({
         </h3>
       )}
 
-      <Link href={`/posts/${post.id}`} className="flex flex-col gap-1.5">
+      <Link href={appendBackHref(`/posts/${post.id}`, backHref)} className="flex flex-col gap-1.5">
         {post.commentExcerpt && <p className="line-clamp-2 text-[13px] leading-[1.6] text-ink">{post.commentExcerpt}</p>}
         <p className="flex flex-wrap items-center gap-x-2.5 gap-y-0.5 text-[12px] text-muted">
           {post.rating !== null && (

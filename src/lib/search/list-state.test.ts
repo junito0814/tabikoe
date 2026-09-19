@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildMapHrefWithBack, clearListState, listStateKey, loadListState, parseBackHref, saveListState } from "./list-state";
+import { appendBackHref, buildMapHrefWithBack, clearListState, listStateKey, loadListState, parseBackHref, resolveListBack, saveListState } from "./list-state";
 
 function memoryStorage(): Storage {
   const map = new Map<string, string>();
@@ -64,5 +64,23 @@ describe("buildMapHrefWithBack / parseBackHref", () => {
     expect(parseBackHref("https://evil.example")).toBeNull();
     expect(parseBackHref("//evil.example")).toBeNull();
     expect(parseBackHref(null)).toBeNull();
+  });
+});
+
+describe("appendBackHref / resolveListBack（Bug #469: スポット別一覧の戻るは検索結果へ）", () => {
+  it("リンクに back= を付け、次の画面はそれを自分の戻り先にできる（数珠つなぎ）", () => {
+    const spotList = appendBackHref("/search?spot=s1", "/search?pref=東京都&sort=rating");
+    expect(spotList).toBe("/search?spot=s1&back=%2Fsearch%3Fpref%3D%E6%9D%B1%E4%BA%AC%E9%83%BD%26sort%3Drating");
+    const detail = appendBackHref("/posts/p1", spotList);
+    expect(parseBackHref(new URL(`https://example.com${detail}`).searchParams.get("back"))).toBe(spotList);
+    expect(appendBackHref("/posts/p1", null)).toBe("/posts/p1");
+  });
+
+  it("back の URL から戻り先の画面名を出す。無ければ null（呼び出し側が「地図」に倒す）", () => {
+    expect(resolveListBack("/search?pref=東京都")).toEqual({ href: "/search?pref=東京都", label: "東京都" });
+    expect(resolveListBack("/search?q=東京駅&lat=35.6&lng=139.7")).toEqual({ href: "/search?q=東京駅&lat=35.6&lng=139.7", label: "東京駅" });
+    expect(resolveListBack("/")).toEqual({ href: "/", label: "ホーム" });
+    expect(resolveListBack(undefined)).toBeNull();
+    expect(resolveListBack("https://evil.example")).toBeNull();
   });
 });

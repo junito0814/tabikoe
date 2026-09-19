@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { SaveButton } from "@/components/save/SaveButton";
+import { appendBackHref } from "@/lib/search/list-state";
 import { formatStatusLabel } from "@/lib/spots/format-status-label";
 import type { SpotCardData } from "@/lib/spots/search-spots";
 import type { AddModeInfo } from "./AddModeBanner";
@@ -17,10 +18,11 @@ import type { AddModeInfo } from "./AddModeBanner";
  *   - 中段: 代表写真（最新の投稿の 1 枚目）、★の平均・投稿件数・最新の感想 1 行
  *   - 下段: まだあった、「＋」（保存先シート。追加モードなら直接追加）
  * カード本体のタップでスポット別の投稿一覧（/search?spot=）へ。SaveButton だけはリンクの外に置く（押しても遷移しない）。
+ * Bug #469: 今の検索結果の URL を `back=` で渡し、スポット別一覧の戻るが検索結果（「← 東京都」）になるようにする。
  */
-export function SpotCard({ spot, addMode = null }: { spot: SpotCardData; addMode?: AddModeInfo | null }) {
+export function SpotCard({ spot, addMode = null, backHref = null }: { spot: SpotCardData; addMode?: AddModeInfo | null; /** 今の検索結果の URL（戻り先） */ backHref?: string | null }) {
   const statusLabel = formatStatusLabel(spot.latestStatus);
-  const href = `/search?spot=${spot.id}`;
+  const href = appendBackHref(`/search?spot=${spot.id}`, backHref);
 
   return (
     <article className="relative flex flex-col gap-2 rounded-[12px] border border-line bg-surface p-3 shadow-card" data-spot-card={spot.id}>

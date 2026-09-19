@@ -75,6 +75,14 @@ describe("PostDetailScreen（SC-05）", () => {
     expect(screen.getByRole("link", { name: /自分も投稿する/ })).toHaveAttribute("href", "/posts/new?spot=s1");
   });
 
+  it("Bug #469: back があれば戻るはその一覧へ、無ければスポット別一覧へ", () => {
+    const { unmount } = render(<PostDetailScreen post={post} initialComments={noComments} backHref="/search?spot=s1&back=%2Fsearch%3Fpref%3D%E6%9D%B1%E4%BA%AC%E9%83%BD" />);
+    expect(screen.getByRole("link", { name: "戻る" })).toHaveAttribute("href", "/search?spot=s1&back=%2Fsearch%3Fpref%3D%E6%9D%B1%E4%BA%AC%E9%83%BD");
+    unmount();
+    render(<PostDetailScreen post={post} initialComments={noComments} />);
+    expect(screen.getByRole("link", { name: "戻る" })).toHaveAttribute("href", "/spots/s1");
+  });
+
   it("旅行タイトルは画面のどこにも表示されない", () => {
     // PostDetailData に旅行タイトルの項目自体が無い（型で担保）。描画結果にも出ないことを確認する
     render(<PostDetailScreen post={{ ...post, comment: "感想のみ" }} initialComments={noComments} />);

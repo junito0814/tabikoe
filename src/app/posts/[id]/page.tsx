@@ -5,6 +5,7 @@ import { requireUserOrRedirect } from "@/lib/auth/require-user-or-redirect";
 import { ErrorNotice } from "@/components/notices/ErrorNotice";
 import { ERROR_MESSAGES } from "@/components/notices/error-messages";
 import { PostDetailScreen } from "@/components/posts/PostDetailScreen";
+import { parseBackHref } from "@/lib/search/list-state";
 import { BadgeToast } from "@/components/badges/BadgeToast";
 import { parseBadgeToastParam } from "@/components/badges/badge-toast-params";
 import { FlashNotice, resolveFlashKey } from "@/components/notices/FlashNotice";
@@ -25,7 +26,7 @@ export default async function PostDetailPage({
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ posted?: string; updated?: string; badges?: string }>;
+  searchParams: Promise<{ posted?: string; updated?: string; badges?: string; back?: string }>;
 }) {
   const { id } = await params;
   // v3.0: 投稿・更新の完了後はこの画面に遷移するので、完了メッセージとバッジ獲得トーストをここで出す
@@ -63,7 +64,7 @@ export default async function PostDetailPage({
   return (
     <>
       {newBadgeTypes.length > 0 && <BadgeToast badgeTypes={newBadgeTypes} />}
-      <PostDetailScreen post={post} initialComments={comments} notice={flashKey ? <FlashNotice flashKey={flashKey} /> : undefined} />
+      <PostDetailScreen post={post} initialComments={comments} notice={flashKey ? <FlashNotice flashKey={flashKey} /> : undefined} backHref={parseBackHref(query.back)} />
     </>
   );
 }

@@ -7,6 +7,7 @@ import { ERROR_MESSAGES } from "@/components/notices/error-messages";
 import { SpotSearchScreen } from "@/components/posts/SpotSearchScreen";
 import { SpotPostListScreen } from "@/components/posts/SpotPostListScreen";
 import { loadSearchPage, type SearchPageQuery } from "@/lib/search/load-search-page";
+import { resolveListBack } from "@/lib/search/list-state";
 
 /**
  * SC-04 投稿一覧（タイムライン形式・検索結果）
@@ -17,7 +18,7 @@ import { loadSearchPage, type SearchPageQuery } from "@/lib/search/load-search-p
  * 【初心者向け】検索トップ（SC-00）で行き先を決めると、ここに来る。URL が条件そのもの:
  *   /search?pref=大阪府 ／ /search?lat=&lng=&q=大阪駅 ／ /search?spot=<id>（スポット別）
  * 読み込みは lib/search/load-search-page.ts にまとめ、行き先の種類で画面を出し分ける。
- * 「戻る」は検索トップ（ホーム）へ。スポット別は地図へ。
+ * 「戻る」は検索トップ（ホーム）へ。スポット別は `?back=`（検索結果から来たならその URL）へ、無ければ地図へ（Bug #469）。
  */
 export default async function SearchPage({ searchParams }: { searchParams: Promise<SearchPageQuery> }) {
   const supabase = await createClient();
@@ -43,6 +44,7 @@ export default async function SearchPage({ searchParams }: { searchParams: Promi
         initialPage={data.initialPage}
         initialMediaPage={data.initialMediaPage}
         addMode={data.addMode}
+        back={resolveListBack(typeof query.back === "string" ? query.back : null)}
       />
     );
   }

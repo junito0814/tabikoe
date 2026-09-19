@@ -37,11 +37,14 @@ export function PostDetailScreen({
   post,
   initialComments,
   notice,
+  backHref = null,
 }: {
   post: PostDetailData;
   initialComments: CommentPage;
   /** 投稿・更新の完了メッセージ（Server Component から渡す。v3.0） */
   notice?: React.ReactNode;
+  /** Bug #469: 一覧から `?back=` で渡された戻り先（スポット別一覧 URL）。無ければそのスポットの一覧 */
+  backHref?: string | null;
 }) {
   const returnTo = `/posts/${post.id}`;
   const cost = formatCost(post.cost);
@@ -89,7 +92,7 @@ export function PostDetailScreen({
           <header className="flex flex-col gap-2">
             <div className="flex items-center gap-2">
               <Link
-                href={`/spots/${post.spot.id}`}
+                href={backHref ?? `/spots/${post.spot.id}`}
                 className="inline-flex h-8 shrink-0 items-center gap-1 text-[12px] font-medium text-muted"
               >
                 <svg
