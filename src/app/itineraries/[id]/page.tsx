@@ -5,7 +5,7 @@ import { requireUserOrRedirect } from "@/lib/auth/require-user-or-redirect";
 import { ErrorNotice } from "@/components/notices/ErrorNotice";
 import { ERROR_MESSAGES } from "@/components/notices/error-messages";
 import { ItineraryDetailScreen } from "@/components/itineraries/ItineraryDetailScreen";
-import { parseDayTab } from "@/components/itineraries/DayTabs";
+import { parseDayTab } from "@/lib/itineraries/day-tabs";
 import { getItinerary, type ItineraryDetail } from "@/lib/itineraries/get-itinerary";
 
 /**
