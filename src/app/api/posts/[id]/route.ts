@@ -131,11 +131,11 @@ export async function PATCH(
     }
   }
 
-  // 旅行タイトル。省略時は現在の旅行のまま、空文字は仮タイトル
+  // アルバム名。省略時は現在の旅行のまま、空文字は「日常」（v3.1）
   let tripId: string = existing.trip_id;
   if (typeof body.tripTitle === "string") {
     try {
-      tripId = await resolveTripId(admin, user.id, body.tripTitle, { allowProvisional: true });
+      tripId = await resolveTripId(admin, user.id, body.tripTitle, { allowDaily: true });
     } catch (error) {
       if (error instanceof TripTitleValidationError) {
         return NextResponse.json({ error: error.message }, { status: 400 });

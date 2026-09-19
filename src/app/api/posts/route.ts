@@ -12,7 +12,7 @@
  *   - `status: "draft"` なら必須項目が空でも保存できる。スポットは作らず、位置（lat/lng）だけを持つ。
  *     上限 20 件、レート制限は draft_save（1 時間 60 件）
  *   - 公開時は `spotId` が無ければ位置からスポットを確定する（50m 以内の既存に寄せる／新規登録）
- *   - 旅行タイトルが空なら仮タイトル「今日の投稿（M/D）」
+ *   - アルバム名が空なら「日常」アルバム（v3.1。仮タイトルは廃止）
  */
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
@@ -106,11 +106,11 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "photo_required" }, { status: 400 });
   }
 
-  // ⑤ 旅行タイトルはトリム後の完全一致で既存を探し、無ければ作成する（3.3.4）。空なら仮タイトル
+  // ⑤ 旅行タイトルはトリム後の完全一致で既存を探し、無ければ作成する（3.3.4）。空なら「日常」（v3.1）
   const tripTitle = typeof body.tripTitle === "string" ? body.tripTitle : "";
   let tripId: string;
   try {
-    tripId = await resolveTripId(admin, user.id, tripTitle, { allowProvisional: true });
+    tripId = await resolveTripId(admin, user.id, tripTitle, { allowDaily: true });
   } catch (error) {
     if (error instanceof TripTitleValidationError) {
       return NextResponse.json({ error: error.message }, { status: 400 });

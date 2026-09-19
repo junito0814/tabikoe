@@ -89,12 +89,10 @@ describe("MyPageScreen（SC-06）", () => {
     expect(screen.getByRole("link", { name: /あしあと/ })).toHaveAttribute("href", "/mymap");
   });
 
-  it("v3.0: 仮タイトルの投稿にだけ「タイトルを付ける」の促しが出る", () => {
-    render(<MyPageScreen {...base} initialPosts={{ posts: [post("a", "今日の投稿（9/16）"), post("b", "冬旅")], nextOffset: null }} fetchPosts={vi.fn()} />);
-    expect(document.querySelector("[data-rename-prompt='a']")).toBeInTheDocument();
-    expect(document.querySelector("[data-rename-prompt='b']")).toBeNull();
-    fireEvent.click(screen.getByRole("button", { name: /この旅行にタイトルを付ける/ }));
-    expect(screen.getByRole("dialog", { name: "旅行にタイトルを付ける" })).toBeInTheDocument();
+  it("v3.1: 「タイトルを付ける」の促しは出ない（仮タイトルは廃止。日常アルバムへ）", () => {
+    render(<MyPageScreen {...base} initialPosts={{ posts: [post("a", "日常"), post("b", "冬旅")], nextOffset: null }} fetchPosts={vi.fn()} />);
+    expect(document.querySelector("[data-rename-prompt]")).toBeNull();
+    expect(screen.queryByRole("button", { name: /タイトルを付ける/ })).toBeNull();
   });
 
   it("投稿一覧には旅行タイトルと非公開バッジが出て、旅行で絞り込むと trip_id 付きで取り直す", async () => {

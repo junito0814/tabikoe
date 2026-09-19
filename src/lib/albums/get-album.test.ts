@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { filterAlbumsWithPosts, toAlbumMembers } from "./get-album";
+import { filterAlbumsWithPosts, sortAlbumsDailyFirst, toAlbumMembers } from "./get-album";
 
 /**
  * 出典: docs/tasks/posts/post-delete/02-empty-album-hiding.md 単体テスト
@@ -15,6 +15,26 @@ describe("filterAlbumsWithPosts", () => {
       { tripId: "c", postCount: 12 },
     ];
     expect(filterAlbumsWithPosts(albums).map((album) => album.tripId)).toEqual(["b", "c"]);
+  });
+
+  it("v3.1: 「日常」は投稿 0 件でも残す", () => {
+    const albums = [
+      { tripId: "daily", postCount: 0, isDaily: true },
+      { tripId: "a", postCount: 0, isDaily: false },
+      { tripId: "b", postCount: 2, isDaily: false },
+    ];
+    expect(filterAlbumsWithPosts(albums).map((album) => album.tripId)).toEqual(["daily", "b"]);
+  });
+});
+
+describe("sortAlbumsDailyFirst", () => {
+  it("v3.1: 「日常」が先頭、残りは最新投稿順", () => {
+    const sorted = sortAlbumsDailyFirst([
+      { tripId: "old", isDaily: false, updatedAt: "2026-09-01T00:00:00Z" },
+      { tripId: "new", isDaily: false, updatedAt: "2026-09-10T00:00:00Z" },
+      { tripId: "daily", isDaily: true, updatedAt: null },
+    ]);
+    expect(sorted.map((album) => album.tripId)).toEqual(["daily", "new", "old"]);
   });
 });
 

@@ -60,6 +60,8 @@ export function AlbumScreen({
 }) {
   const router = useRouter();
   const isOwner = album.viewerRole === "owner";
+  // v3.1（mentoring-7 Task2）: 「日常」は名前変更・招待ができない（オーナーでも出さない）
+  const canManage = isOwner && !album.isDaily;
   const [title, setTitle] = useState(album.title);
   const [isRenaming, setIsRenaming] = useState(false);
   const [draftTitle, setDraftTitle] = useState(album.title);
@@ -199,7 +201,7 @@ export function AlbumScreen({
           ) : (
             <div className="flex items-start justify-between gap-3">
               <h1 className="min-w-0 break-words text-[20px] font-bold text-ink">{title}</h1>
-              {isOwner && (
+              {canManage && (
                 <button
                   type="button"
                   onClick={() => {
@@ -280,7 +282,7 @@ export function AlbumScreen({
           )}
         </section>
 
-        {isOwner && (
+        {canManage && (
           <section aria-labelledby="invite-heading" className="rounded-[12px] border border-line bg-surface p-4">
             <h2 id="invite-heading" className="mb-2 text-[13px] font-bold text-ink">招待リンク</h2>
             <div className="flex items-center gap-2">
