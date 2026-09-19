@@ -1,7 +1,8 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { getBlockedUserIds } from "@/lib/blocks/get-blocked-user-ids";
 import { createPostPhotoUrls } from "@/lib/posts/signed-url";
-import { DEFAULT_AVATAR_URL } from "@/lib/users/constants";
+import { DEACTIVATED_DISPLAY_NAME, DEFAULT_AVATAR_URL } from "@/lib/users/constants";
+import { unescapeHtml } from "@/lib/comments/validate-comment";
 import { walkMinutesBetween } from "@/lib/geo/walk-minutes";
 import type { MediaItem } from "@/components/media/MediaGrid";
 
@@ -35,7 +36,10 @@ export interface PostCardData {
   /** v3.0: カードに並べる全メディア（MediaGrid 用。署名付き URL、非公開化された写真は除く） */
   media: MediaItem[];
   likeCount: number;
+  /** コメント件数（v3.2: 返信を含む） */
   commentCount: number;
+  /** v3.2（feedback-0919 Task5）: 最新のコメント 1 件のプレビュー（返信を含む最新。無ければ null） */
+  latestComment: { authorName: string; excerpt: string } | null;
   /** 閲覧者がいいね済みか（F-VW-02 Task3 のボタン初期状態） */
   viewerHasLiked: boolean;
   /** v3.0: 閲覧者がこのスポットを「行きたい」に保存済みか（カードの「＋」の初期状態） */
@@ -139,6 +143,7 @@ export interface PostCardExtras {
   viewer?: { lat: number; lng: number } | null;
   savedSpotIds?: ReadonlySet<string>;
   latestStatusBySpot?: ReadonlyMap<string, { status: "still_there" | "gone"; reportedAt: string }>;
+  latestCommentByPost?: ReadonlyMap<string, { authorName: string; excerpt: string }>;
 }
 
 export function toPostCard(
@@ -198,6 +203,7 @@ export function toPostCard(
     media,
     likeCount: row.likes?.[0]?.count ?? 0,
     commentCount: row.comments?.[0]?.count ?? 0,
+    latestComment: extras.latestCommentByPost?.get(row.id) ?? null,
     viewerHasLiked: likedPostIds.has(row.id),
     viewerHasSaved: extras.savedSpotIds?.has(row.spot_id) ?? false,
     isManualSpot: spot?.source === "manual",
@@ -242,13 +248,49 @@ export async function buildPostCards(
   // v3.0: カードに全メディアを並べるので、代表画像だけでなく全部に署名する
   const paths = rows.flatMap((row) => photoPaths(row.post_photos));
   const spotIds = Array.from(new Set(rows.map((row) => row.spot_id)));
-  const [signedUrls, likedPostIds, latestStatusBySpot, savedSpotIds] = await Promise.all([
+  const [signedUrls, likedPostIds, latestStatusBySpot, savedSpotIds, latestCommentByPost] = await Promise.all([
     createPostPhotoUrls(admin, Array.from(new Set(paths))),
     findLikedPostIds(admin, viewerId, rows.map((row) => row.id)),
     findLatestSpotStatuses(admin, spotIds),
     findSavedSpotIds(admin, viewerId, spotIds),
+    findLatestComments(admin, viewerId, rows.map((row) => row.id)),
   ]);
-  return rows.map((row) => toPostCard(row, signedUrls, likedPostIds, { viewer: options.viewer ?? null, latestStatusBySpot, savedSpotIds }));
+  return rows.map((row) => toPostCard(row, signedUrls, likedPostIds, { viewer: options.viewer ?? null, latestStatusBySpot, savedSpotIds, latestCommentByPost }));
+}
+
+/** v3.2: 投稿ごとの最新のコメント 1 件（返信を含む。削除済み・非公開化・ブロック相手は除く）。取れなくてもカードは出す */
+export async function findLatestComments(admin: SupabaseClient, viewerId: string, postIds: string[]): Promise<Map<string, { authorName: string; excerpt: string }>> {
+  const map = new Map<string, { authorName: string; excerpt: string }>();
+  if (postIds.length === 0) return map;
+  try {
+    const blockedIds = await getBlockedUserIds(admin, viewerId);
+    let query = admin
+      .from("comments")
+      .select("post_id, body, created_at, users(display_name, is_deleted)")
+      .in("post_id", postIds)
+      .is("deleted_at", null)
+      .is("hidden_at", null)
+      .order("created_at", { ascending: false })
+      .limit(1000);
+    if (blockedIds.length > 0) query = query.not("user_id", "in", `(${blockedIds.join(",")})`);
+    const { data } = await query;
+    for (const row of (data ?? []) as unknown as { post_id: string; body: string; users: { display_name: string | null; is_deleted: boolean } | { display_name: string | null; is_deleted: boolean }[] | null }[]) {
+      if (map.has(row.post_id)) continue;
+      map.set(row.post_id, { authorName: commentAuthorName(one(row.users)), excerpt: commentExcerpt(row.body) });
+    }
+  } catch {
+    // 取れなくてもカードは出す
+  }
+  return map;
+}
+
+function commentAuthorName(user: { display_name: string | null; is_deleted: boolean } | null): string {
+  return user?.is_deleted ? DEACTIVATED_DISPLAY_NAME : (user?.display_name ?? "ユーザー");
+}
+
+/** コメント本文の冒頭 1 行（保存時の HTML エスケープを戻す） */
+export function commentExcerpt(body: string): string {
+  return unescapeHtml(body).split(/\r?\n/)[0]?.trim() ?? "";
 }
 
 /** v3.0: 閲覧者が「行きたい」に保存済みのスポット ID（カードの「＋」の初期状態） */

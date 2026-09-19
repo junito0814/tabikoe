@@ -21,7 +21,8 @@ import { formatStatusLabel } from "@/lib/spots/format-status-label";
  *   4. 星評価（黄＋「星4」）・予算（¥1,200/人）・カテゴリ
  *   5. 写真・動画（MediaGrid。5 点目以降は「+N」）
  *   6. 「9月にまだあった」（最新の報告があるときだけ）
- *   7. いいね・コメント件数・「＋」（「地図で見る」は v3.1 で廃止。上 1/3 の地図が兼ねる）
+ *   7. いいね・コメント件数（返信を含む）・「＋」（「地図で見る」は v3.1 で廃止。上 1/3 の地図が兼ねる）
+ *   8. v3.2: 最新のコメント 1 件のプレビューと「コメント N 件をすべて見る」（コメントがあるときだけ）
  * state を持たない表示専用の部品。表示に必要な値は `PostCardData`（lib/posts/post-cards.ts）に整形済み。
  */
 export function formatCost(cost: number | null): string | null {
@@ -124,6 +125,16 @@ export function PostCard({
           addMode={addMode ? { itineraryId: addMode.itineraryId, day: addMode.day, initialAdded: addMode.spotIds.includes(post.spotId) } : null}
         />
       </div>
+
+      {/* v3.2（feedback-0919 Task5）: 最新のコメント 1 件のプレビューと「コメント N 件をすべて見る」（コメントがあるときだけ） */}
+      {post.latestComment && (
+        <Link href={`/posts/${post.id}#comments`} className="flex flex-col gap-0.5 text-[12px]" data-comment-preview>
+          <span className="truncate">
+            <span className="font-semibold text-ink">{post.latestComment.authorName}</span> <span className="text-ink">{post.latestComment.excerpt}</span>
+          </span>
+          <span className="text-muted">コメント {post.commentCount} 件をすべて見る</span>
+        </Link>
+      )}
     </article>
   );
 }
