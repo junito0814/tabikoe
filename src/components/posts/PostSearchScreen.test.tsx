@@ -178,7 +178,7 @@ describe("PostSearchScreen（SC-04 タイムライン）", () => {
 
   it("「写真」に切り替えると URL に view=photos が付き、グリッドが描画される", async () => {
     const fetchMediaPage = vi.fn<(params: URLSearchParams) => Promise<{ items: SpotMediaItem[]; nextOffset: number | null }>>(async () => ({
-      items: [{ id: "m1", postId: "p1", mediaType: "photo" as const, thumbnailUrl: "https://example.com/m1.jpg", videoUrl: null, alt: "たこ焼き〇〇の写真 1", postedAt: "2026-09-01T00:00:00Z" }],
+      items: [{ id: "m1", postId: "p1", mediaType: "photo" as const, thumbnailUrl: "https://example.com/m1.jpg", videoUrl: null, alt: "たこ焼き〇〇の写真 1", postedAt: "2026-09-01T00:00:00Z", info: { spotName: "たこ焼き〇〇", isManualSpot: true, rating: 4, duration: "30分以内", cost: 1200, authorName: "たろう", visitDate: "2026-09-03" } }],
       nextOffset: null,
     }));
     renderScreen({
@@ -194,7 +194,7 @@ describe("PostSearchScreen（SC-04 タイムライン）", () => {
     fireEvent.click(screen.getByRole("button", { name: "もっと見る" }));
     await waitFor(() => expect(fetchMediaPage).toHaveBeenCalledTimes(1));
     expect(Object.fromEntries(fetchMediaPage.mock.calls[0][0])).toEqual({ pref: "大阪府", offset: "0" });
-    expect(await screen.findByRole("link", { name: "たこ焼き〇〇の写真 1" })).toBeInTheDocument();
+    expect(await screen.findByRole("button", { name: "たこ焼き〇〇の写真 1" })).toBeInTheDocument();
     // 「投稿」に戻すと一覧が残っている
     fireEvent.click(screen.getByRole("radio", { name: "投稿" }));
     expect(document.querySelector("[data-post-card='p1']")).toBeInTheDocument();

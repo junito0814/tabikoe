@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import Link from "next/link";
 import type { MediaItem } from "./MediaGrid";
 
@@ -22,6 +22,7 @@ export function MediaModal({
   onClose,
   postHref,
   postHrefLabel = "この投稿を見る",
+  renderInfo,
 }: {
   items: MediaItem[];
   startIndex?: number;
@@ -29,6 +30,8 @@ export function MediaModal({
   /** 元の投稿へのリンク（投稿一覧の写真切替から開いたとき） */
   postHref?: string | ((item: MediaItem) => string | undefined);
   postHrefLabel?: string;
+  /** v3.2（feedback-0919 Task3）: 写真タブから開いたときの情報バー（スポット名・★・滞在・費用など）。投稿詳細のモーダルでは渡さない */
+  renderInfo?: (item: MediaItem) => ReactNode;
 }) {
   const [index, setIndex] = useState(() => Math.min(Math.max(startIndex, 0), Math.max(items.length - 1, 0)));
   const touchStartX = useRef<number | null>(null);
@@ -122,12 +125,25 @@ export function MediaModal({
         )}
       </div>
 
-      {href && (
-        <div className="flex justify-center px-4 py-3" onClick={(event) => event.stopPropagation()}>
-          <Link href={href} className="h-10 rounded-full bg-white px-4 text-[13px] font-semibold leading-10 text-black">
-            {postHrefLabel}
-          </Link>
+      {renderInfo ? (
+        <div className="rounded-t-[16px] bg-surface px-4 py-3 text-ink" onClick={(event) => event.stopPropagation()} data-media-info>
+          {renderInfo(item)}
+          {href && (
+            <div className="mt-2 flex justify-end">
+              <Link href={href} className="h-9 rounded-full bg-accent px-4 text-[12px] font-bold leading-9 text-white">
+                {postHrefLabel} →
+              </Link>
+            </div>
+          )}
         </div>
+      ) : (
+        href && (
+          <div className="flex justify-center px-4 py-3" onClick={(event) => event.stopPropagation()}>
+            <Link href={href} className="h-10 rounded-full bg-white px-4 text-[13px] font-semibold leading-10 text-black">
+              {postHrefLabel}
+            </Link>
+          </div>
+        )
       )}
     </div>
   );
