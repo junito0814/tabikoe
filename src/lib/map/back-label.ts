@@ -1,0 +1,56 @@
+/**
+ * mentoring-7 Task6（v3.1）: 地図（SC-02）の左上の「戻る」に出す戻り先の画面名
+ * 出典: docs/tasks/shared-ui/mentoring-7/06-map-callout-and-back.md
+ *       要件定義書 v3.1 3.4.3「置く要素」（「一覧に戻る」という文言は使わない）
+ *
+ * 【初心者向け】`?back=` に入っている「戻り先の URL」を見て、そこが何の画面かを言葉にする。純粋関数なので単体テストしやすい。
+ *   /search?pref=大阪府     → 大阪府
+ *   /search?q=大阪駅&lat&lng → 大阪駅
+ *   /search?spot=<id>・/spots/<id>・/posts/<id> → スポット名（URL からは分からないのでサーバーが引いて渡す。取れなければ「一覧」）
+ *   /itineraries/<id>       → しおり
+ *   それ以外・無し          → ホーム
+ */
+export type BackTarget = { kind: "home" } | { kind: "prefecture"; name: string } | { kind: "place"; name: string } | { kind: "spot"; spotId: string } | { kind: "post"; postId: string } | { kind: "itinerary" } | { kind: "list" };
+
+export function classifyBackHref(back: string | null | undefined): BackTarget {
+  if (!back) return { kind: "home" };
+  let url: URL;
+  try {
+    url = new URL(back, "https://tabikoe.local");
+  } catch {
+    return { kind: "home" };
+  }
+  const path = url.pathname;
+  const params = url.searchParams;
+  if (path === "/" || path === "") return { kind: "home" };
+  if (path.startsWith("/itineraries/")) return { kind: "itinerary" };
+  const spotMatch = path.match(/^\/spots\/([^/]+)/);
+  if (spotMatch) return { kind: "spot", spotId: spotMatch[1] };
+  const postMatch = path.match(/^\/posts\/([^/]+)/);
+  if (postMatch) return { kind: "post", postId: postMatch[1] };
+  if (path === "/search") {
+    if (params.get("spot")) return { kind: "spot", spotId: params.get("spot") as string };
+    if (params.get("pref")) return { kind: "prefecture", name: params.get("pref") as string };
+    if (params.get("q")) return { kind: "place", name: params.get("q") as string };
+    return { kind: "list" };
+  }
+  return { kind: "list" };
+}
+
+/** 戻り先の画面名。スポット名は `spotName` で渡す（無ければ「一覧」） */
+export function backLabelFor(target: BackTarget, spotName: string | null = null): string {
+  switch (target.kind) {
+    case "home":
+      return "ホーム";
+    case "prefecture":
+    case "place":
+      return target.name;
+    case "itinerary":
+      return "しおり";
+    case "spot":
+    case "post":
+      return spotName ?? "一覧";
+    case "list":
+      return "一覧";
+  }
+}

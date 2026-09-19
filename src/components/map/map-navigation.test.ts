@@ -6,18 +6,23 @@ import { resolveMapOpen, SPOT_FOCUS_ZOOM } from "./map-navigation";
  * - クエリに応じた戻るボタンの文言と遷移先
  */
 describe("resolveMapOpen", () => {
-  it("?spot= はスポット中心で「一覧に戻る」（back の URL へ）", () => {
+  it("?spot= はスポット中心で、戻るは戻り先の画面名（back の URL へ。v3.1）", () => {
     const result = resolveMapOpen({ spot: "s1", lat: "34.7", lng: "135.5", back: "/search?pref=大阪府" });
     expect(result).toMatchObject({ mode: "spot", focusSpotId: "s1", center: { lat: 34.7, lng: 135.5 }, zoom: SPOT_FOCUS_ZOOM });
-    expect(result.back).toEqual({ href: "/search?pref=大阪府", label: "一覧に戻る" });
+    expect(result.back).toEqual({ href: "/search?pref=大阪府", label: "大阪府" });
+  });
+
+  it("v3.1: back がスポット別ならサーバーが引いたスポット名、無ければ「一覧」", () => {
+    expect(resolveMapOpen({ spot: "s1", back: "/spots/s1", backSpotName: "たこ焼き〇〇" }).back.label).toBe("たこ焼き〇〇");
+    expect(resolveMapOpen({ spot: "s1", back: "/posts/p1" }).back.label).toBe("一覧");
   });
 
   it("back が外部 URL ならホームへ", () => {
     expect(resolveMapOpen({ spot: "s1", back: "https://evil.example" }).back).toEqual({ href: "/", label: "ホーム" });
   });
 
-  it("?itinerary= は「しおりに戻る」", () => {
-    expect(resolveMapOpen({ itinerary: "it-1" }).back).toEqual({ href: "/itineraries/it-1", label: "しおりに戻る" });
+  it("?itinerary= は「しおり」", () => {
+    expect(resolveMapOpen({ itinerary: "it-1" }).back).toEqual({ href: "/itineraries/it-1", label: "しおり" });
   });
 
   it("?mode=explore は探すモードで「ホーム」", () => {

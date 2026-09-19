@@ -3,6 +3,8 @@ import { createClient } from "@/lib/supabase/server";
 import { requireUserOrRedirect } from "@/lib/auth/require-user-or-redirect";
 import { MapScreen } from "@/components/map/MapScreen";
 import { resolveMapOpen } from "@/components/map/map-navigation";
+import { createAdminClient } from "@/lib/supabase/admin";
+import { classifyBackHref } from "@/lib/map/back-label";
 import { BadgeToast } from "@/components/badges/BadgeToast";
 import { parseBadgeToastParam } from "@/components/badges/badge-toast-params";
 import { FlashNotice, resolveFlashKey } from "@/components/notices/FlashNotice";
@@ -42,7 +44,8 @@ export default async function MapPage({
   if (params.mode === "explore" && (params.lat === undefined || params.lng === undefined)) {
     redirect("/");
   }
-  const open = resolveMapOpen(params);
+  // v3.1（mentoring-7 Task6）: 戻り先がスポット別・投稿詳細ならスポット名を引いて「← たこ焼き〇〇」にする
+  const open = resolveMapOpen({ ...params, backSpotName: await lookupBackSpotName(params.back) });
   const flashKey = resolveFlashKey(params);
   const newBadgeTypes = parseBadgeToastParam(params.badges);
 
@@ -52,4 +55,22 @@ export default async function MapPage({
       <MapScreen open={open} notice={flashKey ? <FlashNotice flashKey={flashKey} /> : undefined} />
     </>
   );
+}
+
+/** back の URL がスポット別（/spots/[id]・/search?spot=）か投稿詳細（/posts/[id]）ならスポット名を返す。取れなければ null */
+async function lookupBackSpotName(back: string | undefined): Promise<string | null> {
+  const target = classifyBackHref(back);
+  if (target.kind !== "spot" && target.kind !== "post") return null;
+  try {
+    const admin = createAdminClient();
+    if (target.kind === "spot") {
+      const { data } = await admin.from("spots").select("name").eq("id", target.spotId).maybeSingle();
+      return data?.name ?? null;
+    }
+    const { data } = await admin.from("posts").select("spots(name)").eq("id", target.postId).maybeSingle();
+    const spot = (data as { spots: { name: string } | { name: string }[] | null } | null)?.spots;
+    return (Array.isArray(spot) ? spot[0] : spot)?.name ?? null;
+  } catch {
+    return null;
+  }
 }

@@ -121,14 +121,15 @@ describe("MapScreen（SC-02 v3.0）", () => {
     expect(screen.getByRole("link", { name: "ここに投稿" })).toBeInTheDocument();
   });
 
-  it("ピンをタップすると吹き出しが出て、「一覧」「投稿する」のリンク先が正しい", async () => {
+  it("ピンをタップすると吹き出しが出て、本体のタップで一覧へ・「投稿する」のリンク先が正しい（「一覧」ボタンは無い。v3.1）", async () => {
     render(<MapScreen open={resolveMapOpen({})} fetchPins={async () => [pin("spot-1")]} resolveCenter={resolveCenter} />);
     await settle();
     fireEvent.click(await screen.findByRole("button", { name: "spot-1:post" }));
     const callout = await screen.findByRole("dialog", { name: "スポットspot-1" });
     expect(callout).toHaveTextContent("7件");
     expect(callout).toHaveTextContent("9月にまだあった");
-    expect(screen.getByRole("link", { name: "一覧" })).toHaveAttribute("href", "/spots/spot-1");
+    expect(screen.queryByRole("link", { name: "一覧" })).toBeNull();
+    expect(callout.querySelector("[data-callout-body]")).toHaveAttribute("href", "/spots/spot-1");
     expect(screen.getByRole("link", { name: "投稿する" })).toHaveAttribute("href", "/posts/new?spot=spot-1");
     expect(panTo).toHaveBeenCalledWith({ lat: 35.65, lng: 139.75 });
     // 地図をタップすると閉じる
@@ -158,11 +159,11 @@ describe("MapScreen（SC-02 v3.0）", () => {
     expect(latestPins).toEqual([expect.objectContaining({ id: "temp", type: "focus" })]);
   });
 
-  it("?spot= で開くと「一覧に戻る」になり、そのスポットがフォーカスピン＋吹き出し", async () => {
+  it("?spot= で開くと戻るに戻り先の画面名（大阪府）が出て、そのスポットがフォーカスピン＋吹き出し", async () => {
     const open = resolveMapOpen({ spot: "spot-1", lat: "35.65", lng: "139.75", back: "/search?pref=大阪府" });
     render(<MapScreen open={open} fetchPins={async () => [pin("spot-1"), pin("spot-2")]} resolveCenter={resolveCenter} />);
     await settle();
-    expect(screen.getByRole("link", { name: "一覧に戻る" })).toHaveAttribute("href", "/search?pref=大阪府");
+    expect(screen.getByRole("link", { name: "大阪府" })).toHaveAttribute("href", "/search?pref=大阪府");
     await waitFor(() => expect(latestPins).toEqual([expect.objectContaining({ id: "spot-1", type: "focus" }), expect.objectContaining({ id: "spot-2", type: "post" })]));
     expect(await screen.findByRole("dialog", { name: "スポットspot-1" })).toBeInTheDocument();
   });
