@@ -44,6 +44,11 @@ describe("AlbumScreen（SC-09）", () => {
     expect(screen.queryByRole("heading", { name: "招待リンク" })).toBeNull();
   });
 
+  it("SC-21: ヘッダーに「写真」リンクが出て、アルバム写真一覧へ行ける", () => {
+    render(<AlbumScreen album={album("viewer")} initialInvitations={[]} viewerId="me" api={api()} />);
+    expect(screen.getByRole("link", { name: /写真/ })).toHaveAttribute("href", "/albums/trip-1/photos");
+  });
+
   it("v3.0: しおりのメンバーにだけ「しおりを見る」が出る", () => {
     const { unmount } = render(<AlbumScreen album={{ ...album("editor"), itineraryId: "it-1" }} initialInvitations={[]} viewerId="me" api={api()} />);
     expect(screen.getByRole("link", { name: /しおりを見る/ })).toHaveAttribute("href", "/itineraries/it-1");
