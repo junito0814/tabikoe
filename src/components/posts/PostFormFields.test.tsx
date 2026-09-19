@@ -25,12 +25,48 @@ function renderFields(values = EMPTY_POST_FORM_VALUES) {
 }
 
 describe("PostFormFields", () => {
-  it("カテゴリは 7 つ、滞在時間は 5 つのドロップダウン", () => {
+  it("カテゴリは 7 つ、滞在時間は 7 つ（v3.2: …3時間以内／半日／1日／宿泊。「それ以上」は無い）のドロップダウン", () => {
     renderFields();
     const category = screen.getByLabelText("カテゴリ *") as HTMLSelectElement;
     expect(category.options.length - 1).toBe(7);
     const duration = screen.getByLabelText("滞在時間 *") as HTMLSelectElement;
-    expect(duration.options.length - 1).toBe(5);
+    expect(Array.from(duration.options).slice(1).map((o) => o.value)).toEqual(["30分以内", "1時間以内", "2時間以内", "3時間以内", "半日", "1日", "宿泊"]);
+  });
+
+  it("v3.2: カテゴリで「宿泊施設」を選ぶと未選択の滞在時間に「宿泊」が入り、選択済みなら変わらない", () => {
+    const onChange = vi.fn();
+    const { unmount } = render(
+      <PostFormFields
+        values={{ ...EMPTY_POST_FORM_VALUES }}
+        onChange={onChange}
+        spotField={<div />}
+        mediaItems={[]}
+        onRemoveMedia={vi.fn()}
+        onAddMedia={vi.fn()}
+        fileInputRef={createRef<HTMLInputElement>()}
+        onFilesSelected={vi.fn()}
+        fetchTripSuggestions={async () => []}
+      />
+    );
+    fireEvent.change(screen.getByLabelText("カテゴリ *"), { target: { value: "宿泊施設" } });
+    expect(onChange).toHaveBeenCalledWith({ category: "宿泊施設", duration: "宿泊" });
+    unmount();
+    const onChange2 = vi.fn();
+    render(
+      <PostFormFields
+        values={{ ...EMPTY_POST_FORM_VALUES, duration: "1時間以内" }}
+        onChange={onChange2}
+        spotField={<div />}
+        mediaItems={[]}
+        onRemoveMedia={vi.fn()}
+        onAddMedia={vi.fn()}
+        fileInputRef={createRef<HTMLInputElement>()}
+        onFilesSelected={vi.fn()}
+        fetchTripSuggestions={async () => []}
+      />
+    );
+    fireEvent.change(screen.getByLabelText("カテゴリ *"), { target: { value: "宿泊施設" } });
+    expect(onChange2).toHaveBeenCalledWith({ category: "宿泊施設" });
   });
 
   it("注意文は畳まれ、「詳しく」で全文が出る", () => {

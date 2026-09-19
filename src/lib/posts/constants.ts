@@ -15,16 +15,41 @@ export const POST_CATEGORIES = [
 
 /** v3.0 で廃止したカテゴリ。DB 側は 20260917000001 で「エンタメ・イベント」へ移行済み */
 export const LEGACY_POST_CATEGORY_MAP: Record<string, PostCategory> = {
-  "イベント会場": "エンタメ・イベント",
+  イベント会場: "エンタメ・イベント",
 };
 
+/**
+ * 滞在時間の選択肢（v3.2 feedback-0919 Task1: 7 択）。
+ * 【初心者向け】入力（投稿・編集・絞り込み）で選べるのはこの 7 つ。v3.1 までの「それ以上」は新規では選べないが、
+ * 既存の投稿に残っているので LEGACY_POST_DURATIONS として表示・絞り込みでだけ受け付ける。
+ */
 export const POST_DURATIONS = [
   "30分以内",
   "1時間以内",
   "2時間以内",
   "3時間以内",
-  "それ以上",
+  "半日",
+  "1日",
+  "宿泊",
 ] as const;
+export type PostDuration = (typeof POST_DURATIONS)[number];
+/** 旧値（v3.1 まで）。DB には残っているが、新しい入力では出さない */
+export const LEGACY_POST_DURATIONS = ["それ以上"] as const;
+/** 「半日以上」の束。絞り込みで 半日／1日／宿泊 のどれかを選んだら、旧「それ以上」も含める */
+export const LONG_STAY_DURATIONS: readonly PostDuration[] = [
+  "半日",
+  "1日",
+  "宿泊",
+];
+/** 宿泊施設を選んだときに自動で入れる滞在時間 */
+export const LODGING_DURATION: PostDuration = "宿泊";
+/** カテゴリが「宿泊施設」のとき、滞在時間が未選択なら自動で入れる（純粋関数。既に選んでいれば触らない） */
+export function autoDurationForCategory(
+  category: string,
+  current: string,
+): PostDuration | null {
+  return category === "宿泊施設" && current === "" ? LODGING_DURATION : null;
+}
 
 export const POST_VISIBILITIES = ["public", "private"] as const;
 
@@ -36,7 +61,6 @@ export type PostStatus = (typeof POST_STATUSES)[number];
 export const MAX_DRAFTS_PER_USER = 20;
 
 export type PostCategory = (typeof POST_CATEGORIES)[number];
-export type PostDuration = (typeof POST_DURATIONS)[number];
 export type PostVisibility = (typeof POST_VISIBILITIES)[number];
 
 /** 感想の最大文字数（書記素クラスタ単位） */
