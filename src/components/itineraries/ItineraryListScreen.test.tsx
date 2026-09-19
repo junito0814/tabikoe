@@ -33,7 +33,7 @@ const item = (id: string, overrides: Partial<ItineraryListItem> = {}): Itinerary
 const api = { create: vi.fn(async () => new Response(JSON.stringify({ itineraryId: "it-new" }), { status: 201 })) } as unknown as ItineraryApi;
 
 describe("ItineraryListScreen（SC-22）", () => {
-  it("期間が近い順 → 未設定 → 過ぎたもの（薄く、アルバムを見る）", () => {
+  it("期間が近い順 → 未設定 → 過ぎたもの（薄くせず「済」の印、アルバムを見る）。先頭に行きたいの入口（v3.1）", () => {
     render(
       <ItineraryListScreen
         today="2026-09-18"
@@ -42,6 +42,7 @@ describe("ItineraryListScreen（SC-22）", () => {
           item("undated"),
           item("soon", { startDate: "2026-09-20", endDate: "2026-09-22", dayCount: 3 }),
         ]}
+        wishlistCount={6}
         api={api}
       />
     );
@@ -49,7 +50,16 @@ describe("ItineraryListScreen（SC-22）", () => {
     expect(titles[0]).toContain("旅行soon");
     expect(titles[1]).toContain("旅行undated");
     expect(titles[2]).toContain("旅行past");
-    expect(document.querySelector("[data-itinerary-group='past']")).toHaveClass("opacity-60");
+    const past = document.querySelector("[data-itinerary-group='past']") as HTMLElement;
+    expect(past).not.toHaveClass("opacity-60");
+    expect(past.querySelector("[data-past-mark]")).toHaveTextContent("済");
+    expect(document.querySelector("[data-itinerary-group='upcoming']")?.querySelector("[data-past-mark]")).toBeNull();
+    // 期間は年つき
+    expect(past).toHaveTextContent("2026/8/10（月） 〜 2026/8/10（月）");
+    // 先頭の行きたいの入口
+    const entry = screen.getByRole("link", { name: /行きたいスポット/ });
+    expect(entry).toHaveAttribute("href", "/wishlist");
+    expect(entry).toHaveTextContent("6");
     expect(screen.getByRole("link", { name: /アルバムを見る/ })).toHaveAttribute("href", "/albums/trip-past");
     expect(screen.getByText(/3 日間/)).toBeInTheDocument();
   });

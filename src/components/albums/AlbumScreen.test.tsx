@@ -52,14 +52,19 @@ describe("AlbumScreen（SC-09）", () => {
     expect(screen.queryByRole("link", { name: /しおりを見る/ })).toBeNull();
   });
 
-  it("オーナーには名称変更ボタンが出る", () => {
-    render(<AlbumScreen album={album("owner")} initialInvitations={[]} viewerId="owner" api={api()} />);
-    expect(screen.getByRole("button", { name: "名前を変更" })).toBeInTheDocument();
+  it("v3.1: 「名前を変更」ボタンは無く、しおりが無いアルバムはオーナーがタイトルをタップして変更。しおりがあればタイトルは押せない", () => {
+    const { unmount } = render(<AlbumScreen album={album("owner")} initialInvitations={[]} viewerId="owner" api={api()} />);
+    expect(screen.queryByRole("button", { name: "名前を変更" })).toBeNull();
+    expect(screen.getByRole("button", { name: "夏の東北旅行（名前を変更）" })).toBeInTheDocument();
+    unmount();
+    render(<AlbumScreen album={{ ...album("owner"), itineraryId: "it-1" }} initialInvitations={[]} viewerId="owner" api={api()} />);
+    expect(screen.queryByRole("button", { name: /名前を変更/ })).toBeNull();
+    expect(screen.getByRole("heading", { name: "夏の東北旅行" })).toBeInTheDocument();
   });
 
   it.each(["editor", "viewer"] as const)("%s には名称変更ボタンが出ない", (role) => {
     render(<AlbumScreen album={album(role)} initialInvitations={[]} viewerId="me" api={api()} />);
-    expect(screen.queryByRole("button", { name: "名前を変更" })).toBeNull();
+    expect(screen.queryByRole("button", { name: /名前を変更/ })).toBeNull();
     expect(screen.queryByRole("button", { name: /リンクを発行/ })).toBeNull();
     expect(screen.getByRole("button", { name: "このアルバムから退出" })).toBeInTheDocument();
   });
@@ -67,11 +72,12 @@ describe("AlbumScreen（SC-09）", () => {
   it("名称変更は PATCH /api/trips/[id] 相当を呼び、表示を更新する", async () => {
     const rename = vi.fn(async () => Response.json({ trip: { id: "trip-1", title: "新しい名前" } }));
     render(<AlbumScreen album={album("owner")} initialInvitations={[]} viewerId="owner" api={api({ rename })} />);
-    fireEvent.click(screen.getByRole("button", { name: "名前を変更" }));
+    fireEvent.click(screen.getByRole("button", { name: "夏の東北旅行（名前を変更）" }));
     fireEvent.change(screen.getByRole("textbox", { name: "アルバム名" }), { target: { value: "新しい名前" } });
     fireEvent.click(screen.getByRole("button", { name: "保存" }));
     await waitFor(() => expect(rename).toHaveBeenCalledWith("trip-1", "新しい名前"));
-    expect(await screen.findByRole("heading", { name: "新しい名前" })).toBeInTheDocument();
+    // 変更後もタイトルはタップで変更できるボタンのまま（見出し要素ではない）
+    expect(await screen.findByRole("button", { name: "新しい名前（名前を変更）" })).toBeInTheDocument();
   });
 
   it("オーナーは招待リンクを発行でき、URLが表示される", async () => {

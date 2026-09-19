@@ -17,8 +17,16 @@ export default async function ItinerariesPage() {
   const supabase = await createClient();
   const user = await requireUserOrRedirect(supabase, "/itineraries");
   let items: Awaited<ReturnType<typeof listItineraries>> | null = null;
+  let wishlistCount: number | null = null;
   try {
-    items = await listItineraries(createAdminClient(), user.id);
+    const admin = createAdminClient();
+    const [list, wishlist] = await Promise.all([
+      listItineraries(admin, user.id),
+      // v3.1（mentoring-7 Task9）: 先頭の「行きたいスポット」の件数。取れなくても一覧は出す
+      admin.from("wishlist").select("id", { count: "exact", head: true }).eq("user_id", user.id),
+    ]);
+    items = list;
+    wishlistCount = wishlist.count ?? null;
   } catch {
     items = null;
   }
@@ -29,5 +37,5 @@ export default async function ItinerariesPage() {
       </div>
     );
   }
-  return <ItineraryListScreen items={items} today={todayInJst()} />;
+  return <ItineraryListScreen items={items} today={todayInJst()} wishlistCount={wishlistCount} />;
 }
