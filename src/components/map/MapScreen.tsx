@@ -107,13 +107,15 @@ export function MapScreen({
 
   // ── しおりの地図（itinerary-map-and-post Task1）──
   const isItinerary = open.mode === "itinerary";
-  const [itineraryDay, setItineraryDay] = useState<ItineraryMapDay>(open.itineraryDay === undefined ? 1 : open.itineraryDay);
+  // v3.1: 指定が無ければ ALL（全日を色分け）。日付なしは ALL にだけ出る
+  const [itineraryDay, setItineraryDay] = useState<ItineraryMapDay>(open.itineraryDay === undefined ? ALL_DAYS : open.itineraryDay);
   // しおりが読めたら: 現在地を待たず最初のスポット（無ければ東京駅）で開き、期間未設定なら「日付なし」のタブにする
   const onItineraryLoaded = useCallback(
     (loaded: NonNullable<ReturnType<typeof useItineraryForMap>["itinerary"]>) => {
       const first = loaded.spots[0];
       setInitial((current) => current ?? { center: first ? { lat: first.lat, lng: first.lng } : TOKYO_STATION, zoom: 13, source: "fallback" });
-      if (loaded.dayCount === 0) setItineraryDay((current) => (current === ALL_DAYS ? current : null));
+      // 期間より大きい Day を指定されたら ALL に倒す
+      setItineraryDay((current) => (current !== ALL_DAYS && current > loaded.dayCount ? ALL_DAYS : current));
     },
     []
   );

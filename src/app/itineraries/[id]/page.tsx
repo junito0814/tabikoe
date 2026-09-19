@@ -5,6 +5,7 @@ import { requireUserOrRedirect } from "@/lib/auth/require-user-or-redirect";
 import { ErrorNotice } from "@/components/notices/ErrorNotice";
 import { ERROR_MESSAGES } from "@/components/notices/error-messages";
 import { ItineraryDetailScreen } from "@/components/itineraries/ItineraryDetailScreen";
+import { parseDayTab } from "@/components/itineraries/DayTabs";
 import { getItinerary, type ItineraryDetail } from "@/lib/itineraries/get-itinerary";
 
 /**
@@ -38,8 +39,8 @@ export default async function ItineraryPage({
   if (!itinerary) notFound();
 
   const query = await searchParams;
-  const dayNumber = query.day === undefined ? undefined : query.day === "undecided" ? null : Number.parseInt(query.day, 10);
-  const initialDay = dayNumber === undefined ? undefined : dayNumber === null || !Number.isInteger(dayNumber) ? null : dayNumber;
+  // v3.1: ?day= は "all"／数字（旧 "undecided" は ALL に倒す）。指定が無ければ ALL
+  const initialDay = parseDayTab(query.day, itinerary.dayCount);
 
   return <ItineraryDetailScreen initial={itinerary} viewerId={user.id} initialDay={initialDay} highlightSpotId={query.spot ?? null} />;
 }

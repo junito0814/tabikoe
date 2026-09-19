@@ -42,3 +42,11 @@ describe("day-utils", () => {
     expect(isPeriodPast(null, "2026-09-18")).toBe(false);
   });
 });
+
+describe("formatPeriodLabel（v3.1: 年つき）", () => {
+  it("開始と終了を年つきで、未設定なら「期間未設定」", async () => {
+    const { formatPeriodLabel } = await import("./day-utils");
+    expect(formatPeriodLabel("2026-09-20", "2026-09-22")).toBe("2026/9/20（日） 〜 2026/9/22（火）");
+    expect(formatPeriodLabel(null, null)).toBe("期間未設定");
+  });
+});

@@ -36,11 +36,18 @@ export function dayDate(startDate: string | null, dayIndex: number): string | nu
 }
 
 /** 「9/20（金）」の形。日付が無ければ空文字 */
-export function formatDayLabel(date: string | null): string {
+export function formatDayLabel(date: string | null, options: { withYear?: boolean } = {}): string {
   if (!date) return "";
   const d = new Date(`${date}T00:00:00Z`);
   const weekday = ["日", "月", "火", "水", "木", "金", "土"][d.getUTCDay()];
-  return `${d.getUTCMonth() + 1}/${d.getUTCDate()}（${weekday}）`;
+  const md = `${d.getUTCMonth() + 1}/${d.getUTCDate()}（${weekday}）`;
+  return options.withYear ? `${d.getUTCFullYear()}/${md}` : md;
+}
+
+/** v3.1（mentoring-7 Task8）: 期間の表示は年つき「2026/9/20（金）〜 2026/9/22（日）」。未設定なら「期間未設定」 */
+export function formatPeriodLabel(startDate: string | null, endDate: string | null): string {
+  if (!startDate || !endDate) return "期間未設定";
+  return `${formatDayLabel(startDate, { withYear: true })} 〜 ${formatDayLabel(endDate, { withYear: true })}`;
 }
 
 /** 期間の変更で範囲外になった Day は未定（null）へ */

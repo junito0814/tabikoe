@@ -5,12 +5,12 @@ import { UnauthorizedError } from "@/lib/api/fetch-with-auth-redirect";
 import type { ItineraryDetail } from "@/lib/itineraries/get-itinerary";
 import { orderSpots } from "@/lib/itineraries/order-spots";
 import { defaultItineraryApi, type ItineraryApi } from "@/components/itineraries/itinerary-api";
-import { dayTabKeys, type DayKey } from "@/components/itineraries/DayTabs";
+import { ALL_TAB, dayTabKeys, dayTabLabel, daysInTab, type DayKey, type DayTab } from "@/components/itineraries/DayTabs";
 import type { GoogleMapPin } from "./GoogleMap";
 
 /** 「すべて」を表すタブの値 */
-export const ALL_DAYS = "all" as const;
-export type ItineraryMapDay = DayKey | typeof ALL_DAYS;
+export const ALL_DAYS = ALL_TAB;
+export type ItineraryMapDay = DayTab;
 
 /**
  * itinerary-map-and-post Task1: しおり表示の地図に重ねる Day タブと、番号ピンの組み立て
@@ -18,12 +18,12 @@ export type ItineraryMapDay = DayKey | typeof ALL_DAYS;
  *       要件定義書 v3.0 3.11.6
  *
  * 【初心者向け】しおりの地図は「開いている Day のスポットだけ」に訪問順の番号ピン（済みは灰色）を出す。
- * 「すべて」では全日を Day の色で色分け（番号は Day 内の順）。未定のスポットは番号なしの Day 色（灰）。
+ * 「ALL」（左端。v3.1）では全日を Day の色で色分け（番号は Day 内の順）。日付なしのスポットは ALL にだけ、Day 色（灰）で出る。
  * ピンの並び（番号）は lib/itineraries/order-spots.ts（時刻順→手動順）と同じ。
  * `buildItineraryPins` は純粋関数（単体テストの対象）。
  */
 export function buildItineraryPins(itinerary: ItineraryDetail, day: ItineraryMapDay): GoogleMapPin[] {
-  const days: DayKey[] = day === ALL_DAYS ? dayTabKeys(itinerary.dayCount) : [day];
+  const days: DayKey[] = daysInTab(day, itinerary.dayCount);
   return days.flatMap((key) =>
     orderSpots(itinerary.spots.filter((spot) => spot.dayIndex === key)).map((spot, index) => ({
       id: spot.spotId,
@@ -68,7 +68,7 @@ export function useItineraryForMap(itineraryId: string | null, api: ItineraryApi
 
 export function ItineraryMapOverlay({ itinerary, day, onChange }: { itinerary: ItineraryDetail; day: ItineraryMapDay; onChange: (day: ItineraryMapDay) => void }) {
   const tabs = useMemo<{ key: ItineraryMapDay; label: string }[]>(
-    () => [...dayTabKeys(itinerary.dayCount).map((key) => ({ key, label: key === null ? "日付なし" : `Day ${key}` })), { key: ALL_DAYS, label: "すべて" }],
+    () => dayTabKeys(itinerary.dayCount).map((key) => ({ key, label: dayTabLabel(key) })),
     [itinerary.dayCount]
   );
   return (
@@ -77,7 +77,7 @@ export function ItineraryMapOverlay({ itinerary, day, onChange }: { itinerary: I
         const selected = tab.key === day;
         return (
           <button
-            key={String(tab.key ?? "undecided")}
+            key={String(tab.key)}
             type="button"
             role="tab"
             aria-selected={selected}

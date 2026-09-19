@@ -53,7 +53,6 @@ export interface ItinerarySpotItem {
   hasPosted: boolean;
   ratingAverage: number | null;
   /** 公開投稿の費用の平均（予算目安） */
-  costAverage: number | null;
   postCount: number;
 }
 
@@ -79,7 +78,6 @@ export interface ItineraryDetail {
   members: ItineraryMember[];
   albumPostCount: number;
   /** 費用目安の合計（費用のあるスポットだけ） */
-  budgetEstimate: number | null;
   updatedAt: string;
 }
 
@@ -204,7 +202,6 @@ export async function getItinerary(admin: SupabaseClient, itineraryId: string, u
           checkedBy: row.checked_by,
           hasPosted: postedSpotIds.has(spot.id),
           ratingAverage: stat?.ratingAverage ?? null,
-          costAverage: stat?.costAverage ?? null,
           postCount: stat?.postCount ?? 0,
         },
       ];
@@ -228,7 +225,6 @@ export async function getItinerary(admin: SupabaseClient, itineraryId: string, u
   });
 
   const count = dayCount(itinerary.start_date, itinerary.end_date);
-  const costs = spots.map((spot) => spot.costAverage).filter((cost): cost is number => cost !== null);
   return {
     id: itinerary.id,
     tripId: itinerary.trip_id,
@@ -241,37 +237,35 @@ export async function getItinerary(admin: SupabaseClient, itineraryId: string, u
     spots,
     members,
     albumPostCount: albumResult.count ?? 0,
-    budgetEstimate: costs.length > 0 ? Math.round(costs.reduce((sum, cost) => sum + cost, 0)) : null,
     updatedAt: itinerary.updated_at,
   };
 }
 
-/** スポットごとの公開投稿の件数・星平均・費用平均 */
+/** スポットごとの公開投稿の件数・星平均（費用は v3.1 で表示しなくなったので取らない） */
 async function findSpotStats(
   admin: SupabaseClient,
   spotIds: string[]
-): Promise<Map<string, { postCount: number; ratingAverage: number | null; costAverage: number | null }>> {
-  const map = new Map<string, { postCount: number; ratingAverage: number | null; costAverage: number | null }>();
+): Promise<Map<string, { postCount: number; ratingAverage: number | null }>> {
+  const map = new Map<string, { postCount: number; ratingAverage: number | null }>();
   if (spotIds.length === 0) return map;
   const { data, error } = await admin
     .from("posts")
-    .select("spot_id, rating, cost")
+    .select("spot_id, rating")
     .in("spot_id", spotIds)
     .eq("visibility", "public")
     .eq("status", "published")
     .is("hidden_at", null);
   if (error) throw error;
-  const groups = new Map<string, { ratings: number[]; costs: number[]; count: number }>();
-  for (const row of (data ?? []) as { spot_id: string; rating: number | null; cost: number | null }[]) {
-    const group = groups.get(row.spot_id) ?? { ratings: [], costs: [], count: 0 };
+  const groups = new Map<string, { ratings: number[]; count: number }>();
+  for (const row of (data ?? []) as { spot_id: string; rating: number | null }[]) {
+    const group = groups.get(row.spot_id) ?? { ratings: [], count: 0 };
     group.count += 1;
     if (typeof row.rating === "number") group.ratings.push(row.rating);
-    if (typeof row.cost === "number") group.costs.push(row.cost);
     groups.set(row.spot_id, group);
   }
   const avg = (values: number[]) => (values.length === 0 ? null : Math.round((values.reduce((s, v) => s + v, 0) / values.length) * 10) / 10);
   for (const [spotId, group] of groups) {
-    map.set(spotId, { postCount: group.count, ratingAverage: avg(group.ratings), costAverage: group.costs.length ? Math.round(group.costs.reduce((s, v) => s + v, 0) / group.costs.length) : null });
+    map.set(spotId, { postCount: group.count, ratingAverage: avg(group.ratings) });
   }
   return map;
 }
