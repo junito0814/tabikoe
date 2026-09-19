@@ -13,7 +13,8 @@ export async function DELETE(_request: Request, { params }: { params: Promise<{ 
   if (isErrorResponse(context)) return context;
   const { data, error } = await context.admin
     .from("itinerary_invitations")
-    .update({ revoked_at: new Date().toISOString() })
+    // v3.2: アプリ内招待の取り消しも同じ（status も revoked に）
+    .update({ revoked_at: new Date().toISOString(), status: "revoked" })
     .eq("id", invitationId)
     .eq("itinerary_id", id)
     .is("revoked_at", null)

@@ -27,6 +27,8 @@ export interface PersonalNotificationItem {
   /** 遷移先。対象が消えている等で無ければ null（fallbackMessage を表示） */
   href: string | null;
   fallbackMessage: string | null;
+  /** v3.2: アプリ内招待の通知だけ持つ。通知一覧に「参加する」「辞退」を出す */
+  invitation?: { kind: "album" | "itinerary"; status: "pending" | "accepted" | "declined" | "revoked" | "expired"; targetTitle: string; inviterName: string };
 }
 
 export interface AnnouncementItem {
@@ -48,6 +50,8 @@ export interface FeedPage {
 export const NOTIFICATION_MESSAGES: Record<NotificationType, string> = {
   comment: "あなたの投稿にコメントが付きました",
   comment_replied: "あなたのコメントに返信が付きました",
+  album_invited: "アルバムに招待されました",
+  itinerary_invited: "しおりに招待されました",
   like: "あなたの投稿にいいねが付きました",
   album_join: "アルバムに新しいメンバーが参加しました",
   role_change: "アルバムでのあなたの権限が変更されました",
@@ -102,6 +106,8 @@ export interface NotificationLookups {
   existingItineraryIds: ReadonlySet<string>;
   /** report_resolved 通知: 通報ID → 対象のリンク（対象が消えていれば null） */
   reportTargetHrefs: ReadonlyMap<string, string | null>;
+  /** v3.2: album_invited／itinerary_invited 通知: 招待ID → 状態・対象名・招待した人 */
+  invitations?: ReadonlyMap<string, NonNullable<PersonalNotificationItem["invitation"]> & { targetId: string }>;
 }
 
 export function resolveNotificationHref(
@@ -137,6 +143,14 @@ export function resolveNotificationHref(
       return lookups.existingItineraryIds.has(relatedId)
         ? { href: `/itineraries/${relatedId}`, fallbackMessage: null }
         : { href: null, fallbackMessage: "このしおりは存在しません" };
+    case "album_invited":
+    case "itinerary_invited": {
+      // v3.2: 未回答なら通知一覧の「参加する」「辞退」で応答する（リンクにしない）。回答済みなら対象へ
+      const invitation = lookups.invitations?.get(relatedId);
+      if (!invitation) return { href: null, fallbackMessage: "この招待は取り消されました" };
+      if (invitation.status === "accepted") return { href: type === "album_invited" ? `/albums/${invitation.targetId}` : `/itineraries/${invitation.targetId}`, fallbackMessage: null };
+      return { href: null, fallbackMessage: null };
+    }
   }
 }
 
@@ -158,8 +172,10 @@ async function buildLookups(admin: SupabaseClient, rows: NotificationRow[]): Pro
   const tripIds = ids(["album_join", "role_change", "member_removed", "new_owner"]);
   const reportIds = ids(["report_resolved"]);
   const itineraryIds = ids(["itinerary_joined", "itinerary_member_removed"]);
+  const albumInvitationIds = ids(["album_invited"]);
+  const itineraryInvitationIds = ids(["itinerary_invited"]);
 
-  const [comments, posts, trips, reports, itineraries] = await Promise.all([
+  const [comments, posts, trips, reports, itineraries, albumInvitations, itineraryInvitations] = await Promise.all([
     commentIds.length ? admin.from("comments").select("id, post_id").in("id", commentIds) : Promise.resolve({ data: [] }),
     likePostIds.length ? admin.from("posts").select("id").in("id", likePostIds) : Promise.resolve({ data: [] }),
     tripIds.length ? admin.from("trips").select("id").in("id", tripIds) : Promise.resolve({ data: [] }),
@@ -167,6 +183,13 @@ async function buildLookups(admin: SupabaseClient, rows: NotificationRow[]): Pro
       ? admin.from("reports").select("id, target_type, target_id, status").in("id", reportIds)
       : Promise.resolve({ data: [] }),
     itineraryIds.length ? admin.from("itineraries").select("id").in("id", itineraryIds) : Promise.resolve({ data: [] }),
+    // v3.2: アプリ内招待（状態・対象名・招待した人）
+    albumInvitationIds.length
+      ? admin.from("album_invitations").select("id, trip_id, status, expires_at, trips(title), users:created_by(display_name)").in("id", albumInvitationIds)
+      : Promise.resolve({ data: [] }),
+    itineraryInvitationIds.length
+      ? admin.from("itinerary_invitations").select("id, itinerary_id, status, expires_at, itineraries(trips(title)), users:created_by(display_name)").in("id", itineraryInvitationIds)
+      : Promise.resolve({ data: [] }),
   ]);
 
   const commentPostIds = new Map<string, string>();
@@ -201,7 +224,26 @@ async function buildLookups(admin: SupabaseClient, rows: NotificationRow[]): Pro
     existingTripIds: new Set(((trips.data ?? []) as { id: string }[]).map((row) => row.id)),
     existingItineraryIds: new Set(((itineraries.data ?? []) as { id: string }[]).map((row) => row.id)),
     reportTargetHrefs,
+    invitations: buildInvitationLookups(albumInvitations.data ?? [], itineraryInvitations.data ?? []),
   };
+}
+
+/** v3.2: 招待の行 → 通知一覧が使う形（期限切れは expired に読み替える） */
+export function buildInvitationLookups(
+  albumRows: unknown[],
+  itineraryRows: unknown[],
+  now: Date = new Date()
+): Map<string, NonNullable<PersonalNotificationItem["invitation"]> & { targetId: string }> {
+  const one = <T,>(value: T | T[] | null | undefined): T | null => (Array.isArray(value) ? (value[0] ?? null) : (value ?? null));
+  const status = (raw: string, expiresAt: string) => (raw === "pending" && new Date(expiresAt).getTime() < now.getTime() ? "expired" : (raw as "pending" | "accepted" | "declined" | "revoked"));
+  const map = new Map<string, NonNullable<PersonalNotificationItem["invitation"]> & { targetId: string }>();
+  for (const row of albumRows as { id: string; trip_id: string; status: string; expires_at: string; trips: { title: string } | { title: string }[] | null; users: { display_name: string | null } | { display_name: string | null }[] | null }[]) {
+    map.set(row.id, { kind: "album", status: status(row.status, row.expires_at), targetId: row.trip_id, targetTitle: one(row.trips)?.title ?? "アルバム", inviterName: one(row.users)?.display_name ?? "ユーザー" });
+  }
+  for (const row of itineraryRows as { id: string; itinerary_id: string; status: string; expires_at: string; itineraries: { trips: { title: string } | { title: string }[] | null } | { trips: { title: string } | { title: string }[] | null }[] | null; users: { display_name: string | null } | { display_name: string | null }[] | null }[]) {
+    map.set(row.id, { kind: "itinerary", status: status(row.status, row.expires_at), targetId: row.itinerary_id, targetTitle: one(one(row.itineraries)?.trips)?.title ?? "しおり", inviterName: one(row.users)?.display_name ?? "ユーザー" });
+  }
+  return map;
 }
 
 /** 本人の通知（90日以内）＋公開済みお知らせを新着順に1ページ返す */
@@ -241,9 +283,12 @@ export async function getNotificationFeed(
       relatedId: row.related_id,
       isRead: row.is_read,
       createdAt: row.created_at,
-      message: NOTIFICATION_MESSAGES[type],
+      message: invitationMessage(type, row.related_id, lookups) ?? NOTIFICATION_MESSAGES[type],
       href,
       fallbackMessage,
+      ...(row.related_id && lookups.invitations?.get(row.related_id) && (type === "album_invited" || type === "itinerary_invited")
+        ? { invitation: pick(lookups.invitations.get(row.related_id)!) }
+        : {}),
     };
   });
 
@@ -262,4 +307,16 @@ export async function getNotificationFeed(
   }));
 
   return paginateFeed(mergeFeed(notifications, announcements), offset);
+}
+
+/** v3.2: 招待の通知は「〈名前〉さんがしおり『…』に招待しました」と具体的に */
+function invitationMessage(type: NotificationType, relatedId: string | null, lookups: NotificationLookups): string | null {
+  if ((type !== "album_invited" && type !== "itinerary_invited") || !relatedId) return null;
+  const invitation = lookups.invitations?.get(relatedId);
+  if (!invitation) return null;
+  return `${invitation.inviterName}さんが${invitation.kind === "album" ? "アルバム" : "しおり"}「${invitation.targetTitle}」に招待しました`;
+}
+
+function pick(value: NonNullable<PersonalNotificationItem["invitation"]> & { targetId: string }): NonNullable<PersonalNotificationItem["invitation"]> {
+  return { kind: value.kind, status: value.status, targetTitle: value.targetTitle, inviterName: value.inviterName };
 }

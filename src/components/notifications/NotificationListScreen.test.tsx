@@ -24,6 +24,7 @@ const items: FeedItem[] = [
 const api = (overrides: Partial<NotificationApi> = {}): NotificationApi => ({
   fetchPage: vi.fn(async () => ({ items: [], nextOffset: null })),
   markRead: vi.fn(async () => Response.json({ updated: 2 })),
+  respondInvitation: vi.fn(async () => Response.json({ ok: true, href: "/itineraries/it-1" })),
   ...overrides,
 });
 
@@ -61,5 +62,40 @@ describe("NotificationListScreen（SC-14）", () => {
     expect(screen.getByRole("dialog")).toHaveTextContent("新しいお知らせ");
     fireEvent.click(screen.getByRole("button", { name: "閉じる" }));
     expect(screen.queryByRole("dialog")).toBeNull();
+  });
+});
+
+describe("NotificationListScreen（v3.2: アプリ内招待の通知）", () => {
+  const invited = (id: string, status: "pending" | "accepted") =>
+    ({
+      kind: "notification",
+      id,
+      type: "itinerary_invited",
+      relatedId: "inv-1",
+      isRead: false,
+      createdAt: "2026-09-19T00:00:00Z",
+      message: "たろうさんがしおり「東京 2 泊 3 日」に招待しました",
+      href: status === "accepted" ? "/itineraries/it-1" : null,
+      fallbackMessage: null,
+      invitation: { kind: "itinerary", status, targetTitle: "東京 2 泊 3 日", inviterName: "たろう" },
+    }) as const;
+
+  it("未回答の招待には「参加する」「辞退」が出て、参加すると API が呼ばれ「参加しました」に変わる", async () => {
+    const a = api();
+    render(<NotificationListScreen initialPage={{ items: [invited("n-inv", "pending")], nextOffset: null }} api={a} />);
+    expect(screen.getByText(/たろうさんがしおり「東京 2 泊 3 日」に招待しました/)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "参加する" }));
+    await waitFor(() => expect(a.respondInvitation).toHaveBeenCalledWith("inv-1", "itinerary", "accept"));
+    await waitFor(() => expect(screen.queryByRole("button", { name: "参加する" })).toBeNull());
+    expect(screen.getByText(/参加しました/)).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /招待しました/ })).toHaveAttribute("href", "/itineraries/it-1");
+  });
+
+  it("辞退すると「辞退しました」", async () => {
+    const a = api({ respondInvitation: vi.fn(async () => Response.json({ ok: true })) });
+    render(<NotificationListScreen initialPage={{ items: [invited("n-inv", "pending")], nextOffset: null }} api={a} />);
+    fireEvent.click(screen.getByRole("button", { name: "辞退" }));
+    await waitFor(() => expect(a.respondInvitation).toHaveBeenCalledWith("inv-1", "itinerary", "decline"));
+    await waitFor(() => expect(screen.getByText(/辞退しました/)).toBeInTheDocument());
   });
 });

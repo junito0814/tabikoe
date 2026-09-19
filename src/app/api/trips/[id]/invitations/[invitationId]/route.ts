@@ -33,7 +33,8 @@ export async function DELETE(
 
   const { data, error } = await admin
     .from("album_invitations")
-    .update({ revoked_at: new Date().toISOString() })
+    // v3.2: アプリ内招待の取り消しも同じ（status も revoked に）
+    .update({ revoked_at: new Date().toISOString(), status: "revoked" })
     .eq("id", invitationId)
     .eq("trip_id", id)
     .is("revoked_at", null)

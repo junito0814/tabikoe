@@ -69,6 +69,9 @@ function makeApi(current: ItineraryDetail): ItineraryApi {
     issueInvitation: vi.fn(),
     listInvitations: vi.fn(async () => ({ invitations: [] })),
     revokeInvitation: vi.fn(),
+    fetchInviteCandidates: vi.fn(async () => ({ candidates: [] })),
+    searchUsers: vi.fn(async () => ({ users: [] })),
+    sendInvitation: vi.fn(),
     removeMember: vi.fn(),
     leave: vi.fn(),
   };

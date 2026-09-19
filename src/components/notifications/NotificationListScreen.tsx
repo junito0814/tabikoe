@@ -12,6 +12,8 @@ import { dispatchNotificationsRead } from "./notification-events";
 export interface NotificationApi {
   fetchPage: (offset: number) => Promise<FeedPage>;
   markRead: (notificationIds: string[]) => Promise<Response>;
+  /** v3.2: アプリ内招待に応答する（参加する／辞退） */
+  respondInvitation: (invitationId: string, kind: "album" | "itinerary", action: "accept" | "decline") => Promise<Response>;
 }
 
 /**
@@ -44,6 +46,35 @@ export function NotificationListScreen({
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [openAnnouncement, setOpenAnnouncement] = useState<AnnouncementItem | null>(null);
   const [fallbackNotice, setFallbackNotice] = useState<string | null>(null);
+  /** v3.2: 応答中の招待通知の id */
+  const [respondingId, setRespondingId] = useState<string | null>(null);
+
+  // v3.2（feedback-0919 Task6）: 招待の通知の「参加する」「辞退」。成功したら通知の状態を書き換える
+  const respond = async (item: Extract<FeedItem, { kind: "notification" }>, action: "accept" | "decline") => {
+    if (!item.invitation || !item.relatedId || respondingId) return;
+    setRespondingId(item.id);
+    setErrorMessage(null);
+    try {
+      const response = await api.respondInvitation(item.relatedId, item.invitation.kind, action);
+      if (!response.ok) {
+        setErrorMessage(response.status === 410 ? "この招待は期限切れです" : response.status === 409 ? "この招待は回答済みか取り消されています" : "招待に応答できませんでした");
+        return;
+      }
+      const data = (await response.json()) as { href?: string };
+      setItems((current) =>
+        current.map((entry) =>
+          entry.kind === "notification" && entry.id === item.id && entry.invitation
+            ? { ...entry, invitation: { ...entry.invitation, status: action === "accept" ? "accepted" : "declined" }, href: action === "accept" ? (data.href ?? null) : null }
+            : entry
+        )
+      );
+    } catch (error) {
+      if (error instanceof UnauthorizedError) return;
+      setErrorMessage("招待に応答できませんでした");
+    } finally {
+      setRespondingId(null);
+    }
+  };
   const markedRef = useRef(new Set<string>());
 
   // Task3: 表示した未読の個人通知を既読化する（お知らせは対象外）
@@ -150,7 +181,32 @@ export function NotificationListScreen({
                 </li>
               ) : (
                 <li key={`n:${item.id}`}>
-                  {item.href ? (
+                  {item.invitation && item.invitation.status === "pending" ? (
+                    // v3.2: 未回答の招待はリンクにせず、その場で「参加する」「辞退」
+                    <div data-notification={item.id} className={`flex flex-col gap-2 rounded-[12px] border border-line bg-surface p-3 ${item.isRead ? "" : "shadow-card"}`}>
+                      <div className="flex items-start gap-3">
+                        <NotificationBody item={item} />
+                      </div>
+                      <div className="flex gap-2 pl-6">
+                        <button
+                          type="button"
+                          onClick={() => void respond(item, "accept")}
+                          disabled={respondingId !== null}
+                          className="h-9 rounded-full bg-accent px-4 text-[12px] font-bold text-white disabled:opacity-45"
+                        >
+                          {respondingId === item.id ? "処理中…" : "参加する"}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => void respond(item, "decline")}
+                          disabled={respondingId !== null}
+                          className="h-9 rounded-full border border-line bg-surface px-4 text-[12px] font-semibold text-ink disabled:opacity-45"
+                        >
+                          辞退
+                        </button>
+                      </div>
+                    </div>
+                  ) : item.href ? (
                     <Link
                       href={item.href}
                       data-notification={item.id}
@@ -233,11 +289,20 @@ function NotificationBody({ item }: { item: Extract<FeedItem, { kind: "notificat
         <span className="mt-0.5 block text-[11px] text-muted">
           {new Date(item.createdAt).toLocaleString("ja-JP")}
           {item.fallbackMessage && ` ・ ${item.fallbackMessage}`}
+          {item.invitation && item.invitation.status !== "pending" && ` ・ ${INVITATION_STATUS_LABELS[item.invitation.status]}`}
         </span>
       </span>
     </>
   );
 }
+
+/** v3.2: 回答済みの招待の表示 */
+const INVITATION_STATUS_LABELS: Record<"accepted" | "declined" | "revoked" | "expired", string> = {
+  accepted: "参加しました",
+  declined: "辞退しました",
+  revoked: "取り消されました",
+  expired: "期限切れ",
+};
 
 const defaultApi: NotificationApi = {
   fetchPage: async (offset) => {
@@ -250,5 +315,11 @@ const defaultApi: NotificationApi = {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ notificationIds }),
+    }),
+  respondInvitation: (invitationId, kind, action) =>
+    fetchWithAuthRedirect(`/api/invitation-responses/${invitationId}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ kind, action }),
     }),
 };
