@@ -19,6 +19,12 @@
 - 30日失効判定ロジック
 - 失効時のログイン誘導処理
 
+## 実装メモ（2026-09-19）
+
+- Supabase のリフレッシュトークンは（無料プランでは）自動で期限切れにならないため、最終利用日時はアプリ側で持つ。`src/proxy.ts` が httpOnly の Cookie `tabikoe-last-active`（epoch ミリ秒）を 1 時間に 1 回書き直し、セッション Cookie があって 30 日を超えていれば `signOut()` で破棄し、`/login?error=expired&redirect_to=<元のパス>` へ送る（API は 401 `session_expired`）。判定は `src/lib/auth/session-activity.ts`（純粋関数）。
+- 未ログインのリクエストでは古い記録を消し、次にログインした人が前の記録で締め出されないようにする。記録が無いときは失効とみなさず、その時点から数える。
+- ログイン画面（`AuthScreen`）は `error=expired` で「しばらく利用がなかったため、もう一度ログインしてください」を出す。
+
 ## テスト要件
 
 ### 単体テスト
