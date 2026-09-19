@@ -62,10 +62,12 @@ export interface SpotPostMediaRow {
  * 非公開投稿・保存パスの無い行・非公開化された写真は落とす。単体テストの対象。
  */
 export function mergeMedia(
-  rows: SpotPostMediaRow[]
-): { key: string; postId: string; path: string; videoUrl: string | null; mediaType: "photo" | "video"; postedAt: string; spotName: string; info: SpotMediaItem["info"] }[] {
+  rows: SpotPostMediaRow[],
+  options: { includePrivate?: boolean } = {}
+): MergedMedia[] {
   return rows
-    .filter((row) => row.visibility === "public")
+    // アルバム写真一覧（SC-21）はメンバー限定なので非公開投稿も含める（3.6.3）
+    .filter((row) => options.includePrivate || row.visibility === "public")
     .flatMap((row) => {
       const spot = Array.isArray(row.spots) ? row.spots[0] : row.spots;
       const spotName = spot?.name ?? "";
@@ -132,6 +134,39 @@ export interface SpotMediaPage {
   nextOffset: number | null;
 }
 
+export type MergedMedia = { key: string; postId: string; path: string; videoUrl: string | null; mediaType: "photo" | "video"; postedAt: string; spotName: string; info: SpotMediaItem["info"] };
+
+/**
+ * 統合済みの一覧から 1 ページ分を切り出し、署名付き URL を付ける（検索の写真タブとアルバム写真一覧で共通）。
+ * 【初心者向け】並べる（mergeMedia）と配る（署名）を分けておくと、取得元が違う画面でも同じ手順で出せる。
+ */
+export async function buildMediaPage(admin: SupabaseClient, merged: MergedMedia[], offset: number, limit: number = PHOTOS_PAGE_SIZE): Promise<SpotMediaPage> {
+  const page = merged.slice(offset, offset + limit);
+  const signedUrls = await createPostPhotoUrls(
+    admin,
+    Array.from(new Set(page.flatMap((item) => [item.path, ...(item.videoUrl ? [item.videoUrl] : [])])))
+  );
+
+  const items: SpotMediaItem[] = page.flatMap((item, index) => {
+    const url = signedUrls.get(item.path);
+    if (!url) return [];
+    return [
+      {
+        id: item.key,
+        postId: item.postId,
+        mediaType: item.mediaType,
+        thumbnailUrl: url,
+        videoUrl: item.videoUrl ? (signedUrls.get(item.videoUrl) ?? null) : null,
+        alt: `${item.spotName}の${item.mediaType === "video" ? "動画" : "写真"} ${offset + index + 1}`,
+        postedAt: item.postedAt,
+        info: item.info,
+      },
+    ];
+  });
+
+  return { items, nextOffset: offset + limit < merged.length ? offset + limit : null };
+}
+
 /** 検索条件に合う公開投稿の写真・動画を、投稿一覧と同じ並び順で 1 ページ（40 点）返す */
 export async function searchMediaPage(
   admin: SupabaseClient,
@@ -162,28 +197,5 @@ export async function searchMediaPage(
     ).map((item) => item.row);
     merged = mergeMedia(ordered as unknown as SpotPostMediaRow[]);
   }
-  const page = merged.slice(offset, offset + limit);
-  const signedUrls = await createPostPhotoUrls(
-    admin,
-    Array.from(new Set(page.flatMap((item) => [item.path, ...(item.videoUrl ? [item.videoUrl] : [])])))
-  );
-
-  const items: SpotMediaItem[] = page.flatMap((item, index) => {
-    const url = signedUrls.get(item.path);
-    if (!url) return [];
-    return [
-      {
-        id: item.key,
-        postId: item.postId,
-        mediaType: item.mediaType,
-        thumbnailUrl: url,
-        videoUrl: item.videoUrl ? (signedUrls.get(item.videoUrl) ?? null) : null,
-        alt: `${item.spotName}の${item.mediaType === "video" ? "動画" : "写真"} ${offset + index + 1}`,
-        postedAt: item.postedAt,
-        info: item.info,
-      },
-    ];
-  });
-
-  return { items, nextOffset: offset + limit < merged.length ? offset + limit : null };
+  return buildMediaPage(admin, merged, offset, limit);
 }

@@ -239,12 +239,18 @@ export function AlbumScreen({
           <p className="text-[11px] text-muted">
             あなたの権限: {ALBUM_ROLE_LABELS[album.viewerRole]} ・ 投稿 {album.posts.length}件 ・ メンバー {members.length}人
           </p>
-          {/* itinerary-basics Task4: しおりのメンバーにだけ「しおりを見る」 */}
-          {album.itineraryId && (
-            <Link href={`/itineraries/${album.itineraryId}`} className="inline-flex h-8 w-fit items-center gap-1 rounded-full border border-line bg-surface px-3 text-[12px] font-semibold text-ink">
-              🔖 しおりを見る
+          <div className="flex flex-wrap gap-2">
+            {/* F-RC-05（SC-21）: このアルバムの写真・動画だけを並べて眺める（非公開投稿も含む） */}
+            <Link href={`/albums/${album.tripId}/photos`} className="inline-flex h-8 w-fit items-center gap-1 rounded-full border border-line bg-surface px-3 text-[12px] font-semibold text-ink">
+              🖼 写真
             </Link>
-          )}
+            {/* itinerary-basics Task4: しおりのメンバーにだけ「しおりを見る」 */}
+            {album.itineraryId && (
+              <Link href={`/itineraries/${album.itineraryId}`} className="inline-flex h-8 w-fit items-center gap-1 rounded-full border border-line bg-surface px-3 text-[12px] font-semibold text-ink">
+                🔖 しおりを見る
+              </Link>
+            )}
+          </div>
         </header>
 
         {errorMessage && <ErrorNotice message={errorMessage} />}
