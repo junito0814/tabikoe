@@ -59,7 +59,11 @@ export async function POST(request: Request) {
   }
 
   // 旅行のオーナーだけがしおりを作れる（共同アルバムの編集者は不可。3.11.1）
-  const { data: trip } = await admin.from("trips").select("user_id, is_daily").eq("id", tripId).maybeSingle();
+  const { data: trip, error: tripError } = await admin.from("trips").select("user_id, is_daily").eq("id", tripId).maybeSingle();
+  // Bug #466: DB の失敗（列が無い・接続できない等）は 403 ではなく 500 にして、権限の問題と区別できるようにする
+  if (tripError) {
+    return NextResponse.json({ error: "fetch_failed" }, { status: 500 });
+  }
   // v3.1（mentoring-7 Task2）: 「日常」にはしおりを作れない
   if (trip?.is_daily) {
     return NextResponse.json({ error: "daily_album" }, { status: 400 });

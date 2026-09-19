@@ -8,6 +8,8 @@ const state = {
   tripOwner: "user-1",
   existingItinerary: null as { id: string } | null,
   inserted: [] as Record<string, unknown>[],
+  /** Bug #466: 旅行の取得が DB エラーで失敗する状況 */
+  tripFetchError: null as { message: string } | null,
 };
 
 vi.mock("@/lib/supabase/server", () => ({ createClient: async () => ({}) }));
@@ -23,7 +25,7 @@ vi.mock("@/lib/supabase/admin", () => ({
         select: () => chain,
         eq: () => chain,
         maybeSingle: async () => {
-          if (table === "trips") return { data: { user_id: state.tripOwner } };
+          if (table === "trips") return state.tripFetchError ? { data: null, error: state.tripFetchError } : { data: { user_id: state.tripOwner } };
           if (table === "itineraries") return { data: state.existingItinerary };
           return { data: null };
         },
@@ -46,6 +48,7 @@ beforeEach(() => {
   state.tripOwner = "user-1";
   state.existingItinerary = null;
   state.inserted = [];
+  state.tripFetchError = null;
 });
 
 describe("POST /api/itineraries", () => {
@@ -54,6 +57,14 @@ describe("POST /api/itineraries", () => {
     expect(response.status).toBe(201);
     expect(await response.json()).toEqual({ itineraryId: "it-new", tripId: "trip-1" });
     expect(state.inserted).toEqual([{ table: "itineraries", trip_id: "trip-1", start_date: "2026-09-20", end_date: "2026-09-22" }]);
+  });
+
+  it("Bug #466: 旅行の取得が DB エラーなら 403 ではなく 500 fetch_failed", async () => {
+    state.tripFetchError = { message: 'column trips.is_daily does not exist' };
+    const response = await post({ title: "大阪旅行" });
+    expect(response.status).toBe(500);
+    expect(await response.json()).toEqual({ error: "fetch_failed" });
+    expect(state.inserted).toEqual([]);
   });
 
   it("旅行のオーナー以外は 403", async () => {
