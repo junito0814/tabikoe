@@ -2,7 +2,10 @@
 
 import { TripTitleInput } from "@/components/trips/TripTitleInput";
 import { UploadNotice } from "@/components/notices/UploadNotice";
-import { SelectedMediaThumbnails, type SelectedMedia } from "@/components/media/SelectedMediaThumbnails";
+import {
+  SelectedMediaThumbnails,
+  type SelectedMedia,
+} from "@/components/media/SelectedMediaThumbnails";
 import { graphemeLength } from "@/lib/text/grapheme-length";
 import {
   MAX_POST_COMMENT_LENGTH,
@@ -15,6 +18,7 @@ import {
   type PostCategory,
   type PostDuration,
   type PostVisibility,
+  autoDurationForCategory,
 } from "@/lib/posts/constants";
 
 /**
@@ -57,23 +61,35 @@ const smallInputClass =
   "h-10 w-full rounded-[10px] border border-line bg-surface px-3 text-[13px] text-ink focus:outline-none focus:ring-1 focus:ring-accent";
 
 /** 星評価（1〜5）。5 個のボタンを並べ、押した番号を onChange で親へ返す。role="radio" は読み上げ用 */
-function StarRating({ value, onChange }: { value: number; onChange: (value: number) => void }) {
+function StarRating({
+  value,
+  onChange,
+}: {
+  value: number;
+  onChange: (value: number) => void;
+}) {
   return (
-    <div className="flex h-10 items-center gap-0.5" role="radiogroup" aria-label="星評価">
-      {Array.from({ length: MAX_POST_RATING }, (_, index) => index + 1).map((star) => (
-        <button
-          key={star}
-          type="button"
-          role="radio"
-          aria-checked={value === star}
-          aria-label={`${star}`}
-          onClick={() => onChange(star)}
-          className="text-[24px] leading-none"
-          style={{ color: star <= value ? "var(--star)" : "var(--line)" }}
-        >
-          ★
-        </button>
-      ))}
+    <div
+      className="flex h-10 items-center gap-0.5"
+      role="radiogroup"
+      aria-label="星評価"
+    >
+      {Array.from({ length: MAX_POST_RATING }, (_, index) => index + 1).map(
+        (star) => (
+          <button
+            key={star}
+            type="button"
+            role="radio"
+            aria-checked={value === star}
+            aria-label={`${star}`}
+            onClick={() => onChange(star)}
+            className="text-[24px] leading-none"
+            style={{ color: star <= value ? "var(--star)" : "var(--line)" }}
+          >
+            ★
+          </button>
+        ),
+      )}
     </div>
   );
 }
@@ -98,30 +114,48 @@ export function PostFormFields({
   onAddMedia: () => void;
   fileInputRef: React.RefObject<HTMLInputElement | null>;
   onFilesSelected: (event: React.ChangeEvent<HTMLInputElement>) => void;
-  fetchTripSuggestions?: React.ComponentProps<typeof TripTitleInput>["fetchSuggestions"];
+  fetchTripSuggestions?: React.ComponentProps<
+    typeof TripTitleInput
+  >["fetchSuggestions"];
 }) {
   const commentLength = graphemeLength(values.comment);
   const isCommentTooLong = commentLength > MAX_POST_COMMENT_LENGTH;
   const costNumber = values.cost === "" ? null : Number(values.cost);
   const isCostInvalid =
-    costNumber !== null && (!Number.isInteger(costNumber) || costNumber < MIN_POST_COST || costNumber > MAX_POST_COST);
+    costNumber !== null &&
+    (!Number.isInteger(costNumber) ||
+      costNumber < MIN_POST_COST ||
+      costNumber > MAX_POST_COST);
 
   return (
     <div className="flex w-full flex-col gap-3">
       {/* 旅行タイトル: ラベルと入力欄を横並び */}
-      <TripTitleInput value={values.tripTitle} onChange={(tripTitle) => onChange({ tripTitle })} fetchSuggestions={fetchTripSuggestions} layout="inline" />
+      <TripTitleInput
+        value={values.tripTitle}
+        onChange={(tripTitle) => onChange({ tripTitle })}
+        fetchSuggestions={fetchTripSuggestions}
+        layout="inline"
+      />
 
       {spotField}
 
       {/* カテゴリ: ドロップダウン（7 つ） */}
       <div className="flex items-center gap-2">
-        <label htmlFor="post-category" className="w-[84px] shrink-0 text-[12px] font-medium text-muted">
+        <label
+          htmlFor="post-category"
+          className="w-[84px] shrink-0 text-[12px] font-medium text-muted"
+        >
           カテゴリ *
         </label>
         <select
           id="post-category"
           value={values.category}
-          onChange={(event) => onChange({ category: event.target.value as PostCategory })}
+          onChange={(event) => {
+            const category = event.target.value as PostCategory;
+            // v3.2: 「宿泊施設」を選んだとき滞在時間が未選択なら「宿泊」を入れる（変更は可）
+            const auto = autoDurationForCategory(category, values.duration);
+            onChange(auto ? { category, duration: auto } : { category });
+          }}
           className={inputClass}
         >
           <option value="">選択してください</option>
@@ -149,7 +183,9 @@ export function PostFormFields({
           滞在時間 *
           <select
             value={values.duration}
-            onChange={(event) => onChange({ duration: event.target.value as PostDuration })}
+            onChange={(event) =>
+              onChange({ duration: event.target.value as PostDuration })
+            }
             className={smallInputClass}
           >
             <option value="">選択</option>
@@ -167,7 +203,9 @@ export function PostFormFields({
         <label className="flex flex-col gap-1 text-[11px] text-muted">
           費用（任意・1人あたり）
           <span className="relative block">
-            <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[13px] text-muted">¥</span>
+            <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[13px] text-muted">
+              ¥
+            </span>
             <input
               type="number"
               inputMode="numeric"
@@ -180,18 +218,30 @@ export function PostFormFields({
               className={`${smallInputClass} pl-7`}
             />
           </span>
-          {isCostInvalid && <span className="text-[11px] text-saved">0〜{MAX_POST_COST.toLocaleString()}の整数で入力してください</span>}
+          {isCostInvalid && (
+            <span className="text-[11px] text-saved">
+              0〜{MAX_POST_COST.toLocaleString()}の整数で入力してください
+            </span>
+          )}
         </label>
         <div className="flex flex-col gap-1 text-[11px] text-muted">
           星評価 *
-          <StarRating value={values.rating} onChange={(rating) => onChange({ rating })} />
+          <StarRating
+            value={values.rating}
+            onChange={(rating) => onChange({ rating })}
+          />
         </div>
       </div>
 
       {/* 写真・動画: 選んだその場にサムネイル */}
       <div className="flex flex-col gap-1.5">
         <span className="text-[12px] font-medium text-muted">写真・動画 *</span>
-        <SelectedMediaThumbnails items={mediaItems} onRemove={onRemoveMedia} onAdd={onAddMedia} addLabel="写真・動画を追加" />
+        <SelectedMediaThumbnails
+          items={mediaItems}
+          onRemove={onRemoveMedia}
+          onAdd={onAddMedia}
+          addLabel="写真・動画を追加"
+        />
         <input
           ref={fileInputRef}
           type="file"
@@ -207,12 +257,17 @@ export function PostFormFields({
       {/* 感想（2 行から伸びる）と公開設定（ラベル行の右端） */}
       <div className="flex flex-col gap-1">
         <div className="flex items-center">
-          <label htmlFor="post-comment" className="flex-1 text-[12px] font-medium text-muted">
+          <label
+            htmlFor="post-comment"
+            className="flex-1 text-[12px] font-medium text-muted"
+          >
             感想（任意）
           </label>
           <select
             value={values.visibility}
-            onChange={(event) => onChange({ visibility: event.target.value as PostVisibility })}
+            onChange={(event) =>
+              onChange({ visibility: event.target.value as PostVisibility })
+            }
             aria-label="公開設定"
             className="h-8 rounded-[8px] border border-line bg-surface px-2 text-[12px] text-ink"
           >
@@ -232,7 +287,9 @@ export function PostFormFields({
           }}
           className="w-full resize-none rounded-[10px] border border-line bg-surface px-3 py-2.5 text-[14px] leading-[1.7] text-ink focus:outline-none focus:ring-1 focus:ring-accent"
         />
-        <p className={`text-right text-[11px] ${isCommentTooLong ? "text-saved" : "text-muted"}`}>
+        <p
+          className={`text-right text-[11px] ${isCommentTooLong ? "text-saved" : "text-muted"}`}
+        >
           {commentLength} / {MAX_POST_COMMENT_LENGTH}
         </p>
       </div>
@@ -241,10 +298,16 @@ export function PostFormFields({
 }
 
 /** 親が「投稿する」を押せるかの判定に使う（項目の規則は v1 と同じ） */
-export function isPostFormComplete(values: PostFormValues, mediaCount: number): boolean {
+export function isPostFormComplete(
+  values: PostFormValues,
+  mediaCount: number,
+): boolean {
   const costNumber = values.cost === "" ? null : Number(values.cost);
   const isCostInvalid =
-    costNumber !== null && (!Number.isInteger(costNumber) || costNumber < MIN_POST_COST || costNumber > MAX_POST_COST);
+    costNumber !== null &&
+    (!Number.isInteger(costNumber) ||
+      costNumber < MIN_POST_COST ||
+      costNumber > MAX_POST_COST);
   return (
     values.tripTitle.trim().length > 0 &&
     values.category !== "" &&
@@ -258,7 +321,10 @@ export function isPostFormComplete(values: PostFormValues, mediaCount: number): 
 }
 
 /** 何か 1 つでも入力があるか（自動保存の判定。draft Task2） */
-export function hasAnyPostInput(values: PostFormValues, mediaCount: number): boolean {
+export function hasAnyPostInput(
+  values: PostFormValues,
+  mediaCount: number,
+): boolean {
   return (
     values.tripTitle.trim().length > 0 ||
     values.category !== "" ||

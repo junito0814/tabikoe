@@ -5,8 +5,7 @@ import {
   matchesFilters,
   parsePeriod,
   parsePostSearchParams,
-  type PostSearchFilters,
-} from "./search-posts";
+  type PostSearchFilters, durationsMatching } from "./search-posts";
 
 /**
  * 出典: docs/tasks/map-search/post-filter/01-post-filter-handler.md 単体テスト
@@ -75,9 +74,13 @@ describe("matchesFilters", () => {
     expect(matchesFilters(post({ cost: null }), none)).toBe(true);
   });
 
-  it("滞在時間は完全一致", () => {
+  it("滞在時間は完全一致。v3.2: 半日／1日／宿泊 を選ぶと旧「それ以上」の投稿も含む", () => {
     expect(matchesFilters(post(), { ...none, duration: "1時間以内" })).toBe(true);
-    expect(matchesFilters(post(), { ...none, duration: "それ以上" })).toBe(false);
+    expect(matchesFilters(post(), { ...none, duration: "宿泊" })).toBe(false);
+    expect(matchesFilters(post({ duration: "それ以上" }), { ...none, duration: "半日" })).toBe(true);
+    expect(matchesFilters(post({ duration: "それ以上" }), { ...none, duration: "1時間以内" })).toBe(false);
+    expect(durationsMatching("宿泊")).toEqual(["宿泊", "それ以上"]);
+    expect(durationsMatching("30分以内")).toEqual(["30分以内"]);
   });
 
   it("複数条件の組み合わせはすべて満たす必要がある", () => {
