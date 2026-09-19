@@ -32,13 +32,21 @@ export interface SpotMediaItem {
   alt: string;
   /** 元投稿の投稿日時 */
   postedAt: string;
+  /** v3.2（feedback-0919 Task3）: モーダルの情報バー用（スポット名・タビコエだけの場所・★・滞在・費用・投稿者・訪問日） */
+  info: { spotName: string; isManualSpot: boolean; rating: number | null; duration: string | null; cost: number | null; authorName: string; visitDate: string | null };
 }
 
 export interface SpotPostMediaRow {
   id: string;
   created_at: string;
   visibility: string;
-  spots: { name: string } | { name: string }[] | null;
+  spots: { name: string; source?: string } | { name: string; source?: string }[] | null;
+  /** v3.2: 情報バー用（無くてもよい） */
+  users?: { display_name: string | null; avatar_url?: string | null; is_deleted?: boolean } | { display_name: string | null; avatar_url?: string | null; is_deleted?: boolean }[] | null;
+  rating?: number | null;
+  duration?: string | null;
+  cost?: number | null;
+  visit_date?: string | null;
   post_photos: {
     id: string;
     storage_url: string | null;
@@ -55,11 +63,22 @@ export interface SpotPostMediaRow {
  */
 export function mergeMedia(
   rows: SpotPostMediaRow[]
-): { key: string; postId: string; path: string; videoUrl: string | null; mediaType: "photo" | "video"; postedAt: string; spotName: string }[] {
+): { key: string; postId: string; path: string; videoUrl: string | null; mediaType: "photo" | "video"; postedAt: string; spotName: string; info: SpotMediaItem["info"] }[] {
   return rows
     .filter((row) => row.visibility === "public")
     .flatMap((row) => {
-      const spotName = (Array.isArray(row.spots) ? row.spots[0] : row.spots)?.name ?? "";
+      const spot = Array.isArray(row.spots) ? row.spots[0] : row.spots;
+      const spotName = spot?.name ?? "";
+      const user = Array.isArray(row.users) ? row.users[0] : row.users;
+      const info: SpotMediaItem["info"] = {
+        spotName,
+        isManualSpot: spot?.source === "manual",
+        rating: row.rating ?? null,
+        duration: row.duration ?? null,
+        cost: row.cost ?? null,
+        authorName: user?.is_deleted ? "退会済みユーザー" : (user?.display_name ?? "ユーザー"),
+        visitDate: row.visit_date ?? null,
+      };
       return [...row.post_photos]
         .sort((a, b) => a.display_order - b.display_order)
         .flatMap((photo) =>
@@ -73,6 +92,7 @@ export function mergeMedia(
                   mediaType: photo.media_type === "video" ? ("video" as const) : ("photo" as const),
                   postedAt: row.created_at,
                   spotName,
+                  info,
                 },
               ]
             : []
@@ -160,6 +180,7 @@ export async function searchMediaPage(
         videoUrl: item.videoUrl ? (signedUrls.get(item.videoUrl) ?? null) : null,
         alt: `${item.spotName}の${item.mediaType === "video" ? "動画" : "写真"} ${offset + index + 1}`,
         postedAt: item.postedAt,
+        info: item.info,
       },
     ];
   });
