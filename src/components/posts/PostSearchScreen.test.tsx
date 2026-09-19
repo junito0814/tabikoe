@@ -89,12 +89,8 @@ describe("PostSearchScreen（SC-04 タイムライン）", () => {
     expect(article).toHaveTextContent("¥1,200/人");
     expect(article).toHaveTextContent("グルメ");
     expect(article).toHaveTextContent("9月にまだあった");
-    const mapHref = new URL(screen.getByRole("link", { name: "地図で見る" }).getAttribute("href") ?? "", "https://example.com");
-    expect(mapHref.pathname).toBe("/map");
-    expect(mapHref.searchParams.get("spot")).toBe("spot-1");
-    expect(mapHref.searchParams.get("lat")).toBe("34.7");
-    // back には今の一覧の URL が入る（「一覧に戻る」用）
-    expect(mapHref.searchParams.get("back")).toBe("/search?pref=%E5%A4%A7%E9%98%AA%E5%BA%9C");
+    // v3.1: カードの「地図で見る」ボタンは廃止（上 1/3 の地図が兼ねる）
+    expect(screen.queryByRole("link", { name: "地図で見る" })).toBeNull();
     expect(screen.getByRole("button", { name: "保存する" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "コメント3件" })).toHaveAttribute("href", "/posts/p1#comments");
     expect(screen.getByRole("button", { name: "たこ焼き〇〇の写真 1" })).toBeInTheDocument();

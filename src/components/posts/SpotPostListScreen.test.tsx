@@ -9,7 +9,7 @@ import type { PostCardData } from "@/lib/posts/post-cards";
 
 /**
  * 出典: docs/tasks/map-search/post-timeline/04-spot-list-header-and-add-mode.md 単体テスト
- * - 見出し（スポット名・都道府県・件数・まだあった・地図で見る・＋・投稿する）
+ * - 見出し（スポット名・都道府県・件数・まだあった・＋・投稿する）と上 1/3 の地図（v3.1）
  * - 投稿が無ければ「まだ投稿がありません」
  * - バナーの表示条件と「完了」の遷移先
  */
@@ -59,16 +59,16 @@ describe("SpotPostListScreen（SC-04 スポット別）", () => {
     expect(screen.getByText("まだ投稿がありません")).toBeInTheDocument();
   });
 
-  it("見出しにスポット名・都道府県・件数・まだあった・地図で見る・＋・投稿する", () => {
+  it("見出しにスポット名・都道府県・件数・まだあった・＋・投稿する。上 1/3 の地図のタップで SC-02（v3.1）", () => {
     render(<SpotPostListScreen spot={spot} initialState={EMPTY_SEARCH_STATE} initialPage={{ posts: [card("p1")], nextOffset: null }} fetchPage={vi.fn()} />);
     expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("東京駅");
     expect(screen.getByText("東京都")).toBeInTheDocument();
     expect(screen.getByText("投稿 7 件")).toBeInTheDocument();
     expect(screen.getByText("9月にまだあった")).toBeInTheDocument();
-    expect(screen.getAllByRole("link", { name: "地図で見る" })[0]).toHaveAttribute(
-      "href",
-      "/map?spot=spot-1&lat=35.68&lng=139.76&back=%2Fsearch%3Fspot%3Dspot-1"
-    );
+    // v3.1: 見出しの「地図で見る」ボタンは無く、上 1/3 の地図（StaticSpotMap）全体がリンク
+    expect(document.querySelector("[data-static-spot-map]")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "東京駅を地図で見る" })).toHaveAttribute("href", "/map?spot=spot-1&lat=35.68&lng=139.76&back=%2Fsearch%3Fspot%3Dspot-1");
+    expect(screen.queryByRole("link", { name: "地図で見る" })).toBeNull();
     expect(screen.getAllByRole("button", { name: "保存する" }).length).toBeGreaterThan(0);
     expect(screen.getByRole("link", { name: "投稿する" })).toHaveAttribute("href", "/posts/new?spot=spot-1");
     // 見出しにスポット名があるので、カードの見出しは出さない
