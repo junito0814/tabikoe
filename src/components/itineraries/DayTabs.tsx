@@ -2,51 +2,19 @@
 
 import { formatDayLabel } from "@/lib/itineraries/day-utils";
 import type { ItinerarySpotItem } from "@/lib/itineraries/get-itinerary";
+import { ALL_TAB, countByDay, dayTabKeys, dayTabLabel, type DayTab } from "@/lib/itineraries/day-tabs";
 
 /**
  * itinerary-days Task2 / itinerary-check Task3 / mentoring-7 Task8（v3.1）: Day タブ（ALL／Day 1／…。各タブに「済み／全体」）
  * 出典: docs/tasks/itinerary/itinerary-days/02-day-tabs-and-move-ui.md
  *       docs/tasks/shared-ui/mentoring-7/08-itinerary-detail.md
- *       要件定義書 v3.1 3.11.2（左端は ALL。日付なしのスポットは ALL にだけ出る。「未定」タブは置かない）
  *
  * 【初心者向け】タブは「ALL＋日数分」。期間未設定なら ALL だけ。
- * `DayKey`（number | null）は「スポットがどの Day に属するか」（null＝日付なし）で、`DayTab`（"all" | number）は「今どのタブを見ているか」。
- * 2 つを分けているのは、日付なしのスポットは専用のタブを持たず ALL にだけ出るため。件数は純粋関数 countByDay で数える。
+ * 純粋関数（parseDayTab など）は lib/itineraries/day-tabs.ts にある（Server Component からも呼ぶため。#462）。
+ * 互換のためここからも再 export する。
  */
-export type DayKey = number | null;
-export const ALL_TAB = "all" as const;
-export type DayTab = typeof ALL_TAB | number;
-
-export function countByDay(spots: Pick<ItinerarySpotItem, "dayIndex" | "checkedAt">[], tab: DayTab): { total: number; checked: number } {
-  const inTab = tab === ALL_TAB ? spots : spots.filter((spot) => spot.dayIndex === tab);
-  return { total: inTab.length, checked: inTab.filter((spot) => spot.checkedAt !== null).length };
-}
-
-/** タブの並び: ALL が左端、続いて Day 1〜n */
-export function dayTabKeys(dayCount: number): DayTab[] {
-  return [ALL_TAB, ...Array.from({ length: dayCount }, (_, i) => i + 1)];
-}
-
-/** スポットが属せる Day の一覧（Day 1〜n → 日付なし）。Day の移動・保存先シートの選択肢に使う */
-export function dayKeys(dayCount: number): DayKey[] {
-  return [...Array.from({ length: dayCount }, (_, i) => i + 1), null];
-}
-
-/** タブに含まれる Day の一覧（ALL は Day の順 → 日付なし）。地図のピンや ALL の一覧の並びに使う */
-export function daysInTab(tab: DayTab, dayCount: number): DayKey[] {
-  return tab === ALL_TAB ? [...Array.from({ length: dayCount }, (_, i) => i + 1), null] : [tab];
-}
-
-/** URL の ?day=（"all"／数字／旧 "undecided"）→ タブ。不正なら ALL */
-export function parseDayTab(value: string | null | undefined, dayCount: number): DayTab {
-  if (value === undefined || value === null || value === "" || value === ALL_TAB || value === "undecided") return ALL_TAB;
-  const n = Number.parseInt(value, 10);
-  return Number.isInteger(n) && n >= 1 && n <= dayCount ? n : ALL_TAB;
-}
-
-export function dayTabLabel(tab: DayTab): string {
-  return tab === ALL_TAB ? "ALL" : `Day ${tab}`;
-}
+export { ALL_TAB, countByDay, dayKeys, daysInTab, dayTabKeys, dayTabLabel, parseDayTab } from "@/lib/itineraries/day-tabs";
+export type { DayKey, DayTab } from "@/lib/itineraries/day-tabs";
 
 export function DayTabs({
   dayCount,
