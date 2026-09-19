@@ -87,7 +87,7 @@ export function MapScreen({
   // ── しおりの地図（itinerary-map-and-post Task1）──
   const isItinerary = open.mode === "itinerary";
   const [itineraryDay, setItineraryDay] = useState<ItineraryMapDay>(open.itineraryDay === undefined ? 1 : open.itineraryDay);
-  // しおりが読めたら: 現在地を待たず最初のスポット（無ければ東京駅）で開き、期間未設定なら未定タブにする
+  // しおりが読めたら: 現在地を待たず最初のスポット（無ければ東京駅）で開き、期間未設定なら「日付なし」のタブにする
   const onItineraryLoaded = useCallback(
     (loaded: NonNullable<ReturnType<typeof useItineraryForMap>["itinerary"]>) => {
       const first = loaded.spots[0];
@@ -226,7 +226,7 @@ export function MapScreen({
       type: pin.kind !== "draft" && pin.spotId === focusId ? "focus" : pin.kind,
       title: pin.name,
     }));
-    // 探すモードで「近くの声」にあるスポットが範囲内のピンに無ければ（100 件上限など）補う
+    // 探すモードで「近くのスポット」にあるスポットが範囲内のピンに無ければ（100 件上限など）補う
     if (open.mode === "explore") {
       const known = new Set(result.map((pin) => pin.id));
       for (const post of nearbyPosts) {

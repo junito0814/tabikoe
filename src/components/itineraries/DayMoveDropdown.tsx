@@ -11,7 +11,7 @@ import { dayTabKeys, type DayKey } from "./DayTabs";
  * 選ぶと onChange(移動先)。画面は今の Day に留まり、トーストは親が出す。
  */
 export function dayLabel(day: DayKey): string {
-  return day === null ? "未定" : `Day ${day}`;
+  return day === null ? "日付なし" : `Day ${day}`;
 }
 
 export function DayMoveDropdown({ value, dayCount, onChange, disabled = false }: { value: DayKey; dayCount: number; onChange: (day: DayKey) => void; disabled?: boolean }) {

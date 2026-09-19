@@ -11,13 +11,22 @@ import type { DraftListPage, DraftSummary } from "@/lib/posts/drafts";
  * 出典: docs/tasks/records/my-page-v3/01-drafts-section-and-menu.md
  *       要件定義書 v3.0 3.3.7・3.6.1（受入条件 51）
  *
- * 【初心者向け】下書きがあるときだけ先頭に出す。「下書き N 件」と最新 3 件（スポット名・保存日時・サムネイル）。
+ * 【初心者向け】下書きがあるときだけ先頭に出す。「下書き N 件」と最新 3 件（スポット名・保存日時・サムネイル）。4 件以上なら「すべて見る」で /mypage/drafts へ（v3.1）。
  * 「続きを書く」→ /posts/new?draft=<id>（SC-03 が保存時の状態で開く）。「削除」は確認してから DELETE /api/posts/[id]。
  * 下書きは他人には一切見えない（地図のピン・一覧・検索に出ない）。
  */
 export const DRAFTS_PREVIEW_COUNT = 3;
 
-export function DraftsSection({ initial, submitDelete = defaultSubmitDelete }: { initial: DraftListPage; submitDelete?: (id: string) => Promise<Response> }) {
+export function DraftsSection({
+  initial,
+  submitDelete = defaultSubmitDelete,
+  showAll = false,
+}: {
+  initial: DraftListPage;
+  submitDelete?: (id: string) => Promise<Response>;
+  /** true なら件数を絞らず全件出す（/mypage/drafts の下書き一覧。v3.1） */
+  showAll?: boolean;
+}) {
   const [drafts, setDrafts] = useState<DraftSummary[]>(initial.drafts);
   const [total, setTotal] = useState(initial.total);
   const [pendingId, setPendingId] = useState<string | null>(null);
@@ -52,7 +61,7 @@ export function DraftsSection({ initial, submitDelete = defaultSubmitDelete }: {
         下書き {total} 件
       </h2>
       <ul className="flex flex-col gap-1.5">
-        {drafts.slice(0, DRAFTS_PREVIEW_COUNT).map((draft) => (
+        {(showAll ? drafts : drafts.slice(0, DRAFTS_PREVIEW_COUNT)).map((draft) => (
           <li key={draft.id} className="flex items-center gap-2" data-draft={draft.id}>
             <span className="block h-10 w-10 shrink-0 overflow-hidden rounded-[6px] border border-dashed border-line bg-app">
               {draft.thumbnailUrl && (
@@ -84,6 +93,12 @@ export function DraftsSection({ initial, submitDelete = defaultSubmitDelete }: {
           </li>
         ))}
       </ul>
+      {/* v3.1（mentoring-7 Task1）: 4 件以上あるときだけ「すべて見る」→ /mypage/drafts（下書き一覧） */}
+      {!showAll && total > DRAFTS_PREVIEW_COUNT && (
+        <Link href="/mypage/drafts" className="self-end text-[12px] font-medium text-accent underline underline-offset-2">
+          すべて見る（{total} 件）
+        </Link>
+      )}
       {error && (
         <p role="alert" className="text-[12px] text-saved">
           {error}

@@ -51,7 +51,7 @@ describe("MyPageScreen（SC-06）", () => {
     expect(document.querySelector("[data-summary='receivedLikeCount']")).toHaveTextContent("12");
   });
 
-  it("遷移メニューは 4 導線（行きたい／アルバム／マイマップ／バッジ）でしおりが無い", () => {
+  it("遷移メニューは 4 導線（行きたい／アルバム／あしあと／バッジ）でしおりが無い", () => {
     render(<MyPageScreen {...base} initialPosts={{ posts: [], nextOffset: null }} fetchPosts={vi.fn()} />);
     expect(MY_PAGE_MENU.map((item) => item.href)).toEqual(["/wishlist", "/albums", "/mymap", "/badges"]);
     expect((MY_PAGE_MENU as readonly { href: string }[]).some((item) => item.href === "/itineraries")).toBe(false);
@@ -69,9 +69,24 @@ describe("MyPageScreen（SC-06）", () => {
     expect(section).toHaveTextContent("下書き 4 件");
     expect(section.querySelectorAll("[data-draft]")).toHaveLength(3);
     expect(screen.getAllByRole("link", { name: "続きを書く" })[0]).toHaveAttribute("href", "/posts/new?draft=d1");
+    // v3.1: 4 件以上なら「すべて見る」→ /mypage/drafts
+    expect(screen.getByRole("link", { name: "すべて見る（4 件）" })).toHaveAttribute("href", "/mypage/drafts");
     unmount();
     render(<MyPageScreen {...base} initialPosts={{ posts: [], nextOffset: null }} fetchPosts={vi.fn()} drafts={{ drafts: [], total: 0 }} />);
     expect(screen.queryByRole("region", { name: "下書き" })).toBeNull();
+  });
+
+  it("v3.1: 下書きが 3 件以下なら「すべて見る」は出ない", () => {
+    const draft = (id: string) => ({ id, spotName: `場所${id}`, lat: null, lng: null, updatedAt: "2026-09-16T05:02:00Z", thumbnailUrl: null });
+    render(<MyPageScreen {...base} initialPosts={{ posts: [], nextOffset: null }} fetchPosts={vi.fn()} drafts={{ drafts: [draft("d1"), draft("d2"), draft("d3")], total: 3 }} />);
+    expect(screen.queryByRole("link", { name: /すべて見る/ })).toBeNull();
+  });
+
+  it("v3.1: 旧文言（マイマップ・旅行タイトル）が出ず、遷移メニューに「あしあと」がある", () => {
+    render(<MyPageScreen {...base} initialPosts={{ posts: [], nextOffset: null }} fetchPosts={vi.fn()} drafts={{ drafts: [], total: 0 }} />);
+    expect(document.body.textContent).not.toContain("マイマップ");
+    expect(document.body.textContent).not.toContain("旅行タイトル");
+    expect(screen.getByRole("link", { name: /あしあと/ })).toHaveAttribute("href", "/mymap");
   });
 
   it("v3.0: 仮タイトルの投稿にだけ「タイトルを付ける」の促しが出る", () => {

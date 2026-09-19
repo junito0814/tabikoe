@@ -68,7 +68,7 @@ export function useItineraryForMap(itineraryId: string | null, api: ItineraryApi
 
 export function ItineraryMapOverlay({ itinerary, day, onChange }: { itinerary: ItineraryDetail; day: ItineraryMapDay; onChange: (day: ItineraryMapDay) => void }) {
   const tabs = useMemo<{ key: ItineraryMapDay; label: string }[]>(
-    () => [...dayTabKeys(itinerary.dayCount).map((key) => ({ key, label: key === null ? "未定" : `Day ${key}` })), { key: ALL_DAYS, label: "すべて" }],
+    () => [...dayTabKeys(itinerary.dayCount).map((key) => ({ key, label: key === null ? "日付なし" : `Day ${key}` })), { key: ALL_DAYS, label: "すべて" }],
     [itinerary.dayCount]
   );
   return (

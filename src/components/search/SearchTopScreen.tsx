@@ -26,7 +26,7 @@ export interface SearchTopApi {
  * 【初心者向け】ログイン後の着地点。置くのは 3 つだけ:
  *   1. 行き先の入力欄（候補 → 投稿一覧 /search へ）
  *   2. 「近くのスポットを探す」（位置情報 → 地図の探すモード /map?mode=explore）
- *   3. 「いまいる場所に投稿する」（位置情報 → 現在地にピンが刺さった投稿画面 /posts/new?lat&lng&from=current）
+ *   3. 「ここを投稿」（位置情報 → 現在地にピンが刺さった投稿画面 /posts/new?lat&lng&from=current）
  * 位置情報が拒否されたら、2 は入力欄にフォーカスして案内、3 は東京駅周辺で投稿画面を開く（地図を動かす案内は画面側）。
  * この画面だけ背景上部に空のグラデーション（bg-sky）を敷く。
  */
@@ -143,11 +143,10 @@ export function SearchTopScreen({
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden>
             <path d="M12 5v14M5 12h14" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" />
           </svg>
-          いまいる場所に投稿する
+          ここを投稿
         </button>
       </div>
 
-      <p className="text-center text-[12px] leading-[1.7] text-muted">さがす ・ 近くを見る ・ ここに投稿</p>
     </div>
   );
 }

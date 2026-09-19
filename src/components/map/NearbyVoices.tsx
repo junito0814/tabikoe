@@ -14,7 +14,7 @@ import {
 export type FetchNearbyPosts = (center: { lat: number; lng: number }, radius: NearbyRadius) => Promise<NearbyPost[]>;
 
 /**
- * explore-mode Task2: 「近くの声」（探すモードの下 1/3）
+ * explore-mode Task2: 「近くのスポット」（探すモードの下 1/3。v3.1 で「近くの声」から改称）
  * 出典: docs/tasks/browsing/explore-mode/02-explore-mode-ui.md
  *       要件定義書 v3.0 3.4.5
  *
@@ -84,9 +84,9 @@ export function NearbyVoices({
   };
 
   return (
-    <section aria-label="近くの声" data-nearby-voices className="flex h-full flex-col gap-2 bg-surface px-4 pt-3 pb-[max(12px,env(safe-area-inset-bottom))]">
+    <section aria-label="近くのスポット" data-nearby-voices className="flex h-full flex-col gap-2 bg-surface px-4 pt-3 pb-[max(12px,env(safe-area-inset-bottom))]">
       <div className="flex items-center justify-between">
-        <h2 className="text-[14px] font-bold text-ink">近くの声</h2>
+        <h2 className="text-[14px] font-bold text-ink">近くのスポット</h2>
         <label className="inline-flex items-center gap-1 text-[12px] text-muted">
           徒歩圏
           <select

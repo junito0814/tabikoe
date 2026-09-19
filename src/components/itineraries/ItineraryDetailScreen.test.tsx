@@ -81,14 +81,14 @@ beforeEach(() => {
 });
 
 describe("ItineraryDetailScreen（SC-23）", () => {
-  it("Day タブは日数＋1（未定）。期間未設定なら未定だけ", () => {
+  it("Day タブは日数＋1（日付なし）。期間未設定なら日付なしだけ", () => {
     const { unmount } = render(<ItineraryDetailScreen initial={detail()} viewerId="me" api={makeApi(detail())} />);
     expect(screen.getAllByRole("tab")).toHaveLength(4);
     expect(screen.getByRole("tab", { name: /Day 1/ })).toHaveAttribute("aria-selected", "true");
     unmount();
     render(<ItineraryDetailScreen initial={detail({ startDate: null, endDate: null, dayCount: 0, dayDates: [] })} viewerId="me" api={makeApi(detail())} />);
     expect(screen.getAllByRole("tab")).toHaveLength(1);
-    expect(screen.getByRole("tab", { name: /未定/ })).toHaveAttribute("aria-selected", "true");
+    expect(screen.getByRole("tab", { name: /日付なし/ })).toHaveAttribute("aria-selected", "true");
   });
 
   it("時刻がある行は上下ボタンが無効、投稿済みは「投稿済み ✓」、投稿するの href", () => {

@@ -24,7 +24,7 @@ const FETCH_DEBOUNCE_MS = 300;
 export type FetchMyMapPins = (mode: MyMapMode, bounds: MapBounds) => Promise<MyMapPin[]>;
 
 /**
- * F-RC-06 Task2・Task3: マイマップ画面（SC-12）
+ * F-RC-06 Task2・Task3: あしあと画面（SC-12。v3.1 で「マイマップ」から改称）
  * 出典: docs/tasks/records/my-map/02-map-component-reuse-integration.md
  *       docs/tasks/records/my-map/03-pin-tap-navigation.md
  *

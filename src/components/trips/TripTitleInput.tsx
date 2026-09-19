@@ -95,7 +95,7 @@ export function TripTitleInput({
   return (
     <div ref={containerRef} className={`relative w-full ${isInline ? "flex flex-wrap items-center gap-x-2 gap-y-1" : ""}`}>
       <label htmlFor={inputId} className={isInline ? "w-[84px] shrink-0 text-[12px] font-medium text-muted" : "mb-1.5 block text-[12px] font-medium text-muted"}>
-        旅行タイトル{isInline ? " *" : ""}
+        アルバム{isInline ? " *" : ""}
       </label>
       <input
         id={inputId}

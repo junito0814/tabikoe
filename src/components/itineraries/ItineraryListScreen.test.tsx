@@ -62,7 +62,7 @@ describe("ItineraryListScreen（SC-22）", () => {
   it("「＋ 新規」でタイトルと期間を入れて作成すると詳細へ", async () => {
     render(<ItineraryListScreen today="2026-09-18" items={[]} api={api} />);
     fireEvent.click(screen.getByRole("button", { name: "＋ 新規" }));
-    fireEvent.change(screen.getByLabelText("旅行タイトル"), { target: { value: "大阪旅行" } });
+    fireEvent.change(screen.getByLabelText("アルバム"), { target: { value: "大阪旅行" } });
     fireEvent.change(screen.getByLabelText("開始日（任意）"), { target: { value: "2026-09-20" } });
     fireEvent.change(screen.getByLabelText("終了日（任意）"), { target: { value: "2026-09-22" } });
     fireEvent.click(screen.getByRole("button", { name: "作成する" }));
