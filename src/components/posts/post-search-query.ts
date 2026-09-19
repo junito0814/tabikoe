@@ -1,5 +1,6 @@
 import { POST_CATEGORIES, POST_DURATIONS, type PostCategory, type PostDuration } from "@/lib/posts/constants";
 import { parsePostSort, type PostSort } from "@/lib/posts/post-cards";
+import { parseSpotSort, type SpotSort } from "@/lib/spots/search-spots";
 import {
   COST_RANGES,
   DISTANCE_OPTIONS,
@@ -36,9 +37,17 @@ export interface PostSearchState {
   /** period が custom のときの日付（YYYY-MM-DD。空なら未指定） */
   from: string;
   to: string;
-  sort: PostSort;
+  /** 並び替え。スポット別は PostSort（新着順／評価順／いいね順）、検索結果は SpotSort（新着順／評価順／投稿数順）（v3.1） */
+  sort: ListSort;
   /** v3.0（photo-view）: 投稿一覧か写真グリッドか */
   view: ListView;
+}
+
+export type ListSort = PostSort | SpotSort;
+
+/** v3.1: 行き先がスポット別なら投稿の並び、それ以外（都道府県・駅）はスポットの並び */
+export function isSpotResultContext(context: SearchContext): boolean {
+  return context.destination?.kind !== "spot";
 }
 
 export const EMPTY_SEARCH_STATE: PostSearchState = {
@@ -173,7 +182,7 @@ export function parseSearchState(params: URLSearchParams, context: SearchContext
     period: includes(PERIOD_OPTIONS, period) ? period : null,
     from: date(params.get("from")),
     to: date(params.get("to")),
-    sort: parsePostSort(params.get("sort")),
+    sort: isSpotResultContext(context) ? parseSpotSort(params.get("sort")) : parsePostSort(params.get("sort")),
     view: parseListView(params.get("view")),
   };
 }
