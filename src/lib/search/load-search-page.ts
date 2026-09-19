@@ -98,7 +98,7 @@ export async function loadSearchPage(admin: SupabaseClient, userId: string, quer
     // 写真切替で開いたときは写真の 1 ページ目を取る（投稿一覧は「投稿」に戻したときにブラウザが取る）
     const initialMediaPage =
       isPhotos && resolved.kind !== "not_found"
-        ? { key: buildPostSearchParams({ ...initialState, view: "posts" }, context, 0).toString(), page: await searchMediaPage(admin, userId, filters, 0) }
+        ? { key: buildPostSearchParams({ ...initialState, view: "posts" }, context, 0).toString(), page: await searchMediaPage(admin, userId, filters, 0, undefined, parseSpotSort(apiParams.get("sort"))) }
         : null;
 
     let spot: SpotSummary | null = null;

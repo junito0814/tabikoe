@@ -5,7 +5,7 @@ import type { SpotMediaItem } from "@/lib/posts/search-photos";
 
 /**
  * 出典: docs/tasks/map-search/photo-view/02-view-toggle-ui.md 単体テスト
- * - モーダルの「この投稿を見る」リンク
+ * - v3.1: 写真のタップは投稿詳細へ直接（モーダルは投稿詳細の中だけ）
  * 出典: docs/tasks/map-search/spot-photo-gallery/02-gallery-screen-ui.md（v1 から引き継ぎ）
  * - 動画には再生アイコンが重畳される、追加読み込みで次の 40 点を取得する
  */
@@ -21,12 +21,13 @@ const item = (id: string, postId: string, mediaType: "photo" | "video" = "photo"
 const params = new URLSearchParams({ spot: "spot-1" });
 
 describe("PhotoGrid（写真切替）", () => {
-  it("サムネイルのタップでモーダルが開き、「この投稿を見る」が元投稿へのリンク。動画には再生アイコン", () => {
+  it("v3.1: サムネイルは投稿詳細へのリンク（モーダルは開かない）。動画には再生アイコン", () => {
     render(<PhotoGrid params={params} initialPage={{ items: [item("a", "post-1"), item("b", "post-2", "video")], nextOffset: null }} fetchPage={vi.fn()} />);
-    const video = screen.getByRole("button", { name: "東京駅の動画 b" });
+    const video = screen.getByRole("link", { name: "東京駅の動画 b" });
     expect(video.querySelector("[data-video-overlay]")).not.toBeNull();
-    fireEvent.click(screen.getByRole("button", { name: "東京駅の写真 a" }));
-    expect(screen.getByRole("link", { name: "この投稿を見る" })).toHaveAttribute("href", "/posts/post-1");
+    expect(screen.getByRole("link", { name: "東京駅の写真 a" })).toHaveAttribute("href", "/posts/post-1");
+    fireEvent.click(screen.getByRole("link", { name: "東京駅の写真 a" }));
+    expect(screen.queryByRole("dialog")).toBeNull();
   });
 
   it("「もっと見る」で同じ条件＋offset で追加読み込みする", async () => {
@@ -35,7 +36,7 @@ describe("PhotoGrid（写真切替）", () => {
     fireEvent.click(screen.getByRole("button", { name: "もっと見る" }));
     await waitFor(() => expect(fetchPage).toHaveBeenCalledTimes(1));
     expect(Object.fromEntries(fetchPage.mock.calls[0][0])).toEqual({ spot: "spot-1", offset: "40" });
-    expect(await screen.findByRole("button", { name: "東京駅の写真 c" })).toBeInTheDocument();
+    expect(await screen.findByRole("link", { name: "東京駅の写真 c" })).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "もっと見る" })).toBeNull();
   });
 
