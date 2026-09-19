@@ -15,6 +15,8 @@ import { resolveInitialCenter, TOKYO_STATION, type InitialCenter, type LatLng } 
 import { MapLegend } from "./MapLegend";
 import type { MapOpenOptions } from "./map-navigation";
 import { NearbyVoices, type FetchNearbyPosts } from "./NearbyVoices";
+import { loadMapState, mapEntryFor, saveMapState, shouldRestoreMapState, type MapState } from "@/lib/map/map-state";
+import type { NearbyRadius } from "@/lib/posts/nearby-posts";
 import { PinCallout, type CalloutTarget } from "./PinCallout";
 import { ALL_DAYS, buildItineraryPins, ItineraryMapOverlay, useItineraryForMap, type ItineraryMapDay } from "./ItineraryMapOverlay";
 import type { ItineraryApi } from "@/components/itineraries/itinerary-api";
@@ -44,7 +46,7 @@ export type FetchMapPins = (bounds: MapBounds) => Promise<MapPinData[]>;
  * 吹き出しは「地図をそのピンの位置へ寄せてから、画面中央の少し上」に出す（マーカーに追従させるより単純で壊れにくい）。
  */
 export function MapScreen({
-  open,
+  open: openProp,
   fetchPins = defaultFetchPins,
   resolveCenter = () => resolveInitialCenter(typeof navigator === "undefined" ? undefined : navigator.geolocation),
   fetchNearby,
@@ -68,8 +70,27 @@ export function MapScreen({
 }) {
   const router = useRouter();
   const mapRef = useRef<GoogleMapHandle>(null);
+
+  // ── v3.1（mentoring-7 Task7）: 地図の状態の復元 ──
+  // 同じ入口に戻ってきた（または素の /map で開いた）ときは、sessionStorage の直前の状態（中心・ズーム・モード・徒歩圏）で開く。
+  // useState の初期化関数の中で 1 回だけ読む（描画のたびに読まない）
+  const [restored] = useState<MapState | null>(() => {
+    const entry = mapEntryFor(openProp);
+    const saved = loadMapState();
+    return shouldRestoreMapState(entry, saved, openProp.center) ? saved : null;
+  });
+  // 素の /map に戻ってきて直前が探すモードなら、探すモードのまま復元する（open を差し替える）
+  const open: MapOpenOptions =
+    restored && openProp.mode === "default" && restored.mode === "explore"
+      ? { ...openProp, mode: "explore", center: restored.center, zoom: restored.zoom }
+      : restored
+        ? { ...openProp, center: restored.center, zoom: restored.zoom }
+        : openProp;
+  const entry = mapEntryFor(open);
+  const radiusRef = useRef<NearbyRadius | undefined>(restored?.radius);
+
   const [initial, setInitial] = useState<InitialCenter | null>(
-    open.center ? { center: open.center, zoom: open.zoom, source: open.mode === "explore" ? "current" : "fallback" } : null
+    open.center ? { center: open.center, zoom: open.zoom, source: open.mode === "explore" && !restored ? "current" : "fallback" } : null
   );
   const [pins, setPins] = useState<MapPinData[]>([]);
   const [bounds, setBounds] = useState<MapBounds | null>(null);
@@ -163,8 +184,13 @@ export function MapScreen({
     }
     setBounds((current) => (current && isSameBounds(current, next) ? current : next));
     setCenter((current) => (current && current.lat === nextCenter.lat && current.lng === nextCenter.lng ? current : nextCenter));
+    // v3.1: 落ち着く（idle）たびに状態を保存する。戻ってきたときの復元用
+    const zoom = mapRef.current?.getZoom();
+    if (typeof zoom === "number") {
+      saveMapState({ entry, mode: open.mode, center: nextCenter, zoom, ...(radiusRef.current !== undefined ? { radius: radiusRef.current } : {}) });
+    }
     // itineraryPins は fit の対象。ref 経由なので依存に入れる必要は無いが、最新の配列を使うために入れる
-  }, [itineraryPins]);
+  }, [itineraryPins, entry, open.mode]);
 
   const closeCallout = useCallback(() => {
     setCallout(null);
@@ -343,7 +369,20 @@ export function MapScreen({
 
       {isExplore && open.center && (
         <div className="h-1/3 border-t border-line">
-          <NearbyVoices center={open.center} fetchPosts={fetchNearby} onActiveChange={handleActiveNearby} onPostsLoaded={setNearbyPosts} />
+          <NearbyVoices
+            center={open.center}
+            fetchPosts={fetchNearby}
+            onActiveChange={handleActiveNearby}
+            onPostsLoaded={setNearbyPosts}
+            initialRadius={restored?.radius}
+            onRadiusChange={(radius) => {
+              // 徒歩圏は idle を待たずにその場で保存する（地図を動かさずに切り替えて離れることがある）
+              radiusRef.current = radius;
+              const zoom = mapRef.current?.getZoom();
+              const current = mapRef.current?.getCenter();
+              if (typeof zoom === "number" && current) saveMapState({ entry, mode: open.mode, center: current, zoom, radius });
+            }}
+          />
         </div>
       )}
     </div>

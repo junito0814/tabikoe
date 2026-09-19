@@ -33,6 +33,7 @@ export function NearbyVoices({
   onActiveChange,
   onPostsLoaded,
   initialRadius = DEFAULT_NEARBY_RADIUS,
+  onRadiusChange,
 }: {
   center: { lat: number; lng: number };
   fetchPosts?: FetchNearbyPosts;
@@ -40,6 +41,8 @@ export function NearbyVoices({
   onActiveChange?: (post: NearbyPost | null) => void;
   onPostsLoaded?: (posts: NearbyPost[]) => void;
   initialRadius?: NearbyRadius;
+  /** v3.1: 徒歩圏を切り替えたとき（地図の状態の保存用） */
+  onRadiusChange?: (radius: NearbyRadius) => void;
 }) {
   const [radius, setRadius] = useState<NearbyRadius>(initialRadius);
   const [posts, setPosts] = useState<NearbyPost[] | null>(null);
@@ -92,7 +95,11 @@ export function NearbyVoices({
           <select
             aria-label="徒歩圏"
             value={radius}
-            onChange={(event) => setRadius(Number(event.target.value) as NearbyRadius)}
+            onChange={(event) => {
+              const next = Number(event.target.value) as NearbyRadius;
+              setRadius(next);
+              onRadiusChange?.(next);
+            }}
             className="h-8 rounded-full border border-line bg-surface px-2 text-[12px] font-semibold text-ink"
           >
             {NEARBY_RADIUS_OPTIONS.map((option) => (

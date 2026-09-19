@@ -44,7 +44,7 @@ vi.mock("./GoogleMap", () => ({
   }) => {
     latestPins = pins;
     triggerLongPress = onLongPress;
-    useImperativeHandle(ref, () => ({ panTo, fitBounds, getCenter: () => ({ lat: 35.65, lng: 139.75 }) }));
+    useImperativeHandle(ref, () => ({ panTo, fitBounds, getCenter: () => ({ lat: 35.65, lng: 139.75 }), getZoom: () => 14 }));
     useEffect(() => {
       onBoundsChange?.(BOUNDS, { lat: 35.65, lng: 139.75 });
       // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -188,5 +188,42 @@ describe("MapScreen（SC-02 v3.0）", () => {
     Object.defineProperty(scroller, "scrollLeft", { value: 186, configurable: true });
     fireEvent.scroll(scroller);
     await waitFor(() => expect(latestPins).toEqual([expect.objectContaining({ id: "s1", type: "post" }), expect.objectContaining({ id: "s2", type: "focus" })]));
+  });
+});
+
+describe("v3.1（mentoring-7 Task7）: 地図の状態の復元", () => {
+  beforeEach(() => {
+    window.sessionStorage.clear();
+  });
+
+  it("idle のたびに中心・ズーム・入口を sessionStorage に保存する", async () => {
+    render(<MapScreen open={resolveMapOpen({ spot: "spot-1", lat: "35.65", lng: "139.75", back: "/search?pref=大阪府" })} fetchPins={async () => []} resolveCenter={resolveCenter} />);
+    await settle();
+    const saved = JSON.parse(window.sessionStorage.getItem("tabikoe:map-state") ?? "null");
+    expect(saved).toMatchObject({ entry: "spot:spot-1", mode: "spot", center: { lat: 35.65, lng: 139.75 }, zoom: 14 });
+  });
+
+  it("素の /map で開くと、直前の探すモード（中心・徒歩圏）を復元する", async () => {
+    window.sessionStorage.setItem(
+      "tabikoe:map-state",
+      JSON.stringify({ entry: "explore", mode: "explore", center: { lat: 34.7, lng: 135.5 }, zoom: 15, radius: 3000, savedAt: Date.now() })
+    );
+    const fetchNearby = vi.fn(async () => []);
+    render(<MapScreen open={resolveMapOpen({})} fetchPins={async () => []} resolveCenter={resolveCenter} fetchNearby={fetchNearby} />);
+    await settle();
+    expect(document.querySelector("[data-map-mode='explore']")).toBeInTheDocument();
+    await waitFor(() => expect(fetchNearby).toHaveBeenCalledWith({ lat: 34.7, lng: 135.5 }, 3000));
+  });
+
+  it("別の入口（他のスポットの地図）から開いたときは復元しない", async () => {
+    window.sessionStorage.setItem(
+      "tabikoe:map-state",
+      JSON.stringify({ entry: "spot:other", mode: "spot", center: { lat: 1, lng: 2 }, zoom: 10, savedAt: Date.now() })
+    );
+    const fetchNearby = vi.fn(async () => []);
+    render(<MapScreen open={resolveMapOpen({ spot: "spot-1", lat: "35.65", lng: "139.75" })} fetchPins={async () => []} resolveCenter={resolveCenter} fetchNearby={fetchNearby} />);
+    await settle();
+    expect(document.querySelector("[data-map-mode='spot']")).toBeInTheDocument();
+    expect(fetchNearby).not.toHaveBeenCalled();
   });
 });
