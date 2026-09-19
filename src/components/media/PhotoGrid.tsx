@@ -6,8 +6,8 @@ import { ERROR_MESSAGES } from "@/components/notices/error-messages";
 import { fetchWithAuthRedirect, UnauthorizedError } from "@/lib/api/fetch-with-auth-redirect";
 import type { SpotMediaItem, SpotMediaPage } from "@/lib/posts/search-photos";
 import { useInfiniteScroll } from "@/components/posts/use-infinite-scroll";
-import { MediaModal } from "./MediaModal";
-import { MediaThumbnail, type MediaItem } from "./MediaGrid";
+import Link from "next/link";
+import { MediaThumbnail } from "./MediaGrid";
 import { gridColumnsForWidth, MIN_GALLERY_COLUMNS } from "./gallery-columns";
 
 export type FetchMediaPage = (params: URLSearchParams) => Promise<SpotMediaPage>;
@@ -19,7 +19,7 @@ export type FetchMediaPage = (params: URLSearchParams) => Promise<SpotMediaPage>
  *
  * 【初心者向け】正方形サムネイルのグリッド。列数は CSS のメディアクエリではなく `ResizeObserver` でコンテナの幅を測って
  * 決める（gridColumnsForWidth）。サイドバーの有無で幅が変わっても正しい列数になる。
- * タップで MediaModal（← → で前後、「この投稿を見る」で投稿詳細）。40 点ずつの無限スクロール。
+ * タップで投稿詳細へ直接（v3.1。モーダルは投稿詳細の中だけ）。40 点ずつの無限スクロール。
  * `params` は投稿一覧と同じ検索条件（行き先・絞り込み・並び替え）で、`offset` だけここで足す。
  */
 export function PhotoGrid({
@@ -38,7 +38,6 @@ export function PhotoGrid({
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [columns, setColumns] = useState(MIN_GALLERY_COLUMNS);
-  const [openIndex, setOpenIndex] = useState<number | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const paramsKey = params.toString();
 
@@ -73,18 +72,6 @@ export function PhotoGrid({
 
   const sentinelRef = useInfiniteScroll(nextOffset !== null && !isLoading, () => void loadMore());
 
-  const modalItems: MediaItem[] = items.map((item) => ({
-    id: item.id,
-    mediaType: item.mediaType,
-    thumbnailUrl: item.thumbnailUrl,
-    alt: item.alt,
-    videoUrl: item.videoUrl ?? undefined,
-  }));
-  const postHrefOf = (media: MediaItem) => {
-    const postId = items.find((item) => item.id === media.id)?.postId;
-    return postId ? `/posts/${postId}` : undefined;
-  };
-
   return (
     <div data-photo-grid>
       <div ref={containerRef} data-columns={columns}>
@@ -95,9 +82,10 @@ export function PhotoGrid({
           <ul className="grid gap-0.5" style={{ gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))` }}>
             {items.map((item, index) => (
               <li key={item.id} className="aspect-square overflow-hidden bg-line">
-                <button type="button" onClick={() => setOpenIndex(index)} className="block h-full w-full" aria-label={item.alt}>
+                {/* v3.1（mentoring-7 Task5）: 写真のタップは投稿詳細へ直接（モーダルは投稿詳細の中だけ） */}
+                <Link href={`/posts/${item.postId}`} className="block h-full w-full" aria-label={item.alt}>
                   <MediaThumbnail item={item} />
-                </button>
+                </Link>
               </li>
             ))}
           </ul>
@@ -118,7 +106,6 @@ export function PhotoGrid({
         </button>
       )}
 
-      {openIndex !== null && <MediaModal items={modalItems} startIndex={openIndex} onClose={() => setOpenIndex(null)} postHref={postHrefOf} />}
     </div>
   );
 }

@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { getBlockedUserIds } from "@/lib/blocks/get-blocked-user-ids";
+import { aggregateSpotCards, sortSpotCards, type SpotSort } from "@/lib/spots/search-spots";
 import { createPostPhotoUrls } from "@/lib/posts/signed-url";
 import { sortPostCards, type PostSort } from "@/lib/posts/post-cards";
 import { applyFilters, baseQuery, matchesFilters, type PostSearchFilters, type SearchRow } from "@/lib/posts/search-posts";
@@ -79,6 +80,28 @@ export function mergeMedia(
     });
 }
 
+/** v3.1: 検索結果の写真タブで 1 スポットに出す枚数の上限 */
+export const PHOTOS_PER_SPOT_CAP = 5;
+
+/**
+ * v3.1（mentoring-7 Task5）: スポットの順に、各スポットの新しい投稿から最大 `cap` 枚ずつ統合する（純粋関数）。
+ * 【初心者向け】投稿をスポットごとに分け、スポットの並び（sortSpotCards）で並べ、各スポットの投稿を新着順にして
+ * mergeMedia した先頭 cap 枚だけ残す。同じ投稿の写真は添付順にまとまる。
+ */
+export function mergeMediaBySpot(rows: SearchRow[], spotSort: SpotSort, cap: number): ReturnType<typeof mergeMedia> {
+  const bySpot = new Map<string, SearchRow[]>();
+  for (const row of rows) {
+    const list = bySpot.get(row.spot_id) ?? [];
+    list.push(row);
+    bySpot.set(row.spot_id, list);
+  }
+  const spotOrder = sortSpotCards(aggregateSpotCards([...rows].sort((a, b) => b.created_at.localeCompare(a.created_at))), spotSort);
+  return spotOrder.flatMap((spot) => {
+    const posts = [...(bySpot.get(spot.id) ?? [])].sort((a, b) => b.created_at.localeCompare(a.created_at));
+    return mergeMedia(posts as unknown as SpotPostMediaRow[]).slice(0, cap);
+  });
+}
+
 /** v1 互換: 新着順に並べてから統合する */
 export function mergeSpotMedia(rows: SpotPostMediaRow[]) {
   return mergeMedia([...rows].sort((a, b) => b.created_at.localeCompare(a.created_at)));
@@ -95,7 +118,9 @@ export async function searchMediaPage(
   viewerId: string,
   filters: PostSearchFilters,
   offset: number,
-  limit: number = PHOTOS_PAGE_SIZE
+  limit: number = PHOTOS_PAGE_SIZE,
+  /** v3.1: 検索結果（スポット単位）のときのスポットの並び。スポット別では使わない */
+  spotSort: SpotSort | null = null
 ): Promise<SpotMediaPage> {
   const blockedIds = await getBlockedUserIds(admin, viewerId);
   const sort: PostSort = filters.sort ?? "newest";
@@ -103,13 +128,20 @@ export async function searchMediaPage(
   if (error) throw error;
 
   const rows = ((data ?? []) as unknown as SearchRow[]).filter((row) => matchesFilters({ ...row, spot: row.spots }, filters));
-  // いいね順は DB で並べられないので、ここで並べ直す（新着順・評価順も同じ関数で揃える）
-  const ordered = sortPostCards(
-    rows.map((row) => ({ row, createdAt: row.created_at, rating: row.rating, likeCount: row.likes?.[0]?.count ?? 0 })),
-    sort
-  ).map((item) => item.row);
 
-  const merged = mergeMedia(ordered as unknown as SpotPostMediaRow[]);
+  let merged: ReturnType<typeof mergeMedia>;
+  if (filters.destination?.kind !== "spot") {
+    // v3.1（mentoring-7 Task5）: 検索結果（都道府県・駅）はスポットの順（新着順／評価順／投稿数順）に、
+    // 1 スポットにつき新しい投稿から最大 5 枚（人気スポットの写真だけで埋まらないように）
+    merged = mergeMediaBySpot(rows, spotSort ?? "newest", PHOTOS_PER_SPOT_CAP);
+  } else {
+    // スポット別: 投稿の順（新着順／評価順／いいね順）で全部。いいね順は DB で並べられないので、ここで並べ直す
+    const ordered = sortPostCards(
+      rows.map((row) => ({ row, createdAt: row.created_at, rating: row.rating, likeCount: row.likes?.[0]?.count ?? 0 })),
+      sort
+    ).map((item) => item.row);
+    merged = mergeMedia(ordered as unknown as SpotPostMediaRow[]);
+  }
   const page = merged.slice(offset, offset + limit);
   const signedUrls = await createPostPhotoUrls(
     admin,

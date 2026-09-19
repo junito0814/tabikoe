@@ -93,7 +93,7 @@ describe("PostSearchScreen（SC-04 タイムライン）", () => {
     expect(screen.queryByRole("link", { name: "地図で見る" })).toBeNull();
     expect(screen.getByRole("button", { name: "保存する" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "コメント3件" })).toHaveAttribute("href", "/posts/p1#comments");
-    expect(screen.getByRole("button", { name: "たこ焼き〇〇の写真 1" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "たこ焼き〇〇の写真 1" })).toHaveAttribute("href", "/posts/p1"); // v3.1: カードの写真は投稿詳細へ直接
   });
 
   it("徒歩分・まだあった報告が無ければ描画しない", () => {
@@ -191,7 +191,7 @@ describe("PostSearchScreen（SC-04 タイムライン）", () => {
     fireEvent.click(screen.getByRole("button", { name: "もっと見る" }));
     await waitFor(() => expect(fetchMediaPage).toHaveBeenCalledTimes(1));
     expect(Object.fromEntries(fetchMediaPage.mock.calls[0][0])).toEqual({ pref: "大阪府", offset: "0" });
-    expect(await screen.findByRole("button", { name: "たこ焼き〇〇の写真 1" })).toBeInTheDocument();
+    expect(await screen.findByRole("link", { name: "たこ焼き〇〇の写真 1" })).toBeInTheDocument();
     // 「投稿」に戻すと一覧が残っている
     fireEvent.click(screen.getByRole("radio", { name: "投稿" }));
     expect(document.querySelector("[data-post-card='p1']")).toBeInTheDocument();

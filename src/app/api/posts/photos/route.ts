@@ -7,6 +7,7 @@ import { isVideoFile, isVideoUploadDisabled, processAndUploadVideo, VideoValidat
 import { POST_MEDIA_BUCKET } from "@/lib/posts/constants";
 import { searchMediaPage } from "@/lib/posts/search-photos";
 import { parsePostSearchParams } from "@/lib/posts/search-posts";
+import { parseSpotSort } from "@/lib/spots/search-spots";
 
 /**
  * photo-view Task1: 写真・動画の一覧（検索条件つき）
@@ -25,7 +26,8 @@ export async function GET(request: Request) {
   const filters = parsePostSearchParams(searchParams);
   const offset = Math.max(0, Number.parseInt(searchParams.get("offset") ?? "0", 10) || 0);
   try {
-    const page = await searchMediaPage(createAdminClient(), user.id, filters, offset);
+    // v3.1: 検索結果（スポット単位）ではスポットの並び（sort=newest|rating|count）で、1 スポット 5 枚まで
+    const page = await searchMediaPage(createAdminClient(), user.id, filters, offset, undefined, parseSpotSort(searchParams.get("sort")));
     return NextResponse.json(page);
   } catch {
     return NextResponse.json({ error: "fetch_failed" }, { status: 500 });

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { MediaModal } from "./MediaModal";
 
 /**
@@ -34,19 +35,17 @@ function MediaCell({
   className,
   overflowCount,
   onOpen,
+  href,
 }: {
   item: MediaItem;
   className?: string;
   overflowCount?: number;
   onOpen: () => void;
+  /** v3.1（mentoring-7 Task5）: 指定すると、タップでモーダルを開かずこのリンクへ移る（投稿カードの写真 → 投稿詳細） */
+  href?: string;
 }) {
-  return (
-    <button
-      type="button"
-      onClick={onOpen}
-      aria-label={item.alt}
-      className={`relative block h-full w-full overflow-hidden bg-line ${className ?? ""}`}
-    >
+  const inner = (
+    <>
       <MediaThumbnail item={item} />
 
       {typeof overflowCount === "number" && (
@@ -54,6 +53,23 @@ function MediaCell({
           +{overflowCount}
         </span>
       )}
+    </>
+  );
+  if (href) {
+    return (
+      <Link href={href} aria-label={item.alt} className={`relative block h-full w-full overflow-hidden bg-line ${className ?? ""}`}>
+        {inner}
+      </Link>
+    );
+  }
+  return (
+    <button
+      type="button"
+      onClick={onOpen}
+      aria-label={item.alt}
+      className={`relative block h-full w-full overflow-hidden bg-line ${className ?? ""}`}
+    >
+      {inner}
     </button>
   );
 }
@@ -86,20 +102,30 @@ export function MediaThumbnail({
   );
 }
 
-export function MediaGrid({ items, postHref }: { items: MediaItem[]; postHref?: string }) {
+export function MediaGrid({
+  items,
+  postHref,
+  linkToPost = false,
+}: {
+  items: MediaItem[];
+  postHref?: string;
+  /** v3.1（mentoring-7 Task5）: true なら写真のタップで postHref へ直接移る（モーダルは開かない）。投稿カードで使う。投稿詳細は false（モーダル） */
+  linkToPost?: boolean;
+}) {
   // 開いているモーダルの起点。null なら閉じている
   const [openIndex, setOpenIndex] = useState<number | null>(null);
+  const cellHref = linkToPost && postHref ? postHref : undefined;
 
   if (items.length === 0) {
     return null;
   }
 
   const modal =
-    openIndex !== null ? (
+    openIndex !== null && !cellHref ? (
       <MediaModal items={items} startIndex={openIndex} onClose={() => setOpenIndex(null)} postHref={postHref} />
     ) : null;
   const cell = (index: number, className?: string, overflowCount?: number) => (
-    <MediaCell key={items[index].id} item={items[index]} className={className} overflowCount={overflowCount} onOpen={() => setOpenIndex(index)} />
+    <MediaCell key={items[index].id} item={items[index]} className={className} overflowCount={overflowCount} onOpen={() => setOpenIndex(index)} href={cellHref} />
   );
 
   if (items.length === 1) {

@@ -97,7 +97,8 @@ export function PostCard({
         </p>
       </Link>
 
-      {post.media.length > 0 && <MediaGrid items={post.media} postHref={`/posts/${post.id}`} />}
+      {/* v3.1: カードの写真のタップは投稿詳細へ直接（モーダルは投稿詳細の中だけ） */}
+      {post.media.length > 0 && <MediaGrid items={post.media} postHref={`/posts/${post.id}`} linkToPost />}
 
       {statusLabel && (
         <p className="text-[12px] font-medium text-done" data-spot-status>

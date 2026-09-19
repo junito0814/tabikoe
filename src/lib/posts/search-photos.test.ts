@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { mergeMedia, mergeSpotMedia, type SpotPostMediaRow } from "./search-photos";
+import { mergeMedia, mergeMediaBySpot, mergeSpotMedia, PHOTOS_PER_SPOT_CAP, type SpotPostMediaRow } from "./search-photos";
+import type { SearchRow } from "./search-posts";
 
 /**
  * 出典: docs/tasks/map-search/spot-photo-gallery/01-spot-photos-handler.md 単体テスト
@@ -62,5 +63,39 @@ describe("mergeMedia（v3.0: 投稿の順序に従う）", () => {
     ];
     // いいね順などで「古い投稿が先」に並んでいても、その順序を尊重する
     expect(mergeMedia(rows).map((item) => item.key)).toEqual(["s1", "s2", "f1"]);
+  });
+});
+
+describe("mergeMediaBySpot（v3.1: 検索結果は 1 スポット 5 枚まで）", () => {
+  const searchRow = (id: string, spotId: string, createdAt: string, photoCount: number, rating = 4): SearchRow => ({
+    id,
+    spot_id: spotId,
+    user_id: "u1",
+    category: "グルメ",
+    visit_date: "2026-09-01",
+    duration: null,
+    cost: null,
+    rating,
+    comment: null,
+    created_at: createdAt,
+    visibility: "public",
+    spots: { id: spotId, name: spotId, lat: 35, lng: 139, source: "places", prefecture: "東京都" },
+    users: null,
+    post_photos: Array.from({ length: photoCount }, (_, i) => ({ id: `${id}-${i}`, storage_url: `${id}/${i}.jpg`, video_url: null, media_type: "photo", display_order: i })),
+    likes: [{ count: 0 }],
+    comments: [{ count: 0 }],
+  });
+
+  it("1 スポット 6 枚以上あっても 5 枚になり、新しい投稿の写真から採る", () => {
+    const rows = [searchRow("old", "s1", "2026-09-01T00:00:00Z", 4), searchRow("new", "s1", "2026-09-05T00:00:00Z", 3)];
+    const merged = mergeMediaBySpot(rows, "newest", PHOTOS_PER_SPOT_CAP);
+    expect(merged).toHaveLength(5);
+    expect(merged.map((m) => m.postId)).toEqual(["new", "new", "new", "old", "old"]);
+  });
+
+  it("スポットの並び（投稿数順）に従い、各スポットの写真がまとまる", () => {
+    const rows = [searchRow("a1", "s1", "2026-09-09T00:00:00Z", 1), searchRow("b1", "s2", "2026-09-01T00:00:00Z", 1), searchRow("b2", "s2", "2026-09-02T00:00:00Z", 1)];
+    expect(mergeMediaBySpot(rows, "count", 5).map((m) => m.postId)).toEqual(["b2", "b1", "a1"]);
+    expect(mergeMediaBySpot(rows, "newest", 5).map((m) => m.postId)).toEqual(["a1", "b2", "b1"]);
   });
 });
