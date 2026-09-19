@@ -22,6 +22,8 @@ export const NOTIFICATION_TYPES = [
   // v3.0（itinerary-sharing Task2）。related_id は itinerary_id。20260918000001 で CHECK 制約に追加
   "itinerary_joined",
   "itinerary_member_removed",
+  // v3.2（feedback-0919 Task4）。related_id はコメント ID（返信）。20260919000004 で CHECK 制約に追加
+  "comment_replied",
 ] as const;
 
 export type NotificationType = (typeof NOTIFICATION_TYPES)[number];
@@ -40,6 +42,11 @@ export const NOTIFICATION_CATALOG: Record<NotificationType, NotificationTypeSpec
     relatedIdRefersTo: "コメントID",
     recipients: "投稿者本人（コメントした本人を除く）",
     producedBy: "browsing/comments",
+  },
+  comment_replied: {
+    relatedIdRefersTo: "コメントID（返信）",
+    recipients: "返信先のコメントの投稿者（返信した本人を除く。投稿者本人には comment 通知だけ）",
+    producedBy: "browsing/comments（v3.2）",
   },
   like: {
     relatedIdRefersTo: "投稿ID",
