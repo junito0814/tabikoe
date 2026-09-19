@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { formatDayLabel } from "@/lib/itineraries/day-utils";
+import { formatPeriodLabel } from "@/lib/itineraries/day-utils";
 import type { ItineraryListItem } from "@/lib/itineraries/get-itinerary";
 import { itineraryGroup, sortItineraries } from "@/lib/itineraries/sort-itineraries";
 import { CreateItineraryDialog } from "./CreateItineraryDialog";
@@ -15,10 +15,22 @@ import { defaultItineraryApi, type ItineraryApi } from "./itinerary-api";
  *       要件定義書 v3.0 3.11.1
  *
  * 【初心者向け】メニューバーの「しおり」から開く。カードは旅行タイトル・期間・スポット数・済み件数だけ（写真は置かない）。
- * 並び順は sort-itineraries.ts（期間が近い順 → 未設定 → 過ぎたもの）。過ぎたものは薄く表示して「アルバムを見る」。
+ * 並び順は sort-itineraries.ts（期間が近い順 → 未設定 → 過ぎたもの）。過ぎたものは薄くせず「済」の印を付けて「アルバムを見る」（v3.1）。
+ * 先頭には「行きたいスポット」への入口（件数つき。v3.1。マイページの入口も残る）。期間は年つき。
  * 「＋ 新規」→ CreateItineraryDialog → 作成できたら詳細へ。
  */
-export function ItineraryListScreen({ items, today, api = defaultItineraryApi }: { items: ItineraryListItem[]; today: string; api?: ItineraryApi }) {
+export function ItineraryListScreen({
+  items,
+  today,
+  wishlistCount = null,
+  api = defaultItineraryApi,
+}: {
+  items: ItineraryListItem[];
+  today: string;
+  /** v3.1: 先頭の「行きたいスポット」の件数（取れなければ null で件数なし） */
+  wishlistCount?: number | null;
+  api?: ItineraryApi;
+}) {
   const router = useRouter();
   const [isCreating, setIsCreating] = useState(false);
   const sorted = sortItineraries(items, today);
@@ -33,6 +45,16 @@ export function ItineraryListScreen({ items, today, api = defaultItineraryApi }:
           </button>
         </header>
 
+        {/* v3.1: 先頭に「行きたいスポット」への入口 */}
+        <Link href="/wishlist" className="mb-3 flex items-center justify-between rounded-[12px] border border-line bg-surface p-3 shadow-card" data-wishlist-entry>
+          <span className="flex items-center gap-2 text-[14px] font-bold text-ink">
+            <span aria-hidden className="text-saved">♥</span>
+            行きたいスポット
+            {wishlistCount !== null && <span className="rounded-full bg-tint px-2 py-0.5 text-[11px] font-semibold text-muted">{wishlistCount}</span>}
+          </span>
+          <span aria-hidden className="text-muted">›</span>
+        </Link>
+
         {sorted.length === 0 ? (
           <div className="py-16 text-center text-[13px] leading-[1.8] text-muted">
             しおりがありません
@@ -43,15 +65,21 @@ export function ItineraryListScreen({ items, today, api = defaultItineraryApi }:
           <ul className="flex flex-col gap-2.5">
             {sorted.map((item) => {
               const group = itineraryGroup(item, today);
-              const period =
-                item.startDate && item.endDate ? `${formatDayLabel(item.startDate)} 〜 ${formatDayLabel(item.endDate)}${group === "past" ? "（済）" : ""}` : "期間未設定";
+              const period = formatPeriodLabel(item.startDate, item.endDate);
               return (
-                <li key={item.id} data-itinerary-group={group} className={group === "past" ? "opacity-60" : ""}>
+                <li key={item.id} data-itinerary-group={group}>
                   <article className="rounded-[12px] border border-line bg-surface p-3 shadow-card">
                     <Link href={`/itineraries/${item.id}`} className="flex flex-col gap-1">
                       <span className="flex items-center justify-between gap-2">
                         <span className="min-w-0 truncate text-[15px] font-bold text-ink">{item.title}</span>
-                        <span className="shrink-0 text-[11px] text-muted">{period}</span>
+                        <span className="flex shrink-0 items-center gap-1 text-[11px] text-muted">
+                          {period}
+                          {group === "past" && (
+                            <span className="rounded-full bg-done/10 px-1.5 py-0.5 text-[10px] font-bold text-done" data-past-mark>
+                              済
+                            </span>
+                          )}
+                        </span>
                       </span>
                       <span className="text-[12px] text-muted">
                         {item.spotCount} スポット

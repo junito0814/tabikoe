@@ -37,7 +37,7 @@ export interface AlbumApi {
  *       docs/tasks/records/album/04-album-media-grid-ui.md
  *       docs/tasks/records/album-collaboration/00-index.md（招待発行・無効化・権限変更・削除・退出の操作UI）
  *
- * - 名称変更（trip-title Task3 の PATCH /api/trips/[id]）はオーナーにだけ出す
+ * - 名称変更（trip-title Task3 の PATCH /api/trips/[id]）はオーナーにだけ。v3.1: ボタンではなくタイトルのタップ（しおりが無いアルバムだけ。「日常」は不可）
  * - 招待リンクの発行・無効化、メンバーの権限変更・削除もオーナーのみ
  * - 編集者・閲覧者には「退出」を出す
  * - 投稿は公開・非公開を問わず MediaGrid で表示し、旅行タイトルを見せてよい画面（trip-title Task5）
@@ -199,21 +199,24 @@ export function AlbumScreen({
               </button>
             </form>
           ) : (
-            <div className="flex items-start justify-between gap-3">
+            // v3.1（mentoring-7 Task9）: 「名前を変更」ボタンは置かない。しおりが無いアルバムだけタイトルをタップ（✎）で変更。
+            // しおりがあるアルバムは名前をしおり詳細のタイトルで変える（名前は 1 つ）
+            canManage && !album.itineraryId ? (
+              <button
+                type="button"
+                onClick={() => {
+                  setDraftTitle(title);
+                  setIsRenaming(true);
+                }}
+                aria-label={`${title}（名前を変更）`}
+                className="flex min-w-0 items-start gap-1.5 text-left text-[20px] font-bold text-ink"
+              >
+                <span className="min-w-0 break-words">{title}</span>
+                <span aria-hidden className="mt-1 text-[13px] font-normal text-muted">✎</span>
+              </button>
+            ) : (
               <h1 className="min-w-0 break-words text-[20px] font-bold text-ink">{title}</h1>
-              {canManage && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    setDraftTitle(title);
-                    setIsRenaming(true);
-                  }}
-                  className="shrink-0 text-[12px] font-medium text-accent underline underline-offset-2"
-                >
-                  名前を変更
-                </button>
-              )}
-            </div>
+            )
           )}
           <p className="text-[11px] text-muted">
             あなたの権限: {ALBUM_ROLE_LABELS[album.viewerRole]} ・ 投稿 {album.posts.length}件 ・ メンバー {members.length}人
