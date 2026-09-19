@@ -84,7 +84,7 @@ describe("POST /api/posts/[id]/comments", () => {
   it("公開投稿にコメントを保存し、エスケープ済み本文で登録する（201）", async () => {
     const response = await post({ body: "<b>こんにちは</b>" });
     expect(response.status).toBe(201);
-    expect(insert).toHaveBeenCalledWith({ post_id: "p1", user_id: "me", body: "&lt;b&gt;こんにちは&lt;/b&gt;" });
+    expect(insert).toHaveBeenCalledWith({ post_id: "p1", user_id: "me", body: "&lt;b&gt;こんにちは&lt;/b&gt;", parent_id: null });
   });
 
   it("非公開投稿へのコメントは拒否される（403）", async () => {

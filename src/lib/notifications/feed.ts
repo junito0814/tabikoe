@@ -47,6 +47,7 @@ export interface FeedPage {
 
 export const NOTIFICATION_MESSAGES: Record<NotificationType, string> = {
   comment: "あなたの投稿にコメントが付きました",
+  comment_replied: "あなたのコメントに返信が付きました",
   like: "あなたの投稿にいいねが付きました",
   album_join: "アルバムに新しいメンバーが参加しました",
   role_change: "アルバムでのあなたの権限が変更されました",
@@ -111,7 +112,8 @@ export function resolveNotificationHref(
   if (!relatedId) return { href: null, fallbackMessage: "対象が見つかりません" };
 
   switch (type) {
-    case "comment": {
+    case "comment":
+    case "comment_replied": {
       const postId = lookups.commentPostIds.get(relatedId);
       return postId ? { href: `/posts/${postId}`, fallbackMessage: null } : { href: null, fallbackMessage: "このコメントは削除されました" };
     }
@@ -151,7 +153,7 @@ async function buildLookups(admin: SupabaseClient, rows: NotificationRow[]): Pro
   const ids = (types: string[]) =>
     Array.from(new Set(rows.filter((row) => types.includes(row.type) && row.related_id).map((row) => row.related_id!)));
 
-  const commentIds = ids(["comment"]);
+  const commentIds = ids(["comment", "comment_replied"]);
   const likePostIds = ids(["like"]);
   const tripIds = ids(["album_join", "role_change", "member_removed", "new_owner"]);
   const reportIds = ids(["report_resolved"]);

@@ -66,12 +66,14 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
 
-  let body: { body?: unknown };
+  let body: { body?: unknown; parentId?: unknown };
   try {
     body = await request.json();
   } catch {
     return NextResponse.json({ error: "invalid_body" }, { status: 400 });
   }
+  // v3.2（feedback-0919 Task4）: 返信なら返信先のコメント ID
+  const parentId = typeof body.parentId === "string" && body.parentId.length > 0 ? body.parentId : null;
 
   const validation = validateCommentBody(body.body);
   if (!validation.ok) {
@@ -87,6 +89,16 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   }
   if (!target.ok) {
     return NextResponse.json({ error: target.error }, { status: target.status });
+  }
+
+  // v3.2: 返信先は同じ投稿の、消えていないコメントに限る
+  let parent: { id: string; user_id: string; post_id: string } | null = null;
+  if (parentId) {
+    const { data } = await admin.from("comments").select("id, user_id, post_id, deleted_at, hidden_at").eq("id", parentId).maybeSingle();
+    if (!data || data.post_id !== id || data.deleted_at || data.hidden_at) {
+      return NextResponse.json({ error: "invalid_parent" }, { status: 400 });
+    }
+    parent = data;
   }
 
   // Task4: 1ユーザーにつき1分間5件まで
@@ -109,8 +121,8 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   // RLS（comments_owner_write）に従わせるためユーザー権限で作成する
   const { data: comment, error } = await supabase
     .from("comments")
-    .insert({ post_id: id, user_id: user.id, body: validation.body })
-    .select("id, user_id, body, created_at")
+    .insert({ post_id: id, user_id: user.id, body: validation.body, parent_id: parentId })
+    .select("id, user_id, body, created_at, parent_id, root_id, deleted_at")
     .single();
 
   if (error || !comment) {
@@ -132,6 +144,15 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     type: "comment",
     relatedId: comment.id,
   });
+  // v3.2: 返信先の投稿者への通知（投稿者本人なら上の comment 通知だけにして二重に送らない）
+  if (parent && parent.user_id !== target.post.user_id) {
+    await createNotification(admin, {
+      recipientId: parent.user_id,
+      actorId: user.id,
+      type: "comment_replied",
+      relatedId: comment.id,
+    });
+  }
 
   const { data: profile } = await admin
     .from("users")
@@ -139,8 +160,11 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     .eq("id", user.id)
     .maybeSingle();
 
-  return NextResponse.json(
-    { comment: toCommentData({ ...comment, users: profile ?? null }, user.id) },
-    { status: 201 }
-  );
+  // 「@名前 への返信」用に返信先の名前を付けて返す
+  let replyToName: string | null = null;
+  if (parent) {
+    const { data: parentUser } = await admin.from("users").select("display_name, is_deleted").eq("id", parent.user_id).maybeSingle();
+    replyToName = parentUser?.is_deleted ? "退会済みユーザー" : (parentUser?.display_name ?? "ユーザー");
+  }
+  return NextResponse.json({ comment: toCommentData({ ...comment, users: profile ?? null }, user.id, replyToName) }, { status: 201 });
 }
