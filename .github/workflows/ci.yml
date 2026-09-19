@@ -1,0 +1,53 @@
+# CI: PR を開いたとき・main に push したときに、手元で毎回やっている 4 つの確認を自動で回す。
+#   1. 型チェック（tsc）  2. lint（eslint）  3. 単体テスト（vitest）  4. 本番ビルド（next build）
+# どれか 1 つでも赤なら PR 画面に ✗ が出る。E2E（Playwright）は土台ができたら別ジョブで足す。
+#
+# 【初心者向け】ビルドは Supabase や Google のキーを「値の中身」までは見ない（接続はしない）ので、
+# ここではダミーの値を環境変数に入れて通す。本物のキーは GitHub に置かない。
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+concurrency:
+  # 同じブランチで push が続いたら古い実行を止める（Actions の分数を節約）
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    name: tsc / eslint / vitest / build
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      NEXT_PUBLIC_SUPABASE_URL: https://example.supabase.co
+      NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ci-dummy-publishable-key
+      SUPABASE_SECRET_KEY: ci-dummy-secret-key
+      NEXT_PUBLIC_GOOGLE_MAPS_API_KEY: ci-dummy-maps-key
+      GOOGLE_PLACES_API_KEY: ci-dummy-places-key
+      GOOGLE_GEOCODING_API_KEY: ci-dummy-geocoding-key
+      NEXT_TELEMETRY_DISABLED: "1"
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install
+        run: npm ci
+
+      - name: Type check
+        run: npx tsc --noEmit
+
+      - name: Lint
+        run: npx eslint src --max-warnings=0
+
+      - name: Unit tests
+        run: npx vitest run
+
+      - name: Build
+        run: npm run build
