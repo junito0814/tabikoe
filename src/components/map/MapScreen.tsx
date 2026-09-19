@@ -16,7 +16,7 @@ import { MapLegend } from "./MapLegend";
 import type { MapOpenOptions } from "./map-navigation";
 import { NearbyVoices, type FetchNearbyPosts } from "./NearbyVoices";
 import { loadMapState, mapEntryFor, saveMapState, shouldRestoreMapState, type MapState } from "@/lib/map/map-state";
-import type { NearbyRadius } from "@/lib/posts/nearby-posts";
+import type { TravelMode } from "@/lib/geo/travel-time";
 import { PinCallout, type CalloutTarget } from "./PinCallout";
 import { ALL_DAYS, buildItineraryPins, ItineraryMapOverlay, useItineraryForMap, type ItineraryMapDay } from "./ItineraryMapOverlay";
 import type { ItineraryApi } from "@/components/itineraries/itinerary-api";
@@ -87,7 +87,7 @@ export function MapScreen({
         ? { ...openProp, center: restored.center, zoom: restored.zoom }
         : openProp;
   const entry = mapEntryFor(open);
-  const radiusRef = useRef<NearbyRadius | undefined>(restored?.radius);
+  const travelRef = useRef<TravelMode | undefined>(restored?.travel ?? openProp.travel);
 
   const [initial, setInitial] = useState<InitialCenter | null>(
     open.center ? { center: open.center, zoom: open.zoom, source: open.mode === "explore" && !restored ? "current" : "fallback" } : null
@@ -189,7 +189,7 @@ export function MapScreen({
     // v3.1: 落ち着く（idle）たびに状態を保存する。戻ってきたときの復元用
     const zoom = mapRef.current?.getZoom();
     if (typeof zoom === "number") {
-      saveMapState({ entry, mode: open.mode, center: nextCenter, zoom, ...(radiusRef.current !== undefined ? { radius: radiusRef.current } : {}) });
+      saveMapState({ entry, mode: open.mode, center: nextCenter, zoom, ...(travelRef.current !== undefined ? { travel: travelRef.current } : {}) });
     }
     // itineraryPins は fit の対象。ref 経由なので依存に入れる必要は無いが、最新の配列を使うために入れる
   }, [itineraryPins, entry, open.mode]);
@@ -376,13 +376,13 @@ export function MapScreen({
             fetchPosts={fetchNearby}
             onActiveChange={handleActiveNearby}
             onPostsLoaded={setNearbyPosts}
-            initialRadius={restored?.radius}
-            onRadiusChange={(radius) => {
-              // 徒歩圏は idle を待たずにその場で保存する（地図を動かさずに切り替えて離れることがある）
-              radiusRef.current = radius;
+            initialMode={restored?.travel ?? openProp.travel}
+            onModeChange={(travel) => {
+              // 移動手段は idle を待たずにその場で保存する（地図を動かさずに切り替えて離れることがある）
+              travelRef.current = travel;
               const zoom = mapRef.current?.getZoom();
               const current = mapRef.current?.getCenter();
-              if (typeof zoom === "number" && current) saveMapState({ entry, mode: open.mode, center: current, zoom, radius });
+              if (typeof zoom === "number" && current) saveMapState({ entry, mode: open.mode, center: current, zoom, travel });
             }}
           />
         </div>

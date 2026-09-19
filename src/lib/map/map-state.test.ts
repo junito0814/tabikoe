@@ -4,7 +4,7 @@ import { loadMapState, mapEntryFor, saveMapState, shouldRestoreMapState, type Ma
 /**
  * 出典: docs/tasks/shared-ui/mentoring-7/07-map-state-restore.md 単体テスト
  * - 保存した状態が同じキー（入口）で復元され、別のキーでは復元されないこと
- * - 徒歩圏の復元
+ * - 移動手段の復元
  */
 function memoryStorage(): Storage {
   const map = new Map<string, string>();
@@ -18,10 +18,10 @@ function memoryStorage(): Storage {
   };
 }
 
-const explore: MapState = { entry: "explore", mode: "explore", center: { lat: 35.68, lng: 139.76 }, zoom: 15, radius: 3000 };
+const explore: MapState = { entry: "explore", mode: "explore", center: { lat: 35.68, lng: 139.76 }, zoom: 15, travel: "bicycle" };
 
 describe("map-state", () => {
-  it("保存した中心・ズーム・徒歩圏がそのまま戻る。30 分を過ぎたら捨てる", () => {
+  it("保存した中心・ズーム・移動手段がそのまま戻る。30 分を過ぎたら捨てる", () => {
     const storage = memoryStorage();
     saveMapState(explore, storage);
     expect(loadMapState(storage)).toEqual(explore);

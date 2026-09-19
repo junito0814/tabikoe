@@ -1,5 +1,5 @@
 import { haversineMeters } from "@/lib/geo/walk-minutes";
-import type { NearbyRadius } from "@/lib/posts/nearby-posts";
+import type { TravelMode } from "@/lib/geo/travel-time";
 
 /**
  * mentoring-7 Task7（v3.1）: 地図（SC-02）の状態の保存と復元
@@ -7,7 +7,7 @@ import type { NearbyRadius } from "@/lib/posts/nearby-posts";
  *       要件定義書 v3.1 3.4.3「地図の状態の復元」（受入条件 46）
  *
  * 【初心者向け】地図 → 詳細 → 地図 と戻ってきたとき、見ていた場所がずれないように、
- * 地図の中心・ズーム・モード（探すモードなら徒歩圏も）を sessionStorage に覚えておく（list-state.ts と同じ作り）。
+ * 地図の中心・ズーム・モード（探すモードなら移動手段も）を sessionStorage に覚えておく（list-state.ts と同じ作り）。
  *   - `entry` は「どの入口で開いた地図か」（default／explore／spot:<id>／itinerary:<id>）。
  *     復元するのは「同じ入口に戻ってきたとき」だけ。別の入口（一覧の地図・しおりの地図）から新しく開いたときは復元しない
  *   - 素の /map（entry=default）で開いたときは、直前の地図が探すモードならそのまま探すモードで復元する（吹き出しの一覧 → ← 地図 の流れ）
@@ -20,8 +20,8 @@ export interface MapState {
   mode: "default" | "explore" | "spot" | "itinerary";
   center: { lat: number; lng: number };
   zoom: number;
-  /** 探すモードの徒歩圏 */
-  radius?: NearbyRadius;
+  /** 探すモードの移動手段（v3.2。徒歩／自転車／車） */
+  travel?: TravelMode;
 }
 
 const KEY = "tabikoe:map-state";
@@ -73,7 +73,7 @@ export function loadMapState(storage: Storage | undefined = defaultStorage(), no
       mode: parsed.mode as MapState["mode"],
       center: { lat: parsed.center.lat, lng: parsed.center.lng },
       zoom: parsed.zoom,
-      ...(parsed.radius !== undefined ? { radius: parsed.radius } : {}),
+      ...(parsed.travel !== undefined ? { travel: parsed.travel } : {}),
     };
   } catch {
     return null;

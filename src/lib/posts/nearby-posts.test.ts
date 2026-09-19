@@ -44,3 +44,20 @@ describe("parseNearbyRadius", () => {
     expect(parseNearbyRadius("999")).toBe(1000);
   });
 });
+
+describe("v3.2: 移動手段", () => {
+  it("移動手段ごとの半径（徒歩 1km／自転車 3km／車 10km）と所要時間の目安", async () => {
+    const { radiusForTravelMode, selectNearbyPosts } = await import("./nearby-posts");
+    expect(radiusForTravelMode("walk")).toBe(1000);
+    expect(radiusForTravelMode("bicycle")).toBe(3000);
+    expect(radiusForTravelMode("car")).toBe(10000);
+    const center = { lat: 35.68, lng: 139.76 };
+    const row = { id: "p", spot_id: "s", comment: null, spots: { id: "s", name: "遠い店", lat: 35.7, lng: 139.76 }, post_photos: [] };
+    // 約 2.2km: 徒歩では範囲外（1km）だが車（10km）では入り、分数は車の速度
+    expect(selectNearbyPosts([row], center, 1000, 20, "walk")).toHaveLength(0);
+    const byCar = selectNearbyPosts([row], center, 10000, 20, "car");
+    expect(byCar).toHaveLength(1);
+    expect(byCar[0].mode).toBe("car");
+    expect(byCar[0].minutes).toBe(Math.ceil(byCar[0].distanceMeters / 500));
+  });
+});

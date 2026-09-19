@@ -3,15 +3,10 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { fetchWithAuthRedirect, UnauthorizedError } from "@/lib/api/fetch-with-auth-redirect";
-import {
-  DEFAULT_NEARBY_RADIUS,
-  NEARBY_RADIUS_LABELS,
-  NEARBY_RADIUS_OPTIONS,
-  type NearbyPost,
-  type NearbyRadius,
-} from "@/lib/posts/nearby-posts";
+import type { NearbyPost } from "@/lib/posts/nearby-posts";
+import { DEFAULT_TRAVEL_MODE, formatTravelMinutes, TRAVEL_MODE_LABELS, TRAVEL_MODES, type TravelMode } from "@/lib/geo/travel-time";
 
-export type FetchNearbyPosts = (center: { lat: number; lng: number }, radius: NearbyRadius) => Promise<NearbyPost[]>;
+export type FetchNearbyPosts = (center: { lat: number; lng: number }, mode: TravelMode) => Promise<NearbyPost[]>;
 
 /**
  * explore-mode Task2: 「近くのスポット」（探すモードの下 1/3。v3.1 で「近くの声」から改称）
@@ -19,7 +14,7 @@ export type FetchNearbyPosts = (center: { lat: number; lng: number }, radius: Ne
  *       要件定義書 v3.0 3.4.5
  *
  * 【初心者向け】現在地を中心に、近い順のカードを横スクロールで並べる。
- *   - 「徒歩圏 ▾」で半径（500m／1km／3km）を切り替えると API を呼び直す
+ *   - 「移動手段 ▾」（徒歩 1km／自転車 3km／車 10km。v3.2 feedback-0919 Task7）を切り替えると API を呼び直し、分数の表示も変わる
  *   - 横スクロールで真ん中に来たカード（`scroll-snap` で 1 枚ずつ止まる）を親に知らせ、地図の対応ピンを強調する（onActiveChange）
  *   - カードのタップで投稿詳細（/posts/[id]）
  * スクロール位置 → どのカードが中央か、は `scrollLeft / カード幅` で概算する（カード幅は固定）。
@@ -32,19 +27,19 @@ export function NearbyVoices({
   fetchPosts = defaultFetchNearbyPosts,
   onActiveChange,
   onPostsLoaded,
-  initialRadius = DEFAULT_NEARBY_RADIUS,
-  onRadiusChange,
+  initialMode = DEFAULT_TRAVEL_MODE,
+  onModeChange,
 }: {
   center: { lat: number; lng: number };
   fetchPosts?: FetchNearbyPosts;
   /** 中央に来たカードの投稿（ピンの強調用）。無ければ null */
   onActiveChange?: (post: NearbyPost | null) => void;
   onPostsLoaded?: (posts: NearbyPost[]) => void;
-  initialRadius?: NearbyRadius;
-  /** v3.1: 徒歩圏を切り替えたとき（地図の状態の保存用） */
-  onRadiusChange?: (radius: NearbyRadius) => void;
+  initialMode?: TravelMode;
+  /** v3.1: 移動手段を切り替えたとき（地図の状態の保存用） */
+  onModeChange?: (mode: TravelMode) => void;
 }) {
-  const [radius, setRadius] = useState<NearbyRadius>(initialRadius);
+  const [mode, setMode] = useState<TravelMode>(initialMode);
   const [posts, setPosts] = useState<NearbyPost[] | null>(null);
   const [failed, setFailed] = useState(false);
   const [activeIndex, setActiveIndex] = useState(0);
@@ -58,7 +53,7 @@ export function NearbyVoices({
 
   useEffect(() => {
     let cancelled = false;
-    fetchPosts(center, radius)
+    fetchPosts(center, mode)
       .then((result) => {
         if (cancelled) return;
         setPosts(result);
@@ -74,7 +69,7 @@ export function NearbyVoices({
     return () => {
       cancelled = true;
     };
-  }, [center, radius, fetchPosts]);
+  }, [center, mode, fetchPosts]);
 
   const handleScroll = () => {
     const scroller = scrollerRef.current;
@@ -91,20 +86,20 @@ export function NearbyVoices({
       <div className="flex items-center justify-between">
         <h2 className="text-[14px] font-bold text-ink">近くのスポット</h2>
         <label className="inline-flex items-center gap-1 text-[12px] text-muted">
-          徒歩圏
+          移動手段
           <select
-            aria-label="徒歩圏"
-            value={radius}
+            aria-label="移動手段"
+            value={mode}
             onChange={(event) => {
-              const next = Number(event.target.value) as NearbyRadius;
-              setRadius(next);
-              onRadiusChange?.(next);
+              const next = event.target.value as TravelMode;
+              setMode(next);
+              onModeChange?.(next);
             }}
             className="h-8 rounded-full border border-line bg-surface px-2 text-[12px] font-semibold text-ink"
           >
-            {NEARBY_RADIUS_OPTIONS.map((option) => (
+            {TRAVEL_MODES.map((option) => (
               <option key={option} value={option}>
-                {NEARBY_RADIUS_LABELS[option]}
+                {TRAVEL_MODE_LABELS[option]}
               </option>
             ))}
           </select>
@@ -116,7 +111,7 @@ export function NearbyVoices({
       ) : posts === null ? (
         <p className="py-6 text-center text-[12px] text-muted">読み込んでいます…</p>
       ) : posts.length === 0 ? (
-        <p className="py-6 text-center text-[12px] text-muted">この徒歩圏に投稿はありません。範囲を広げてみてください</p>
+        <p className="py-6 text-center text-[12px] text-muted">この範囲に投稿はありません。移動手段を変えて範囲を広げてみてください</p>
       ) : (
         <div
           ref={scrollerRef}
@@ -143,7 +138,7 @@ export function NearbyVoices({
                     <img src={post.thumbnailUrl} alt="" className="h-full w-full object-cover" />
                   )}
                 </span>
-                徒歩 {post.walkMinutes}分
+                <span data-travel-minutes>{formatTravelMinutes(post.minutes ?? post.walkMinutes, post.mode ?? mode)}</span>
               </span>
             </Link>
           ))}
@@ -153,8 +148,8 @@ export function NearbyVoices({
   );
 }
 
-async function defaultFetchNearbyPosts(center: { lat: number; lng: number }, radius: NearbyRadius): Promise<NearbyPost[]> {
-  const params = new URLSearchParams({ lat: String(center.lat), lng: String(center.lng), radius: String(radius) });
+async function defaultFetchNearbyPosts(center: { lat: number; lng: number }, mode: TravelMode): Promise<NearbyPost[]> {
+  const params = new URLSearchParams({ lat: String(center.lat), lng: String(center.lng), mode });
   const response = await fetchWithAuthRedirect(`/api/posts/nearby?${params.toString()}`);
   if (!response.ok) throw new Error(`Failed to fetch nearby posts: ${response.status}`);
   const data = (await response.json()) as { posts: NearbyPost[] };
