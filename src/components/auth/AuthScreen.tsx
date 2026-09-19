@@ -79,7 +79,9 @@ export default function AuthScreen({ mode }: { mode: AuthMode }) {
     const hasConsentError = errorParam === "consent_required";
     const hasAccountNotFound = errorParam === "account_not_found";
     const hasSuspended = errorParam === "suspended";
-    const hasError = localError || errorParam === "1" || hasConsentError || hasAccountNotFound || hasSuspended;
+    // F-AC-02 Task3: 最終利用から 30 日を超えてセッションが失効した（proxy.ts から error=expired で戻される）
+    const hasExpired = errorParam === "expired";
+    const hasError = localError || errorParam === "1" || hasConsentError || hasAccountNotFound || hasSuspended || hasExpired;
     // F-AD-01 Task2: SC-15（管理者ログイン画面）は SC-01 を admin=1 付きで開いたもの（4.1）
     const isAdminLogin = !isSignup && searchParams.get("admin") === "1";
 
@@ -124,7 +126,9 @@ export default function AuthScreen({ mode }: { mode: AuthMode }) {
             ? "利用規約と個人情報保護方針への同意が必要です"
             : hasSuspended
                 ? "このアカウントは一時停止されています"
-                : ERROR_MESSAGES.oauthFailure;
+                : hasExpired
+                    ? "しばらく利用がなかったため、もう一度ログインしてください"
+                    : ERROR_MESSAGES.oauthFailure;
 
     return (
         <div
