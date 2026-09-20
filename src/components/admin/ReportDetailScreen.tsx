@@ -154,7 +154,7 @@ export function ReportDetailScreen({
           {result && <p role="status" className="mt-2 text-[12px] text-done">{result}</p>}
 
           <div className="mt-3 flex flex-wrap gap-2">
-            <button type="button" onClick={() => void run("hide")} disabled={isSubmitting || isResolved} className={`${actionButton} bg-ink text-white`}>
+            <button type="button" onClick={() => void run("hide")} disabled={isSubmitting || isResolved} className={`${actionButton} bg-ink text-on-ink`}>
               非公開化
             </button>
             <button type="button" onClick={() => setConfirmingDelete(true)} disabled={isSubmitting || isResolved} className={`${actionButton} bg-accent text-white`}>

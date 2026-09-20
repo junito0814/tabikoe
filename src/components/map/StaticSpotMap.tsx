@@ -24,7 +24,7 @@ export function StaticSpotMap({ spot, href, className }: { spot: { id: string; n
         className="h-full w-full"
       />
       <Link href={href} aria-label={`${spot.name}を地図で見る`} className="absolute inset-0 z-10 block">
-        <span className="absolute right-3 bottom-3 rounded-full bg-ink/80 px-2.5 py-1 text-[11px] font-medium text-white">タップで地図を全画面に</span>
+        <span className="absolute right-3 bottom-3 rounded-full bg-ink/80 px-2.5 py-1 text-[11px] font-medium text-on-ink">タップで地図を全画面に</span>
       </Link>
     </div>
   );

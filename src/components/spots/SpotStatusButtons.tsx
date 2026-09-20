@@ -67,7 +67,7 @@ export function SpotStatusButtons({
                 selected
                   ? status === "still_there"
                     ? "border-done bg-done text-white"
-                    : "border-ink bg-ink text-white"
+                    : "border-ink bg-ink text-on-ink"
                   : "border-line bg-surface text-ink"
               }`}
             >

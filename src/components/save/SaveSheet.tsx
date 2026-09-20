@@ -186,7 +186,7 @@ function SaveSheetBody({
       title={title}
       onClose={close}
       footer={
-        <button type="button" onClick={close} className="h-11 w-full rounded-[10px] bg-ink text-[14px] font-semibold text-white">
+        <button type="button" onClick={close} className="h-11 w-full rounded-[10px] bg-ink text-[14px] font-semibold text-on-ink">
           完了
         </button>
       }

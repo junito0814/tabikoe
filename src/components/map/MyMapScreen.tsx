@@ -132,7 +132,7 @@ export function MyMapScreen({
                   aria-checked={selected}
                   onClick={() => setMode(item.mode)}
                   className={`h-8 flex-1 rounded-full text-[12px] font-semibold transition-colors ${
-                    selected ? "bg-ink text-white" : "text-muted"
+                    selected ? "bg-ink text-on-ink" : "text-muted"
                   }`}
                 >
                   {item.label}
