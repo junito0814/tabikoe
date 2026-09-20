@@ -79,9 +79,11 @@ function FilterSheetBody({
   // Bug #473: スポット別一覧は上 1/3 地図＋下 2/3 シート（MapSheetLayout）の中にあり、そのシートが `relative z-10` で
   // 重なり順の入れ物（stacking context）を作る。その中で fixed にしても z-10 の枠から出られず、メニューバー（z-40）の下に
   // なる。createPortal で body 直下に描いて枠の外に出し、z-50 でメニューバーより上にする。
+  // メニューバーは隠さず残す: バーがあるとき（body:has([data-menu-bar])）はスマホで下 60px、パソコンで左 200px を空け、
+  // 暗い背景もシートもメニューバーの手前で止める（メニューバーはそのまま押せる）。
   if (typeof document === "undefined") return null;
   return createPortal(
-    <div className="fixed inset-0 z-50 flex items-end justify-center md:items-center" data-filter-sheet>
+    <div className="fixed inset-0 z-50 flex items-end justify-center md:items-center [body:has([data-menu-bar])_&]:bottom-[60px] md:[body:has([data-menu-bar])_&]:bottom-0 md:[body:has([data-menu-bar])_&]:left-[200px]" data-filter-sheet>
       <button type="button" aria-label="閉じる" onClick={onClose} className="absolute inset-0 bg-black/40" />
       <form
         role="dialog"
