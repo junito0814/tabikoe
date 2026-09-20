@@ -2,6 +2,7 @@
 
 import { useCallback, useRef, useState, type ReactNode } from "react";
 import Link from "next/link";
+import { appendBackHref } from "@/lib/search/list-state";
 import { useRouter } from "next/navigation";
 import { ErrorNotice } from "@/components/notices/ErrorNotice";
 import { ERROR_MESSAGES } from "@/components/notices/error-messages";
@@ -51,6 +52,7 @@ export function PostSearchScreen({
   title,
   backHref,
   backLabel,
+  backParam = null,
   header,
   addMode = null,
   emptyMessage = "条件に合う投稿がありません",
@@ -69,6 +71,8 @@ export function PostSearchScreen({
   title: string;
   backHref: string;
   backLabel: string;
+  /** Bug #469: この一覧自身が受け取った戻り先（`back=`）。投稿詳細へ渡す一覧 URL に付け直して数珠つなぎにする */
+  backParam?: string | null;
   /** 見出しの下に差し込む要素（スポット別の情報行など） */
   header?: ReactNode;
   addMode?: AddModeInfo | null;
@@ -194,7 +198,7 @@ export function PostSearchScreen({
           <ul className="flex flex-col gap-3">
             {posts.map((post) => (
               <li key={post.id}>
-                <PostCard post={withWalk(post)} backHref={pageHref} showSpotName={context.destination?.kind !== "spot"} addMode={addMode} />
+                <PostCard post={withWalk(post)} backHref={appendBackHref(pageHref, backParam)} showSpotName={context.destination?.kind !== "spot"} addMode={addMode} />
               </li>
             ))}
           </ul>

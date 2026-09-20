@@ -6,6 +6,7 @@ import { ErrorNotice } from "@/components/notices/ErrorNotice";
 import { ERROR_MESSAGES } from "@/components/notices/error-messages";
 import { SpotPostListScreen } from "@/components/posts/SpotPostListScreen";
 import { loadSearchPage, type SearchPageQuery } from "@/lib/search/load-search-page";
+import { resolveListBack } from "@/lib/search/list-state";
 
 /**
  * SC-04 投稿一覧（スポット別）
@@ -44,6 +45,7 @@ export default async function SpotPostsPage({
       initialPage={data.initialPage}
       initialMediaPage={data.initialMediaPage}
       addMode={data.addMode}
+      back={resolveListBack(typeof query.back === "string" ? query.back : null)}
     />
   );
 }

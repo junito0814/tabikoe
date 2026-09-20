@@ -36,7 +36,7 @@ export interface SpotSummary {
  *   1 行目: 都道府県 ・ 投稿 N 件 ・ 9月にまだあった（報告があるときだけ）
  *   2 行目: (＋) [投稿する]（→ SC-03、スポット確定で開く）。「地図で見る」は上 1/3 の地図が兼ねる（v3.1）
  * 投稿が無ければ「まだ投稿がありません」。追加モード（?itinerary=）ならバナーが上に出る。
- * 「戻る」は地図へ（地図のピンやスポット名検索から来る画面のため）。
+ * 「戻る」は `back`（`?back=` から page.tsx が解決した戻り先）へ。無ければ地図へ（地図のピンから来た場合。Bug #469）。
  */
 export function SpotPostListScreen({
   spot,
@@ -45,6 +45,7 @@ export function SpotPostListScreen({
   initialMediaPage = null,
   addMode = null,
   fetchPage,
+  back = null,
 }: {
   spot: SpotSummary;
   initialState: PostSearchState;
@@ -53,6 +54,8 @@ export function SpotPostListScreen({
   addMode?: AddModeInfo | null;
   /** 差し替え口（単体テスト用） */
   fetchPage?: FetchSearchPage;
+  /** Bug #469: 戻り先（検索結果など）。href は `?back=` の生の値、label は画面名。無ければ「地図」 */
+  back?: { href: string; label: string } | null;
 }) {
   const context: SearchContext = {
     destination: { kind: "spot", spotId: spot.id },
@@ -109,8 +112,9 @@ export function SpotPostListScreen({
         initialPage={initialPage}
         initialMediaPage={initialMediaPage}
         title={spot.name}
-        backHref="/map"
-        backLabel="地図"
+        backHref={back?.href ?? "/map"}
+        backLabel={back?.label ?? "地図"}
+        backParam={back?.href ?? null}
         header={header}
         addMode={addMode}
         emptyMessage="まだ投稿がありません"

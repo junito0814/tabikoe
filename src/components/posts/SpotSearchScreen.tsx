@@ -168,7 +168,7 @@ export function SpotSearchScreen({
           <ul className="flex flex-col gap-3" data-spot-list>
             {spots.map((spot) => (
               <li key={spot.id}>
-                <SpotCard spot={withWalk(spot)} addMode={addMode} />
+                <SpotCard spot={withWalk(spot)} addMode={addMode} backHref={pageHref} />
               </li>
             ))}
           </ul>

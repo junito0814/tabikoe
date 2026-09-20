@@ -77,6 +77,20 @@ describe("SpotPostListScreen（SC-04 スポット別）", () => {
     expect(screen.getByRole("link", { name: "地図" })).toHaveAttribute("href", "/map");
   });
 
+  it("Bug #469: 検索結果から来た（back あり）なら戻るは検索結果の画面名で、投稿詳細へも back を渡す。無ければ「地図」", () => {
+    const { unmount } = render(
+      <SpotPostListScreen spot={spot} initialState={EMPTY_SEARCH_STATE} initialPage={{ posts: [card("p1")], nextOffset: null }} fetchPage={vi.fn()} back={{ href: "/search?pref=東京都", label: "東京都" }} />
+    );
+    expect(screen.getByRole("link", { name: "東京都" })).toHaveAttribute("href", "/search?pref=東京都");
+    expect(screen.queryByRole("link", { name: "地図" })).toBeNull();
+    const detail = new URL(document.querySelector("[data-post-card='p1'] a[href^='/posts/p1']")?.getAttribute("href") ?? "", "https://example.com");
+    expect(detail.pathname).toBe("/posts/p1");
+    expect(detail.searchParams.get("back")).toBe("/search?spot=spot-1&back=%2Fsearch%3Fpref%3D%E6%9D%B1%E4%BA%AC%E9%83%BD");
+    unmount();
+    render(<SpotPostListScreen spot={spot} initialState={EMPTY_SEARCH_STATE} initialPage={{ posts: [card("p1")], nextOffset: null }} fetchPage={vi.fn()} />);
+    expect(screen.getByRole("link", { name: "地図" })).toHaveAttribute("href", "/map");
+  });
+
   it("追加モードならバナーが出て「完了」でしおりへ戻る", () => {
     render(
       <SpotPostListScreen

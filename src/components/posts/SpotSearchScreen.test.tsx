@@ -49,7 +49,10 @@ describe("SpotSearchScreen（SC-04 検索結果・スポット単位）", () => 
     expect(card).toHaveTextContent("投稿 3 件");
     expect(card).toHaveTextContent("朝イチが空いてる");
     expect(card).toHaveTextContent("9月にまだあった");
-    expect(card.querySelector("a")).toHaveAttribute("href", "/search?spot=s2");
+    // Bug #469: 今の検索結果の URL を back= で渡す（スポット別一覧の戻るが「← 東京都」になる）
+    const href = new URL(card.querySelector("a")?.getAttribute("href") ?? "", "https://example.com");
+    expect(href.pathname + "?" + href.searchParams.get("spot")).toBe("/search?s2");
+    expect(decodeURIComponent(href.searchParams.get("back") ?? "")).toBe("/search?pref=東京都");
   });
 
   it("並び替えは 新着順／評価順／投稿数順 で、投稿数順を選ぶと sort=count で取り直し URL も変わる", async () => {

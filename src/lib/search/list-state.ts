@@ -1,3 +1,4 @@
+import { backLabelFor, classifyBackHref } from "@/lib/map/back-label";
 /**
  * post-timeline Task3: 一覧のスクロール位置・読み込み済みページ数の保存と復元
  * 出典: docs/tasks/map-search/post-timeline/03-scroll-and-back.md
@@ -86,9 +87,32 @@ export function buildMapHrefWithBack(mapParams: Record<string, string | number |
   return `/map${query ? `?${query}` : ""}`;
 }
 
+/**
+ * Bug #469: 一覧・詳細のリンクに「どこから来たか」を `back=` で付ける（無ければそのまま）。
+ * 例: appendBackHref("/search?spot=s1", "/search?pref=東京都") → /search?spot=s1&back=%2Fsearch%3Fpref%3D...
+ * 【初心者向け】戻るボタンは「直前の画面」に戻したい。ブラウザの履歴には頼れない（URL を直接開くこともある）ので、
+ * リンクの URL に戻り先を持たせて次の画面に渡す。次の画面はさらにその URL を自分の戻り先として渡す（数珠つなぎ）。
+ */
+export function appendBackHref(href: string, back: string | null | undefined): string {
+  if (!back) return href;
+  const url = new URL(href, "https://tabikoe.local");
+  url.searchParams.set("back", back);
+  return `${url.pathname}${url.search}`;
+}
+
 /** `back` クエリの安全な読み取り。同一サイトの相対パス（/search…）だけ許す（オープンリダイレクト対策） */
 export function parseBackHref(value: string | null | undefined): string | null {
   if (!value) return null;
   if (!value.startsWith("/") || value.startsWith("//")) return null;
   return value;
+}
+
+/**
+ * Bug #469: `?back=` から一覧画面の戻り先（URL と画面名）を決める。無ければ null（呼び出し側が既定の戻り先を使う）。
+ * 画面名は地図（SC-02）と同じ規則（lib/map/back-label.ts）: /search?pref=東京都 → 東京都、/search?q=東京駅 → 東京駅、/ → ホーム
+ */
+export function resolveListBack(value: string | null | undefined): { href: string; label: string } | null {
+  const href = parseBackHref(value);
+  if (!href) return null;
+  return { href, label: backLabelFor(classifyBackHref(href)) };
 }
