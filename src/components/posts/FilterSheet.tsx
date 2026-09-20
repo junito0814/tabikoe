@@ -76,7 +76,8 @@ function FilterSheetBody({
     } ${disabled ? "opacity-45" : ""}`;
 
   return (
-    <div className="fixed inset-0 z-40 flex items-end justify-center md:items-center" data-filter-sheet>
+    // Bug #473: メニューバー（z-40）より上に出す。同じ z-40 だと DOM で後にあるメニューバーが下端の「この条件で表示」を覆う
+    <div className="fixed inset-0 z-50 flex items-end justify-center md:items-center" data-filter-sheet>
       <button type="button" aria-label="閉じる" onClick={onClose} className="absolute inset-0 bg-black/40" />
       <form
         role="dialog"

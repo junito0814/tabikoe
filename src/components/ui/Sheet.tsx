@@ -37,7 +37,8 @@ export function Sheet({
 
   if (!open) return null;
   return (
-    <div className="fixed inset-0 z-40 flex items-end justify-center md:items-center" data-sheet>
+    // Bug #473: メニューバー（z-40）より上に出す（同じ値だと下から出るシートの下 60px がメニューバーに隠れる）
+    <div className="fixed inset-0 z-50 flex items-end justify-center md:items-center" data-sheet>
       <button type="button" aria-label="閉じる" onClick={onClose} className="absolute inset-0 bg-black/40" />
       <div
         role="dialog"
