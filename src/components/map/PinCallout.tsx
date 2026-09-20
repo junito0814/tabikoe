@@ -5,6 +5,7 @@ import type { MapPinData } from "@/lib/map/get-map-pins";
 import { composeHref } from "@/lib/posts/compose-initial-state";
 import { formatStatusLabel } from "@/lib/spots/format-status-label";
 import { SaveButton } from "@/components/save/SaveButton";
+import { appendBackHref } from "@/lib/search/list-state";
 
 /**
  * pin-interaction-v3 Task1・Task3: ピンの吹き出し
@@ -22,7 +23,7 @@ export type CalloutTarget =
   | { kind: "pin"; pin: MapPinData }
   | { kind: "temp"; lat: number; lng: number };
 
-export function PinCallout({ target, backHref, onClose }: { target: CalloutTarget; backHref?: string | null; onClose: () => void }) {
+export function PinCallout({ target, backHref, onClose }: { target: CalloutTarget; /** この地図の URL（吹き出しから開く一覧の戻り先） */ backHref?: string | null; onClose: () => void }) {
   return (
     <div
       role="dialog"
@@ -55,7 +56,8 @@ export function PinCallout({ target, backHref, onClose }: { target: CalloutTarge
 
 function SpotBody({ pin, backHref }: { pin: MapPinData; backHref: string | null }) {
   const statusLabel = formatStatusLabel(pin.latestStatus);
-  const listHref = pin.spotId ? `/spots/${pin.spotId}` : "/search";
+  // Bug #471: 一覧から「← 地図」で戻ったとき、地図の URL（戻り先名や探すモードを含む）ごと戻れるように back= を付ける
+  const listHref = pin.spotId ? appendBackHref(`/spots/${pin.spotId}`, backHref) : "/search";
   return (
     <div className="flex flex-col gap-1.5 pr-5">
       {/* v3.1（mentoring-7 Task6）: 「一覧」ボタンは無く、本体（スポット名〜件数）のタップでスポット別の投稿一覧へ */}
@@ -95,7 +97,6 @@ function SpotBody({ pin, backHref }: { pin: MapPinData; backHref: string | null 
           </Link>
         )}
       </div>
-      {backHref && <span className="sr-only">戻り先: {backHref}</span>}
     </div>
   );
 }

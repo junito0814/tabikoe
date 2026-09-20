@@ -46,7 +46,7 @@ export function ItineraryListScreen({
         </header>
 
         {/* v3.1: 先頭に「行きたいスポット」への入口 */}
-        <Link href="/wishlist" className="mb-3 flex items-center justify-between rounded-[12px] border border-line bg-surface p-3 shadow-card" data-wishlist-entry>
+        <Link href="/wishlist?back=%2Fitineraries" className="mb-3 flex items-center justify-between rounded-[12px] border border-line bg-surface p-3 shadow-card" data-wishlist-entry>
           <span className="flex items-center gap-2 text-[14px] font-bold text-ink">
             <span aria-hidden className="text-saved">♥</span>
             行きたいスポット

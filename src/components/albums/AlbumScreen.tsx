@@ -58,7 +58,10 @@ export function AlbumScreen({
   initialInvitations,
   viewerId,
   api = defaultApi,
+  back = null,
 }: {
+  /** Bug #471: 直前の画面（`?back=` から page.tsx が解決）。無ければ既定の戻り先 */
+  back?: { href: string; label: string } | null;
   album: AlbumDetail;
   initialInvitations: AlbumInvitation[];
   viewerId: string;
@@ -197,8 +200,9 @@ export function AlbumScreen({
     <div className="flex min-h-screen flex-col items-center bg-app px-4 py-6">
       <div className="flex w-full max-w-[560px] flex-col gap-5">
         <header className="flex flex-col gap-2">
-          <Link href="/albums" className="text-[12px] text-muted underline underline-offset-2">
-            アルバム一覧へ
+          {/* Bug #471: どこから来たかで戻り先を変える（しおり・通知など）。無ければアルバム一覧 */}
+          <Link href={back?.href ?? "/albums"} className="text-[12px] text-muted underline underline-offset-2">
+            ← {back?.label ?? "アルバム一覧"}
           </Link>
           {isRenaming ? (
             <form onSubmit={handleRename} className="flex gap-2">
@@ -246,7 +250,7 @@ export function AlbumScreen({
             </Link>
             {/* itinerary-basics Task4: しおりのメンバーにだけ「しおりを見る」 */}
             {album.itineraryId && (
-              <Link href={`/itineraries/${album.itineraryId}`} className="inline-flex h-8 w-fit items-center gap-1 rounded-full border border-line bg-surface px-3 text-[12px] font-semibold text-ink">
+              <Link href={`/itineraries/${album.itineraryId}?back=${encodeURIComponent(`/albums/${album.tripId}`)}`} className="inline-flex h-8 w-fit items-center gap-1 rounded-full border border-line bg-surface px-3 text-[12px] font-semibold text-ink">
                 🔖 しおりを見る
               </Link>
             )}
@@ -396,7 +400,7 @@ export function AlbumScreen({
                     ]}
                   />
                 )}
-                <Link href={`/posts/${post.id}`} className="flex flex-col gap-1 p-3">
+                <Link href={`/posts/${post.id}?back=${encodeURIComponent(`/albums/${album.tripId}`)}`} className="flex flex-col gap-1 p-3">
                   <span className="flex items-center gap-2 text-[13px] font-semibold text-ink">
                     {post.spotName}
                     {post.visibility === "private" && (

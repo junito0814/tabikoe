@@ -129,7 +129,8 @@ describe("MapScreen（SC-02 v3.0）", () => {
     expect(callout).toHaveTextContent("7件");
     expect(callout).toHaveTextContent("9月にまだあった");
     expect(screen.queryByRole("link", { name: "一覧" })).toBeNull();
-    expect(callout.querySelector("[data-callout-body]")).toHaveAttribute("href", "/spots/spot-1");
+    // Bug #471: 一覧から「← 地図」でこの地図（URL ごと）に戻れるよう back を付ける（テストでは jsdom の URL "/"）
+    expect(callout.querySelector("[data-callout-body]")).toHaveAttribute("href", "/spots/spot-1?back=%2F");
     expect(screen.getByRole("link", { name: "投稿する" })).toHaveAttribute("href", "/posts/new?spot=spot-1");
     expect(panTo).toHaveBeenCalledWith({ lat: 35.65, lng: 139.75 });
     // 地図をタップすると閉じる

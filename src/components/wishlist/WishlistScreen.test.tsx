@@ -54,6 +54,16 @@ describe("WishlistScreen", () => {
     expect(placeholder).toHaveAttribute("data-placeholder", "true");
   });
 
+  it("Bug #471: 戻るは back があればその画面名、無ければマイページ。スポットへのリンクには行きたいを back で渡す", () => {
+    const { unmount } = render(<WishlistScreen initialItems={items} submitRemove={vi.fn()} back={{ href: "/itineraries", label: "しおり一覧" }} />);
+    expect(screen.getByRole("link", { name: "しおり一覧" })).toHaveAttribute("href", "/itineraries");
+    expect(document.querySelector("[data-wishlist-item='a'] a")).toHaveAttribute("href", "/spots/a?back=%2Fwishlist%3Fback%3D%252Fitineraries");
+    unmount();
+    render(<WishlistScreen initialItems={items} submitRemove={vi.fn()} />);
+    expect(screen.getByRole("link", { name: "マイページ" })).toHaveAttribute("href", "/mypage");
+    expect(document.querySelector("[data-wishlist-item='a'] a")).toHaveAttribute("href", "/spots/a?back=%2Fwishlist");
+  });
+
   it("v3.1: 解除はゴミ箱マークのボタン（文字の「解除」は出ない）", () => {
     render(<WishlistScreen initialItems={items} submitRemove={vi.fn()} />);
     const button = screen.getByRole("button", { name: "浅草寺の保存を解除" });

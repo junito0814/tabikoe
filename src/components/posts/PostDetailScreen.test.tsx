@@ -65,7 +65,8 @@ describe("PostDetailScreen（SC-05）", () => {
     const heading = screen.getByRole("heading", { level: 1 });
     expect(heading).toHaveTextContent("東京駅 グランスタ");
     expect(heading).toHaveTextContent("タビコエだけの場所");
-    expect(heading.querySelector("a")).toHaveAttribute("href", "/spots/s1");
+    // Bug #471: スポット別一覧から「← 投稿」でこの投稿に戻れるよう back を付ける
+    expect(heading.querySelector("a")).toHaveAttribute("href", "/spots/s1?back=%2Fposts%2Fp1");
     // v3.1: 「地図で見る」ボタンは無く、上 1/3 の地図（StaticSpotMap）が SC-02 へのリンク
     expect(document.querySelector("[data-static-spot-map]")).toBeInTheDocument();
     const mapHref = new URL(screen.getByRole("link", { name: "東京駅 グランスタを地図で見る" }).getAttribute("href") ?? "", "https://example.com");
@@ -75,12 +76,15 @@ describe("PostDetailScreen（SC-05）", () => {
     expect(screen.getByRole("link", { name: /自分も投稿する/ })).toHaveAttribute("href", "/posts/new?spot=s1");
   });
 
-  it("Bug #469: back があれば戻るはその一覧へ、無ければスポット別一覧へ", () => {
-    const { unmount } = render(<PostDetailScreen post={post} initialComments={noComments} backHref="/search?spot=s1&back=%2Fsearch%3Fpref%3D%E6%9D%B1%E4%BA%AC%E9%83%BD" />);
-    expect(screen.getByRole("link", { name: "戻る" })).toHaveAttribute("href", "/search?spot=s1&back=%2Fsearch%3Fpref%3D%E6%9D%B1%E4%BA%AC%E9%83%BD");
+  it("Bug #469・#471: back があれば戻るはその画面名でそこへ。無ければスポット名でスポット別一覧へ。地図・見出しのスポット名にはこの画面を back で渡す", () => {
+    const { unmount } = render(<PostDetailScreen post={post} initialComments={noComments} back={{ href: "/mypage", label: "マイページ" }} />);
+    expect(screen.getByRole("link", { name: "マイページ" })).toHaveAttribute("href", "/mypage");
+    const mapHref = new URL(screen.getByRole("link", { name: "東京駅 グランスタを地図で見る" }).getAttribute("href") ?? "", "https://example.com");
+    expect(mapHref.searchParams.get("back")).toBe("/posts/p1?back=%2Fmypage");
+    expect(screen.getByRole("link", { name: /^東京駅 グランスタ$/ })).toHaveAttribute("href", "/spots/s1?back=%2Fposts%2Fp1%3Fback%3D%252Fmypage");
     unmount();
     render(<PostDetailScreen post={post} initialComments={noComments} />);
-    expect(screen.getByRole("link", { name: "戻る" })).toHaveAttribute("href", "/spots/s1");
+    expect(screen.getByRole("link", { name: "投稿一覧" })).toHaveAttribute("href", "/spots/s1");
   });
 
   it("旅行タイトルは画面のどこにも表示されない", () => {

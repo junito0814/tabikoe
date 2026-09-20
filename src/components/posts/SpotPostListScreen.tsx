@@ -6,7 +6,7 @@ import { SaveButton } from "@/components/save/SaveButton";
 import { composeHref } from "@/lib/posts/compose-initial-state";
 import type { PostCardPage } from "@/lib/posts/post-cards";
 import type { SpotMediaPage } from "@/lib/posts/search-photos";
-import { buildMapHrefWithBack } from "@/lib/search/list-state";
+import { appendBackHref, buildMapHrefWithBack } from "@/lib/search/list-state";
 import { formatStatusLabel, type LatestSpotStatus } from "@/lib/spots/format-status-label";
 import type { AddModeInfo } from "./AddModeBanner";
 import { PostSearchScreen, type FetchSearchPage } from "./PostSearchScreen";
@@ -61,7 +61,8 @@ export function SpotPostListScreen({
     destination: { kind: "spot", spotId: spot.id },
     addMode: addMode ? { itinerary: addMode.itineraryId, day: addMode.day === null ? null : String(addMode.day) } : null,
   };
-  const listHref = buildSearchPageHref(initialState, context);
+  // Bug #471: 上の地図（SC-02）から戻るときも、この一覧の戻り先（検索結果など）を保ったまま戻れるように back を含める
+  const listHref = appendBackHref(buildSearchPageHref(initialState, context), back?.href);
   const statusLabel = formatStatusLabel(spot.latestStatus);
 
   const header = (

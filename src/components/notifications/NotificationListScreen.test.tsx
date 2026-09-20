@@ -51,7 +51,8 @@ describe("NotificationListScreen（SC-14）", () => {
 
   it("遷移先がある通知はリンク、無い通知はタップでフォールバック文言を表示する", () => {
     render(<NotificationListScreen initialPage={{ items, nextOffset: null }} api={api()} />);
-    expect(document.querySelector("a[data-notification='n-unread']")).toHaveAttribute("href", "/posts/p1");
+    // Bug #471: 「← 通知」で戻れるよう back を付ける
+    expect(document.querySelector("a[data-notification='n-unread']")).toHaveAttribute("href", "/posts/p1?back=%2Fnotifications");
     fireEvent.click(document.querySelector("button[data-notification='n-gone']")!);
     expect(screen.getByRole("status")).toHaveTextContent("対象は削除されました");
   });
@@ -88,7 +89,7 @@ describe("NotificationListScreen（v3.2: アプリ内招待の通知）", () => 
     await waitFor(() => expect(a.respondInvitation).toHaveBeenCalledWith("inv-1", "itinerary", "accept"));
     await waitFor(() => expect(screen.queryByRole("button", { name: "参加する" })).toBeNull());
     expect(screen.getByText(/参加しました/)).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: /招待しました/ })).toHaveAttribute("href", "/itineraries/it-1");
+    expect(screen.getByRole("link", { name: /招待しました/ })).toHaveAttribute("href", "/itineraries/it-1?back=%2Fnotifications");
   });
 
   it("辞退すると「辞退しました」", async () => {

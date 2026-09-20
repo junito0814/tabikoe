@@ -100,7 +100,7 @@ export function MyPostsList({
           {posts.map((post) => (
             <li key={post.id}>
               <Link
-                href={`/posts/${post.id}`}
+                href={`/posts/${post.id}?back=%2Fmypage`}
                 className="flex gap-3 rounded-[12px] border border-line bg-surface p-2.5"
                 data-my-post={post.id}
               >

@@ -28,7 +28,7 @@ export function AlbumPhotoGalleryScreen({ tripId, title, initialPage }: { tripId
           </Link>
           <h1 className="text-[18px] font-bold text-ink">写真・動画</h1>
         </header>
-        <PhotoGrid params={params} initialPage={initialPage} fetchPage={fetchPage} />
+        <PhotoGrid params={params} initialPage={initialPage} fetchPage={fetchPage} backHref={`/albums/${tripId}/photos`} />
       </div>
     </div>
   );

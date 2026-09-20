@@ -7,6 +7,7 @@ import { ERROR_MESSAGES } from "@/components/notices/error-messages";
 import { AlbumScreen, type AlbumInvitation } from "@/components/albums/AlbumScreen";
 import { getAlbumDetail, type AlbumDetail } from "@/lib/albums/get-album";
 import { evaluateInvitation } from "@/lib/albums/invitations";
+import { resolveListBack } from "@/lib/search/list-state";
 
 /**
  * SC-09 アルバム画面
@@ -14,8 +15,9 @@ import { evaluateInvitation } from "@/lib/albums/invitations";
  *
  * メンバー（オーナー・編集者・閲覧者）のみ。メンバーでなければ404（存在自体を伏せる）。
  */
-export default async function AlbumPage({ params }: { params: Promise<{ id: string }> }) {
+export default async function AlbumPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ back?: string }> }) {
   const { id } = await params;
+  const { back } = await searchParams;
   const supabase = await createClient();
   const user = await requireUserOrRedirect(supabase, `/albums/${id}`);
 
@@ -56,5 +58,5 @@ export default async function AlbumPage({ params }: { params: Promise<{ id: stri
     notFound();
   }
 
-  return <AlbumScreen album={album} initialInvitations={invitations} viewerId={user.id} />;
+  return <AlbumScreen album={album} initialInvitations={invitations} viewerId={user.id} back={resolveListBack(back)} />;
 }

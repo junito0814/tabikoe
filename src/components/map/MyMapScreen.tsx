@@ -95,11 +95,11 @@ export function MyMapScreen({
   const handlePinClick = useCallback(
     (pinId: string) => {
       const pin = pinById.get(pinId);
-      if (pin) router.push(myMapPinHref(pin));
+      if (pin) router.push(myMapPinHref(pin, mode === "both" ? "/mymap" : `/mymap?mode=${mode}`));
     },
     // pins が変わるたびに Map を作り直すため、pins を依存にする
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [router, pins]
+    [router, pins, mode]
   );
 
   const mapPins = useMemo<GoogleMapPin[]>(

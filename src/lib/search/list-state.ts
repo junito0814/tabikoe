@@ -97,7 +97,7 @@ export function appendBackHref(href: string, back: string | null | undefined): s
   if (!back) return href;
   const url = new URL(href, "https://tabikoe.local");
   url.searchParams.set("back", back);
-  return `${url.pathname}${url.search}`;
+  return `${url.pathname}${url.search}${url.hash}`;
 }
 
 /** `back` クエリの安全な読み取り。同一サイトの相対パス（/search…）だけ許す（オープンリダイレクト対策） */

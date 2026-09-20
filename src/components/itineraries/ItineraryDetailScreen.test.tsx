@@ -100,6 +100,17 @@ describe("ItineraryDetailScreen（SC-23）", () => {
     expect(screen.getByRole("tab", { name: /ALL/ })).toHaveAttribute("aria-selected", "true");
   });
 
+  it("Bug #471: 戻るは back があればその画面名、無ければしおり一覧。スポット行の「投稿一覧」と「アルバムを見る」にはこのしおりを back で渡す", () => {
+    const data = detail({ spots: [spot("a", { arrivalTime: "10:00" })], albumPostCount: 3 });
+    const { unmount } = render(<ItineraryDetailScreen initial={data} viewerId="me" api={makeApi(data)} back={{ href: "/albums/trip-1", label: "アルバム" }} />);
+    expect(screen.getByRole("link", { name: "アルバム" })).toHaveAttribute("href", "/albums/trip-1");
+    expect(screen.getByRole("link", { name: "投稿一覧" })).toHaveAttribute("href", "/spots/a?back=%2Fitineraries%2Fit-1");
+    expect(screen.getByRole("link", { name: /アルバム「.*」を見る/ })).toHaveAttribute("href", "/albums/trip-1?back=%2Fitineraries%2Fit-1");
+    unmount();
+    render(<ItineraryDetailScreen initial={data} viewerId="me" api={makeApi(data)} />);
+    expect(screen.getByRole("link", { name: "しおり一覧" })).toHaveAttribute("href", "/itineraries");
+  });
+
   it("v3.1: 期間は年つきでタップで変更、タイトルは ✎ で名前変更、値段は出ない", () => {
     render(<ItineraryDetailScreen initial={detail()} viewerId="me" api={makeApi(detail())} />);
     expect(screen.getByRole("button", { name: "期間 2026/9/20（日） 〜 2026/9/22（火）（変更）" })).toBeInTheDocument();

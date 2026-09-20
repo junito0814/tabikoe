@@ -12,7 +12,7 @@ import { SpotStatusButtons } from "@/components/spots/SpotStatusButtons";
 import type { CommentPage } from "@/lib/comments/list-comments";
 import type { PostDetailData } from "@/lib/posts/post-detail";
 import { composeHref } from "@/lib/posts/compose-href";
-import { buildMapHrefWithBack } from "@/lib/search/list-state";
+import { appendBackHref, buildMapHrefWithBack } from "@/lib/search/list-state";
 import { MapSheetLayout } from "@/components/layout/MapSheetLayout";
 import { StaticSpotMap } from "@/components/map/StaticSpotMap";
 import { formatCost } from "./PostCard";
@@ -37,15 +37,19 @@ export function PostDetailScreen({
   post,
   initialComments,
   notice,
-  backHref = null,
+  back = null,
 }: {
   post: PostDetailData;
   initialComments: CommentPage;
   /** 投稿・更新の完了メッセージ（Server Component から渡す。v3.0） */
   notice?: React.ReactNode;
-  /** Bug #469: 一覧から `?back=` で渡された戻り先（スポット別一覧 URL）。無ければそのスポットの一覧 */
-  backHref?: string | null;
+  /** Bug #469・#471: 一覧などから `?back=` で渡された戻り先（URL と画面名）。無ければそのスポットの一覧（「投稿一覧」） */
+  back?: { href: string; label: string } | null;
 }) {
+  // Bug #471: この画面の URL（back を含む）。ここから開く地図・スポット別一覧の戻り先にする
+  const selfHref = appendBackHref(`/posts/${post.id}`, back?.href);
+  const backHref = back?.href ?? `/spots/${post.spot.id}`;
+  const backLabel = back?.label ?? "投稿一覧";
   const returnTo = `/posts/${post.id}`;
   const cost = formatCost(post.cost);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -60,10 +64,8 @@ export function PostDetailScreen({
     return () => document.removeEventListener("pointerdown", onPointerDown);
   }, [isMenuOpen]);
 
-  const mapHref = buildMapHrefWithBack(
-    { spot: post.spot.id, lat: post.spot.lat, lng: post.spot.lng },
-    null,
-  );
+  // 上の地図（SC-02）からは「← スポット名」でこの投稿に戻る（要件 8 章 46）
+  const mapHref = buildMapHrefWithBack({ spot: post.spot.id, lat: post.spot.lat, lng: post.spot.lng }, selfHref);
 
   // v3.1（mentoring-7 Task4）: 上 1/3 に見るだけの地図（タップで SC-02）、下 2/3 に内容。「地図で見る」ボタンは置かない
   const map =
@@ -92,7 +94,7 @@ export function PostDetailScreen({
           <header className="flex flex-col gap-2">
             <div className="flex items-center gap-2">
               <Link
-                href={backHref ?? `/spots/${post.spot.id}`}
+                href={backHref}
                 className="inline-flex h-8 shrink-0 items-center gap-1 text-[12px] font-medium text-muted"
               >
                 <svg
@@ -110,7 +112,7 @@ export function PostDetailScreen({
                     strokeLinejoin="round"
                   />
                 </svg>
-                戻る
+                {backLabel}
               </Link>
               <span className="flex-1" />
               {post.isOwner ? (
@@ -154,7 +156,7 @@ export function PostDetailScreen({
 
             <h1 className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[18px] font-bold leading-tight text-ink">
               <Link
-                href={`/spots/${post.spot.id}`}
+                href={appendBackHref(`/spots/${post.spot.id}`, selfHref)}
                 className="min-w-0 break-words"
               >
                 {post.spot.name}

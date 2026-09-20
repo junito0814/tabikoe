@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import { appendBackHref } from "@/lib/search/list-state";
 import { fetchWithAuthRedirect, UnauthorizedError } from "@/lib/api/fetch-with-auth-redirect";
 import type { NearbyPost } from "@/lib/posts/nearby-posts";
 import { DEFAULT_TRAVEL_MODE, formatTravelMinutes, TRAVEL_MODE_LABELS, TRAVEL_MODES, type TravelMode } from "@/lib/geo/travel-time";
@@ -29,8 +30,11 @@ export function NearbyVoices({
   onPostsLoaded,
   initialMode = DEFAULT_TRAVEL_MODE,
   onModeChange,
+  backHref = null,
 }: {
   center: { lat: number; lng: number };
+  /** Bug #471: 投稿詳細から「← 地図」で探すモードに戻れるように渡す、この地図の URL */
+  backHref?: string | null;
   fetchPosts?: FetchNearbyPosts;
   /** 中央に来たカードの投稿（ピンの強調用）。無ければ null */
   onActiveChange?: (post: NearbyPost | null) => void;
@@ -122,7 +126,7 @@ export function NearbyVoices({
           {posts.map((post, index) => (
             <Link
               key={post.id}
-              href={`/posts/${post.id}`}
+              href={appendBackHref(`/posts/${post.id}`, backHref)}
               data-nearby-card={post.id}
               aria-current={index === activeIndex ? "true" : undefined}
               className={`flex w-[176px] shrink-0 snap-center flex-col gap-1 rounded-[12px] border p-2.5 ${

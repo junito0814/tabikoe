@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { appendBackHref } from "@/lib/search/list-state";
 import { useRouter } from "next/navigation";
 import { ErrorNotice } from "@/components/notices/ErrorNotice";
 import { ItineraryPickerSheet } from "@/components/save/ItineraryPickerSheet";
@@ -29,8 +30,11 @@ export function WishlistScreen({
   initialView = "list",
   submitRemove = defaultSubmitRemove,
   saveSheetApi,
+  back = null,
 }: {
   initialItems: WishlistItem[];
+  /** Bug #471: 直前の画面（`?back=` から page.tsx が解決）。無ければ既定の戻り先 */
+  back?: { href: string; label: string } | null;
   initialView?: WishlistView;
   /** 差し替え口（単体テスト用） */
   submitRemove?: (spotId: string) => Promise<Response>;
@@ -45,9 +49,12 @@ export function WishlistScreen({
   const [pickerSpot, setPickerSpot] = useState<WishlistItem | null>(null);
   const [toast, setToast] = useState<ToastMessage | null>(null);
 
+  // Bug #471: ここから開く画面（スポット別一覧・地図の吹き出し）に「行きたいへ戻る」を渡す
+  const selfHref = appendBackHref(view === "map" ? "/wishlist?view=map" : "/wishlist", back?.href);
+
   const changeView = (next: WishlistView) => {
     setView(next);
-    router.replace(next === "map" ? "/wishlist?view=map" : "/wishlist", { scroll: false });
+    router.replace(appendBackHref(next === "map" ? "/wishlist?view=map" : "/wishlist", back?.href), { scroll: false });
   };
 
   const handleRemove = async (spotId: string) => {
@@ -72,11 +79,11 @@ export function WishlistScreen({
   const header = (
     <header className="flex flex-col gap-2.5">
       <div className="flex items-center gap-2">
-        <Link href="/mypage" className="inline-flex h-8 shrink-0 items-center gap-1 text-[12px] font-medium text-muted">
+        <Link href={back?.href ?? "/mypage"} className="inline-flex h-8 shrink-0 items-center gap-1 text-[12px] font-medium text-muted">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden>
             <path d="M15 5l-7 7 7 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
-          マイページ
+          {back?.label ?? "マイページ"}
         </Link>
         <h1 className="min-w-0 flex-1 truncate text-center text-[16px] font-bold text-ink">行きたい</h1>
         <span className="shrink-0 text-[12px] text-muted">{items.length}件</span>
@@ -102,7 +109,7 @@ export function WishlistScreen({
     return (
       <div className="flex min-h-screen flex-col bg-app">
         <div className="px-4 pt-4 pb-2">{header}</div>
-        <MapScreen open={{ ...resolveMapOpen({}), savedOnly: true, back: { href: "/mypage", label: "マイページ" } }} />
+        <MapScreen open={{ ...resolveMapOpen({}), savedOnly: true, back: back ?? { href: "/mypage", label: "マイページ" } }} selfHref={selfHref} />
       </div>
     );
   }
@@ -117,7 +124,7 @@ export function WishlistScreen({
           <ul className="mt-3 flex flex-col gap-2.5">
             {items.map((item) => (
               <li key={item.spotId} className="flex items-center gap-3 rounded-[12px] border border-line bg-surface p-2.5" data-wishlist-item={item.spotId}>
-                <Link href={`/spots/${item.spotId}`} className="flex min-w-0 flex-1 items-center gap-3">
+                <Link href={appendBackHref(`/spots/${item.spotId}`, selfHref)} className="flex min-w-0 flex-1 items-center gap-3">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src={item.thumbnailUrl}

@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import { appendBackHref } from "@/lib/search/list-state";
 import { ErrorNotice } from "@/components/notices/ErrorNotice";
 import { ERROR_MESSAGES } from "@/components/notices/error-messages";
 import { fetchWithAuthRedirect, UnauthorizedError } from "@/lib/api/fetch-with-auth-redirect";
@@ -208,7 +209,7 @@ export function NotificationListScreen({
                     </div>
                   ) : item.href ? (
                     <Link
-                      href={item.href}
+                      href={appendBackHref(item.href, "/notifications")}
                       data-notification={item.id}
                       className={`flex items-start gap-3 rounded-[12px] border border-line bg-surface p-3 ${
                         item.isRead ? "" : "shadow-card"
