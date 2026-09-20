@@ -96,7 +96,7 @@ export function WishlistScreen({
             role="radio"
             aria-checked={view === option}
             onClick={() => view !== option && changeView(option)}
-            className={`h-7 rounded-full px-3 text-[12px] font-semibold ${view === option ? "bg-ink text-white" : "text-muted"}`}
+            className={`h-7 rounded-full px-3 text-[12px] font-semibold ${view === option ? "bg-ink text-on-ink" : "text-muted"}`}
           >
             {option === "list" ? "一覧" : "地図"}
           </button>

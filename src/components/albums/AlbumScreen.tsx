@@ -341,7 +341,7 @@ export function AlbumScreen({
                 type="button"
                 onClick={() => void handleIssue()}
                 disabled={busy !== null}
-                className="h-9 rounded-[8px] bg-ink px-3 text-[12px] font-semibold text-white disabled:opacity-45"
+                className="h-9 rounded-[8px] bg-ink px-3 text-[12px] font-semibold text-on-ink disabled:opacity-45"
               >
                 {busy === "issue" ? "発行中…" : "リンクを発行（7日間有効）"}
               </button>

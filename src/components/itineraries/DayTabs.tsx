@@ -46,7 +46,7 @@ export function DayTabs({
             data-day={String(tab)}
             onClick={() => onChange(tab)}
             className={`flex h-9 shrink-0 items-center gap-1.5 rounded-full px-3 text-[12px] font-semibold ${
-              selected ? "bg-ink text-white" : "border border-line bg-surface text-muted"
+              selected ? "bg-ink text-on-ink" : "border border-line bg-surface text-muted"
             }`}
           >
             {dayTabLabel(tab)}

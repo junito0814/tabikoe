@@ -66,7 +66,7 @@ export function TimePicker10({
             onChange(joinTime(hour, minute));
             onClose?.();
           }}
-          className="h-9 rounded-[8px] bg-ink px-4 text-[12px] font-semibold text-white"
+          className="h-9 rounded-[8px] bg-ink px-4 text-[12px] font-semibold text-on-ink"
         >
           {joinTime(hour, minute)} にする
         </button>

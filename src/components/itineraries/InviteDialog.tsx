@@ -145,7 +145,7 @@ export function InviteDialog({ open, itineraryId, onClose, api }: { open: boolea
         {latestUrl && (
           <div className="flex flex-col gap-2 rounded-[10px] border border-line bg-app p-3">
             <input readOnly value={latestUrl} aria-label="招待リンク" onFocus={(event) => event.target.select()} className="h-9 rounded-[8px] border border-line bg-surface px-2 text-[12px] text-ink" />
-            <button type="button" onClick={() => void copy()} className="h-9 rounded-[8px] bg-ink text-[12px] font-semibold text-white">
+            <button type="button" onClick={() => void copy()} className="h-9 rounded-[8px] bg-ink text-[12px] font-semibold text-on-ink">
               {copied ? "コピーしました" : "リンクをコピー"}
             </button>
           </div>

@@ -37,7 +37,7 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 export default function ComponentPreviewPage() {
   return (
     <div className="flex min-h-screen flex-col items-center gap-10 bg-app px-6 py-12">
-      <p className="w-full max-w-[420px] rounded-lg bg-ink px-3 py-2 text-[11px] text-white">
+      <p className="w-full max-w-[420px] rounded-lg bg-ink px-3 py-2 text-[11px] text-on-ink">
         開発用プレビューページ（本番画面には組み込まれていません）
       </p>
 

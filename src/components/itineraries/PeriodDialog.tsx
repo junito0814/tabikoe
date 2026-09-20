@@ -82,7 +82,7 @@ export function PeriodDialog({
           >
             期間を解除
           </button>
-          <button type="submit" disabled={isSubmitting} className="h-10 rounded-[10px] bg-ink px-4 text-[13px] font-semibold text-white disabled:opacity-45">
+          <button type="submit" disabled={isSubmitting} className="h-10 rounded-[10px] bg-ink px-4 text-[13px] font-semibold text-on-ink disabled:opacity-45">
             保存
           </button>
         </div>

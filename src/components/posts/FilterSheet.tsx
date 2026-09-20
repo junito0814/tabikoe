@@ -211,7 +211,7 @@ function FilterSheetBody({
           >
             条件をクリア
           </button>
-          <button type="submit" className="h-10 rounded-[10px] bg-ink px-4 text-[13px] font-semibold text-white">
+          <button type="submit" className="h-10 rounded-[10px] bg-ink px-4 text-[13px] font-semibold text-on-ink">
             この条件で表示
           </button>
         </div>

@@ -112,7 +112,7 @@ export function ItinerarySpotRow({
       <div className="flex min-w-0 flex-1 flex-col gap-1.5">
         <div className="flex items-start justify-between gap-2">
           <p className={`min-w-0 text-[14px] font-bold ${checked ? "text-muted line-through" : "text-ink"}`} data-spot-name>
-            <span className="mr-1.5 inline-flex h-5 w-5 items-center justify-center rounded-full bg-ink text-[11px] text-white no-underline">{index}</span>
+            <span className="mr-1.5 inline-flex h-5 w-5 items-center justify-center rounded-full bg-ink text-[11px] text-on-ink no-underline">{index}</span>
             {spot.name}
             {spot.isManualSpot && <span className="ml-1.5 rounded-full bg-tint px-1.5 py-0.5 text-[10px] font-semibold text-accent no-underline">タビコエだけの場所</span>}
           </p>

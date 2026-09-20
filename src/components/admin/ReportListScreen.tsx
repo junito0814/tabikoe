@@ -124,7 +124,7 @@ export function ReportListScreen({
             通報日（まで）
             <input type="date" value={draft.to} onChange={(e) => setDraft({ ...draft, to: e.target.value })} className={`${selectClass} mt-0.5 block`} />
           </label>
-          <button type="submit" disabled={isLoading} className="h-9 rounded-[8px] bg-ink px-4 text-[12px] font-semibold text-white disabled:opacity-45">
+          <button type="submit" disabled={isLoading} className="h-9 rounded-[8px] bg-ink px-4 text-[12px] font-semibold text-on-ink disabled:opacity-45">
             絞り込む
           </button>
           <button type="button" onClick={handleReset} className="h-9 text-[12px] text-muted underline underline-offset-2">
