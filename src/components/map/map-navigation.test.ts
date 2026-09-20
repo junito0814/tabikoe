@@ -12,9 +12,9 @@ describe("resolveMapOpen", () => {
     expect(result.back).toEqual({ href: "/search?pref=大阪府", label: "大阪府" });
   });
 
-  it("v3.1: back がスポット別ならサーバーが引いたスポット名、無ければ「一覧」", () => {
+  it("v3.1: back がスポット別ならサーバーが引いたスポット名、無ければスポット別は「一覧」・投稿詳細は「投稿」（Bug #471）", () => {
     expect(resolveMapOpen({ spot: "s1", back: "/spots/s1", backSpotName: "たこ焼き〇〇" }).back.label).toBe("たこ焼き〇〇");
-    expect(resolveMapOpen({ spot: "s1", back: "/posts/p1" }).back.label).toBe("一覧");
+    expect(resolveMapOpen({ spot: "s1", back: "/posts/p1" }).back.label).toBe("投稿");
   });
 
   it("back が外部 URL ならホームへ", () => {

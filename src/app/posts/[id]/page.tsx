@@ -5,7 +5,7 @@ import { requireUserOrRedirect } from "@/lib/auth/require-user-or-redirect";
 import { ErrorNotice } from "@/components/notices/ErrorNotice";
 import { ERROR_MESSAGES } from "@/components/notices/error-messages";
 import { PostDetailScreen } from "@/components/posts/PostDetailScreen";
-import { parseBackHref } from "@/lib/search/list-state";
+import { resolveListBack } from "@/lib/search/list-state";
 import { BadgeToast } from "@/components/badges/BadgeToast";
 import { parseBadgeToastParam } from "@/components/badges/badge-toast-params";
 import { FlashNotice, resolveFlashKey } from "@/components/notices/FlashNotice";
@@ -64,7 +64,7 @@ export default async function PostDetailPage({
   return (
     <>
       {newBadgeTypes.length > 0 && <BadgeToast badgeTypes={newBadgeTypes} />}
-      <PostDetailScreen post={post} initialComments={comments} notice={flashKey ? <FlashNotice flashKey={flashKey} /> : undefined} backHref={parseBackHref(query.back)} />
+      <PostDetailScreen post={post} initialComments={comments} notice={flashKey ? <FlashNotice flashKey={flashKey} /> : undefined} back={resolveListBack(query.back)} />
     </>
   );
 }

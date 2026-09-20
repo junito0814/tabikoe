@@ -46,7 +46,10 @@ export function ItineraryDetailScreen({
   initialDay = ALL_TAB,
   highlightSpotId = null,
   api = defaultItineraryApi,
+  back = null,
 }: {
+  /** Bug #471: 直前の画面（`?back=` から page.tsx が解決）。無ければ既定の戻り先 */
+  back?: { href: string; label: string } | null;
   initial: ItineraryDetail;
   viewerId: string;
   /** 最初に開くタブ（既定は ALL。地図の番号ピンからはその Day） */
@@ -185,11 +188,11 @@ export function ItineraryDetailScreen({
       <div className="w-full max-w-[520px]">
         <header className="flex flex-col gap-2.5">
           <div className="flex items-center gap-2">
-            <Link href="/itineraries" className="inline-flex h-8 shrink-0 items-center gap-1 text-[12px] font-medium text-muted">
+            <Link href={back?.href ?? "/itineraries"} className="inline-flex h-8 shrink-0 items-center gap-1 text-[12px] font-medium text-muted">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden>
                 <path d="M15 5l-7 7 7 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
               </svg>
-              しおり
+              {back?.label ?? "しおり一覧"}
             </Link>
             {/* v3.1: タイトルをタップ（✎）で名前を変更。「名前を変更」ボタンは置かない */}
             {isOwner ? (
@@ -266,7 +269,7 @@ export function ItineraryDetailScreen({
             {itinerary.members.length > 1 && ` ・ メンバー ${itinerary.members.length} 人`}
           </p>
           {itinerary.albumPostCount > 0 && (
-            <Link href={`/albums/${itinerary.tripId}`} className="inline-flex h-8 w-fit items-center gap-1 rounded-full border border-line bg-surface px-3 text-[12px] font-semibold text-ink">
+            <Link href={`/albums/${itinerary.tripId}?back=${encodeURIComponent(`/itineraries/${itinerary.id}`)}`} className="inline-flex h-8 w-fit items-center gap-1 rounded-full border border-line bg-surface px-3 text-[12px] font-semibold text-ink">
               📷 アルバム「{itinerary.title}」を見る（{itinerary.albumPostCount}）
             </Link>
           )}

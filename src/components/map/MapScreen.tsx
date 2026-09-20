@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore, type ReactNode } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ErrorNotice } from "@/components/notices/ErrorNotice";
@@ -53,8 +53,11 @@ export function MapScreen({
   itineraryApi,
   geolocation,
   notice,
+  selfHref: selfHrefProp,
 }: {
   open: MapOpenOptions;
+  /** Bug #471: この地図の URL（吹き出し・近くのスポットから開く画面の戻り先）。無ければブラウザの URL を使う */
+  selfHref?: string;
   /** 差し替え口（単体テスト用） */
   fetchPins?: FetchMapPins;
   /** 差し替え口（単体テスト用）。開き方に中心が無いときだけ使う */
@@ -70,6 +73,15 @@ export function MapScreen({
 }) {
   const router = useRouter();
   const mapRef = useRef<GoogleMapHandle>(null);
+
+  // Bug #471: 吹き出し・近くのスポットのリンクに付ける「この地図の URL」。サーバーでは分からないので、
+  // 描画後にブラウザの URL から取る（useSyncExternalStore はサーバーと最初の描画で第 3 引数の値を使い、その後ブラウザの値に置き換わる）
+  const browserHref = useSyncExternalStore(
+    () => () => {},
+    () => `${window.location.pathname}${window.location.search}`,
+    () => null
+  );
+  const selfHref = selfHrefProp ?? browserHref;
 
   // ── v3.1（mentoring-7 Task7）: 地図の状態の復元 ──
   // 同じ入口に戻ってきた（または素の /map で開いた）ときは、sessionStorage の直前の状態（中心・ズーム・モード・徒歩圏）で開く。
@@ -337,7 +349,7 @@ export function MapScreen({
         {callout && (
           <div className="pointer-events-none absolute left-1/2 top-1/2 z-20 -translate-x-1/2 -translate-y-[calc(100%+22px)]">
             <div className="pointer-events-auto">
-              <PinCallout target={callout} onClose={closeCallout} />
+              <PinCallout target={callout} onClose={closeCallout} backHref={selfHref} />
             </div>
           </div>
         )}
@@ -373,6 +385,7 @@ export function MapScreen({
         <div className="h-1/3 border-t border-line">
           <NearbyVoices
             center={open.center}
+            backHref={selfHref}
             fetchPosts={fetchNearby}
             onActiveChange={handleActiveNearby}
             onPostsLoaded={setNearbyPosts}

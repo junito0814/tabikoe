@@ -58,7 +58,7 @@ describe("ItineraryListScreen（SC-22）", () => {
     expect(past).toHaveTextContent("2026/8/10（月） 〜 2026/8/10（月）");
     // 先頭の行きたいの入口
     const entry = screen.getByRole("link", { name: /行きたいスポット/ });
-    expect(entry).toHaveAttribute("href", "/wishlist");
+    expect(entry).toHaveAttribute("href", "/wishlist?back=%2Fitineraries");
     expect(entry).toHaveTextContent("6");
     expect(screen.getByRole("link", { name: /アルバムを見る/ })).toHaveAttribute("href", "/albums/trip-past");
     expect(screen.getByText(/3 日間/)).toBeInTheDocument();

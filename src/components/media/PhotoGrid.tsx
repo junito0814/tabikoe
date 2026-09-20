@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { appendBackHref } from "@/lib/search/list-state";
 import { ErrorNotice } from "@/components/notices/ErrorNotice";
 import { ERROR_MESSAGES } from "@/components/notices/error-messages";
 import { fetchWithAuthRedirect, UnauthorizedError } from "@/lib/api/fetch-with-auth-redirect";
@@ -28,12 +29,15 @@ export function PhotoGrid({
   params,
   initialPage,
   fetchPage = defaultFetchMediaPage,
+  backHref = null,
 }: {
   /** 投稿一覧と同じ検索条件（offset は含めない） */
   params: URLSearchParams;
   initialPage: SpotMediaPage;
   /** 差し替え口（単体テスト用） */
   fetchPage?: FetchMediaPage;
+  /** Bug #471: モーダルの「この投稿を見る →」に渡す戻り先（この一覧の URL）。無ければ付けない */
+  backHref?: string | null;
 }) {
   const [items, setItems] = useState<SpotMediaItem[]>(initialPage.items);
   const [nextOffset, setNextOffset] = useState<number | null>(initialPage.nextOffset);
@@ -113,7 +117,7 @@ export function PhotoGrid({
           onClose={() => setOpenIndex(null)}
           postHref={(media) => {
             const postId = items.find((item) => item.id === media.id)?.postId;
-            return postId ? `/posts/${postId}` : undefined;
+            return postId ? appendBackHref(`/posts/${postId}`, backHref) : undefined;
           }}
           renderInfo={(media) => {
             const info = items.find((item) => item.id === media.id)?.info;

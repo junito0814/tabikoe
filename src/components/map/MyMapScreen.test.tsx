@@ -96,9 +96,10 @@ describe("MyMapScreen（SC-12）", () => {
       await vi.advanceTimersByTimeAsync(400);
     });
     fireEvent.click(await screen.findByRole("button", { name: "s-posted:posted" }));
-    expect(push).toHaveBeenCalledWith("/posts/post-1");
+    // Bug #471: 「← あしあと」で戻れるよう back を付ける
+    expect(push).toHaveBeenCalledWith("/posts/post-1?back=%2Fmymap");
     fireEvent.click(screen.getByRole("button", { name: "s-saved:saved" }));
-    expect(push).toHaveBeenCalledWith("/spots/s-saved");
+    expect(push).toHaveBeenCalledWith("/spots/s-saved?back=%2Fmymap");
     fireEvent.click(screen.getByRole("button", { name: "draft:d1:draft" }));
     expect(push).toHaveBeenCalledWith("/posts/new?draft=d1");
   });
