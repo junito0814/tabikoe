@@ -39,9 +39,9 @@ export function Sheet({
   if (!open || typeof document === "undefined") return null;
   // Bug #473: メニューバー（z-40）より上に出す（同じ値だと下から出るシートの下 60px が隠れる）。さらに、上 1/3 地図＋下 2/3
   // シート（MapSheetLayout）の中から開くと親の `relative z-10` が重なり順の枠になり fixed でも外に出られないので、
-  // createPortal で body 直下に描く。
+  // createPortal で body 直下に描く。メニューバーは隠さず残す（バーがあるときはスマホで下 60px、パソコンで左 200px を空ける）。
   return createPortal(
-    <div className="fixed inset-0 z-50 flex items-end justify-center md:items-center" data-sheet>
+    <div className="fixed inset-0 z-50 flex items-end justify-center md:items-center [body:has([data-menu-bar])_&]:bottom-[60px] md:[body:has([data-menu-bar])_&]:bottom-0 md:[body:has([data-menu-bar])_&]:left-[200px]" data-sheet>
       <button type="button" aria-label="閉じる" onClick={onClose} className="absolute inset-0 bg-black/40" />
       <div
         role="dialog"
