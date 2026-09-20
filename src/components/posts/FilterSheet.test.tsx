@@ -17,9 +17,16 @@ describe("FilterSheet（絞り込みシート）", () => {
     expect(onApply).toHaveBeenCalledWith(expect.objectContaining({ categories: ["グルメ"] }));
   });
 
-  it("Bug #473: シートはメニューバー（z-40）より上の z-50 に出る", () => {
-    render(<FilterSheet open value={EMPTY_SEARCH_STATE} hasDistanceCenter={false} onApply={vi.fn()} onClose={vi.fn()} />);
-    expect(document.querySelector("[data-filter-sheet]")).toHaveClass("z-50");
+  it("Bug #473: シートは body 直下（上 1/3 地図＋シートの枠の外）に z-50 で出て、メニューバー（z-40）に隠れない", () => {
+    const { container } = render(
+      <div className="relative z-10">
+        <FilterSheet open value={EMPTY_SEARCH_STATE} hasDistanceCenter={false} onApply={vi.fn()} onClose={vi.fn()} />
+      </div>
+    );
+    const sheet = document.querySelector("[data-filter-sheet]") as HTMLElement;
+    expect(sheet).toHaveClass("z-50");
+    expect(sheet.parentElement).toBe(document.body);
+    expect(container.querySelector("[data-filter-sheet]")).toBeNull();
   });
 
   it("閉じているときは何も描画しない", () => {

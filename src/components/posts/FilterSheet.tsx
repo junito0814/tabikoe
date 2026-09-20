@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { POST_CATEGORIES, POST_DURATIONS, type PostCategory } from "@/lib/posts/constants";
 import {
   COST_RANGE_LABELS,
@@ -75,8 +76,11 @@ function FilterSheetBody({
       selected ? "border-accent bg-accent text-white" : "border-line text-ink"
     } ${disabled ? "opacity-45" : ""}`;
 
-  return (
-    // Bug #473: メニューバー（z-40）より上に出す。同じ z-40 だと DOM で後にあるメニューバーが下端の「この条件で表示」を覆う
+  // Bug #473: スポット別一覧は上 1/3 地図＋下 2/3 シート（MapSheetLayout）の中にあり、そのシートが `relative z-10` で
+  // 重なり順の入れ物（stacking context）を作る。その中で fixed にしても z-10 の枠から出られず、メニューバー（z-40）の下に
+  // なる。createPortal で body 直下に描いて枠の外に出し、z-50 でメニューバーより上にする。
+  if (typeof document === "undefined") return null;
+  return createPortal(
     <div className="fixed inset-0 z-50 flex items-end justify-center md:items-center" data-filter-sheet>
       <button type="button" aria-label="閉じる" onClick={onClose} className="absolute inset-0 bg-black/40" />
       <form
@@ -212,6 +216,7 @@ function FilterSheetBody({
           </button>
         </div>
       </form>
-    </div>
+    </div>,
+    document.body
   );
 }

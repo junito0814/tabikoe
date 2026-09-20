@@ -22,12 +22,17 @@ describe("Sheet（共通シート）", () => {
     expect(onClose).toHaveBeenCalledTimes(2);
   });
 
-  it("Bug #473: シートはメニューバー（z-40）より上の z-50 に出る", () => {
-    render(
-      <Sheet open title="保存先" onClose={vi.fn()}>
-        中身
-      </Sheet>
+  it("Bug #473: シートは body 直下（上 1/3 地図＋シートの枠の外）に z-50 で出て、メニューバー（z-40）に隠れない", () => {
+    const { container } = render(
+      <div className="relative z-10">
+        <Sheet open title="保存先" onClose={vi.fn()}>
+          中身
+        </Sheet>
+      </div>
     );
-    expect(document.querySelector("[data-sheet]")).toHaveClass("z-50");
+    const sheet = document.querySelector("[data-sheet]") as HTMLElement;
+    expect(sheet).toHaveClass("z-50");
+    expect(sheet.parentElement).toBe(document.body);
+    expect(container.querySelector("[data-sheet]")).toBeNull();
   });
 });

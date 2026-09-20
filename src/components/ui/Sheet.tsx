@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useId, type ReactNode } from "react";
+import { createPortal } from "react-dom";
 
 /**
  * 共通: 下から出るシート（パソコン幅では中央のダイアログ）
@@ -35,9 +36,11 @@ export function Sheet({
     return () => document.removeEventListener("keydown", onKeyDown);
   }, [open, onClose]);
 
-  if (!open) return null;
-  return (
-    // Bug #473: メニューバー（z-40）より上に出す（同じ値だと下から出るシートの下 60px がメニューバーに隠れる）
+  if (!open || typeof document === "undefined") return null;
+  // Bug #473: メニューバー（z-40）より上に出す（同じ値だと下から出るシートの下 60px が隠れる）。さらに、上 1/3 地図＋下 2/3
+  // シート（MapSheetLayout）の中から開くと親の `relative z-10` が重なり順の枠になり fixed でも外に出られないので、
+  // createPortal で body 直下に描く。
+  return createPortal(
     <div className="fixed inset-0 z-50 flex items-end justify-center md:items-center" data-sheet>
       <button type="button" aria-label="閉じる" onClick={onClose} className="absolute inset-0 bg-black/40" />
       <div
@@ -57,6 +60,7 @@ export function Sheet({
         <div className="flex-1 overflow-y-auto px-4 pb-4">{children}</div>
         {footer && <div className="border-t border-line px-4 py-3 pb-[max(12px,env(safe-area-inset-bottom))]">{footer}</div>}
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
