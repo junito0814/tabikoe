@@ -42,9 +42,10 @@ describe("SC-01 ログイン画面（mode=login）", () => {
     expect(screen.getByRole("button", { name: /Googleでログイン/ })).toBeEnabled();
   });
 
-  it("新規登録画面への導線がある", () => {
+  it("Task10（2026-09-22）: 新規登録画面への導線は置かない（未登録ならログイン後に自動で SC-20 へ）", () => {
     render(<AuthScreen mode="login" />);
-    expect(screen.getByRole("link", { name: "新規登録" })).toHaveAttribute("href", "/signup");
+    expect(screen.queryByRole("link", { name: "新規登録" })).toBeNull();
+    expect(screen.queryByText(/アカウントをお持ちでない方/)).toBeNull();
   });
 
   it("押下でgoogleを指定してsignInWithOAuthが呼ばれ、mode=loginがコールバックに乗る", async () => {
@@ -85,11 +86,11 @@ describe("SC-01 ログイン画面（mode=login）", () => {
 });
 
 describe("SC-20 アカウント新規作成画面（mode=signup）", () => {
-  it("同意欄を表示する", () => {
+  it("同意欄は利用規約と個人情報保護方針の 2 つのチェック（Task10）", () => {
     render(<AuthScreen mode="signup" />);
-    expect(screen.getByRole("checkbox")).toBeInTheDocument();
-    expect(screen.getByText("利用規約")).toBeInTheDocument();
-    expect(screen.getByText("個人情報保護方針")).toBeInTheDocument();
+    expect(screen.getAllByRole("checkbox")).toHaveLength(2);
+    expect(screen.getByRole("checkbox", { name: "利用規約に同意する" })).toBeInTheDocument();
+    expect(screen.getByRole("checkbox", { name: "個人情報保護方針に同意する" })).toBeInTheDocument();
   });
 
   it("未チェックでは作成ボタンが無効", () => {
@@ -97,29 +98,34 @@ describe("SC-20 アカウント新規作成画面（mode=signup）", () => {
     expect(screen.getByRole("button", { name: /Googleでアカウントを作成/ })).toBeDisabled();
   });
 
-  it("チェックすると作成ボタンが有効になる", () => {
+  it("片方だけのチェックでは無効のまま、両方チェックすると作成ボタンが有効になる（Task10）", () => {
     render(<AuthScreen mode="signup" />);
-    fireEvent.click(screen.getByRole("checkbox"));
+    fireEvent.click(screen.getByRole("checkbox", { name: "利用規約に同意する" }));
+    expect(screen.getByRole("button", { name: /Googleでアカウントを作成/ })).toBeDisabled();
+    fireEvent.click(screen.getByRole("checkbox", { name: "個人情報保護方針に同意する" }));
     expect(screen.getByRole("button", { name: /Googleでアカウントを作成/ })).toBeEnabled();
   });
 
   it("同意チェックボックスは実体のあるinputで、キーボードから操作できる（要件7.7）", () => {
     render(<AuthScreen mode="signup" />);
-    const checkbox = screen.getByRole("checkbox");
+    const checkbox = screen.getByRole("checkbox", { name: "利用規約に同意する" });
     expect(checkbox.tagName).toBe("INPUT");
     expect(checkbox).toHaveAttribute("type", "checkbox");
     // 隠しているだけでフォーカス可能（tabIndex=-1などで除外されていない）
     expect(checkbox).not.toHaveAttribute("tabindex", "-1");
   });
 
-  it("同意済みで押下すると consent=1 と mode=signup がコールバックに乗る", async () => {
+  it("両方に同意して押下すると terms=1・privacy=1（と互換の consent=1）と mode=signup がコールバックに乗る", async () => {
     render(<AuthScreen mode="signup" />);
-    fireEvent.click(screen.getByRole("checkbox"));
+    fireEvent.click(screen.getByRole("checkbox", { name: "利用規約に同意する" }));
+    fireEvent.click(screen.getByRole("checkbox", { name: "個人情報保護方針に同意する" }));
     fireEvent.click(screen.getByRole("button", { name: /Googleでアカウントを作成/ }));
 
     await waitFor(() => expect(signInWithOAuth).toHaveBeenCalledTimes(1));
     const redirectTo = new URL(signInWithOAuth.mock.calls[0][0].options.redirectTo);
     expect(redirectTo.searchParams.get("mode")).toBe("signup");
+    expect(redirectTo.searchParams.get("terms")).toBe("1");
+    expect(redirectTo.searchParams.get("privacy")).toBe("1");
     expect(redirectTo.searchParams.get("consent")).toBe("1");
   });
 

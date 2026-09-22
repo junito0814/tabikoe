@@ -18,16 +18,20 @@ import { getClientIp } from "@/lib/http/client-ip";
 import { isWithinRateLimit } from "@/lib/rate-limit/check-rate-limit";
 import { recordOperation } from "@/lib/logs/record-operation";
 import { resolvePostLoginRedirect } from "@/lib/auth/post-login-redirect";
+import { hasFullConsent } from "@/lib/auth/consent";
 
 // F-AC-01 Task8: 同一IPから1分間に10回を超える試行を拒否する
 const LOGIN_RATE_LIMIT_WINDOW_SECONDS = 60;
 const LOGIN_RATE_LIMIT_MAX_ATTEMPTS = 10;
 
+
 export async function GET(request: Request) {
     const { searchParams, origin } = new URL(request.url);
     const code = searchParams.get("code");
     const redirectTo = safeRedirectPath(searchParams.get("redirect_to"));
-    const consent = searchParams.get("consent");
+    // signup-login Task10（2026-09-22）: 同意は利用規約（terms）と個人情報保護方針（privacy）の 2 つで、両方必須。
+    // 旧 consent=1 だけでは作らない（SC-20 が両方を送る）
+    const hasConsent = hasFullConsent(searchParams);
     // どちらの画面から来たか。SC-01（login）とSC-20（signup）でIdP認証のフローは同一のため、
     // アカウントの有無と合わせてここで分岐する（要件定義書3.2.1、v2.8）
     const isSignupFlow = searchParams.get("mode") === "signup";
@@ -103,7 +107,7 @@ export async function GET(request: Request) {
             });
             return NextResponse.redirect(`${origin}/signup?error=account_not_found`);
         }
-        if (consent !== "1") {
+        if (!hasConsent) {
             await supabase.auth.signOut();
             await recordOperation(admin, {
                 actionType: "login_failure",
