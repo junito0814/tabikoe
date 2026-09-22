@@ -24,13 +24,16 @@ interface SearchResult {
 }
 
 async function searchSpotsFromApi(query: string): Promise<SearchResult> {
+  // Bug #485: 候補検索は /api/spots/candidates（/api/spots/search は v3.1 からスポットカード用）
   const response = await fetchWithAuthRedirect(
-    `/api/spots/search?query=${encodeURIComponent(query)}`
+    `/api/spots/candidates?query=${encodeURIComponent(query)}`
   );
   if (!response.ok) {
     return { candidates: [], placesUnavailable: false };
   }
-  return (await response.json()) as SearchResult;
+  const data = (await response.json()) as Partial<SearchResult>;
+  // 応答の形が想定と違っても画面が落ちないように、無ければ空として扱う
+  return { candidates: Array.isArray(data.candidates) ? data.candidates : [], placesUnavailable: data.placesUnavailable === true };
 }
 
 /**
