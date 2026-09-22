@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { fireEvent, render, screen } from "@testing-library/react";
+import { act, fireEvent, render, screen } from "@testing-library/react";
 import { PostDetailScreen } from "./PostDetailScreen";
 import type { PostDetailData } from "@/lib/posts/post-detail";
 
@@ -114,5 +114,21 @@ describe("PostDetailScreen（SC-05）", () => {
     expect(screen.queryByRole("button", { name: "いいねする" })).toBeNull();
     expect(screen.getByText("非公開")).toBeInTheDocument();
     expect(screen.getByText("非公開の投稿にはコメントできません")).toBeInTheDocument();
+  });
+
+  it("performance Task2: コメントが Promise で渡されたら、届くまで骨組み、届いたらコメント欄", async () => {
+    let resolve!: (page: typeof noComments) => void;
+    const promise = new Promise<typeof noComments>((r) => (resolve = r));
+    await act(async () => {
+      render(<PostDetailScreen post={post} initialComments={promise} />);
+    });
+    expect(screen.getByRole("status", { name: "コメントを読み込んでいます" })).toBeInTheDocument();
+    await act(async () => {
+      resolve(noComments);
+      await promise;
+      await new Promise((r) => setTimeout(r, 20));
+    });
+    expect(screen.queryByRole("status", { name: "コメントを読み込んでいます" })).toBeNull();
+    expect(screen.getByRole("heading", { name: /コメント/ })).toBeInTheDocument();
   });
 });

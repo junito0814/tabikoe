@@ -4,9 +4,10 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { requireUserOrRedirect } from "@/lib/auth/require-user-or-redirect";
 import { ErrorNotice } from "@/components/notices/ErrorNotice";
 import { ERROR_MESSAGES } from "@/components/notices/error-messages";
-import { SpotSearchScreen } from "@/components/posts/SpotSearchScreen";
-import { SpotPostListScreen } from "@/components/posts/SpotPostListScreen";
-import { loadSearchPage, type SearchPageQuery } from "@/lib/search/load-search-page";
+import { Suspense } from "react";
+import { StreamingSpotPostListScreen, StreamingSpotSearchScreen } from "@/components/posts/StreamingSearchScreens";
+import { ListScreenSkeleton, MapSheetSkeleton } from "@/components/skeleton/Skeletons";
+import { loadSearchFirstPage, loadSearchShell, retryableEmptyFirstPage, type SearchPageQuery } from "@/lib/search/load-search-page";
 import { resolveListBack } from "@/lib/search/list-state";
 
 /**
@@ -26,7 +27,10 @@ export default async function SearchPage({ searchParams }: { searchParams: Promi
   const qs = new URLSearchParams(Object.entries(query).flatMap(([k, v]) => (typeof v === "string" ? [[k, v]] : []))).toString();
   const user = await requireUserOrRedirect(supabase, `/search${qs ? `?${qs}` : ""}`);
 
-  const data = await loadSearchPage(createAdminClient(), user.id, query);
+  const admin = createAdminClient();
+  // performance Task2: 骨組み（行き先・見出し）だけ待ち、1 ページ目は Promise のまま画面に渡してストリーミングする。
+  // 1 ページ目が失敗したら「空で、すぐ取り直す」ページにして、画面側の再取得とエラー表示に任せる
+  const data = await loadSearchShell(admin, user.id, query);
   if (data.kind === "spot_missing") notFound();
   if (data.kind === "error") {
     return (
@@ -36,31 +40,31 @@ export default async function SearchPage({ searchParams }: { searchParams: Promi
     );
   }
 
+  const shell = data;
+  const firstPage = loadSearchFirstPage(admin, user.id, shell).catch(() => retryableEmptyFirstPage(shell));
+
   if (data.spot) {
+    const back = resolveListBack(typeof query.back === "string" ? query.back : null);
     return (
-      <SpotPostListScreen
-        spot={data.spot}
-        initialState={data.initialState}
-        initialPage={data.initialPage}
-        initialMediaPage={data.initialMediaPage}
-        addMode={data.addMode}
-        back={resolveListBack(typeof query.back === "string" ? query.back : null)}
-      />
+      <Suspense fallback={<MapSheetSkeleton backLabel={back?.label ?? "地図"} title={data.spot.name} />}>
+        <StreamingSpotPostListScreen spot={data.spot} initialState={data.initialState} addMode={data.addMode} back={back} firstPage={firstPage} />
+      </Suspense>
     );
   }
 
   // v3.1（mentoring-7 Task3）: 検索結果（都道府県・駅・市区町村）はスポット単位のカード
   return (
-    <SpotSearchScreen
-      context={data.context}
-      initialState={data.initialState}
-      initialPage={data.initialSpotPage}
-      initialMediaPage={data.initialMediaPage}
-      title={data.resolved.title}
-      backHref="/"
-      backLabel="ホーム"
-      addMode={data.addMode}
-      emptyMessage={data.resolved.kind === "not_found" ? "見つかりませんでした。都道府県名・駅名・スポット名で入力してください" : "条件に合う投稿がありません"}
-    />
+    <Suspense fallback={<ListScreenSkeleton backLabel="ホーム" title={data.resolved.title} />}>
+      <StreamingSpotSearchScreen
+        context={data.context}
+        initialState={data.initialState}
+        title={data.resolved.title}
+        backHref="/"
+        backLabel="ホーム"
+        addMode={data.addMode}
+        emptyMessage={data.resolved.kind === "not_found" ? "見つかりませんでした。都道府県名・駅名・スポット名で入力してください" : "条件に合う投稿がありません"}
+        firstPage={firstPage}
+      />
+    </Suspense>
   );
 }
