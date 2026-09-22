@@ -12,6 +12,7 @@
 | 4 | [OAuthコールバック Route Handler](04-oauth-callback-handler.md) | 1, 2 |
 | 5 | [初回ログイン時のユーザーレコード作成ロジック](05-initial-user-record-creation.md) | 4 |
 | 7 | [アカウント新規作成画面（SC-20）と同意フロー](07-consent-flow.md) | 4, 5 |
+| 11 | [Google 1 回で新規登録（認証状態を保持して同意画面へ）](11-google-once-signup.md) | 4, 7 |
 | 8 | [ログイン試行のレート制限](08-login-rate-limiting.md) | 2, 4 |
 | 9 | [受入テスト（E2E）](09-acceptance-e2e.md) | 1, 2, 3, 4, 5, 7, 8すべて |
 

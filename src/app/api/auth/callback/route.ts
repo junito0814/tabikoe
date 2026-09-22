@@ -7,18 +7,17 @@
  *   2. Google が認証を終えると、このURLに `?code=...` を付けて戻してくる
  *   3. ここで code をセッション（Cookie）に交換し、アプリ側のアカウント有無を確認して遷移先へ送る
  * つまり「Google で本人確認 OK」と「タビコエにアカウントがある」は別物で、後者はこのファイルで判定する。
- * 失敗時は必ず元の画面（/login または /signup）へ `?error=` 付きで戻し、白い画面を出さない。
+ * 未登録ならセッションを保持したまま同意画面（/signup）へ送り、そこでアカウントを作る（Task11。Google は 1 回だけ）。
+ * 失敗時は必ずログイン画面（/login）へ `?error=` 付きで戻し、白い画面を出さない。
  */
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { ensureUserRecord } from "@/lib/users/ensure-user-record";
 import { safeRedirectPath } from "@/lib/safe-redirect";
 import { getClientIp } from "@/lib/http/client-ip";
 import { isWithinRateLimit } from "@/lib/rate-limit/check-rate-limit";
 import { recordOperation } from "@/lib/logs/record-operation";
 import { resolvePostLoginRedirect } from "@/lib/auth/post-login-redirect";
-import { hasFullConsent } from "@/lib/auth/consent";
 
 // F-AC-01 Task8: 同一IPから1分間に10回を超える試行を拒否する
 const LOGIN_RATE_LIMIT_WINDOW_SECONDS = 60;
@@ -29,13 +28,8 @@ export async function GET(request: Request) {
     const { searchParams, origin } = new URL(request.url);
     const code = searchParams.get("code");
     const redirectTo = safeRedirectPath(searchParams.get("redirect_to"));
-    // signup-login Task10（2026-09-22）: 同意は利用規約（terms）と個人情報保護方針（privacy）の 2 つで、両方必須。
-    // 旧 consent=1 だけでは作らない（SC-20 が両方を送る）
-    const hasConsent = hasFullConsent(searchParams);
-    // どちらの画面から来たか。SC-01（login）とSC-20（signup）でIdP認証のフローは同一のため、
-    // アカウントの有無と合わせてここで分岐する（要件定義書3.2.1、v2.8）
-    const isSignupFlow = searchParams.get("mode") === "signup";
-    const entryScreen = isSignupFlow ? "/signup" : "/login";
+    // Task11（2026-09-22）: 入口はログイン画面（SC-01）の「Google で続ける」1 つ。失敗時は必ずそこへ戻す
+    const entryScreen = "/login";
     // F-AD-01 Task2: 管理者ログイン画面（SC-15 = /login?admin=1）経由か
     const fromAdminLogin = searchParams.get("admin") === "1";
 
@@ -97,41 +91,19 @@ export async function GET(request: Request) {
     }
 
     if (!existingUser) {
-        // 未登録。同意を得ていない限りアカウントを作らない。
-        // ログイン画面から来た場合は同意欄自体が無いため、必ずここに該当する。
-        if (!isSignupFlow) {
-            await supabase.auth.signOut();
-            await recordOperation(admin, {
-                actionType: "login_failure",
-                detail: { reason: "account_not_found" },
-            });
-            return NextResponse.redirect(`${origin}/signup?error=account_not_found`);
-        }
-        if (!hasConsent) {
-            await supabase.auth.signOut();
-            await recordOperation(admin, {
-                actionType: "login_failure",
-                detail: { reason: "consent_required" },
-            });
-            return NextResponse.redirect(`${origin}/signup?error=consent_required`);
-        }
-
-        try {
-            await ensureUserRecord(admin, data.user);
-        } catch {
-            await supabase.auth.signOut();
-            return NextResponse.redirect(`${origin}/signup?error=1`);
-        }
-
-        // 要件7.5: アカウントの登録
+        // signup-login Task11（2026-09-22）: 未登録。同意を得ていないのでアカウントは作らないが、
+        // Google の認証状態（セッション）は捨てずに同意画面（SC-20）へ送る。こうすると Google のアカウント選択が
+        // 1 回で済む。アカウント作成は SC-20 の「同意してはじめる」→ POST /api/auth/signup が行う。
+        // この「登録待ち」の状態で他の画面を開けないようにするのは proxy.ts の役目。
         await recordOperation(admin, {
-            actionType: "account_create",
-            userId: data.user.id,
-            targetId: data.user.id,
+            actionType: "login_failure",
+            detail: { reason: "account_not_found", next: "consent" },
         });
+        const consentUrl = new URL("/signup", origin);
+        if (redirectTo !== "/") consentUrl.searchParams.set("redirect_to", redirectTo);
+        return NextResponse.redirect(consentUrl.toString());
     }
-    // 登録済みの場合は、どちらの画面から来ても通常のログインとして扱う。
-    // consented_atは初回サインアップ時の値を保持する（ensureUserRecordを呼ばない）。
+    // 登録済みなら通常のログイン。consented_at は初回サインアップ時の値を保持する（ensureUserRecord を呼ばない）。
 
     // F-AD-05: 通報対応でアカウントを一時停止されたユーザーはログインできない（3.10.5）
     if (existingUser?.suspended_at) {
@@ -148,7 +120,7 @@ export async function GET(request: Request) {
     await recordOperation(admin, {
         actionType: "login_success",
         userId: data.user.id,
-        detail: { flow: isSignupFlow ? "signup" : "login" },
+        detail: { flow: "login" },
     });
 
     // F-AD-01 Task2: 管理者ログイン導線から来た管理者はダッシュボードへ

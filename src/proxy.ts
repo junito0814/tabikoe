@@ -2,6 +2,7 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import { assertSupabaseEnv } from "@/lib/supabase/env";
 import { sessionCookieOptions } from "@/lib/supabase/cookie-options";
+import { pendingSignupAction } from "@/lib/auth/pending-signup";
 import {
   buildExpiredLoginPath,
   isSessionExpiredByInactivity,
@@ -34,7 +35,7 @@ import {
  * ページや API に届く前に通る関所」。ここでやることは 3 つ：
  *   1. Cookie のトークンを確かめ、期限切れなら裏で更新して新しい Cookie を返す（利用者は気づかない）
  *      ただし最終利用から 30 日を超えていたら更新せずに締め出す（Task3）
- *   2. 一時停止されたアカウントを締め出す
+ *   2. 一時停止されたアカウントを締め出す。認証は済んだが未登録（登録待ち）の人は同意画面（/signup）以外を開けない（Task11）
  *   3. /admin 配下を管理者以外に見せない（404）
  * 「未ログインならログイン画面へ」の誘導はここではなく、各ページの requireUserOrRedirect が行う
  * （元の遷移先を redirect_to に持たせるため）。`config.matcher` は静的ファイルを対象外にする条件。
@@ -102,11 +103,24 @@ export async function proxy(request: NextRequest) {
   // ログイン自体はコールバックで拒否するが、停止前に発行済みのセッションもここで止める。
   // 停止判定は SC-00・SC-01 等の未ログインでも開ける画面では不要なので、ログイン済みの時だけ問い合わせる
   if (user && !request.nextUrl.pathname.startsWith("/api/auth/")) {
-    const { data: profile } = await supabase
+    const { data: profile, error: profileError } = await supabase
       .from("users")
-      .select("suspended_at")
+      .select("id, suspended_at")
       .eq("id", user.id)
       .maybeSingle();
+    // signup-login Task11（2026-09-22）: 認証は済んだが users 行が無い「登録待ち」は、同意画面（/signup）以外を開けない。
+    // 取得に失敗したときは判定できないので通す（各ページ側のエラー表示に任せる）
+    if (!profileError && !profile) {
+      const action = pendingSignupAction(request.nextUrl.pathname);
+      if (action.kind === "api_denied") {
+        return NextResponse.json({ error: "signup_required" }, { status: 401 });
+      }
+      if (action.kind === "redirect") {
+        const redirect = NextResponse.redirect(new URL(action.to, request.url));
+        response.cookies.getAll().forEach((cookie) => redirect.cookies.set(cookie));
+        return redirect;
+      }
+    }
     if (profile?.suspended_at) {
       await supabase.auth.signOut();
       if (request.nextUrl.pathname.startsWith("/api/")) {

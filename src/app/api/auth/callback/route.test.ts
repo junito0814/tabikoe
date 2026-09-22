@@ -1,13 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 /**
- * 出典: docs/tasks/account/signup-login/07-consent-flow.md 単体テスト
- * - サーバー側で同意（利用規約・個人情報保護方針）のどちらかが欠けたら、ユーザー作成を実行せず SC-20 へ戻す
- * - 両方あれば作成して着地点（/）へ（ログイン画面を挟まない）
- * - ログイン画面から来た未登録者は作成せず SC-20 へ（account_not_found）
+ * 出典: docs/tasks/account/signup-login/11-google-once-signup.md 単体テスト
+ * - 未登録なら signOut せず（Google の認証状態を保持したまま）アカウントも作らずに /signup へ。redirect_to は引き継ぐ
+ * - 登録済みなら着地点へ
  */
 const state = { existingUser: null as { id: string; is_admin: boolean; suspended_at: string | null } | null };
-const ensureUserRecord = vi.fn(async () => {});
 const signOut = vi.fn(async () => ({ error: null }));
 
 vi.mock("@/lib/supabase/server", () => ({
@@ -22,7 +20,6 @@ vi.mock("@/lib/supabase/admin", () => ({
 }));
 vi.mock("@/lib/rate-limit/check-rate-limit", () => ({ isWithinRateLimit: async () => true }));
 vi.mock("@/lib/logs/record-operation", () => ({ recordOperation: async () => {} }));
-vi.mock("@/lib/users/ensure-user-record", () => ({ ensureUserRecord: (...args: unknown[]) => ensureUserRecord(...(args as [])) }));
 
 import { GET } from "./route";
 
@@ -31,36 +28,31 @@ const location = (response: Response) => response.headers.get("location")?.repla
 
 beforeEach(() => {
   state.existingUser = null;
-  ensureUserRecord.mockClear();
   signOut.mockClear();
 });
 
-describe("GET /api/auth/callback（同意フロー）", () => {
-  it("Task10: 利用規約と個人情報保護方針の両方に同意していれば作成してホーム（/）へ", async () => {
-    const response = await get("mode=signup&consent=1&terms=1&privacy=1");
-    expect(ensureUserRecord).toHaveBeenCalledTimes(1);
-    expect(location(response)).toBe("/");
+describe("GET /api/auth/callback（Task11: Google は 1 回）", () => {
+  it("未登録なら認証状態を保持したまま同意画面（/signup）へ。アカウントは作らない", async () => {
+    const response = await get("");
+    expect(location(response)).toBe("/signup");
+    expect(signOut).not.toHaveBeenCalled();
   });
 
-  it("Task10: どちらか一方だけ（旧 consent=1 だけも）なら作成せず、セッションを破棄して SC-20 へ", async () => {
-    for (const query of ["mode=signup&consent=1&terms=1", "mode=signup&consent=1&privacy=1", "mode=signup&consent=1"]) {
-      const response = await get(query);
-      expect(location(response)).toBe("/signup?error=consent_required");
-    }
-    expect(ensureUserRecord).not.toHaveBeenCalled();
-    expect(signOut).toHaveBeenCalledTimes(3);
+  it("未登録で redirect_to があれば同意画面に引き継ぐ", async () => {
+    const response = await get("redirect_to=%2Fposts%2Fnew");
+    expect(location(response)).toBe("/signup?redirect_to=%2Fposts%2Fnew");
   });
 
-  it("ログイン画面から来た未登録者は作成せず SC-20 へ（account_not_found）", async () => {
-    const response = await get("mode=login");
-    expect(location(response)).toBe("/signup?error=account_not_found");
-    expect(ensureUserRecord).not.toHaveBeenCalled();
-  });
-
-  it("登録済みならどちらの画面から来ても通常ログインとして着地点へ", async () => {
+  it("登録済みなら通常のログインとして着地点へ", async () => {
     state.existingUser = { id: "u-new", is_admin: false, suspended_at: null };
-    const response = await get("mode=login&redirect_to=%2Fmypage");
+    const response = await get("redirect_to=%2Fmypage");
     expect(location(response)).toBe("/mypage");
-    expect(ensureUserRecord).not.toHaveBeenCalled();
+  });
+
+  it("一時停止中なら signOut してログイン画面へ", async () => {
+    state.existingUser = { id: "u-new", is_admin: false, suspended_at: "2026-09-01T00:00:00Z" };
+    const response = await get("");
+    expect(location(response)).toBe("/login?error=suspended");
+    expect(signOut).toHaveBeenCalled();
   });
 });
