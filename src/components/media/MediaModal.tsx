@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
+import { createPortal } from "react-dom";
 import Link from "next/link";
 import type { MediaItem } from "./MediaGrid";
 
@@ -60,11 +61,15 @@ export function MediaModal({
   }, [onClose, goPrev, goNext]);
 
   const item = items[index];
-  if (!item) return null;
+  if (!item || typeof document === "undefined") return null;
   const href = typeof postHref === "function" ? postHref(item) : postHref;
   const fullUrl = item.fullUrl ?? item.thumbnailUrl;
 
-  return (
+  // Bug #492: スポット別一覧（上 1/3 地図＋下 2/3 シート）の中から開くと、シートの `relative z-10` が重なり順の枠になり
+  // fixed でも枠から出られずメニューバー（z-40）の下に沈む。createPortal で body 直下に描いて枠の外に出す。
+  // メニューバーは隠さず残す: バーがあるとき（body:has([data-menu-bar])）はスマホで下 60px、パソコンで左 200px を空け、
+  // 黒い背景・写真・情報バーをメニューバーの手前で止める（シートと同じ扱い）。
+  return createPortal(
     <div
       role="dialog"
       aria-modal="true"
@@ -72,7 +77,7 @@ export function MediaModal({
       ref={dialogRef}
       tabIndex={-1}
       data-media-modal
-      className="fixed inset-0 z-50 flex flex-col bg-black/90 text-white outline-none"
+      className="fixed inset-0 z-50 flex flex-col bg-black/90 text-white outline-none [body:has([data-menu-bar])_&]:bottom-[60px] md:[body:has([data-menu-bar])_&]:bottom-0 md:[body:has([data-menu-bar])_&]:left-[200px]"
       onClick={onClose}
       onTouchStart={(event) => {
         touchStartX.current = event.touches[0]?.clientX ?? null;
@@ -145,6 +150,7 @@ export function MediaModal({
           </div>
         )
       )}
-    </div>
+    </div>,
+    document.body
   );
 }
