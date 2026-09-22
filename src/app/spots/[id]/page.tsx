@@ -4,8 +4,10 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { requireUserOrRedirect } from "@/lib/auth/require-user-or-redirect";
 import { ErrorNotice } from "@/components/notices/ErrorNotice";
 import { ERROR_MESSAGES } from "@/components/notices/error-messages";
-import { SpotPostListScreen } from "@/components/posts/SpotPostListScreen";
-import { loadSearchPage, type SearchPageQuery } from "@/lib/search/load-search-page";
+import { Suspense } from "react";
+import { StreamingSpotPostListScreen } from "@/components/posts/StreamingSearchScreens";
+import { MapSheetSkeleton } from "@/components/skeleton/Skeletons";
+import { loadSearchFirstPage, loadSearchShell, retryableEmptyFirstPage, type SearchPageQuery } from "@/lib/search/load-search-page";
 import { resolveListBack } from "@/lib/search/list-state";
 
 /**
@@ -28,7 +30,9 @@ export default async function SpotPostsPage({
   const user = await requireUserOrRedirect(supabase, `/spots/${id}`);
 
   const query = await searchParams;
-  const data = await loadSearchPage(createAdminClient(), user.id, { ...query, spot: id });
+  const admin = createAdminClient();
+  // performance Task2: 骨組みだけ待ち、1 ページ目はストリーミング（/search と同じ）
+  const data = await loadSearchShell(admin, user.id, { ...query, spot: id });
   if (data.kind === "spot_missing") notFound();
   if (data.kind === "error" || !data.spot) {
     return (
@@ -38,14 +42,12 @@ export default async function SpotPostsPage({
     );
   }
 
+  const shell = data;
+  const firstPage = loadSearchFirstPage(admin, user.id, shell).catch(() => retryableEmptyFirstPage(shell));
+  const back = resolveListBack(typeof query.back === "string" ? query.back : null);
   return (
-    <SpotPostListScreen
-      spot={data.spot}
-      initialState={data.initialState}
-      initialPage={data.initialPage}
-      initialMediaPage={data.initialMediaPage}
-      addMode={data.addMode}
-      back={resolveListBack(typeof query.back === "string" ? query.back : null)}
-    />
+    <Suspense fallback={<MapSheetSkeleton backLabel={back?.label ?? "地図"} title={data.spot.name} />}>
+      <StreamingSpotPostListScreen spot={data.spot} initialState={data.initialState} addMode={data.addMode} back={back} firstPage={firstPage} />
+    </Suspense>
   );
 }

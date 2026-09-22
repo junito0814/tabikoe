@@ -38,13 +38,13 @@ export default async function PostDetailPage({
 
   const admin = createAdminClient();
   let post: PostDetailData | null = null;
-  let comments: CommentPage | null = null;
   let failed = false;
+  // performance Task2: コメント 1 ページ目は待たずに Promise のまま画面へ渡し、本文の後から流し込む。
+  // 失敗しても本文は出す（コメント欄は空。取り直しは画面側の「もっと見る」に任せる）
+  const emptyComments: CommentPage = { comments: [], nextOffset: null, totalCount: 0 };
+  const comments: Promise<CommentPage> = listComments(admin, user.id, id, 0).catch(() => emptyComments);
   try {
-    // performance Task1: 投稿本体とコメント 1 ページ目は独立なので並列に（投稿が無ければコメントは捨てる）
-    const [detail, commentPage] = await Promise.all([getPostDetail(admin, user.id, id), listComments(admin, user.id, id, 0)]);
-    post = detail;
-    if (post) comments = commentPage;
+    post = await getPostDetail(admin, user.id, id);
   } catch {
     failed = true;
   }
@@ -57,7 +57,7 @@ export default async function PostDetailPage({
     );
   }
 
-  if (!post || !comments) {
+  if (!post) {
     notFound();
   }
 

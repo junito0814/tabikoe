@@ -1,11 +1,12 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { Suspense, use, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { MediaGrid } from "@/components/media/MediaGrid";
 import { SaveButton } from "@/components/save/SaveButton";
 import { LikeButton } from "@/components/likes/LikeButton";
 import { CommentSection } from "@/components/comments/CommentSection";
+import { CommentsSkeleton } from "@/components/skeleton/Skeletons";
 import { ReportLink } from "@/components/reports/ReportLink";
 import { DeletePostButton } from "@/components/posts/DeletePostButton";
 import { SpotStatusButtons } from "@/components/spots/SpotStatusButtons";
@@ -40,7 +41,8 @@ export function PostDetailScreen({
   back = null,
 }: {
   post: PostDetailData;
-  initialComments: CommentPage;
+  /** performance Task2: page.tsx は Promise のまま渡す（コメントは本文の後から流し込む）。テストでは値でもよい */
+  initialComments: CommentPage | Promise<CommentPage>;
   /** 投稿・更新の完了メッセージ（Server Component から渡す。v3.0） */
   notice?: React.ReactNode;
   /** Bug #469・#471: 一覧などから `?back=` で渡された戻り先（URL と画面名）。無ければそのスポットの一覧（「投稿一覧」） */
@@ -293,14 +295,21 @@ export function PostDetailScreen({
             </Link>
           )}
 
-          <CommentSection
-            postId={post.id}
-            initialPage={initialComments}
-            canComment={post.canInteract}
-            returnTo={returnTo}
-          />
+          {/* performance Task2: コメント欄は本文の後から流し込む（届くまで骨組み） */}
+          <Suspense fallback={<CommentsSkeleton />}>
+            <StreamedCommentSection postId={post.id} initialComments={initialComments} canComment={post.canInteract} returnTo={returnTo} />
+          </Suspense>
         </article>
       </div>
     </MapSheetLayout>
   );
+}
+
+/**
+ * コメント 1 ページ目が Promise なら `use()` で待ってから CommentSection を描く（値ならそのまま）。
+ * 【初心者向け】`use(promise)` は「まだなら外側の Suspense に骨組みを出させ、届いたら続きを描く」React の仕組み。
+ */
+function StreamedCommentSection({ postId, initialComments, canComment, returnTo }: { postId: string; initialComments: CommentPage | Promise<CommentPage>; canComment: boolean; returnTo: string }) {
+  const page = initialComments instanceof Promise ? use(initialComments) : initialComments;
+  return <CommentSection postId={postId} initialPage={page} canComment={canComment} returnTo={returnTo} />;
 }
