@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { claimsResultOf } from "@/lib/auth/claims-result";
 
 /**
  * 出典: docs/tasks/posts/spot-selection/02-spot-search-handler.md 単体テスト
@@ -15,7 +16,7 @@ const state = {
   placesError: false,
 };
 
-vi.mock("@/lib/supabase/server", () => ({ createClient: async () => ({ auth: { getUser: async () => ({ data: { user: state.user }, error: null }) } }) }));
+vi.mock("@/lib/supabase/server", () => ({ createClient: async () => ({ auth: { getClaims: async () => claimsResultOf(state.user) } }) }));
 vi.mock("@/lib/supabase/admin", () => ({
   createAdminClient: () => ({
     from: () => ({ select: () => ({ is: () => ({ ilike: () => ({ limit: async () => ({ data: state.stored, error: null }) }) }) }) }),

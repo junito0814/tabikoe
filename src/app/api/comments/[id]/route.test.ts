@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { claimsResultOf } from "@/lib/auth/claims-result";
 
 /**
  * 出典: docs/tasks/browsing/comments/02-comment-delete-handler.md 単体テスト
@@ -17,7 +18,7 @@ const adminUpdate = vi.fn(() => ({ eq: async () => ({ error: null }) }));
 
 vi.mock("@/lib/supabase/server", () => ({
   createClient: async () => ({
-    auth: { getUser: async () => ({ data: { user: state.user }, error: null }) },
+    auth: { getClaims: async () => claimsResultOf(state.user) },
     from: () => ({ delete: () => ({ eq: deleteEq }) }),
   }),
 }));

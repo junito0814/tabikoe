@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { claimsResultOf } from "@/lib/auth/claims-result";
 
 /**
  * 出典: docs/tasks/notifications/notification-list/03-read-status-badge-sync.md 単体テスト
@@ -10,7 +11,7 @@ const inIds = vi.fn((_col: string, ids: string[]) => ({ select: async () => ({ d
 const eqCalls: [string, unknown][] = [];
 
 vi.mock("@/lib/supabase/server", () => ({
-  createClient: async () => ({ auth: { getUser: async () => ({ data: { user: state.user }, error: null }) } }),
+  createClient: async () => ({ auth: { getClaims: async () => claimsResultOf(state.user) } }),
 }));
 vi.mock("@/lib/supabase/admin", () => ({
   createAdminClient: () => ({

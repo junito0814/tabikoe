@@ -72,7 +72,7 @@ export function PostCard({
 
       {showSpotName && (
         <h3 className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-0.5 text-[15px] font-bold leading-tight text-ink">
-          <Link href={`/search?spot=${post.spotId}`} className="min-w-0 truncate">
+          <Link href={`/search?spot=${post.spotId}`} prefetch={false} className="min-w-0 truncate">
             {post.spotName}
           </Link>
           {post.isManualSpot && (
@@ -81,7 +81,8 @@ export function PostCard({
         </h3>
       )}
 
-      <Link href={appendBackHref(`/posts/${post.id}`, backHref)} className="flex flex-col gap-1.5">
+{/* performance Task1: 一覧のカードは先読みしない（1 画面で何十本も裏で走り、関所と Supabase を叩くため） */}
+      <Link href={appendBackHref(`/posts/${post.id}`, backHref)} prefetch={false} className="flex flex-col gap-1.5">
         {post.commentExcerpt && <p className="line-clamp-2 text-[13px] leading-[1.6] text-ink">{post.commentExcerpt}</p>}
         <p className="flex flex-wrap items-center gap-x-2.5 gap-y-0.5 text-[12px] text-muted">
           {post.rating !== null && (
@@ -111,7 +112,7 @@ export function PostCard({
       <div className="flex items-center gap-2 border-t border-line pt-2">
         <LikeButton postId={post.id} initialLiked={post.viewerHasLiked} initialCount={post.likeCount} className="h-8" />
         <Link
-          href={`/posts/${post.id}#comments`}
+          href={`/posts/${post.id}#comments`} prefetch={false}
           aria-label={`コメント${post.commentCount}件`}
           className="inline-flex h-8 items-center gap-1 rounded-full px-2 text-[12px] text-muted"
         >
@@ -129,7 +130,7 @@ export function PostCard({
 
       {/* v3.2（feedback-0919 Task5）: 最新のコメント 1 件のプレビューと「コメント N 件をすべて見る」（コメントがあるときだけ） */}
       {post.latestComment && (
-        <Link href={`/posts/${post.id}#comments`} className="flex flex-col gap-0.5 text-[12px]" data-comment-preview>
+        <Link href={`/posts/${post.id}#comments`} prefetch={false} className="flex flex-col gap-0.5 text-[12px]" data-comment-preview>
           <span className="truncate">
             <span className="font-semibold text-ink">{post.latestComment.authorName}</span> <span className="text-ink">{post.latestComment.excerpt}</span>
           </span>

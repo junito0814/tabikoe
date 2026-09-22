@@ -400,7 +400,7 @@ export function AlbumScreen({
                     ]}
                   />
                 )}
-                <Link href={`/posts/${post.id}?back=${encodeURIComponent(`/albums/${album.tripId}`)}`} className="flex flex-col gap-1 p-3">
+                <Link href={`/posts/${post.id}?back=${encodeURIComponent(`/albums/${album.tripId}`)}`} prefetch={false} className="flex flex-col gap-1 p-3">
                   <span className="flex items-center gap-2 text-[13px] font-semibold text-ink">
                     {post.spotName}
                     {post.visibility === "private" && (

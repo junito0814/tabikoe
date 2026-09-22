@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { getAuthenticatedUser } from "@/lib/auth/get-authenticated-user";
 import { hasFullConsent } from "@/lib/auth/consent";
 import { resolvePostLoginRedirect } from "@/lib/auth/post-login-redirect";
 import { ensureUserRecord } from "@/lib/users/ensure-user-record";
@@ -20,7 +19,10 @@ import { safeRedirectPath } from "@/lib/safe-redirect";
  */
 export async function POST(request: Request) {
   const supabase = await createClient();
-  const user = await getAuthenticatedUser(supabase);
+  // ここだけは getUser()（Supabase Auth に問い合わせ）。ensureUserRecord が Google の識別子・表示名・アイコンを使うため
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
   if (!user) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }

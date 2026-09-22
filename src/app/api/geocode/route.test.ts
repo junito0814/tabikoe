@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { claimsResultOf } from "@/lib/auth/claims-result";
 import { GeocodingApiError } from "@/lib/google/geocoding";
 
 /**
@@ -13,7 +14,7 @@ const state = {
 
 vi.mock("@/lib/supabase/server", () => ({
   createClient: async () => ({
-    auth: { getUser: async () => ({ data: { user: state.user }, error: null }) },
+    auth: { getClaims: async () => claimsResultOf(state.user) },
   }),
 }));
 

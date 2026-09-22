@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { render, screen, waitFor } from "@testing-library/react";
-import { AppMenuBar, UnreadBadge } from "./AppMenuBar";
+import { AppMenuBar, resetUnreadCountCache, shouldRefetchUnreadCount, UNREAD_COUNT_TTL_MS, UnreadBadge } from "./AppMenuBar";
+import { NOTIFICATIONS_READ_EVENT } from "@/components/notifications/notification-events";
 
 /**
  * 出典: docs/tasks/shared-ui/menu-bar/01-menu-bar-component.md 単体テスト
@@ -15,6 +16,7 @@ vi.mock("next/navigation", () => ({
 
 beforeEach(() => {
   pathname = "/account";
+  resetUnreadCountCache();
 });
 
 describe("AppMenuBar 表示制御（Task1）", () => {
@@ -108,5 +110,27 @@ describe("AppMenuBar 管理画面導線（Task3）", () => {
       .getAllByRole("link")
       .filter((link) => link.getAttribute("href")?.startsWith("/admin"));
     expect(adminLinks).toHaveLength(0);
+  });
+});
+
+describe("未読件数の間引き（performance Task1）", () => {
+  it("前回の取得から 60 秒以内は取り直さず、60 秒を過ぎたら取り直す（純粋関数）", () => {
+    const now = 1_000_000;
+    expect(shouldRefetchUnreadCount(null, now)).toBe(true);
+    expect(shouldRefetchUnreadCount(now - 5_000, now)).toBe(false);
+    expect(shouldRefetchUnreadCount(now - UNREAD_COUNT_TTL_MS, now)).toBe(true);
+  });
+
+  it("画面遷移をまたいでも 60 秒以内なら API を呼ばず、既読イベントでは必ず取り直す", async () => {
+    const fetchUnreadCount = vi.fn(async () => 2);
+    const { unmount } = render(<AppMenuBar fetchUnreadCount={fetchUnreadCount} />);
+    expect(await screen.findByLabelText("未読2件")).toBeInTheDocument();
+    unmount();
+    pathname = "/mypage";
+    render(<AppMenuBar fetchUnreadCount={fetchUnreadCount} />);
+    expect(await screen.findByLabelText("未読2件")).toBeInTheDocument();
+    expect(fetchUnreadCount).toHaveBeenCalledTimes(1);
+    window.dispatchEvent(new Event(NOTIFICATIONS_READ_EVENT));
+    await waitFor(() => expect(fetchUnreadCount).toHaveBeenCalledTimes(2));
   });
 });

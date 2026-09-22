@@ -1,5 +1,6 @@
-import type { SupabaseClient, User } from "@supabase/supabase-js";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { getAuthenticatedUser } from "./get-authenticated-user";
+import type { AuthUser } from "./auth-user";
 
 /**
  * F-AD-01: 管理者用 Route Handler の共通ガード
@@ -12,7 +13,7 @@ import { getAuthenticatedUser } from "./get-authenticated-user";
 export async function requireAdminUser(
   supabase: SupabaseClient,
   admin: SupabaseClient
-): Promise<User | null> {
+): Promise<AuthUser | null> {
   const user = await getAuthenticatedUser(supabase);
   if (!user) return null;
 

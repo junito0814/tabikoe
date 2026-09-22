@@ -1,25 +1,11 @@
-import type { SupabaseClient, User } from "@supabase/supabase-js";
+import type { SupabaseClient } from "@supabase/supabase-js";
+import { getAuthUserFromClaims, type AuthUser } from "./auth-user";
 
 /**
- * F-AC-02 Task1: セッション検証の共通ユーティリティ（Route Handlers向け）
- * 出典: docs/tasks/account/session-management/01-session-verification-middleware.md
- *
- * 各Route Handlerで同じ`auth.getUser()`呼び出し・エラーハンドリングを重複させないための共通関数。
- * トークンが存在しない・無効・期限切れ（リフレッシュも失敗）のいずれの場合もnullを返す。
- *
- * 【初心者向け】Route Handler の先頭で `const user = await getAuthenticatedUser(supabase)` と書き、
- * null なら 401 を返すのが定型。`auth.getUser()` は Supabase のサーバーにトークンを問い合わせて本物か確かめるので、
- * Cookie を書き換えただけの偽装は通らない。
+ * Route Handler 共通: ログイン中の利用者（id・email）を返す。未ログインなら null
+ * performance Task1（2026-09-22）: `getUser()`（毎回 Supabase Auth へ通信）から `getClaims()`（手元で署名検証）に変更。
+ * Google の表示名などが要る所（新規登録 API）は `supabase.auth.getUser()` を直接使う。
  */
-export async function getAuthenticatedUser(supabase: SupabaseClient): Promise<User | null> {
-  const {
-    data: { user },
-    error,
-  } = await supabase.auth.getUser();
-
-  if (error || !user) {
-    return null;
-  }
-
-  return user;
+export async function getAuthenticatedUser(supabase: SupabaseClient): Promise<AuthUser | null> {
+  return getAuthUserFromClaims(supabase);
 }

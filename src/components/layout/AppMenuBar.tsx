@@ -81,6 +81,23 @@ export function UnreadBadge({ count }: { count: number }) {
   );
 }
 
+/** 未読件数の再取得はこの間隔で 1 回（performance Task1） */
+export const UNREAD_COUNT_TTL_MS = 60 * 1000;
+
+/** 前回の取得から TTL を過ぎていれば取り直す（純粋関数。未取得なら true） */
+export function shouldRefetchUnreadCount(fetchedAt: number | null, now: number): boolean {
+  return fetchedAt === null || now - fetchedAt >= UNREAD_COUNT_TTL_MS;
+}
+
+/** 直近の未読件数（画面遷移をまたいで使い回す） */
+const unreadCache: { count: number; fetchedAt: number | null } = { count: 0, fetchedAt: null };
+
+/** 単体テスト用: キャッシュを消す */
+export function resetUnreadCountCache(): void {
+  unreadCache.count = 0;
+  unreadCache.fetchedAt = null;
+}
+
 export function AppMenuBar({
   fetchUnreadCount = fetchUnreadCountFromApi,
   isAuthenticated = true,
@@ -104,10 +121,18 @@ export function AppMenuBar({
     if (!visible) return;
     let cancelled = false;
 
-    const refresh = () => {
+    // performance Task1: 画面遷移のたびに API を呼ぶと 1 本 0.3 秒かかるので、前回から 60 秒以内なら取り直さない
+    // （直近の値はモジュール内に持つ。既読イベントのときは必ず取り直す）
+    const refresh = (force = false) => {
+      if (!force && !shouldRefetchUnreadCount(unreadCache.fetchedAt, Date.now())) {
+        setUnreadCount(unreadCache.count);
+        return;
+      }
       fetchUnreadCountRef
         .current()
         .then((count) => {
+          unreadCache.count = count;
+          unreadCache.fetchedAt = Date.now();
           if (!cancelled) setUnreadCount(count);
         })
         .catch((error) => {
@@ -117,13 +142,13 @@ export function AppMenuBar({
     };
     refresh();
     // F-NT-02 Task3: 通知一覧で既読化した直後にも取り直す
-    window.addEventListener(NOTIFICATIONS_READ_EVENT, refresh);
+    const onRead = () => refresh(true);
+    window.addEventListener(NOTIFICATIONS_READ_EVENT, onRead);
 
     return () => {
       cancelled = true;
-      window.removeEventListener(NOTIFICATIONS_READ_EVENT, refresh);
+      window.removeEventListener(NOTIFICATIONS_READ_EVENT, onRead);
     };
-    // 画面遷移のたびに件数を取り直す（通知一覧で既読にした直後などに反映させるため）
   }, [visible, pathname]);
 
   if (!visible) {

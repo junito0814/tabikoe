@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { claimsResultOf } from "@/lib/auth/claims-result";
 
 /**
  * 出典: docs/tasks/records/wishlist/01-wishlist-toggle-handler.md 単体テスト
@@ -16,7 +17,7 @@ const insert = vi.fn(async () => ({ error: state.insertError }));
 
 vi.mock("@/lib/supabase/server", () => ({
   createClient: async () => ({
-    auth: { getUser: async () => ({ data: { user: state.user }, error: null }) },
+    auth: { getClaims: async () => claimsResultOf(state.user) },
     from: () => ({ insert }),
   }),
 }));
