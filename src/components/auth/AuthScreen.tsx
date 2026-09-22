@@ -67,12 +67,48 @@ function AppLogoIcon() {
     );
 }
 
+/**
+ * 同意のチェック 1 つ分（利用規約／個人情報保護方針）。
+ * 【初心者向け】実際の checkbox を視覚的に隠して置き（sr-only）、見た目は隣の span で描く。
+ * こうするとキーボード（Tab → Space）とスクリーンリーダーでも操作できる（要件定義書 7.7）。
+ */
+function ConsentCheckbox({ checked, onChange, label }: { checked: boolean; onChange: (next: boolean) => void; label: string }) {
+    return (
+        <label className="flex w-full cursor-pointer items-start gap-2.5">
+            <input
+                type="checkbox"
+                checked={checked}
+                onChange={(event) => onChange(event.target.checked)}
+                aria-label={`${label}に同意する`}
+                className="peer sr-only"
+            />
+            <span
+                aria-hidden
+                className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-[6px] border-[1.5px] transition-colors peer-focus-visible:ring-2 peer-focus-visible:ring-accent peer-focus-visible:ring-offset-2 ${checked ? "bg-accent border-accent" : "border-line bg-transparent"}`}
+            >
+                {checked && (
+                    <svg width="11" height="11" viewBox="0 0 12 12" fill="none">
+                        <path d="M2 6l3 3 5-5" stroke="#fff" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                )}
+            </span>
+            <span className="select-none text-[13px] leading-[1.65] text-ink">
+                <span className="font-medium text-accent">{label}</span>
+                {" に同意する"}
+            </span>
+        </label>
+    );
+}
+
 export default function AuthScreen({ mode }: { mode: AuthMode }) {
     const isSignup = mode === "signup";
     const searchParams = useSearchParams();
     const supabase = createClient();
     const [isLoading, setIsLoading] = useState(false);
-    const [agreed, setAgreed] = useState(false);
+    // signup-login Task10（2026-09-22）: 同意は「利用規約」「個人情報保護方針」の 2 つに分け、両方必須
+    const [agreedTerms, setAgreedTerms] = useState(false);
+    const [agreedPrivacy, setAgreedPrivacy] = useState(false);
+    const agreed = agreedTerms && agreedPrivacy;
     const [localError, setLocalError] = useState(false);
 
     const errorParam = searchParams.get("error");
@@ -101,7 +137,10 @@ export default function AuthScreen({ mode }: { mode: AuthMode }) {
             callbackUrl.searchParams.set("admin", "1");
         }
         if (isSignup) {
+            // consent は互換のため残し、サーバーは terms と privacy の両方を確認する（Task10）
             callbackUrl.searchParams.set("consent", agreed ? "1" : "0");
+            callbackUrl.searchParams.set("terms", agreedTerms ? "1" : "0");
+            callbackUrl.searchParams.set("privacy", agreedPrivacy ? "1" : "0");
         }
 
         const { error } = await supabase.auth.signInWithOAuth({
@@ -159,33 +198,10 @@ export default function AuthScreen({ mode }: { mode: AuthMode }) {
                 </p>
 
                 {isSignup && (
-                    <label className="mb-5 flex w-full cursor-pointer items-start gap-2.5">
-                        {/* 実際のcheckboxを視覚的に隠して置くことで、キーボード操作（Tab→Space）と
-                            スクリーンリーダー対応を担保する（要件定義書7.7） */}
-                        <input
-                            type="checkbox"
-                            checked={agreed}
-                            onChange={(event) => setAgreed(event.target.checked)}
-                            className="peer sr-only"
-                        />
-                        <span
-                            aria-hidden
-                            className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-[6px] border-[1.5px] transition-colors peer-focus-visible:ring-2 peer-focus-visible:ring-accent peer-focus-visible:ring-offset-2 ${agreed ? "bg-accent border-accent" : "border-line bg-transparent"
-                                }`}
-                        >
-                            {agreed && (
-                                <svg width="11" height="11" viewBox="0 0 12 12" fill="none">
-                                    <path d="M2 6l3 3 5-5" stroke="#fff" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-                                </svg>
-                            )}
-                        </span>
-                        <span className="select-none text-[13px] leading-[1.65] text-ink">
-                            <span className="font-medium text-accent">利用規約</span>
-                            {" と "}
-                            <span className="font-medium text-accent">個人情報保護方針</span>
-                            {" に同意する"}
-                        </span>
-                    </label>
+                    <div className="mb-5 flex w-full flex-col gap-3">
+                        <ConsentCheckbox checked={agreedTerms} onChange={setAgreedTerms} label="利用規約" />
+                        <ConsentCheckbox checked={agreedPrivacy} onChange={setAgreedPrivacy} label="個人情報保護方針" />
+                    </div>
                 )}
 
                 <button
@@ -206,23 +222,15 @@ export default function AuthScreen({ mode }: { mode: AuthMode }) {
 
                 {hasError && <ErrorNotice className="mt-3 w-full" message={errorMessage} />}
 
-                <p className="mt-8 text-center text-[13px] leading-[1.7] text-muted">
-                    {isSignup ? (
-                        <>
-                            すでにアカウントをお持ちの方は{" "}
-                            <Link href="/login" className="font-medium text-accent underline underline-offset-2">
-                                ログイン
-                            </Link>
-                        </>
-                    ) : (
-                        <>
-                            アカウントをお持ちでない方は{" "}
-                            <Link href="/signup" className="font-medium text-accent underline underline-offset-2">
-                                新規登録
-                            </Link>
-                        </>
-                    )}
-                </p>
+                {/* Task10（2026-09-22）: SC-01 に「新規登録」の導線は置かない。未登録ならログイン後に自動で SC-20 へ（3.2.1） */}
+                {isSignup && (
+                    <p className="mt-8 text-center text-[13px] leading-[1.7] text-muted">
+                        すでにアカウントをお持ちの方は{" "}
+                        <Link href="/login" className="font-medium text-accent underline underline-offset-2">
+                            ログイン
+                        </Link>
+                    </p>
+                )}
             </div>
         </div>
     );
