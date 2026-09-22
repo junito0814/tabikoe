@@ -189,11 +189,8 @@ export default function AuthScreen({ mode }: { mode: AuthMode }) {
                     {isAdminLogin ? (
                         <>管理者ログイン</>
                     ) : (
-                        <>
-                            みんなの旅の記録を、
-                            <br />
-                            次の旅のヒントに
-                        </>
+                        // キャッチフレーズ（2026-09-22 決定。要求定義書 0 章）
+                        <>あなたのコエが、だれかのタビへ。</>
                     )}
                 </p>
 

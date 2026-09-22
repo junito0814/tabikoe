@@ -16,7 +16,7 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "タビコエ",
-  description: "みんなの旅の記録を、次の旅のヒントに",
+  description: "あなたのコエが、だれかのタビへ。",
 };
 
 /**
