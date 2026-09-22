@@ -123,7 +123,8 @@ export function PostSearchScreen({
   const applyState = (next: PostSearchState) => {
     setState(next);
     setIsSheetOpen(false);
-    router.replace(buildSearchPageHref(next, context), { scroll: false });
+    // Bug #483: 戻り先（back）を落とさずに URL を書き換える（落とすと戻るが既定の「地図」に変わる）
+    router.replace(appendBackHref(buildSearchPageHref(next, context), backParam), { scroll: false });
     window.scrollTo({ top: 0 });
     void load(next, 0, true);
   };
@@ -150,7 +151,7 @@ export function PostSearchScreen({
   const onViewChange = (view: ListView) => {
     const next = { ...state, view };
     setState(next);
-    router.replace(buildSearchPageHref(next, context), { scroll: false });
+    router.replace(appendBackHref(buildSearchPageHref(next, context), backParam), { scroll: false });
   };
   // 写真グリッドに渡す条件（投稿一覧と同じ。offset と view は含めない）
   const mediaParams = buildPostSearchParams({ ...state, view: "posts" }, context, 0);
