@@ -3,6 +3,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { assertSupabaseEnv } from "@/lib/supabase/env";
 import { sessionCookieOptions } from "@/lib/supabase/cookie-options";
 import { pendingSignupAction } from "@/lib/auth/pending-signup";
+import { getAuthUserFromClaims } from "@/lib/auth/auth-user";
 import {
   buildExpiredLoginPath,
   isSessionExpiredByInactivity,
@@ -22,8 +23,8 @@ import {
  * F-AC-02 Task3（最終利用から 30 日で再ログイン）もここ。最終利用日時を Cookie（tabikoe-last-active）に持ち、
  * 30 日を超えていればトークンを更新せずセッションを破棄し、元の遷移先を redirect_to に付けてログイン画面へ送る。
  *
- * ほぼ全ページで実行する。supabase.auth.getUser()はアクセストークン期限切れを検知すると
- * リフレッシュトークンで自動的に再発行し（Supabaseはローテーションするため）、
+ * ほぼ全ページで実行する。supabase.auth.getClaims()（performance Task1 で getUser から変更）はアクセストークン期限切れを
+ * 検知するとリフレッシュトークンで自動的に再発行し（Supabaseはローテーションするため）、
  * その新しいCookieをこのProxyのレスポンスに載せて透過的に更新する。
  * Server Component（src/lib/supabase/server.ts）はCookieを変更できないため、
  * この仕組みがないとリフレッシュトークンのローテーションに追従できずセッションが失われる。
@@ -83,11 +84,14 @@ export async function proxy(request: NextRequest) {
     return redirect;
   }
 
-  // リフレッシュトークンが失効している場合もuser=nullとして返る
-  // （何が原因で失効したかは問わず、以降は一律「未ログイン」として扱う）
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  // performance Task1（2026-09-22）: 認証確認は getClaims（手元で署名検証。通信なし）。アクセストークンが期限切れなら
+  // リフレッシュトークンで更新され、新しい Cookie が setAll 経由でレスポンスに載る（ここは従来どおり）。
+  // リフレッシュトークンが失効している場合も null として返る（以降は一律「未ログイン」として扱う）
+  const user = await getAuthUserFromClaims(supabase);
+
+  // performance Task1: リンクの先読み（prefetch）は 1 画面で 20 本以上飛ぶ。認証の確認だけ行い、
+  // users への問い合わせ（一時停止・登録待ち）は本命のリクエストに任せる
+  const isPrefetch = request.headers.get("next-router-prefetch") === "1";
 
   // F-AC-02 Task3: ログイン中なら最終利用日時を進める（1 時間に 1 回）。未ログインなら古い記録を消す
   // （次にログインした人が前の記録で締め出されないように）
@@ -102,7 +106,7 @@ export async function proxy(request: NextRequest) {
   // F-AD-05: 一時停止されたアカウント（3.10.5）はセッションを破棄してログイン画面へ。
   // ログイン自体はコールバックで拒否するが、停止前に発行済みのセッションもここで止める。
   // 停止判定は SC-00・SC-01 等の未ログインでも開ける画面では不要なので、ログイン済みの時だけ問い合わせる
-  if (user && !request.nextUrl.pathname.startsWith("/api/auth/")) {
+  if (user && !isPrefetch && !request.nextUrl.pathname.startsWith("/api/auth/")) {
     const { data: profile, error: profileError } = await supabase
       .from("users")
       .select("id, suspended_at")

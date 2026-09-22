@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { claimsResultOf } from "@/lib/auth/claims-result";
 
 /**
  * 出典: docs/tasks/account/signup-login/11-google-once-signup.md 単体テスト
@@ -9,7 +10,7 @@ const signOut = vi.fn(async () => ({ error: null }));
 const deleteUser = vi.fn(async () => ({ data: {}, error: null }));
 
 vi.mock("@/lib/supabase/server", () => ({
-  createClient: async () => ({ auth: { getUser: async () => ({ data: { user: state.user }, error: null }), signOut } }),
+  createClient: async () => ({ auth: { getClaims: async () => claimsResultOf(state.user), signOut } }),
 }));
 vi.mock("@/lib/supabase/admin", () => ({
   createAdminClient: () => ({

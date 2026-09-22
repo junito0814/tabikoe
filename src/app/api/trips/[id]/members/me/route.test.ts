@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { claimsResultOf } from "@/lib/auth/claims-result";
 
 /**
  * 出典: docs/tasks/records/album-collaboration/06-member-self-removal-handler.md 単体テスト
@@ -8,7 +9,7 @@ const state = { user: { id: "me" } as { id: string } | null, myRole: "viewer" as
 const remove = vi.fn(() => ({ eq: () => ({ eq: async () => ({ error: null }) }) }));
 
 vi.mock("@/lib/supabase/server", () => ({
-  createClient: async () => ({ auth: { getUser: async () => ({ data: { user: state.user }, error: null }) } }),
+  createClient: async () => ({ auth: { getClaims: async () => claimsResultOf(state.user) } }),
 }));
 vi.mock("@/lib/supabase/admin", () => ({
   createAdminClient: () => ({

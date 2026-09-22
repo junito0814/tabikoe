@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
-import type { SupabaseClient, User } from "@supabase/supabase-js";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { safeRedirectPath } from "@/lib/safe-redirect";
+import { getAuthUserFromClaims, type AuthUser } from "./auth-user";
 
 /**
  * F-AC-02 Task3: ログイン必須ページの共通ガード（Server Components向け）
@@ -13,10 +14,9 @@ import { safeRedirectPath } from "@/lib/safe-redirect";
 export async function requireUserOrRedirect(
   supabase: SupabaseClient,
   currentPath: string
-): Promise<User> {
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+): Promise<AuthUser> {
+  // performance Task1（2026-09-22）: getUser()（毎回通信）→ getClaims()（手元で署名検証）
+  const user = await getAuthUserFromClaims(supabase);
 
   if (!user) {
     const redirectTo = safeRedirectPath(currentPath);

@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { claimsResultOf } from "@/lib/auth/claims-result";
 
 /**
  * 出典: docs/tasks/admin/report-handling/01-report-action-handler.md 単体テスト
@@ -19,7 +20,7 @@ const notificationInsert = vi.fn(async () => ({ error: null }));
 const effects: string[] = [];
 
 vi.mock("@/lib/supabase/server", () => ({
-  createClient: async () => ({ auth: { getUser: async () => ({ data: { user: state.user }, error: null }) } }),
+  createClient: async () => ({ auth: { getClaims: async () => claimsResultOf(state.user) } }),
 }));
 vi.mock("@/lib/supabase/admin", () => ({
   createAdminClient: () => ({

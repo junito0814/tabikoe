@@ -26,7 +26,8 @@ export function SpotCard({ spot, addMode = null, backHref = null }: { spot: Spot
 
   return (
     <article className="relative flex flex-col gap-2 rounded-[12px] border border-line bg-surface p-3 shadow-card" data-spot-card={spot.id}>
-      <Link href={href} className="flex flex-col gap-2">
+{/* performance Task1: 一覧のカードは先読みしない（1 画面で何十本も裏で走り、関所と Supabase を叩くため） */}
+      <Link href={href} prefetch={false} className="flex flex-col gap-2">
         <h3 className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-0.5 pr-10 text-[15px] font-bold leading-tight text-ink">
           <span className="min-w-0 truncate">{spot.name}</span>
           {spot.isManualSpot && <span className="rounded-full bg-tint px-2 py-0.5 text-[10px] font-semibold text-accent">タビコエだけの場所</span>}

@@ -57,7 +57,7 @@ function MediaCell({
   );
   if (href) {
     return (
-      <Link href={href} aria-label={item.alt} className={`relative block h-full w-full overflow-hidden bg-line ${className ?? ""}`}>
+      <Link href={href} prefetch={false} aria-label={item.alt} className={`relative block h-full w-full overflow-hidden bg-line ${className ?? ""}`}>
         {inner}
       </Link>
     );

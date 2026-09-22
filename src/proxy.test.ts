@@ -1,18 +1,20 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { NextRequest } from "next/server";
+import { claimsResultOf } from "@/lib/auth/claims-result";
 
 /**
  * 出典: docs/tasks/account/session-management/03-refresh-token-expiry-rule.md 単体テスト
- * - 最終利用が 30 日以内: リフレッシュ（getUser）が行われ、締め出されない
+ * - 最終利用が 30 日以内: 認証確認（getClaims）が行われ、締め出されない
  * - 最終利用が 30 日超: リフレッシュせずセッションを破棄し、redirect_to 付きでログイン画面へ（API は 401）
  */
 const state = { user: { id: "u1" } as { id: string } | null, profile: { id: "u1", suspended_at: null } as { id: string; suspended_at: string | null } | null };
-const getUser = vi.fn(async () => ({ data: { user: state.user }, error: null }));
+// performance Task1: 認証確認は getClaims（手元の署名検証）
+const getClaims = vi.fn(async () => claimsResultOf(state.user));
 const signOut = vi.fn(async () => ({ error: null }));
 
 vi.mock("@supabase/ssr", () => ({
   createServerClient: () => ({
-    auth: { getUser, signOut },
+    auth: { getClaims, signOut },
     from: () => ({ select: () => ({ eq: () => ({ maybeSingle: async () => ({ data: state.profile, error: null }), single: async () => ({ data: { is_admin: false } }) }) }) }),
   }),
 }));
@@ -30,15 +32,15 @@ const session = { "sb-abc-auth-token": "token" };
 beforeEach(() => {
   state.user = { id: "u1" };
   state.profile = { id: "u1", suspended_at: null };
-  getUser.mockClear();
+  getClaims.mockClear();
   signOut.mockClear();
 });
 
 describe("proxy（F-AC-02 Task3: 最終利用から 30 日で再ログイン）", () => {
-  it("最終利用が 30 日以内ならリフレッシュ（getUser）が行われ、そのまま通る", async () => {
+  it("最終利用が 30 日以内なら認証確認（getClaims）が行われ、そのまま通る", async () => {
     const response = await proxy(request("/mypage", { ...session, "tabikoe-last-active": String(Date.now() - 10 * day) }));
     expect(response.status).toBe(200);
-    expect(getUser).toHaveBeenCalled();
+    expect(getClaims).toHaveBeenCalled();
     expect(signOut).not.toHaveBeenCalled();
   });
 
@@ -46,7 +48,7 @@ describe("proxy（F-AC-02 Task3: 最終利用から 30 日で再ログイン）"
     const response = await proxy(request("/mypage", { ...session, "tabikoe-last-active": String(Date.now() - 31 * day) }));
     expect(response.status).toBe(307);
     expect(new URL(response.headers.get("location")!).pathname + new URL(response.headers.get("location")!).search).toBe("/login?error=expired&redirect_to=%2Fmypage");
-    expect(getUser).not.toHaveBeenCalled();
+    expect(getClaims).not.toHaveBeenCalled();
     expect(signOut).toHaveBeenCalled();
     expect(response.cookies.get("tabikoe-last-active")?.value).toBe("");
   });
@@ -97,6 +99,17 @@ describe("proxy（F-AC-02 Task3: 最終利用から 30 日で再ログイン）"
       for (const path of ["/signup", "/login", "/api/auth/signup"]) {
         expect((await proxy(request(path, session))).status).toBe(200);
       }
+    });
+  });
+
+  describe("performance Task1: リンクの先読み（Next-Router-Prefetch）", () => {
+    it("先読みでは認証確認だけ行い、users（一時停止・登録待ち）は引かない", async () => {
+      state.profile = null; // 本来なら登録待ちとして /signup へ戻される状態
+      const req = request("/mypage", session);
+      req.headers.set("next-router-prefetch", "1");
+      const response = await proxy(req);
+      expect(response.status).toBe(200);
+      expect(getClaims).toHaveBeenCalled();
     });
   });
 });

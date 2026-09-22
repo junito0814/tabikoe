@@ -14,9 +14,11 @@ const redirect = vi.fn((url: string) => {
 vi.mock("next/navigation", () => ({ redirect: (url: string) => redirect(url) }));
 
 import { requireUserOrRedirect } from "./require-user-or-redirect";
+import { claimsResultOf } from "./claims-result";
 
+// performance Task1: 認証確認は getClaims（手元の署名検証）になった
 const client = (user: { id: string } | null) =>
-  ({ auth: { getUser: async () => ({ data: { user } }) } }) as unknown as SupabaseClient;
+  ({ auth: { getClaims: async () => claimsResultOf(user) } }) as unknown as SupabaseClient;
 
 describe("requireUserOrRedirect", () => {
   it("未ログインなら元のアクセス先を redirect_to に含めてログイン画面へ送る", async () => {
@@ -26,7 +28,7 @@ describe("requireUserOrRedirect", () => {
 
   it("ログイン済みならユーザーを返し、リダイレクトしない", async () => {
     redirect.mockClear();
-    await expect(requireUserOrRedirect(client({ id: "me" }), "/posts/abc-123")).resolves.toEqual({ id: "me" });
+    await expect(requireUserOrRedirect(client({ id: "me" }), "/posts/abc-123")).resolves.toEqual({ id: "me", email: null });
     expect(redirect).not.toHaveBeenCalled();
   });
 });

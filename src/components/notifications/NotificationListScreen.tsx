@@ -210,6 +210,7 @@ export function NotificationListScreen({
                   ) : item.href ? (
                     <Link
                       href={appendBackHref(item.href, "/notifications")}
+                      prefetch={false}
                       data-notification={item.id}
                       className={`flex items-start gap-3 rounded-[12px] border border-line bg-surface p-3 ${
                         item.isRead ? "" : "shadow-card"

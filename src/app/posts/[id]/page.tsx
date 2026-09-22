@@ -41,10 +41,10 @@ export default async function PostDetailPage({
   let comments: CommentPage | null = null;
   let failed = false;
   try {
-    post = await getPostDetail(admin, user.id, id);
-    if (post) {
-      comments = await listComments(admin, user.id, id, 0);
-    }
+    // performance Task1: 投稿本体とコメント 1 ページ目は独立なので並列に（投稿が無ければコメントは捨てる）
+    const [detail, commentPage] = await Promise.all([getPostDetail(admin, user.id, id), listComments(admin, user.id, id, 0)]);
+    post = detail;
+    if (post) comments = commentPage;
   } catch {
     failed = true;
   }

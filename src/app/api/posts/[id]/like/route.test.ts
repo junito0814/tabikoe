@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { claimsResultOf } from "@/lib/auth/claims-result";
 
 /**
  * 出典: docs/tasks/browsing/likes/01-like-toggle-handler.md 単体テスト
@@ -22,7 +23,7 @@ const notificationInsert = vi.fn(async () => ({ error: null }));
 
 vi.mock("@/lib/supabase/server", () => ({
   createClient: async () => ({
-    auth: { getUser: async () => ({ data: { user: state.user }, error: null }) },
+    auth: { getClaims: async () => claimsResultOf(state.user) },
     from: () => ({
       insert,
       delete: () => ({ eq: () => ({ eq: deleteEq2 }) }),

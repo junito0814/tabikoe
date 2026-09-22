@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { claimsResultOf } from "@/lib/auth/claims-result";
 
 /**
  * 出典: docs/tasks/admin/announcement-management/02-announcement-crud-handler.md 単体テスト
@@ -21,7 +22,7 @@ const deleteEq = vi.fn(() => ({
 const remove = vi.fn(() => ({ eq: deleteEq }));
 
 vi.mock("@/lib/supabase/server", () => ({
-  createClient: async () => ({ auth: { getUser: async () => ({ data: { user: state.user }, error: null }) } }),
+  createClient: async () => ({ auth: { getClaims: async () => claimsResultOf(state.user) } }),
 }));
 vi.mock("@/lib/supabase/admin", () => ({
   createAdminClient: () => ({

@@ -47,22 +47,45 @@ function str(value: string | string[] | undefined): string | undefined {
   return typeof value === "string" ? value : undefined;
 }
 
+/** スポット別一覧の見出し（件数・行きたい・最新の報告）。3 本のクエリを並列に */
+async function loadSpotSummary(admin: SupabaseClient, userId: string, spot: { id: string; name: string; prefecture: string | null; lat: number | null; lng: number | null; source: string }): Promise<SpotSummary> {
+  const [countResult, wishlist, statuses] = await Promise.all([
+    admin.from("posts").select("id", { count: "exact", head: true }).eq("spot_id", spot.id).eq("visibility", "public").eq("status", "published").is("hidden_at", null),
+    admin.from("wishlist").select("id").eq("user_id", userId).eq("spot_id", spot.id).maybeSingle(),
+    findLatestSpotStatuses(admin, [spot.id]),
+  ]);
+  return {
+    id: spot.id,
+    name: spot.name,
+    prefecture: spot.prefecture,
+    lat: spot.lat,
+    lng: spot.lng,
+    isManualSpot: spot.source === "manual",
+    postCount: countResult.count ?? 0,
+    isWishlisted: wishlist.data !== null,
+    latestStatus: statuses.get(spot.id) ?? null,
+  };
+}
+
 export async function loadSearchPage(admin: SupabaseClient, userId: string, query: SearchPageQuery): Promise<SearchPageData> {
   const params = new URLSearchParams();
   for (const [key, value] of Object.entries(query)) {
     if (typeof value === "string") params.set(key, value);
   }
 
-  const resolved = await resolveDestination(admin, {
-    spot: str(query.spot),
-    pref: str(query.pref),
-    lat: str(query.lat),
-    lng: str(query.lng),
-    q: str(query.q),
-  });
+  // performance Task1: 行き先の解決と追加モードの読み込みは独立なので並列に（往復 1 回分を節約）
+  const [resolved, addMode] = await Promise.all([
+    resolveDestination(admin, {
+      spot: str(query.spot),
+      pref: str(query.pref),
+      lat: str(query.lat),
+      lng: str(query.lng),
+      q: str(query.q),
+    }),
+    loadAddMode(admin, userId, { itinerary: str(query.itinerary), day: str(query.day) }),
+  ]);
   if (resolved.kind === "spot_missing") return { kind: "spot_missing" };
 
-  const addMode = await loadAddMode(admin, userId, { itinerary: str(query.itinerary), day: str(query.day) });
   const context: SearchContext = {
     destination: resolved.destination,
     addMode: addMode ? { itinerary: addMode.itineraryId, day: addMode.day === null ? null : String(addMode.day) } : null,
@@ -92,40 +115,17 @@ export async function loadSearchPage(admin: SupabaseClient, userId: string, quer
     // v3.1: 検索結果（都道府県・駅）はスポット単位、スポット別は投稿単位で 1 ページ目を取る
     const isSpotResult = resolved.kind !== "spot";
     const empty = resolved.kind === "not_found" || isPhotos;
-    const initialPage: PostCardPage = empty || isSpotResult ? { posts: [], nextOffset: null } : await searchPostCards(admin, userId, filters, 0);
-    const initialSpotPage: SpotCardPage =
-      empty || !isSpotResult ? { spots: [], nextOffset: null } : await searchSpotCards(admin, userId, filters, parseSpotSort(apiParams.get("sort")), 0);
-    // 写真切替で開いたときは写真の 1 ページ目を取る（投稿一覧は「投稿」に戻したときにブラウザが取る）
-    const initialMediaPage =
-      isPhotos && resolved.kind !== "not_found"
-        ? { key: buildPostSearchParams({ ...initialState, view: "posts" }, context, 0).toString(), page: await searchMediaPage(admin, userId, filters, 0, undefined, parseSpotSort(apiParams.get("sort"))) }
-        : null;
-
-    let spot: SpotSummary | null = null;
-    if (resolved.kind === "spot") {
-      const [countResult, wishlist, statuses] = await Promise.all([
-        admin
-          .from("posts")
-          .select("id", { count: "exact", head: true })
-          .eq("spot_id", resolved.spot.id)
-          .eq("visibility", "public")
-          .eq("status", "published")
-          .is("hidden_at", null),
-        admin.from("wishlist").select("id").eq("user_id", userId).eq("spot_id", resolved.spot.id).maybeSingle(),
-        findLatestSpotStatuses(admin, [resolved.spot.id]),
-      ]);
-      spot = {
-        id: resolved.spot.id,
-        name: resolved.spot.name,
-        prefecture: resolved.spot.prefecture,
-        lat: resolved.spot.lat,
-        lng: resolved.spot.lng,
-        isManualSpot: resolved.spot.source === "manual",
-        postCount: countResult.count ?? 0,
-        isWishlisted: wishlist.data !== null,
-        latestStatus: statuses.get(resolved.spot.id) ?? null,
-      };
-    }
+    // performance Task1: 1 ページ目（投稿／スポット／写真）とスポットの見出し（件数・行きたい・報告）は互いに独立なので並列に
+    const spotSort = parseSpotSort(apiParams.get("sort"));
+    const [initialPage, initialSpotPage, mediaPage, spotSummary] = await Promise.all([
+      empty || isSpotResult ? Promise.resolve<PostCardPage>({ posts: [], nextOffset: null }) : searchPostCards(admin, userId, filters, 0),
+      empty || !isSpotResult ? Promise.resolve<SpotCardPage>({ spots: [], nextOffset: null }) : searchSpotCards(admin, userId, filters, spotSort, 0),
+      // 写真切替で開いたときは写真の 1 ページ目を取る（投稿一覧は「投稿」に戻したときにブラウザが取る）
+      isPhotos && resolved.kind !== "not_found" ? searchMediaPage(admin, userId, filters, 0, undefined, spotSort) : Promise.resolve(null),
+      resolved.kind === "spot" ? loadSpotSummary(admin, userId, resolved.spot) : Promise.resolve(null),
+    ]);
+    const initialMediaPage = mediaPage ? { key: buildPostSearchParams({ ...initialState, view: "posts" }, context, 0).toString(), page: mediaPage } : null;
+    const spot: SpotSummary | null = spotSummary;
 
     return { kind: "ok", resolved, context, initialState, initialPage, initialSpotPage, initialMediaPage, addMode, spot };
   } catch {

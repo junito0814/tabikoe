@@ -147,7 +147,7 @@ export function ItinerarySpotRow({
 
         <div className="flex flex-wrap items-center gap-1.5">
           {/* Bug #471: 「← しおり」で戻れるように、このしおりの URL を back= で渡す */}
-          <Link href={`/spots/${spot.spotId}?back=${encodeURIComponent(`/itineraries/${itineraryId}`)}`} className="inline-flex h-7 items-center rounded-full border border-line bg-surface px-2.5 text-[11px] font-semibold text-ink">
+          <Link href={`/spots/${spot.spotId}?back=${encodeURIComponent(`/itineraries/${itineraryId}`)}`} prefetch={false} className="inline-flex h-7 items-center rounded-full border border-line bg-surface px-2.5 text-[11px] font-semibold text-ink">
             投稿一覧
           </Link>
           {spot.hasPosted ? (

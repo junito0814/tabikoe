@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { AppMenuBar } from "@/components/layout/AppMenuBar";
 import { createClient } from "@/lib/supabase/server";
+import { getAuthUserFromClaims } from "@/lib/auth/auth-user";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -32,9 +33,8 @@ export const metadata: Metadata = {
 export default async function RootLayout({ children }: LayoutProps<"/">) {
   // menu-bar-v3 Task1: 未ログインのホーム（/）ではメニューバーを出さないため、ここでログイン状態を見る
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  // performance Task1: ここは「ログインしているか」だけ分かればよいので、手元の署名検証（getClaims）で済ませる
+  const user = await getAuthUserFromClaims(supabase);
 
   return (
     <html

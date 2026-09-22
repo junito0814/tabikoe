@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { claimsResultOf } from "@/lib/auth/claims-result";
 
 /**
  * 出典: docs/tasks/browsing/comments/01-comment-create-handler.md 単体テスト
@@ -34,7 +35,7 @@ const rpc = vi.fn(async (name: string, args: Record<string, unknown>) => {
 
 vi.mock("@/lib/supabase/server", () => ({
   createClient: async () => ({
-    auth: { getUser: async () => ({ data: { user: state.user }, error: null }) },
+    auth: { getClaims: async () => claimsResultOf(state.user) },
     from: () => ({ insert }),
   }),
 }));
