@@ -116,6 +116,20 @@ describe("PostSearchScreen（SC-04 タイムライン）", () => {
     expect(replace).toHaveBeenCalledWith("/search?pref=%E5%A4%A7%E9%98%AA%E5%BA%9C&sort=rating", { scroll: false });
   });
 
+  it("Bug #483: 戻り先（back）があるときは、並び替え・写真切替で URL を書き換えても back を保つ", async () => {
+    renderScreen({ context: { destination: { kind: "spot", spotId: "spot-1" } }, title: "東京駅", backHref: "/search?pref=東京都", backLabel: "東京都", backParam: "/search?pref=東京都" });
+    fireEvent.click(screen.getByRole("button", { name: "並び替え: 新着順" }));
+    fireEvent.click(screen.getByRole("option", { name: "評価順" }));
+    await waitFor(() => expect(replace).toHaveBeenCalled());
+    const url = new URL(String(replace.mock.calls[0][0]), "https://example.com");
+    expect(url.searchParams.get("sort")).toBe("rating");
+    expect(url.searchParams.get("back")).toBe("/search?pref=東京都");
+    fireEvent.click(screen.getByRole("radio", { name: "写真" }));
+    const url2 = new URL(String(replace.mock.calls[replace.mock.calls.length - 1][0]), "https://example.com");
+    expect(url2.searchParams.get("view")).toBe("photos");
+    expect(url2.searchParams.get("back")).toBe("/search?pref=東京都");
+  });
+
   it("絞り込みシートの選択がリクエストに反映され、件数がボタンに出る", async () => {
     const fetchPage = renderScreen({ context: nearby, title: "東京駅" });
     fireEvent.click(screen.getByRole("button", { name: "絞り込み" }));
