@@ -6,14 +6,14 @@ import { NextRequest } from "next/server";
  * - 最終利用が 30 日以内: リフレッシュ（getUser）が行われ、締め出されない
  * - 最終利用が 30 日超: リフレッシュせずセッションを破棄し、redirect_to 付きでログイン画面へ（API は 401）
  */
-const state = { user: { id: "u1" } as { id: string } | null };
+const state = { user: { id: "u1" } as { id: string } | null, profile: { id: "u1", suspended_at: null } as { id: string; suspended_at: string | null } | null };
 const getUser = vi.fn(async () => ({ data: { user: state.user }, error: null }));
 const signOut = vi.fn(async () => ({ error: null }));
 
 vi.mock("@supabase/ssr", () => ({
   createServerClient: () => ({
     auth: { getUser, signOut },
-    from: () => ({ select: () => ({ eq: () => ({ maybeSingle: async () => ({ data: { suspended_at: null } }), single: async () => ({ data: { is_admin: false } }) }) }) }),
+    from: () => ({ select: () => ({ eq: () => ({ maybeSingle: async () => ({ data: state.profile, error: null }), single: async () => ({ data: { is_admin: false } }) }) }) }),
   }),
 }));
 vi.mock("@/lib/supabase/env", () => ({ assertSupabaseEnv: () => {} }));
@@ -29,6 +29,7 @@ const session = { "sb-abc-auth-token": "token" };
 
 beforeEach(() => {
   state.user = { id: "u1" };
+  state.profile = { id: "u1", suspended_at: null };
   getUser.mockClear();
   signOut.mockClear();
 });
@@ -74,5 +75,28 @@ describe("proxy（F-AC-02 Task3: 最終利用から 30 日で再ログイン）"
     expect(response.status).toBe(200);
     expect(signOut).not.toHaveBeenCalled();
     expect(response.cookies.get("tabikoe-last-active")?.value).toBe("");
+  });
+
+  describe("Task11: 認証済みだが未登録（登録待ち）", () => {
+    it("他の画面を開くと同意画面（/signup）へ", async () => {
+      state.profile = null;
+      const response = await proxy(request("/mypage", session));
+      expect(response.status).toBe(307);
+      expect(new URL(response.headers.get("location")!).pathname).toBe("/signup");
+    });
+
+    it("認証以外の API は 401 signup_required", async () => {
+      state.profile = null;
+      const response = await proxy(request("/api/posts", session));
+      expect(response.status).toBe(401);
+      expect(await response.json()).toEqual({ error: "signup_required" });
+    });
+
+    it("同意画面・ログイン画面・認証 API は通る", async () => {
+      state.profile = null;
+      for (const path of ["/signup", "/login", "/api/auth/signup"]) {
+        expect((await proxy(request(path, session))).status).toBe(200);
+      }
+    });
   });
 });

@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { safeRedirectPath } from "@/lib/safe-redirect";
@@ -12,20 +11,18 @@ import { outfit, lora } from "@/app/fonts";
 const MAIN = "var(--accent)";
 
 /**
- * F-AC-01 Task3（SC-01 ログイン画面）/ Task7（SC-20 アカウント新規作成画面）
+ * F-AC-01 Task3（SC-01 ログイン画面）/ Task11（2026-09-22: 入口を「Google で続ける」1 つに）
  * 出典: docs/tasks/account/signup-login/03-login-screen-ui.md
- *       docs/tasks/account/signup-login/07-consent-flow.md
+ *       docs/tasks/account/signup-login/11-google-once-signup.md
  *
- * 2画面はロゴ・OAuth呼び出し・redirect_toの引き継ぎが共通で、
- * 違いは同意欄の有無と文言・遷移先だけのため、mode で切り替える1コンポーネントにしている。
- * 同意欄はSC-20にのみ表示する（要件定義書3.2.1、v2.8）。
+ * ログインと新規登録を区別しない 1 画面（X と同じ）。同意欄はここには無く、未登録なら
+ * コールバックが認証状態を保持したまま同意画面（SC-20 = SignupConsentScreen）へ送る。
  *
  * 【初心者向け】ボタンを押すと `supabase.auth.signInWithOAuth` が Google の認証ページへ移動させる。
- * 戻り先（redirectTo）に /api/auth/callback を指定し、そこに「どの画面から来たか（mode）」「同意したか（consent）」
- * 「ログイン後に戻る場所（redirect_to）」をクエリで乗せておく。判定はすべてコールバック側（サーバー）で行う。
- * `?error=` の値でエラーメッセージを出し分けているのは、コールバックが失敗時にこの画面へ戻すため。
+ * 戻り先（redirectTo）に /api/auth/callback を指定し、「ログイン後に戻る場所（redirect_to）」をクエリで乗せておく。
+ * 判定はすべてコールバック側（サーバー）で行う。`?error=` の値でエラーメッセージを出し分けているのは、
+ * コールバックが失敗時にこの画面へ戻すため。
  */
-export type AuthMode = "login" | "signup";
 
 function GoogleIcon() {
     return (
@@ -50,7 +47,7 @@ function GoogleIcon() {
     );
 }
 
-function AppLogoIcon() {
+export function AppLogoIcon() {
     return (
         <svg width="72" height="72" viewBox="0 0 72 72" fill="none" aria-hidden>
             <rect width="72" height="72" rx="20" fill={MAIN} />
@@ -67,62 +64,22 @@ function AppLogoIcon() {
     );
 }
 
-/**
- * 同意のチェック 1 つ分（利用規約／個人情報保護方針）。
- * 【初心者向け】実際の checkbox を視覚的に隠して置き（sr-only）、見た目は隣の span で描く。
- * こうするとキーボード（Tab → Space）とスクリーンリーダーでも操作できる（要件定義書 7.7）。
- */
-function ConsentCheckbox({ checked, onChange, label }: { checked: boolean; onChange: (next: boolean) => void; label: string }) {
-    return (
-        <label className="flex w-full cursor-pointer items-start gap-2.5">
-            <input
-                type="checkbox"
-                checked={checked}
-                onChange={(event) => onChange(event.target.checked)}
-                aria-label={`${label}に同意する`}
-                className="peer sr-only"
-            />
-            <span
-                aria-hidden
-                className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-[6px] border-[1.5px] transition-colors peer-focus-visible:ring-2 peer-focus-visible:ring-accent peer-focus-visible:ring-offset-2 ${checked ? "bg-accent border-accent" : "border-line bg-transparent"}`}
-            >
-                {checked && (
-                    <svg width="11" height="11" viewBox="0 0 12 12" fill="none">
-                        <path d="M2 6l3 3 5-5" stroke="#fff" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-                    </svg>
-                )}
-            </span>
-            <span className="select-none text-[13px] leading-[1.65] text-ink">
-                <span className="font-medium text-accent">{label}</span>
-                {" に同意する"}
-            </span>
-        </label>
-    );
-}
-
-export default function AuthScreen({ mode }: { mode: AuthMode }) {
-    const isSignup = mode === "signup";
+export default function AuthScreen() {
     const searchParams = useSearchParams();
     const supabase = createClient();
     const [isLoading, setIsLoading] = useState(false);
-    // signup-login Task10（2026-09-22）: 同意は「利用規約」「個人情報保護方針」の 2 つに分け、両方必須
-    const [agreedTerms, setAgreedTerms] = useState(false);
-    const [agreedPrivacy, setAgreedPrivacy] = useState(false);
-    const agreed = agreedTerms && agreedPrivacy;
     const [localError, setLocalError] = useState(false);
 
     const errorParam = searchParams.get("error");
-    const hasConsentError = errorParam === "consent_required";
-    const hasAccountNotFound = errorParam === "account_not_found";
     const hasSuspended = errorParam === "suspended";
     // F-AC-02 Task3: 最終利用から 30 日を超えてセッションが失効した（proxy.ts から error=expired で戻される）
     const hasExpired = errorParam === "expired";
-    const hasError = localError || errorParam === "1" || hasConsentError || hasAccountNotFound || hasSuspended || hasExpired;
+    const hasError = localError || errorParam === "1" || hasSuspended || hasExpired;
     // F-AD-01 Task2: SC-15（管理者ログイン画面）は SC-01 を admin=1 付きで開いたもの（4.1）
-    const isAdminLogin = !isSignup && searchParams.get("admin") === "1";
+    const isAdminLogin = searchParams.get("admin") === "1";
 
-    // SC-01は同意欄を持たないため、常に押下できる
-    const canSubmit = (!isSignup || agreed) && !isLoading;
+    // 同意欄はこの画面に無いので、常に押下できる
+    const canSubmit = !isLoading;
 
     const handleSubmit = async () => {
         if (!canSubmit) return;
@@ -132,15 +89,8 @@ export default function AuthScreen({ mode }: { mode: AuthMode }) {
         const redirectTo = safeRedirectPath(searchParams.get("redirect_to"));
         const callbackUrl = new URL("/api/auth/callback", window.location.origin);
         callbackUrl.searchParams.set("redirect_to", redirectTo);
-        callbackUrl.searchParams.set("mode", mode);
         if (isAdminLogin) {
             callbackUrl.searchParams.set("admin", "1");
-        }
-        if (isSignup) {
-            // consent は互換のため残し、サーバーは terms と privacy の両方を確認する（Task10）
-            callbackUrl.searchParams.set("consent", agreed ? "1" : "0");
-            callbackUrl.searchParams.set("terms", agreedTerms ? "1" : "0");
-            callbackUrl.searchParams.set("privacy", agreedPrivacy ? "1" : "0");
         }
 
         const { error } = await supabase.auth.signInWithOAuth({
@@ -159,15 +109,11 @@ export default function AuthScreen({ mode }: { mode: AuthMode }) {
         }
     };
 
-    const errorMessage = hasAccountNotFound
-        ? "アカウントが見つかりません。新規登録してください"
-        : hasConsentError
-            ? "利用規約と個人情報保護方針への同意が必要です"
-            : hasSuspended
-                ? "このアカウントは一時停止されています"
-                : hasExpired
-                    ? "しばらく利用がなかったため、もう一度ログインしてください"
-                    : ERROR_MESSAGES.oauthFailure;
+    const errorMessage = hasSuspended
+        ? "このアカウントは一時停止されています"
+        : hasExpired
+            ? "しばらく利用がなかったため、もう一度ログインしてください"
+            : ERROR_MESSAGES.oauthFailure;
 
     return (
         <div
@@ -194,12 +140,6 @@ export default function AuthScreen({ mode }: { mode: AuthMode }) {
                     )}
                 </p>
 
-                {isSignup && (
-                    <div className="mb-5 flex w-full flex-col gap-3">
-                        <ConsentCheckbox checked={agreedTerms} onChange={setAgreedTerms} label="利用規約" />
-                        <ConsentCheckbox checked={agreedPrivacy} onChange={setAgreedPrivacy} label="個人情報保護方針" />
-                    </div>
-                )}
 
                 <button
                     type="button"
@@ -209,25 +149,13 @@ export default function AuthScreen({ mode }: { mode: AuthMode }) {
                 >
                     <GoogleIcon />
                     <span className="text-[15px] font-semibold tracking-[0.2px] text-ink">
-                        {isLoading
-                            ? "リダイレクト中..."
-                            : isSignup
-                                ? "Googleでアカウントを作成"
-                                : "Googleでログイン"}
+                        {isLoading ? "リダイレクト中..." : "Google で続ける"}
                     </span>
                 </button>
 
                 {hasError && <ErrorNotice className="mt-3 w-full" message={errorMessage} />}
 
-                {/* Task10（2026-09-22）: SC-01 に「新規登録」の導線は置かない。未登録ならログイン後に自動で SC-20 へ（3.2.1） */}
-                {isSignup && (
-                    <p className="mt-8 text-center text-[13px] leading-[1.7] text-muted">
-                        すでにアカウントをお持ちの方は{" "}
-                        <Link href="/login" className="font-medium text-accent underline underline-offset-2">
-                            ログイン
-                        </Link>
-                    </p>
-                )}
+                {/* Task11（2026-09-22）: 入口はこのボタン 1 つ。新規登録の導線は置かない（未登録なら自動で同意画面へ。3.2.1） */}
             </div>
         </div>
     );

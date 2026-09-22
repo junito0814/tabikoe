@@ -59,9 +59,9 @@ export default async function Home({
         </p>
       </div>
 
+      {/* Task11（2026-09-22）: 入口は 1 つ。ログインと新規登録の区別は SC-01 の先（コールバック）で行う */}
       <div className="flex w-full max-w-[320px] flex-col gap-2.5">
-        <NavLink href="/signup" label="アカウントを作成" />
-        <NavLink href="/login" label="ログイン" />
+        <NavLink href="/login" label="はじめる" />
       </div>
     </div>
   );
