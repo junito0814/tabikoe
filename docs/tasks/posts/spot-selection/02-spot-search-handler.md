@@ -9,13 +9,13 @@
 
 ## 実装内容
 
-- `GET /api/spots/search?query=...`を実装する
+- `GET /api/spots/candidates?query=...`を実装する（もとは `/api/spots/search`。v3.1 で同 URL がスポットカード用になったため 2026-09-22 に移動。Bug #485）
 - Google Places APIの検索結果と、Supabase上の手動登録スポットを統合する
 - 投稿数が多い順に並べ、Google由来・手動登録あわせて最大5件を返す
 
 ## 成果物
 
-- `app/api/spots/search/route.ts`
+- `app/api/spots/candidates/route.ts`
 
 ## テスト要件
 
