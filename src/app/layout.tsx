@@ -32,9 +32,11 @@ export const metadata: Metadata = {
  */
 export default async function RootLayout({ children }: LayoutProps<"/">) {
   // menu-bar-v3 Task1: 未ログインのホーム（/）ではメニューバーを出さないため、ここでログイン状態を見る
-  const supabase = await createClient();
-  // performance Task1: ここは「ログインしているか」だけ分かればよいので、手元の署名検証（getClaims）で済ませる
-  const user = await getAuthUserFromClaims(supabase);
+  // performance Task1: ここは「ログインしているか」だけ分かればよいので、手元の署名検証（getClaims）で済ませる。
+  // 【初心者向け】この共通レイアウトは 404 ページを含む全ページで動くので、ここで例外を投げるとビルドごと止まる
+  // （環境変数の入れ忘れでデプロイが丸ごと失敗した）。読めなければ「未ログイン」として描き、原因はログに出す。
+  // 実際のページを開けば、そのページ自身が同じ環境変数のエラーを出すので、設定漏れは見逃されない。
+  const user = await getMenuBarUser();
 
   return (
     <html
@@ -47,4 +49,14 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
       </body>
     </html>
   );
+}
+
+/** メニューバーの出し分け用に、ログイン状態だけを見る。失敗しても画面は描く（未ログイン扱い） */
+async function getMenuBarUser() {
+  try {
+    return await getAuthUserFromClaims(await createClient());
+  } catch (error) {
+    console.error("[layout] ログイン状態を確認できませんでした:", error);
+    return null;
+  }
 }
