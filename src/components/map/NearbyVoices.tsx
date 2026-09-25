@@ -86,7 +86,9 @@ export function NearbyVoices({
     onPostsLoadedRef.current = onPostsLoaded;
   }, [onActiveChange, onPostsLoaded]);
 
-  // map-restore Task1: 詳細から戻ったときに中央へ戻すカード。1 回使ったら忘れる（以後は普通に先頭から）
+  // map-restore Task1: 詳細から戻ったときに中央へ戻すカード。
+  // Bug #511: 戻ったときは現在地を取り直すため一覧を 2 回取る。どちらの取得でも同じカードを選べるよう、
+  // 利用者が操作する（スライド・タップ・移動手段の変更）まで覚えておく
   const restoreSpotRef = useRef<string | null>(initialActiveSpotId);
 
   useEffect(() => {
@@ -97,7 +99,7 @@ export function NearbyVoices({
         setPosts(result);
         setFailed(false);
         const restoreIndex = restoreSpotRef.current ? result.findIndex((post) => post.spotId === restoreSpotRef.current) : -1;
-        restoreSpotRef.current = null;
+
         const index = restoreIndex >= 0 ? restoreIndex : 0;
         setActiveIndex(index);
         onPostsLoadedRef.current?.(result);
@@ -123,6 +125,7 @@ export function NearbyVoices({
   const selectOrOpen = (index: number) => {
     const post = posts?.[index];
     if (!post) return;
+    restoreSpotRef.current = null; // 利用者が選んだら、復元の指定は忘れる
     if (index === activeIndex) {
       router.push(appendBackHref(`/spots/${post.spotId}`, backHref));
       return;
@@ -139,6 +142,7 @@ export function NearbyVoices({
     // 右端まで送っても最後のカードが選ばれなかった。各カードの実際の位置を測って中央に最も近いものを選ぶ
     const index = centeredCardIndex(scroller);
     if (index !== null && index !== activeIndex) {
+      restoreSpotRef.current = null; // 利用者がスライドしたら、復元の指定は忘れる
       setActiveIndex(index);
       onActiveChangeRef.current?.(posts[index] ?? null);
     }
@@ -155,6 +159,7 @@ export function NearbyVoices({
             value={mode}
             onChange={(event) => {
               const next = event.target.value as TravelMode;
+              restoreSpotRef.current = null; // 移動手段を変えたら、復元の指定は忘れる
               setMode(next);
               onModeChange?.(next);
             }}
