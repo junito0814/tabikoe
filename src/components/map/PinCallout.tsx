@@ -88,12 +88,11 @@ function SpotBody({ pin, backHref }: { pin: MapPinData; backHref: string | null 
       <div className="mt-0.5 flex items-center gap-2">
         {/* wishlist-v3 Task1: 吹き出しにも「＋」（保存先シート）。赤ピン＝保存済みなので ✓ で出す */}
         {pin.spotId && <SaveButton spotId={pin.spotId} initialSaved={pin.kind === "saved"} size="sm" />}
+        {/* map-restore Task2（2026-09-25）: 「投稿する」→「投稿を見る」。本体タップだけでは一覧へ行けると
+            分からないため、文言のあるボタンに置き換えた。投稿は右下の「ここに投稿」と長押しから（要件 3.4.4） */}
         {pin.spotId && (
-          <Link
-            href={composeHref({ kind: "spot", spotId: pin.spotId })}
-            className="inline-flex h-8 flex-1 items-center justify-center rounded-full bg-accent text-[12px] font-bold text-white"
-          >
-            投稿する
+          <Link href={listHref} className="inline-flex h-8 flex-1 items-center justify-center rounded-full bg-accent text-[12px] font-bold text-white">
+            投稿を見る
           </Link>
         )}
       </div>

@@ -121,7 +121,7 @@ describe("MapScreen（SC-02 v3.0）", () => {
     expect(screen.getByRole("link", { name: "ここに投稿" })).toBeInTheDocument();
   });
 
-  it("ピンをタップすると吹き出しが出て、本体のタップで一覧へ・「投稿する」のリンク先が正しい（「一覧」ボタンは無い。v3.1）", async () => {
+  it("ピンをタップすると吹き出しが出て、本体・「投稿を見る」のどちらでも投稿一覧へ（「一覧」「投稿する」は無い。v3.1／2026-09-25）", async () => {
     render(<MapScreen open={resolveMapOpen({})} fetchPins={async () => [pin("spot-1")]} resolveCenter={resolveCenter} />);
     await settle();
     fireEvent.click(await screen.findByRole("button", { name: "spot-1:post" }));
@@ -131,7 +131,9 @@ describe("MapScreen（SC-02 v3.0）", () => {
     expect(screen.queryByRole("link", { name: "一覧" })).toBeNull();
     // Bug #471: 一覧から「← 地図」でこの地図（URL ごと）に戻れるよう back を付ける（テストでは jsdom の URL "/"）
     expect(callout.querySelector("[data-callout-body]")).toHaveAttribute("href", "/spots/spot-1?back=%2F");
-    expect(screen.getByRole("link", { name: "投稿する" })).toHaveAttribute("href", "/posts/new?spot=spot-1");
+    // map-restore Task2（2026-09-25）: 「投稿する」を「投稿を見る」に変更（行き先は本体タップと同じ投稿一覧）
+    expect(screen.getByRole("link", { name: "投稿を見る" })).toHaveAttribute("href", "/spots/spot-1?back=%2F");
+    expect(screen.queryByRole("link", { name: "投稿する" })).toBeNull();
     expect(panTo).toHaveBeenCalledWith({ lat: 35.65, lng: 139.75 });
     // 地図をタップすると閉じる
     fireEvent.click(screen.getByTestId("map-stub"));
