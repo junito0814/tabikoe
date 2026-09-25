@@ -66,4 +66,26 @@ describe("NearbyVoices（近くのスポット）", () => {
     scroller.dispatchEvent(new Event("scroll", { bubbles: true }));
     await waitFor(() => expect(onActiveChange).toHaveBeenCalledWith(expect.objectContaining({ id: "c" })));
   });
+
+  it("map-restore: 詳細から戻ったときは前に選んでいたカードから始まる", async () => {
+    const onActiveChange = vi.fn();
+    render(
+      <NearbyVoices
+        center={{ lat: 35.68, lng: 139.76 }}
+        fetchPosts={async () => [post("a"), post("b"), post("c")]}
+        onActiveChange={onActiveChange}
+        initialActiveSpotId="s-c"
+      />
+    );
+    await waitFor(() => expect(onActiveChange).toHaveBeenCalledWith(expect.objectContaining({ id: "c" })));
+    expect(document.querySelector("[data-nearby-card='c']")).toHaveAttribute("aria-current", "true");
+  });
+
+  it("map-restore: 覚えていたカードが無くなっていたら先頭から始まる", async () => {
+    const onActiveChange = vi.fn();
+    render(
+      <NearbyVoices center={{ lat: 35.68, lng: 139.76 }} fetchPosts={async () => [post("a"), post("b")]} onActiveChange={onActiveChange} initialActiveSpotId="s-zzz" />
+    );
+    await waitFor(() => expect(onActiveChange).toHaveBeenCalledWith(expect.objectContaining({ id: "a" })));
+  });
 });

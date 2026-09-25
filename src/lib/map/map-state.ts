@@ -20,8 +20,15 @@ export interface MapState {
   mode: "default" | "explore" | "spot" | "itinerary";
   center: { lat: number; lng: number };
   zoom: number;
-  /** 探すモードの移動手段（v3.2。徒歩／自転車／車） */
+  /** 探すモードの移動手段（v3.2。徒歩／自転車／車／電車／バス） */
   travel?: TravelMode;
+  /**
+   * map-restore Task1（2026-09-25）: 探すモードを「開いたとき」の現在地。
+   * 復元してよいかの判定に使う（今の中心はカードのスライドで動くので判定には使えない）
+   */
+  openedAt?: { lat: number; lng: number };
+  /** map-restore Task1: 選んでいたカードのスポット。戻ったとき同じカードを中央に戻す */
+  activeSpotId?: string | null;
 }
 
 const KEY = "tabikoe:map-state";
@@ -74,6 +81,10 @@ export function loadMapState(storage: Storage | undefined = defaultStorage(), no
       center: { lat: parsed.center.lat, lng: parsed.center.lng },
       zoom: parsed.zoom,
       ...(parsed.travel !== undefined ? { travel: parsed.travel } : {}),
+      ...(parsed.openedAt && typeof parsed.openedAt.lat === "number" && typeof parsed.openedAt.lng === "number"
+        ? { openedAt: { lat: parsed.openedAt.lat, lng: parsed.openedAt.lng } }
+        : {}),
+      ...(typeof parsed.activeSpotId === "string" ? { activeSpotId: parsed.activeSpotId } : {}),
     };
   } catch {
     return null;
@@ -98,7 +109,7 @@ export function mapEntryFor(open: { mode: string; focusSpotId: string | null; it
 }
 
 /** 探すモードで「同じ場所から開き直した」とみなす距離。これより離れていれば移動したので新しく開く */
-const EXPLORE_SAME_PLACE_METERS = 500;
+export const EXPLORE_SAME_PLACE_METERS = 500;
 
 /**
  * 復元してよいか（純粋関数）。
@@ -107,10 +118,22 @@ const EXPLORE_SAME_PLACE_METERS = 500;
  *   - 探すモードは URL に現在地が付くので、保存した中心から 500m 以内なら「戻ってきた」、離れていれば「移動して開き直した」とみなして復元しない
  *   - それ以外（別の入口から新しく開いた）→ 復元しない
  */
+/**
+ * 復元してよいか（map-restore Task1 で判定を変更。2026-09-25）
+ *
+ * 【初心者向け】判断の材料は「同じ入口から戻ってきたか」。以前は探すモードだけ「今回の現在地と、保存した
+ * 地図の中心が 500m 以内か」で見ていたが、カードを横にスライドすると地図がそのスポットへ動くので、
+ * 保存される中心は現在地から離れる（車なら 10km まで）。そのため戻るたびに復元が見送られ、初期値に戻っていた。
+ * 「別の街で開き直したら初期位置」という元の狙いは、探すモードを“開いたとき”の現在地（openedAt）と
+ * 今回の現在地を比べて保つ。現在地が取れないときは復元する（取り直しを待たない）。
+ */
 export function shouldRestoreMapState(entry: MapEntry, saved: MapState | null, requestedCenter: { lat: number; lng: number } | null = null): saved is MapState {
   if (!saved) return false;
   if (entry === "default") return true;
   if (saved.entry !== entry) return false;
-  if (entry === "explore" && requestedCenter) return haversineMeters(requestedCenter, saved.center) <= EXPLORE_SAME_PLACE_METERS;
+  if (entry === "explore" && requestedCenter && saved.openedAt) {
+    return haversineMeters(requestedCenter, saved.openedAt) <= EXPLORE_SAME_PLACE_METERS;
+  }
   return true;
 }
+
