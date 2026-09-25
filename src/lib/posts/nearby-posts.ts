@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { getBlockedUserIds } from "@/lib/blocks/get-blocked-user-ids";
 import { haversineMeters, walkMinutes } from "@/lib/geo/walk-minutes";
+import { getTravelMinutes } from "@/lib/google/routes-cache";
 import { travelMinutes, TRAVEL_RADIUS_METERS, type TravelMode } from "@/lib/geo/travel-time";
 import { createPostPhotoUrls } from "@/lib/posts/signed-url";
 import { boundsAround } from "@/lib/posts/search-posts";
@@ -99,7 +100,9 @@ export async function getNearbyPosts(
   viewerId: string,
   center: { lat: number; lng: number },
   radiusMeters: NearbyRadius,
-  mode: TravelMode = "walk"
+  mode: TravelMode = "walk",
+  /** 差し替え口（単体テスト用）。既定は Routes API＋10 分キャッシュ */
+  travelMinutesFetcher: (origin: { lat: number; lng: number }, destinations: { lat: number; lng: number }[], mode: TravelMode) => Promise<(number | null)[]> = getTravelMinutes
 ): Promise<NearbyPost[]> {
   const blockedIds = await getBlockedUserIds(admin, viewerId);
   const box = boundsAround(center, radiusMeters);
@@ -121,6 +124,16 @@ export async function getNearbyPosts(
   if (error) throw error;
 
   const selected = selectNearbyPosts((data ?? []) as unknown as NearbyPostRow[], center, radiusMeters, NEARBY_POSTS_LIMIT, mode);
-  const signed = await createPostPhotoUrls(admin, selected.flatMap((post) => (post.thumbnailPath ? [post.thumbnailPath] : [])));
-  return selected.map(({ thumbnailPath, ...post }) => ({ ...post, thumbnailUrl: thumbnailPath ? (signed.get(thumbnailPath) ?? null) : null }));
+
+  // travel-time Task2（2026-09-25）: 車・電車・バスは Routes API の実測に差し替える。
+  // 取れなかった分（経路なし・API 障害）は selectNearbyPosts が入れた直線距離の計算のまま残す
+  const [signed, apiMinutes] = await Promise.all([
+    createPostPhotoUrls(admin, selected.flatMap((post) => (post.thumbnailPath ? [post.thumbnailPath] : []))),
+    travelMinutesFetcher(center, selected.map((post) => ({ lat: post.lat, lng: post.lng })), mode),
+  ]);
+  return selected.map(({ thumbnailPath, ...post }, index) => ({
+    ...post,
+    minutes: apiMinutes[index] ?? post.minutes,
+    thumbnailUrl: thumbnailPath ? (signed.get(thumbnailPath) ?? null) : null,
+  }));
 }

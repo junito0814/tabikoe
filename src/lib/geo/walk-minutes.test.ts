@@ -2,11 +2,12 @@ import { describe, expect, it } from "vitest";
 import { haversineMeters, walkMinutes, walkMinutesBetween } from "./walk-minutes";
 
 describe("walkMinutes", () => {
-  it("80m/分で切り上げる", () => {
-    expect(walkMinutes(80)).toBe(1);
-    expect(walkMinutes(81)).toBe(2);
-    expect(walkMinutes(640)).toBe(8);
-    expect(walkMinutes(641)).toBe(9);
+  // travel-time（2026-09-25）: 80 → 60m/分。直線距離を使うため、道のり基準の 80 を 1.3 で割った値にした
+  it("60m/分で切り上げる", () => {
+    expect(walkMinutes(60)).toBe(1);
+    expect(walkMinutes(61)).toBe(2);
+    expect(walkMinutes(600)).toBe(10);
+    expect(walkMinutes(601)).toBe(11);
   });
 
   it("0m でも 1 分", () => {

@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { DEFAULT_NEARBY_RADIUS, parseNearbyRadius, selectNearbyPosts } from "./nearby-posts";
 
 /**
@@ -24,8 +24,9 @@ describe("selectNearbyPosts", () => {
     ];
     const result = selectNearbyPosts(rows, center, 1000);
     expect(result.map((post) => post.id)).toEqual(["near", "mid"]);
+    // travel-time（2026-09-25）: 徒歩は 60m/分
     expect(result[0].walkMinutes).toBe(2);
-    expect(result[1].walkMinutes).toBe(9);
+    expect(result[1].walkMinutes).toBe(11);
     expect(result[0].thumbnailPath).toBe("near.jpg");
   });
 
@@ -46,11 +47,13 @@ describe("parseNearbyRadius", () => {
 });
 
 describe("v3.2: 移動手段", () => {
-  it("移動手段ごとの半径（徒歩 1km／自転車 3km／車 10km）と所要時間の目安", async () => {
+  it("移動手段ごとの半径（徒歩 1km／自転車 3km／車 10km／電車 15km／バス 5km）と所要時間の目安", async () => {
     const { radiusForTravelMode, selectNearbyPosts } = await import("./nearby-posts");
     expect(radiusForTravelMode("walk")).toBe(1000);
     expect(radiusForTravelMode("bicycle")).toBe(3000);
     expect(radiusForTravelMode("car")).toBe(10000);
+    expect(radiusForTravelMode("train")).toBe(15000);
+    expect(radiusForTravelMode("bus")).toBe(5000);
     const center = { lat: 35.68, lng: 139.76 };
     const row = { id: "p", spot_id: "s", comment: null, spots: { id: "s", name: "遠い店", lat: 35.7, lng: 139.76 }, post_photos: [] };
     // 約 2.2km: 徒歩では範囲外（1km）だが車（10km）では入り、分数は車の速度
@@ -58,6 +61,39 @@ describe("v3.2: 移動手段", () => {
     const byCar = selectNearbyPosts([row], center, 10000, 20, "car");
     expect(byCar).toHaveLength(1);
     expect(byCar[0].mode).toBe("car");
-    expect(byCar[0].minutes).toBe(Math.ceil(byCar[0].distanceMeters / 500));
+    // Routes API が使えないときの目安（車 300m/分）。実測に差し替えるのは getNearbyPosts の役目
+    expect(byCar[0].minutes).toBe(Math.ceil(byCar[0].distanceMeters / 300));
+  });
+});
+
+describe("getNearbyPosts（2026-09-25: 車・電車・バスは Routes API の実測に差し替える）", () => {
+  const rows = [
+    { id: "a", spot_id: "s1", comment: null, spots: { id: "s1", name: "近い店", lat: 35.685, lng: 139.76 }, post_photos: [] },
+    { id: "b", spot_id: "s2", comment: null, spots: { id: "s2", name: "遠い店", lat: 35.70, lng: 139.76 }, post_photos: [] },
+  ];
+  const admin = {
+    from: () => {
+      const q: Record<string, unknown> = {};
+      for (const m of ["select", "eq", "is", "gte", "lte", "order", "limit", "not", "in", "or"]) q[m] = () => q;
+      q.then = (resolve: (v: unknown) => void) => resolve({ data: rows, error: null });
+      return q;
+    },
+    storage: { from: () => ({ createSignedUrls: async () => ({ data: [], error: null }) }) },
+  } as unknown as Parameters<typeof import("./nearby-posts").getNearbyPosts>[0];
+
+  it("Routes API が返した分数を使い、返らなかった分は直線距離の計算のまま残す", async () => {
+    const { getNearbyPosts } = await import("./nearby-posts");
+    const fetcher = vi.fn(async () => [9, null]);
+    const posts = await getNearbyPosts(admin, "me", { lat: 35.68, lng: 139.76 }, 10000, "car", fetcher);
+    expect(fetcher).toHaveBeenCalledTimes(1);
+    expect(posts[0].minutes).toBe(9);
+    expect(posts[1].minutes).toBe(Math.ceil(posts[1].distanceMeters / 300));
+  });
+
+  it("徒歩では Routes API を呼ばない（呼び出し口が全部 null を返す）", async () => {
+    const { getNearbyPosts } = await import("./nearby-posts");
+    const fetcher = vi.fn(async (_o: unknown, d: unknown[]) => d.map(() => null));
+    const posts = await getNearbyPosts(admin, "me", { lat: 35.68, lng: 139.76 }, 1000, "walk", fetcher);
+    expect(posts[0].minutes).toBe(Math.ceil(posts[0].distanceMeters / 60));
   });
 });
