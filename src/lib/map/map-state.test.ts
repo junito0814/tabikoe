@@ -44,9 +44,31 @@ describe("map-state", () => {
     expect(shouldRestoreMapState("default", explore)).toBe(true); // 「← 地図」で素の /map に戻った → 探すモードのまま
     expect(shouldRestoreMapState("explore", spot)).toBe(false); // ホームから探すモードを新しく開いた
     expect(shouldRestoreMapState("default", null)).toBe(false);
-    // 探すモード: 同じ場所（500m 以内）なら復元、離れていれば移動したので復元しない
-    expect(shouldRestoreMapState("explore", explore, { lat: 35.681, lng: 139.761 })).toBe(true);
-    expect(shouldRestoreMapState("explore", explore, { lat: 35.7, lng: 139.8 })).toBe(false);
+  });
+
+  // map-restore Task1（2026-09-25）: 判定は「同じ入口か」だけ。探すモードは “開いたときの現在地”（openedAt）で見る。
+  // 以前は「今の地図の中心」と比べていたため、カードを横にスライドして地図が動くと復元されなかった
+  it("探すモードは開いたときの現在地で判定する（今の中心が動いていても復元する）", () => {
+    const openedAt = { lat: 35.68, lng: 139.76 };
+    // カードのスライドで中心が 3km 先へ動いた状態
+    const moved: MapState = { ...explore, center: { lat: 35.71, lng: 139.76 }, openedAt, activeSpotId: "s9" };
+    expect(shouldRestoreMapState("explore", moved, { lat: 35.681, lng: 139.761 })).toBe(true);
+    // 別の街から開き直した（開いた場所から 500m 超）
+    expect(shouldRestoreMapState("explore", moved, { lat: 35.7, lng: 139.8 })).toBe(false);
+    // 現在地が取れないときは復元する（取り直しを待たない）
+    expect(shouldRestoreMapState("explore", moved, null)).toBe(true);
+    // 古い保存（openedAt が無い）も復元する
+    expect(shouldRestoreMapState("explore", explore, { lat: 35.7, lng: 139.8 })).toBe(true);
+  });
+
+  it("選んでいたカードと開いた場所も保存して戻る", () => {
+    const storage = memoryStorage();
+    const state: MapState = { ...explore, openedAt: { lat: 35.68, lng: 139.76 }, activeSpotId: "s9" };
+    saveMapState(state, storage);
+    expect(loadMapState(storage)).toEqual(state);
+    // 壊れた値は捨てる（他は生きる）
+    storage.setItem("tabikoe:map-state", JSON.stringify({ ...state, openedAt: { lat: "x" }, activeSpotId: 5, savedAt: Date.now() }));
+    expect(loadMapState(storage)).toEqual(explore);
   });
 
   it("入口の種類は開き方から決まる", () => {

@@ -100,6 +100,30 @@ export function MapScreen({
         : openProp;
   const entry = mapEntryFor(open);
   const travelRef = useRef<TravelMode | undefined>(restored?.travel ?? openProp.travel);
+  // map-restore Task1（2026-09-25）: 選んでいたカードと、探すモードを「開いたとき」の現在地。
+  // 開いたときの現在地は復元の判定に使う（今の中心はカードのスライドで動くので判定には使えない）。
+  // 復元して開いたときは、その値を引き継いで上書きしない
+  const activeSpotRef = useRef<string | null>(restored?.activeSpotId ?? null);
+  const openedAtRef = useRef<{ lat: number; lng: number } | undefined>(restored?.openedAt ?? (openProp.mode === "explore" ? (openProp.center ?? undefined) : undefined));
+
+  /** 今の地図の状態を保存する（中心は省略すると地図から読む） */
+  const saveCurrentMapState = useCallback(
+    (center?: LatLng) => {
+      const zoom = mapRef.current?.getZoom();
+      const nextCenter = center ?? mapRef.current?.getCenter();
+      if (typeof zoom !== "number" || !nextCenter) return;
+      saveMapState({
+        entry,
+        mode: open.mode,
+        center: nextCenter,
+        zoom,
+        ...(travelRef.current !== undefined ? { travel: travelRef.current } : {}),
+        ...(openedAtRef.current ? { openedAt: openedAtRef.current } : {}),
+        ...(activeSpotRef.current ? { activeSpotId: activeSpotRef.current } : {}),
+      });
+    },
+    [entry, open.mode]
+  );
 
   const [initial, setInitial] = useState<InitialCenter | null>(
     open.center ? { center: open.center, zoom: open.zoom, source: open.mode === "explore" && !restored ? "current" : "fallback" } : null
@@ -155,6 +179,8 @@ export function MapScreen({
       if (cancelled) return;
       setInitial(result);
       if (result.source === "current") setCurrentLocation(result.center);
+      // map-restore Task1: 探すモードを「開いたときの現在地」を覚える（復元の判定に使う）。復元して開いたときは上書きしない
+      if (open.mode === "explore" && !openedAtRef.current) openedAtRef.current = result.center;
     });
     return () => {
       cancelled = true;
@@ -199,11 +225,9 @@ export function MapScreen({
     setBounds((current) => (current && isSameBounds(current, next) ? current : next));
     setCenter((current) => (current && current.lat === nextCenter.lat && current.lng === nextCenter.lng ? current : nextCenter));
     // v3.1: 落ち着く（idle）たびに状態を保存する。戻ってきたときの復元用
-    const zoom = mapRef.current?.getZoom();
-    if (typeof zoom === "number") {
-      saveMapState({ entry, mode: open.mode, center: nextCenter, zoom, ...(travelRef.current !== undefined ? { travel: travelRef.current } : {}) });
-    }
+    saveCurrentMapState(nextCenter);
     // itineraryPins は fit の対象。ref 経由なので依存に入れる必要は無いが、最新の配列を使うために入れる
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [itineraryPins, entry, open.mode]);
 
   const closeCallout = useCallback(() => {
@@ -248,10 +272,14 @@ export function MapScreen({
     }
   };
 
-  // 探すモード: 中央のカードに対応するピンを強調
+  // 探すモード: 中央のカードに対応するピンを強調し、そのカードも覚える（map-restore Task1）
   const handleActiveNearby = useCallback((post: NearbyPost | null) => {
     setActiveNearbySpotId(post?.spotId ?? null);
+    activeSpotRef.current = post?.spotId ?? null;
     if (post) mapRef.current?.panTo({ lat: post.lat, lng: post.lng });
+    saveCurrentMapState();
+    // saveCurrentMapState は ref だけを読むので依存に入れない
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const mapPins = useMemo<GoogleMapPin[]>(() => {
@@ -390,12 +418,11 @@ export function MapScreen({
             onActiveChange={handleActiveNearby}
             onPostsLoaded={setNearbyPosts}
             initialMode={restored?.travel ?? openProp.travel}
+            initialActiveSpotId={restored?.activeSpotId ?? null}
             onModeChange={(travel) => {
               // 移動手段は idle を待たずにその場で保存する（地図を動かさずに切り替えて離れることがある）
               travelRef.current = travel;
-              const zoom = mapRef.current?.getZoom();
-              const current = mapRef.current?.getCenter();
-              if (typeof zoom === "number" && current) saveMapState({ entry, mode: open.mode, center: current, zoom, travel });
+              saveCurrentMapState();
             }}
           />
         </div>

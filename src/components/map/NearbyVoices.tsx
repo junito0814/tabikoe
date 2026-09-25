@@ -25,6 +25,12 @@ export type FetchNearbyPosts = (center: { lat: number; lng: number }, mode: Trav
  * 【初心者向け】`getBoundingClientRect()` は画面上の実際の位置を返す。カードの中心と、スクロール領域の中心の
  * 距離をくらべていちばん近いものを選ぶ。カードの幅・隙間・余白が変わっても、端まで送っても正しく決まる。
  */
+/** 指定した番号のカードを中央へ寄せる（map-restore Task1） */
+export function scrollToCard(scroller: HTMLElement | null, index: number): void {
+  const card = scroller?.querySelectorAll<HTMLElement>("[data-nearby-card]")[index];
+  card?.scrollIntoView({ block: "nearest", inline: "center" });
+}
+
 export function centeredCardIndex(scroller: Pick<HTMLElement, "getBoundingClientRect"> & { querySelectorAll: HTMLElement["querySelectorAll"] }): number | null {
   const cards = Array.from(scroller.querySelectorAll<HTMLElement>("[data-nearby-card]"));
   if (cards.length === 0) return null;
@@ -50,6 +56,7 @@ export function NearbyVoices({
   onPostsLoaded,
   initialMode = DEFAULT_TRAVEL_MODE,
   onModeChange,
+  initialActiveSpotId = null,
   backHref = null,
 }: {
   center: { lat: number; lng: number };
@@ -62,6 +69,8 @@ export function NearbyVoices({
   initialMode?: TravelMode;
   /** v3.1: 移動手段を切り替えたとき（地図の状態の保存用） */
   onModeChange?: (mode: TravelMode) => void;
+  /** map-restore Task1（2026-09-25）: 詳細から戻ったとき、最初に中央に置くカードのスポット */
+  initialActiveSpotId?: string | null;
 }) {
   const [mode, setMode] = useState<TravelMode>(initialMode);
   const [posts, setPosts] = useState<NearbyPost[] | null>(null);
@@ -75,6 +84,9 @@ export function NearbyVoices({
     onPostsLoadedRef.current = onPostsLoaded;
   }, [onActiveChange, onPostsLoaded]);
 
+  // map-restore Task1: 詳細から戻ったときに中央へ戻すカード。1 回使ったら忘れる（以後は普通に先頭から）
+  const restoreSpotRef = useRef<string | null>(initialActiveSpotId);
+
   useEffect(() => {
     let cancelled = false;
     fetchPosts(center, mode)
@@ -82,9 +94,14 @@ export function NearbyVoices({
         if (cancelled) return;
         setPosts(result);
         setFailed(false);
-        setActiveIndex(0);
+        const restoreIndex = restoreSpotRef.current ? result.findIndex((post) => post.spotId === restoreSpotRef.current) : -1;
+        restoreSpotRef.current = null;
+        const index = restoreIndex >= 0 ? restoreIndex : 0;
+        setActiveIndex(index);
         onPostsLoadedRef.current?.(result);
-        onActiveChangeRef.current?.(result[0] ?? null);
+        onActiveChangeRef.current?.(result[index] ?? null);
+        // 描画が終わってからそのカードへ寄せる（scrollTo は次の描画を待つ必要がある）
+        if (index > 0) requestAnimationFrame(() => scrollToCard(scrollerRef.current, index));
       })
       .catch((error) => {
         if (cancelled || error instanceof UnauthorizedError) return;
