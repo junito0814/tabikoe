@@ -101,7 +101,8 @@ const SPOTS = [
   { name: "鎌倉 海が見える坂", lat: 35.3040, lng: 139.5350, source: "manual", cat: "自然・景勝地", pref: "神奈川県" },
 ];
 
-const DURATIONS = ["30分以内", "1時間以内", "2時間以内", "3時間以内", "それ以上"];
+// v3.2 の 7 択（2026-09-22: 旧「それ以上」をやめた。宿泊施設は「宿泊」）
+const DURATIONS = ["30分以内", "1時間以内", "2時間以内", "3時間以内", "半日", "1日"];
 const COMMENTS = [
   "朝イチで行ったら人が少なくてゆっくり見られた。午後は混むと思う。",
   "写真で見るより広い。1 時間じゃ足りなかった。",
@@ -267,7 +268,7 @@ async function main() {
         spot_id: spotRows[i].id,
         category: spot.cat,
         visit_date: ymd(visit),
-        duration: spot.cat === "宿泊施設" ? "それ以上" : pick(DURATIONS, i + k),
+        duration: spot.cat === "宿泊施設" ? "宿泊" : pick(DURATIONS, i + k),
         cost,
         rating: 3 + ((i + k) % 3),
         comment: pick(COMMENTS, i * 3 + k),
