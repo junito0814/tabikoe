@@ -165,8 +165,12 @@ export function MapScreen({
   const [fetchFailed, setFetchFailed] = useState(false);
   const [callout, setCallout] = useState<CalloutTarget | null>(null);
   const [tempPin, setTempPin] = useState<LatLng | null>(null);
+  // Bug #511: 「地図をどこに表示するか（open.center）」と「現在地はどこか」を分ける。
+  // 復元して開くと open.center は保存した地図の中心（＝選んでいたスポット）になるので、それを現在地にすると
+  // 現在地マーカーと「近くのスポット」の取得元がスポットへずれてしまう。現在地は openedAt（探すモードを
+  // 開いたときの現在地。無ければ URL の lat/lng）を仮に置き、戻ってきたときに取り直す
   const [currentLocation, setCurrentLocation] = useState<{ lat: number; lng: number; accuracy?: number } | null>(
-    open.mode === "explore" && open.center ? open.center : null
+    open.mode === "explore" ? (restored?.openedAt ?? openProp.center) : null
   );
   const [isLocating, setIsLocating] = useState(false);
   const [activeNearbySpotId, setActiveNearbySpotId] = useState<string | null>(null);
@@ -201,6 +205,23 @@ export function MapScreen({
     // itineraryPins の中身は fitKey で判定する
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isItinerary, fitKey]);
+
+  // Bug #511: 投稿一覧などから戻ってきたとき（復元）は、歩いて移動している可能性があるので現在地を取り直す。
+  // 地図の表示位置は動かさない（見ていた画面のまま）。取れなければ仮の現在地のまま
+  useEffect(() => {
+    if (!restored || open.mode !== "explore") return;
+    let cancelled = false;
+    resolveCenter().then((result) => {
+      if (cancelled || result.source !== "current") return;
+      setCurrentLocation(result.center);
+      openedAtRef.current = result.center;
+    });
+    return () => {
+      cancelled = true;
+    };
+    // 開いた直後に 1 回だけ
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // 開き方に中心が無いときだけ現在地（→東京駅）を待つ
   useEffect(() => {
@@ -451,7 +472,7 @@ export function MapScreen({
       {isExplore && open.center && (
         <div className="h-1/3 border-t border-line">
           <NearbyVoices
-            center={open.center}
+            center={currentLocation ?? open.center}
             backHref={selfHref}
             fetchPosts={fetchNearby}
             onActiveChange={handleActiveNearby}

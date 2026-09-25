@@ -253,4 +253,39 @@ describe("v3.1（mentoring-7 Task7）: 地図の状態の復元", () => {
     // ピンがまだ無いスポットでも、カードの情報だけで吹き出しを出す
     await waitFor(() => expect(screen.getByRole("dialog", { name: "展望台" })).toBeInTheDocument());
   });
+
+  it("Bug #511: 投稿一覧から戻ったとき、地図は保存した位置・現在地は取り直した今いる場所・カードはそのまま", async () => {
+    // 保存された状態: 地図の中心はスポット（s9）、開いたときの現在地は 35.65/139.75、選んでいたカードは s9
+    window.sessionStorage.setItem(
+      "tabikoe:map-state",
+      JSON.stringify({
+        entry: "explore",
+        mode: "explore",
+        center: { lat: 35.652, lng: 139.752 },
+        zoom: 16,
+        travel: "walk",
+        openedAt: { lat: 35.65, lng: 139.75 },
+        activeSpotId: "s9",
+        savedAt: Date.now(),
+      })
+    );
+    const nearby = [
+      { id: "p1", spotId: "s1", spotName: "カフェ", commentExcerpt: null, thumbnailUrl: null, lat: 35.651, lng: 139.751, distanceMeters: 100, walkMinutes: 2, minutes: 2, mode: "walk" as const },
+      { id: "p2", spotId: "s9", spotName: "展望台", commentExcerpt: null, thumbnailUrl: null, lat: 35.652, lng: 139.752, distanceMeters: 300, walkMinutes: 5, minutes: 5, mode: "walk" as const },
+    ];
+    const fetchNearby = vi.fn<(center: { lat: number; lng: number }, mode: string) => Promise<typeof nearby>>(async () => nearby);
+    // 戻ってきたときの位置情報の取り直し（少し歩いた位置が返る）
+    const relocated = { lat: 35.6505, lng: 139.7505 };
+    const resolveCurrent = () => Promise.resolve({ center: relocated, zoom: 16, source: "current" as const });
+    render(
+      <MapScreen open={resolveMapOpen({ mode: "explore", lat: "35.65", lng: "139.75" })} fetchPins={async () => []} fetchNearby={fetchNearby} resolveCenter={resolveCurrent} />
+    );
+    await settle();
+    // 近くのスポットは「取り直した現在地」で取り直す（スポットの位置ではない）
+    await waitFor(() => expect(fetchNearby).toHaveBeenLastCalledWith(relocated, "walk"));
+    expect(fetchNearby.mock.calls.every((call) => call[0].lat !== 35.652)).toBe(true);
+    // 選んでいたカードはそのまま
+    await waitFor(() => expect(document.querySelector("[data-nearby-card=\"p2\"]")).toHaveAttribute("aria-current", "true"));
+    window.sessionStorage.clear();
+  });
 });
