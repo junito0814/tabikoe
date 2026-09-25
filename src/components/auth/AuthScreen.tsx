@@ -64,7 +64,7 @@ export function AppLogoIcon() {
     );
 }
 
-export default function AuthScreen() {
+export default function AuthScreen({ sky = false }: { /** Task12（2026-09-25）: 未ログインのホーム（/）では背景に空のグラデーションを敷く（4.5.5） */ sky?: boolean } = {}) {
     const searchParams = useSearchParams();
     const supabase = createClient();
     const [isLoading, setIsLoading] = useState(false);
@@ -117,7 +117,7 @@ export default function AuthScreen() {
 
     return (
         <div
-            className={`${outfit.className} flex min-h-screen flex-col items-center justify-center bg-app px-6`}
+            className={`${outfit.className} flex min-h-screen flex-col items-center justify-center px-6 ${sky ? "bg-sky" : "bg-app"}`}
         >
             <div className="flex w-full max-w-[360px] flex-col items-center">
                 <div className="relative mb-6 flex h-[160px] w-[160px] items-center justify-center">
