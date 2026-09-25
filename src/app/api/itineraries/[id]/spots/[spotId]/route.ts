@@ -5,7 +5,7 @@ import { isTenMinuteTime } from "@/lib/itineraries/order-spots";
 import { authorizeItinerary, isErrorResponse, readJson, type ItineraryContext } from "@/lib/itineraries/route-helpers";
 
 /** メモの上限（書記素）。要件定義書 v3.0 3.11.3 */
-export const MAX_ITINERARY_MEMO_LENGTH = 500;
+const MAX_ITINERARY_MEMO_LENGTH = 500;
 
 /**
  * itinerary-days Task1 / arrival-time Task1 / itinerary-check Task1 / add-spots Task1: しおりのスポット 1 行の更新・削除
