@@ -35,6 +35,12 @@ export async function GET(request: Request) {
 }
 
 /**
+ * 写真は sharp、動画は ffmpeg で処理するため時間がかかる。既定（10 秒）では足りないことがあるので上限を延ばす。
+ * 【初心者向け】Vercel ではこの値が「1 リクエストにかけてよい秒数」。無料枠の上限は 60 秒。
+ */
+export const maxDuration = 60;
+
+/**
  * F-PO-01 Task4 / post-creation-v3 Task4: 投稿の写真・動画アップロード
  * 出典: docs/tasks/posts/post-creation/04-media-upload-integration.md
  *       docs/tasks/posts/post-creation-v3/04-video-mov-support.md
