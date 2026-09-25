@@ -27,6 +27,7 @@
 | `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` | 同上 | 表示用。リファラー制限で守る（4 節） |
 | `GOOGLE_PLACES_API_KEY` | 同上 | サーバーのみ |
 | `GOOGLE_GEOCODING_API_KEY` | 同上 | サーバーのみ |
+| `GOOGLE_ROUTES_API_KEY` | 同上 | サーバーのみ。探すモードの車・電車・バスの所要時間（要件定義書 6.7）。無くても動く（直線距離の計算に切り替わる） |
 | `VIDEO_UPLOAD_DISABLED` | `1`（当面） | 動画の変換に使う ffmpeg はサーバーレスでの実績が無いため、まずは止めて出す。写真は影響なし |
 
 `.env.local` の値をそのまま貼る。値はどこにも書き残さない。

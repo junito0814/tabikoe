@@ -179,7 +179,7 @@ describe("MapScreen（SC-02 v3.0）", () => {
     await settle();
     expect(screen.getByRole("heading", { name: "近くのスポット" })).toBeInTheDocument();
     await waitFor(() => expect(fetchNearby).toHaveBeenCalledWith({ lat: 35.65, lng: 139.75 }, "walk"));
-    expect(screen.getAllByText("徒歩 6分")[0]).toBeInTheDocument();
+    expect(screen.getAllByText("徒歩 約 6分")[0]).toBeInTheDocument();
     await waitFor(() => expect(latestPins).toEqual([expect.objectContaining({ id: "s1", type: "focus" }), expect.objectContaining({ id: "s2", type: "post" })]));
 
     // v3.2: 「移動手段」を車にすると mode=car で取り直す

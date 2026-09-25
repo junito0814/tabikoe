@@ -6,7 +6,12 @@
  * 【初心者向け】「徒歩 N 分」は不動産広告と同じ基準（80m ＝ 1 分）で、直線距離を 80 で割って切り上げる。
  * 直線距離は Haversine（球面上の 2 点間距離）の公式で求める。道なりの距離ではないので目安に過ぎない。
  */
-export const WALK_METERS_PER_MINUTE = 80;
+/**
+ * travel-time（2026-09-25）: 80 → 60m/分。不動産広告の「1 分＝80m」は“道のり”に対する値で、
+ * 実際の道は直線距離の約 1.3 倍になる。ここは直線距離を使うので 80 ÷ 1.3 ≒ 60 とし、曲がり角・横断歩道を織り込む。
+ * 探すモードの徒歩（lib/geo/travel-time.ts）と同じ値にして、全画面で基準を 1 つにする。
+ */
+export const WALK_METERS_PER_MINUTE = 60;
 
 /** 距離（m）→ 徒歩分。0m でも「徒歩 1 分」にする（0 分は変なので） */
 export function walkMinutes(distanceMeters: number): number {
