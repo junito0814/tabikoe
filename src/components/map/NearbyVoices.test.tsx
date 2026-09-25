@@ -1,7 +1,10 @@
 import { describe, expect, it, vi } from "vitest";
-import { render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { centeredCardIndex, NearbyVoices } from "./NearbyVoices";
 import type { NearbyPost } from "@/lib/posts/nearby-posts";
+
+const push = vi.fn();
+vi.mock("next/navigation", () => ({ useRouter: () => ({ push, replace: vi.fn(), refresh: vi.fn() }) }));
 
 /**
  * 出典: docs/tasks/map-search/map-restore/（Bug #503）単体テスト
@@ -87,5 +90,26 @@ describe("NearbyVoices（近くのスポット）", () => {
       <NearbyVoices center={{ lat: 35.68, lng: 139.76 }} fetchPosts={async () => [post("a"), post("b")]} onActiveChange={onActiveChange} initialActiveSpotId="s-zzz" />
     );
     await waitFor(() => expect(onActiveChange).toHaveBeenCalledWith(expect.objectContaining({ id: "a" })));
+  });
+
+  it("Task3: 選ばれていないカードのタップは選ぶだけ（画面は移らない）、選ばれているカードのタップで投稿一覧へ", async () => {
+    push.mockClear();
+    const onActiveChange = vi.fn();
+    render(<NearbyVoices center={{ lat: 35.68, lng: 139.76 }} backHref="/map?mode=explore" fetchPosts={async () => [post("a"), post("b")]} onActiveChange={onActiveChange} />);
+    await waitFor(() => expect(document.querySelectorAll("[data-nearby-card]")).toHaveLength(2));
+    // 2 枚目（選ばれていない）を押す → 選ばれるだけ
+    fireEvent.click(document.querySelector("[data-nearby-card='b']") as HTMLElement);
+    expect(push).not.toHaveBeenCalled();
+    expect(onActiveChange).toHaveBeenLastCalledWith(expect.objectContaining({ id: "b" }));
+    expect(document.querySelector("[data-nearby-card='b']")).toHaveAttribute("aria-current", "true");
+    // もう一度押す → そのスポットの投稿一覧へ
+    fireEvent.click(document.querySelector("[data-nearby-card='b']") as HTMLElement);
+    expect(push).toHaveBeenCalledWith("/spots/s-b?back=%2Fmap%3Fmode%3Dexplore");
+  });
+
+  it("Task3: カードはリンクではなくボタン（キーボードでも押せる）", async () => {
+    render(<NearbyVoices center={{ lat: 35.68, lng: 139.76 }} fetchPosts={async () => [post("a")]} />);
+    await waitFor(() => expect(document.querySelector("[data-nearby-card]")).toBeInTheDocument());
+    expect((document.querySelector("[data-nearby-card='a']") as HTMLElement).tagName).toBe("BUTTON");
   });
 });

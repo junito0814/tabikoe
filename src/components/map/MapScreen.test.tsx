@@ -190,7 +190,8 @@ describe("MapScreen（SC-02 v3.0）", () => {
 
     // 2 枚目までスクロールしたことにする（カード幅 176 + 間隔 10）
     // Bug #503: 中央のカードは各カードの実際の位置で決まるので、jsdom では矩形を差し替えて 2 枚目を中央に置く
-    const scroller = screen.getByRole("link", { name: /展望台/ }).parentElement as HTMLElement;
+    // Task3（2026-09-25）: カードはリンクではなくボタン（1 回目のタップは選ぶだけ）
+    const scroller = screen.getByRole("button", { name: /展望台/ }).parentElement as HTMLElement;
     const rect = (left: number, width: number) => () => ({ left, width, right: left + width, top: 0, bottom: 0, height: 0, x: left, y: 0, toJSON: () => ({}) }) as DOMRect;
     scroller.getBoundingClientRect = rect(0, 390);
     Array.from(scroller.querySelectorAll<HTMLElement>("[data-nearby-card]")).forEach((card, index) => {
@@ -235,5 +236,21 @@ describe("v3.1（mentoring-7 Task7）: 地図の状態の復元", () => {
     await settle();
     expect(document.querySelector("[data-map-mode='spot']")).toBeInTheDocument();
     expect(fetchNearby).not.toHaveBeenCalled();
+  });
+
+  it("Task3（2026-09-25）: カードを選ぶと地図が動き、そのスポットの吹き出しが開く", async () => {
+    const fetchNearby = vi.fn(async () => [
+      { id: "p1", spotId: "s1", spotName: "カフェ", commentExcerpt: null, thumbnailUrl: null, lat: 35.651, lng: 139.751, distanceMeters: 100, walkMinutes: 2, minutes: 2, mode: "walk" as const },
+      { id: "p2", spotId: "s9", spotName: "展望台", commentExcerpt: null, thumbnailUrl: null, lat: 35.652, lng: 139.752, distanceMeters: 300, walkMinutes: 5, minutes: 5, mode: "walk" as const },
+    ]);
+    render(<MapScreen open={resolveMapOpen({ mode: "explore", lat: "35.65", lng: "139.75" })} fetchPins={async () => [pin("s2")]} fetchNearby={fetchNearby} resolveCenter={resolveCenter} />);
+    await settle();
+    await screen.findByRole("heading", { name: "近くのスポット" });
+    // 最初のカードは自動で選ばれ、その吹き出しが出る
+    await waitFor(() => expect(screen.getByRole("dialog")).toBeInTheDocument());
+    // 2 枚目を選ぶと吹き出しがそのスポットに変わる
+    fireEvent.click(screen.getByRole("button", { name: /展望台/ }));
+    // ピンがまだ無いスポットでも、カードの情報だけで吹き出しを出す
+    await waitFor(() => expect(screen.getByRole("dialog", { name: "展望台" })).toBeInTheDocument());
   });
 });

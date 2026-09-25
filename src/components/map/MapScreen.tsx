@@ -45,6 +45,32 @@ export type FetchMapPins = (bounds: MapBounds) => Promise<MapPinData[]>;
  * 長押しすると一時ピン＋「ここに投稿」。地図をタップ／ドラッグすると吹き出しと一時ピンは消える。
  * 吹き出しは「地図をそのピンの位置へ寄せてから、画面中央の少し上」に出す（マーカーに追従させるより単純で壊れにくい）。
  */
+/**
+ * Task3（2026-09-25）: 吹き出しが下 1/3 のカードに隠れないよう、地図の中心をピンより少し下にずらす量（度）。
+ * 緯度 0.0007 度 ≒ 78m。ズーム 16 前後で画面のおよそ 1/8 にあたる
+ */
+const CALLOUT_OFFSET_DEGREES = 0.0007;
+
+/** 近くのスポットのカードから、吹き出しに出すピンの形を作る（件数・星は一覧のピンから補う） */
+function nearbyPinFrom(post: NearbyPost, pins: MapPinData[]): MapPinData {
+  const known = pins.find((pin) => pin.spotId === post.spotId);
+  if (known) return known;
+  // 表示範囲の外などでピンがまだ取れていないときは、カードの情報だけで最低限の吹き出しを出す
+  return {
+    id: post.spotId,
+    spotId: post.spotId,
+    name: post.spotName,
+    lat: post.lat,
+    lng: post.lng,
+    kind: "post",
+    prefecture: null,
+    postCount: 1,
+    ratingAverage: null,
+    latestStatus: null,
+    draftId: null,
+  };
+}
+
 export function MapScreen({
   open: openProp,
   fetchPins = defaultFetchPins,
@@ -129,6 +155,11 @@ export function MapScreen({
     open.center ? { center: open.center, zoom: open.zoom, source: open.mode === "explore" && !restored ? "current" : "fallback" } : null
   );
   const [pins, setPins] = useState<MapPinData[]>([]);
+  // handleActiveNearby から最新のピンを読むための控え（依存を増やさないため ref に置く）
+  const pinsRef = useRef<MapPinData[]>([]);
+  useEffect(() => {
+    pinsRef.current = pins;
+  }, [pins]);
   const [bounds, setBounds] = useState<MapBounds | null>(null);
   const [center, setCenter] = useState<LatLng | null>(open.center);
   const [fetchFailed, setFetchFailed] = useState(false);
@@ -272,11 +303,19 @@ export function MapScreen({
     }
   };
 
-  // 探すモード: 中央のカードに対応するピンを強調し、そのカードも覚える（map-restore Task1）
+  // 探すモード: 中央のカードに対応するピンを強調し、そのカードも覚える（map-restore Task1）。
+  // Task3（2026-09-25）: そのスポットの吹き出しも開く。吹き出しは下のカードに隠れないよう、
+  // 地図の中心をピンより少し南（画面では下）に置いて、ピンと吹き出しを上半分に見せる
   const handleActiveNearby = useCallback((post: NearbyPost | null) => {
     setActiveNearbySpotId(post?.spotId ?? null);
     activeSpotRef.current = post?.spotId ?? null;
-    if (post) mapRef.current?.panTo({ lat: post.lat, lng: post.lng });
+    if (post) {
+      mapRef.current?.panTo({ lat: post.lat - CALLOUT_OFFSET_DEGREES, lng: post.lng });
+      setTempPin(null);
+      setCallout({ kind: "pin", pin: nearbyPinFrom(post, pinsRef.current) });
+    } else {
+      setCallout(null);
+    }
     saveCurrentMapState();
     // saveCurrentMapState は ref だけを読むので依存に入れない
     // eslint-disable-next-line react-hooks/exhaustive-deps

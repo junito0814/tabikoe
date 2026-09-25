@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { appendBackHref } from "@/lib/search/list-state";
 import { fetchWithAuthRedirect, UnauthorizedError } from "@/lib/api/fetch-with-auth-redirect";
 import type { NearbyPost } from "@/lib/posts/nearby-posts";
@@ -28,7 +28,8 @@ export type FetchNearbyPosts = (center: { lat: number; lng: number }, mode: Trav
 /** 指定した番号のカードを中央へ寄せる（map-restore Task1） */
 export function scrollToCard(scroller: HTMLElement | null, index: number): void {
   const card = scroller?.querySelectorAll<HTMLElement>("[data-nearby-card]")[index];
-  card?.scrollIntoView({ block: "nearest", inline: "center" });
+  // jsdom には scrollIntoView が無いので、あるときだけ呼ぶ
+  card?.scrollIntoView?.({ block: "nearest", inline: "center" });
 }
 
 export function centeredCardIndex(scroller: Pick<HTMLElement, "getBoundingClientRect"> & { querySelectorAll: HTMLElement["querySelectorAll"] }): number | null {
@@ -76,6 +77,7 @@ export function NearbyVoices({
   const [posts, setPosts] = useState<NearbyPost[] | null>(null);
   const [failed, setFailed] = useState(false);
   const [activeIndex, setActiveIndex] = useState(0);
+  const router = useRouter();
   const scrollerRef = useRef<HTMLDivElement>(null);
   const onActiveChangeRef = useRef(onActiveChange);
   const onPostsLoadedRef = useRef(onPostsLoaded);
@@ -111,6 +113,24 @@ export function NearbyVoices({
       cancelled = true;
     };
   }, [center, mode, fetchPosts]);
+
+  /**
+   * Task3（2026-09-25）: カードのタップは 2 段階。
+   * 【初心者向け】選ばれていないカードは「選ぶ」だけ（中央へ寄せ、親が地図を動かして吹き出しを出す）。
+   * 選ばれている（中央の）カードをもう一度押すと、そのスポットの投稿一覧へ移る。
+   * 地図で場所を確かめてから開けるので、押し間違いで画面が変わらない。
+   */
+  const selectOrOpen = (index: number) => {
+    const post = posts?.[index];
+    if (!post) return;
+    if (index === activeIndex) {
+      router.push(appendBackHref(`/spots/${post.spotId}`, backHref));
+      return;
+    }
+    setActiveIndex(index);
+    onActiveChangeRef.current?.(post);
+    scrollToCard(scrollerRef.current, index);
+  };
 
   const handleScroll = () => {
     const scroller = scrollerRef.current;
@@ -163,12 +183,13 @@ export function NearbyVoices({
           style={{ scrollbarWidth: "none" }}
         >
           {posts.map((post, index) => (
-            <Link
+            <button
               key={post.id}
-              href={appendBackHref(`/posts/${post.id}`, backHref)}
+              type="button"
+              onClick={() => selectOrOpen(index)}
               data-nearby-card={post.id}
               aria-current={index === activeIndex ? "true" : undefined}
-              className={`flex w-[176px] shrink-0 snap-center flex-col gap-1 rounded-[12px] border p-2.5 ${
+              className={`flex w-[176px] shrink-0 snap-center flex-col gap-1 rounded-[12px] border p-2.5 text-left ${
                 index === activeIndex ? "border-accent" : "border-line"
               } bg-surface`}
             >
@@ -183,7 +204,7 @@ export function NearbyVoices({
                 </span>
                 <span data-travel-minutes>{formatTravelMinutes(post.minutes ?? post.walkMinutes, post.mode ?? mode)}</span>
               </span>
-            </Link>
+            </button>
           ))}
         </div>
       )}

@@ -1,10 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ErrorNotice } from "@/components/notices/ErrorNotice";
 import { fetchWithAuthRedirect, UnauthorizedError } from "@/lib/api/fetch-with-auth-redirect";
 import { useCurrentPosition } from "@/lib/geo/use-current-position";
+import { clearMapState } from "@/lib/map/map-state";
 import { composeHref } from "@/lib/posts/compose-initial-state";
 import { buildSearchHref, type AddModeParams } from "@/lib/search/build-search-href";
 import type { DestinationSuggestion } from "@/lib/search/suggest-destinations";
@@ -44,6 +45,13 @@ export function SearchTopScreen({
 }) {
   const router = useRouter();
   const { locate, isLocating } = useCurrentPosition(geolocation);
+
+  // map-restore Task3（2026-09-25）: ホーム（この画面）を開いたら、覚えている地図の状態を消す。
+  // 【初心者向け】投稿一覧などから地図に戻ったときは前の続きを出すが、いったんホームに帰ったら
+  // 「探すモードを新しく開く」扱いにして、現在地・徒歩・半径 1km の初期値に戻す（要件 3.4.3）
+  useEffect(() => {
+    clearMapState();
+  }, []);
   const [notice, setNotice] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [focusInput, setFocusInput] = useState(0);
