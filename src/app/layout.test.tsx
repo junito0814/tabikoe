@@ -26,7 +26,7 @@ describe("RootLayout（共通レイアウト）", () => {
   it("ログイン状態が読めないときも例外にせず、未ログインとして描く", async () => {
     state.fail = true;
     const error = vi.spyOn(console, "error").mockImplementation(() => {});
-    const element = (await RootLayout({ children: null })) as React.ReactElement;
+    const element = (await RootLayout({ children: null, params: Promise.resolve({}) })) as React.ReactElement;
     expect(element).toBeTruthy();
     expect(error).toHaveBeenCalled();
     error.mockRestore();
@@ -34,7 +34,7 @@ describe("RootLayout（共通レイアウト）", () => {
 
   it("読めたときはログイン済みとしてメニューバーに渡す", async () => {
     state.fail = false;
-    const element = (await RootLayout({ children: null })) as React.ReactElement;
+    const element = (await RootLayout({ children: null, params: Promise.resolve({}) })) as React.ReactElement;
     expect(JSON.stringify(element)).toContain("isAuthenticated");
   });
 });
