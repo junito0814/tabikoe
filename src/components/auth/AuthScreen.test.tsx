@@ -93,4 +93,12 @@ describe("SC-01 ログイン画面", () => {
     render(<AuthScreen />);
     expect(screen.getByText("しばらく利用がなかったため、もう一度ログインしてください")).toBeInTheDocument();
   });
+
+  it("Task12（2026-09-25）: sky を渡すと空のグラデーション、渡さなければ白地", () => {
+    const { unmount, container } = render(<AuthScreen sky />);
+    expect(container.firstElementChild).toHaveClass("bg-sky");
+    unmount();
+    const plain = render(<AuthScreen />);
+    expect(plain.container.firstElementChild).toHaveClass("bg-app");
+  });
 });
