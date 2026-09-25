@@ -187,8 +187,13 @@ describe("MapScreen（SC-02 v3.0）", () => {
     await waitFor(() => expect(fetchNearby).toHaveBeenLastCalledWith({ lat: 35.65, lng: 139.75 }, "car"));
 
     // 2 枚目までスクロールしたことにする（カード幅 176 + 間隔 10）
+    // Bug #503: 中央のカードは各カードの実際の位置で決まるので、jsdom では矩形を差し替えて 2 枚目を中央に置く
     const scroller = screen.getByRole("link", { name: /展望台/ }).parentElement as HTMLElement;
-    Object.defineProperty(scroller, "scrollLeft", { value: 186, configurable: true });
+    const rect = (left: number, width: number) => () => ({ left, width, right: left + width, top: 0, bottom: 0, height: 0, x: left, y: 0, toJSON: () => ({}) }) as DOMRect;
+    scroller.getBoundingClientRect = rect(0, 390);
+    Array.from(scroller.querySelectorAll<HTMLElement>("[data-nearby-card]")).forEach((card, index) => {
+      card.getBoundingClientRect = rect(index === 1 ? 107 : -79, 176);
+    });
     fireEvent.scroll(scroller);
     await waitFor(() => expect(latestPins).toEqual([expect.objectContaining({ id: "s1", type: "post" }), expect.objectContaining({ id: "s2", type: "focus" })]));
   });
