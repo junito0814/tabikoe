@@ -87,4 +87,11 @@ describe("SearchTopScreen", () => {
     fireEvent.click(screen.getByRole("button", { name: "ここを投稿" }));
     await waitFor(() => expect(push).toHaveBeenCalledWith("/posts/new?from=current"));
   });
+
+  it("Task3（2026-09-25）: ホームを開くと覚えている地図の状態を消す（次に探すモードを開くと初期値）", () => {
+    const storage = window.sessionStorage;
+    storage.setItem("tabikoe:map-state", JSON.stringify({ entry: "explore", mode: "explore", center: { lat: 1, lng: 2 }, zoom: 15, savedAt: Date.now() }));
+    render(<SearchTopScreen />);
+    expect(storage.getItem("tabikoe:map-state")).toBeNull();
+  });
 });
