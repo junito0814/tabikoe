@@ -20,8 +20,28 @@ export type FetchNearbyPosts = (center: { lat: number; lng: number }, mode: Trav
  *   - カードのタップで投稿詳細（/posts/[id]）
  * スクロール位置 → どのカードが中央か、は `scrollLeft / カード幅` で概算する（カード幅は固定）。
  */
-const CARD_WIDTH = 176;
-const CARD_GAP = 10;
+/**
+ * 横スクロール領域の中央にいちばん近いカードの番号（Bug #503。単体テストの対象）。
+ * 【初心者向け】`getBoundingClientRect()` は画面上の実際の位置を返す。カードの中心と、スクロール領域の中心の
+ * 距離をくらべていちばん近いものを選ぶ。カードの幅・隙間・余白が変わっても、端まで送っても正しく決まる。
+ */
+export function centeredCardIndex(scroller: Pick<HTMLElement, "getBoundingClientRect"> & { querySelectorAll: HTMLElement["querySelectorAll"] }): number | null {
+  const cards = Array.from(scroller.querySelectorAll<HTMLElement>("[data-nearby-card]"));
+  if (cards.length === 0) return null;
+  const box = scroller.getBoundingClientRect();
+  const center = box.left + box.width / 2;
+  let best = 0;
+  let bestDistance = Number.POSITIVE_INFINITY;
+  cards.forEach((card, index) => {
+    const rect = card.getBoundingClientRect();
+    const distance = Math.abs(rect.left + rect.width / 2 - center);
+    if (distance < bestDistance) {
+      bestDistance = distance;
+      best = index;
+    }
+  });
+  return best;
+}
 
 export function NearbyVoices({
   center,
@@ -78,8 +98,10 @@ export function NearbyVoices({
   const handleScroll = () => {
     const scroller = scrollerRef.current;
     if (!scroller || !posts) return;
-    const index = Math.min(posts.length - 1, Math.max(0, Math.round(scroller.scrollLeft / (CARD_WIDTH + CARD_GAP))));
-    if (index !== activeIndex) {
+    // Bug #503: スクロール量からの概算（scrollLeft ÷ カード幅）だと snap-center や左右の余白とずれ、
+    // 右端まで送っても最後のカードが選ばれなかった。各カードの実際の位置を測って中央に最も近いものを選ぶ
+    const index = centeredCardIndex(scroller);
+    if (index !== null && index !== activeIndex) {
       setActiveIndex(index);
       onActiveChangeRef.current?.(posts[index] ?? null);
     }
