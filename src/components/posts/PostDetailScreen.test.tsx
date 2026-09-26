@@ -67,9 +67,9 @@ describe("PostDetailScreen（SC-05）", () => {
     expect(heading).toHaveTextContent("タビコエだけの場所");
     // Bug #471: スポット別一覧から「← 投稿」でこの投稿に戻れるよう back を付ける
     expect(heading.querySelector("a")).toHaveAttribute("href", "/spots/s1?back=%2Fposts%2Fp1");
-    // v3.1: 「地図で見る」ボタンは無く、上 1/3 の地図（StaticSpotMap）が SC-02 へのリンク
+    // v3.1: 「地図で見る」ボタンは無く上 1/3 に地図（StaticSpotMap）。map-sheet Task1: 全画面への入口は右下のボタンだけ
     expect(document.querySelector("[data-static-spot-map]")).toBeInTheDocument();
-    const mapHref = new URL(screen.getByRole("link", { name: "東京駅 グランスタを地図で見る" }).getAttribute("href") ?? "", "https://example.com");
+    const mapHref = new URL(screen.getByRole("link", { name: "地図を全画面に" }).getAttribute("href") ?? "", "https://example.com");
     expect(mapHref.pathname).toBe("/map");
     expect(mapHref.searchParams.get("spot")).toBe("s1");
     expect(screen.queryByRole("link", { name: "🗺 地図で見る" })).toBeNull();
@@ -79,7 +79,7 @@ describe("PostDetailScreen（SC-05）", () => {
   it("Bug #469・#471: back があれば戻るはその画面名でそこへ。無ければスポット名でスポット別一覧へ。地図・見出しのスポット名にはこの画面を back で渡す", () => {
     const { unmount } = render(<PostDetailScreen post={post} initialComments={noComments} back={{ href: "/mypage", label: "マイページ" }} />);
     expect(screen.getByRole("link", { name: "マイページ" })).toHaveAttribute("href", "/mypage");
-    const mapHref = new URL(screen.getByRole("link", { name: "東京駅 グランスタを地図で見る" }).getAttribute("href") ?? "", "https://example.com");
+    const mapHref = new URL(screen.getByRole("link", { name: "地図を全画面に" }).getAttribute("href") ?? "", "https://example.com");
     expect(mapHref.searchParams.get("back")).toBe("/posts/p1?back=%2Fmypage");
     expect(screen.getByRole("link", { name: /^東京駅 グランスタ$/ })).toHaveAttribute("href", "/spots/s1?back=%2Fposts%2Fp1%3Fback%3D%252Fmypage");
     unmount();

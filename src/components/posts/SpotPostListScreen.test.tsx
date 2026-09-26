@@ -66,9 +66,9 @@ describe("SpotPostListScreen（SC-04 スポット別）", () => {
     expect(screen.getByText("東京都")).toBeInTheDocument();
     expect(screen.getByText("投稿 7 件")).toBeInTheDocument();
     expect(screen.getByText("9月にまだあった")).toBeInTheDocument();
-    // v3.1: 見出しの「地図で見る」ボタンは無く、上 1/3 の地図（StaticSpotMap）全体がリンク
+    // v3.1: 見出しの「地図で見る」ボタンは無く上 1/3 に地図。map-sheet Task1: 全画面への入口は右下のボタンだけ
     expect(document.querySelector("[data-static-spot-map]")).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "東京駅を地図で見る" })).toHaveAttribute("href", "/map?spot=spot-1&lat=35.68&lng=139.76&back=%2Fsearch%3Fspot%3Dspot-1");
+    expect(screen.getByRole("link", { name: "地図を全画面に" })).toHaveAttribute("href", "/map?spot=spot-1&lat=35.68&lng=139.76&back=%2Fsearch%3Fspot%3Dspot-1");
     expect(screen.queryByRole("link", { name: "地図で見る" })).toBeNull();
     expect(screen.getAllByRole("button", { name: "保存する" }).length).toBeGreaterThan(0);
     expect(screen.getByRole("link", { name: "投稿する" })).toHaveAttribute("href", "/posts/new?spot=spot-1");
