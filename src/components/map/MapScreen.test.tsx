@@ -24,6 +24,8 @@ const panTo = vi.fn();
 const fitBounds = vi.fn();
 const BOUNDS: MapBounds = { north: 35.7, south: 35.6, east: 139.8, west: 139.7 };
 let latestPins: { id: string; type: string }[] = [];
+// map-current-location Task1: GoogleMap に渡された現在地（青い点）を覗く
+let latestCurrentLocation: { lat: number; lng: number } | null = null;
 let triggerLongPress: ((position: { lat: number; lng: number }) => void) | undefined;
 
 vi.mock("./GoogleMap", () => ({
@@ -34,6 +36,7 @@ vi.mock("./GoogleMap", () => ({
     onPinClick,
     onLongPress,
     onMapClick,
+    currentLocation,
   }: {
     ref?: React.Ref<GoogleMapHandle>;
     pins: { id: string; type: string }[];
@@ -41,8 +44,10 @@ vi.mock("./GoogleMap", () => ({
     onPinClick?: (id: string) => void;
     onLongPress?: (position: { lat: number; lng: number }) => void;
     onMapClick?: () => void;
+    currentLocation?: { lat: number; lng: number } | null;
   }) => {
     latestPins = pins;
+    latestCurrentLocation = currentLocation ?? null;
     triggerLongPress = onLongPress;
     useImperativeHandle(ref, () => ({ panTo, fitBounds, getCenter: () => ({ lat: 35.65, lng: 139.75 }), getZoom: () => 14 }));
     useEffect(() => {
@@ -98,6 +103,7 @@ beforeEach(() => {
   vi.useFakeTimers({ shouldAdvanceTime: true });
   panTo.mockClear();
   latestPins = [];
+  latestCurrentLocation = null;
 });
 
 describe("MapScreen（SC-02 v3.0）", () => {
@@ -287,5 +293,47 @@ describe("v3.1（mentoring-7 Task7）: 地図の状態の復元", () => {
     // 選んでいたカードはそのまま
     await waitFor(() => expect(document.querySelector("[data-nearby-card=\"p2\"]")).toHaveAttribute("aria-current", "true"));
     window.sessionStorage.clear();
+  });
+  /**
+   * 出典: docs/tasks/map-search/map-current-location/01-current-location-everywhere.md 単体テスト
+   * 要件定義書 4.5.10「地図の現在地」（2026-09-26）
+   */
+  describe("現在地（4.5.10）", () => {
+    const geolocation = (result: { lat: number; lng: number } | "fail") => ({
+      getCurrentPosition: (onOk: PositionCallback, onError?: PositionErrorCallback) => {
+        if (result === "fail") onError?.({ code: 1, message: "denied" } as GeolocationPositionError);
+        else onOk({ coords: { latitude: result.lat, longitude: result.lng } } as GeolocationPosition);
+      },
+    });
+
+    it("スポットから開いた（中心つきの）地図でも現在地の点を出す。地図は動かさない", async () => {
+      render(
+        <MapScreen
+          open={resolveMapOpen({ spot: "spot-1", lat: "35.68", lng: "139.76" })}
+          fetchPins={async () => [pin("spot-1")]}
+          resolveCenter={resolveCenter}
+          geolocation={geolocation({ lat: 35.6, lng: 139.7 })}
+        />
+      );
+      await settle();
+      await waitFor(() => expect(latestCurrentLocation).toEqual({ lat: 35.6, lng: 139.7 }));
+      // 点を出すだけで、見ていたスポットが画面から外れないこと
+      expect(panTo).not.toHaveBeenCalled();
+    });
+
+    it("位置情報を断られても地図は普通に動く（エラーも出さない）", async () => {
+      render(
+        <MapScreen
+          open={resolveMapOpen({ spot: "spot-1", lat: "35.68", lng: "139.76" })}
+          fetchPins={async () => [pin("spot-1")]}
+          resolveCenter={resolveCenter}
+          geolocation={geolocation("fail")}
+        />
+      );
+      await settle();
+      expect(await screen.findByTestId("map-stub")).toBeInTheDocument();
+      expect(latestCurrentLocation).toBeNull();
+      expect(screen.queryByRole("alert")).toBeNull();
+    });
   });
 });
