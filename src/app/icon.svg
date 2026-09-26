@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="72" height="72" viewBox="0 0 72 72" role="img" aria-label="タビコエ">
+  <!--
+    brand-logo Task1（2026-09-26）: アプリのロゴ。出典: 要件定義書 4.5.9「ロゴとファビコン」
+
+    【初心者向け】このファイルを src/app/ に置くだけで、Next.js が全ページの <head> に
+    <link rel="icon"> を入れてくれる（自分で <head> を書く必要はない）。
+    形は「白い丸い吹き出し（＝コエ）＋下に伸びる尾（＝地図のピン）＋広がる 2 本の輪（＝声の波紋）」。
+    吹き出しの縁は中心から 11.5〜15、内側の輪の内縁は 19.9 なので、どの向きでも輪に触れない。
+    触れると 16 ピクセルでつながって 1 つの塊に見えてしまうため、この間隔は変えないこと。
+  -->
+  <rect width="72" height="72" rx="20" fill="#2F7FD8" />
+  <circle cx="36" cy="32.8" r="11.5" fill="#FFFFFF" />
+  <path d="M32 42L36 51L40 42Z" fill="#FFFFFF" />
+  <circle cx="36" cy="36" r="22" fill="none" stroke="#FFFFFF" stroke-opacity="0.6" stroke-width="4.2" />
+  <circle cx="36" cy="36" r="30" fill="none" stroke="#FFFFFF" stroke-opacity="0.28" stroke-width="3.6" />
+</svg>
