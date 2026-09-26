@@ -21,6 +21,7 @@ const spot: SpotSummary = {
   lng: 139.76,
   isManualSpot: false,
   postCount: 7,
+  ratingAverage: 4.5,
   isWishlisted: false,
   latestStatus: { status: "still_there", reportedAt: "2026-09-10T00:00:00Z" },
 };

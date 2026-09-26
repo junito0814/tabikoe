@@ -23,6 +23,8 @@ export interface SpotSummary {
   /** 手動登録スポット＝「タビコエだけの場所」 */
   isManualSpot: boolean;
   postCount: number;
+  /** map-sheet Task2: 地図を広くした段階の 1 行に出す星の平均（4.5.6）。投稿が無ければ null */
+  ratingAverage: number | null;
   isWishlisted: boolean;
   latestStatus: LatestSpotStatus | null;
 }
@@ -105,8 +107,24 @@ export function SpotPostListScreen({
       <div className="flex h-full w-full items-center justify-center bg-line text-[12px] text-muted">位置情報のないスポット</div>
     );
 
+  // map-sheet Task2: 地図を広くした段階でシートに出す 1 行（4.5.6）
+  const summary = (
+    <p className="flex items-center gap-x-2 px-4 pb-3 text-[13px] font-semibold text-ink" data-sheet-summary-line>
+      <span className="truncate">{spot.name}</span>
+      {spot.ratingAverage !== null && (
+        <span className="flex shrink-0 items-center gap-1 font-normal text-muted" aria-label={`星${spot.ratingAverage}`}>
+          <span className="text-star" aria-hidden>
+            ★
+          </span>
+          <span>{spot.ratingAverage.toFixed(1)}</span>
+        </span>
+      )}
+      <span className="shrink-0 font-normal text-muted">投稿 {spot.postCount} 件</span>
+    </p>
+  );
+
   return (
-    <MapSheetLayout map={map}>
+    <MapSheetLayout map={map} summary={summary}>
       <PostSearchScreen
         context={context}
         initialState={initialState}

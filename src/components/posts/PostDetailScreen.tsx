@@ -88,8 +88,24 @@ export function PostDetailScreen({
       </div>
     );
 
+  // map-sheet Task2: 地図を広くした段階でシートに出す 1 行（4.5.6）。スポット名・★・訪問日
+  const summary = (
+    <p className="flex items-center gap-x-2 px-4 pb-3 text-[13px] font-semibold text-ink" data-sheet-summary-line>
+      <span className="truncate">{post.spot.name}</span>
+      {post.rating !== null && (
+        <span className="flex shrink-0 items-center gap-1 font-normal text-muted" aria-label={`星${post.rating}`}>
+          <span className="text-star" aria-hidden>
+            ★
+          </span>
+          <span>{post.rating}</span>
+        </span>
+      )}
+      {post.visitDate && <span className="shrink-0 font-normal text-muted">訪問 {new Date(post.visitDate).toLocaleDateString("ja-JP")}</span>}
+    </p>
+  );
+
   return (
-    <MapSheetLayout map={map}>
+    <MapSheetLayout map={map} summary={summary}>
       <div className="flex flex-col items-center px-4 pt-2 pb-8">
         <article className="flex w-full max-w-[520px] flex-col gap-4">
           {notice}
