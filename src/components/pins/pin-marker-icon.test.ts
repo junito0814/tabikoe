@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
 import { createElement } from "react";
 import { PinIcon } from "./PinIcon";
-import { pinIconDataUrl, pinIconSvgMarkup } from "./pin-marker-icon";
+import { pinIconDataUrl, pinIconSvgMarkup, pinMarkerAnchor } from "./pin-marker-icon";
 import type { PinType } from "./pin-styles";
 
 /**
@@ -28,8 +28,9 @@ function normalize(svg: string): string[] {
 
 describe("pinIconSvgMarkup", () => {
   it.each(ALL_TYPES)("%s の図形が PinIcon と一致する", (type) => {
-    const fromReact = renderToStaticMarkup(createElement(PinIcon, { type, label: 3, dayIndex: 2 }));
-    expect(normalize(pinIconSvgMarkup(type, { label: 3, dayIndex: 2 }))).toEqual(normalize(fromReact));
+    const options = { label: 3, dayIndex: 2, category: "グルメ" as const };
+    const fromReact = renderToStaticMarkup(createElement(PinIcon, { type, ...options }));
+    expect(normalize(pinIconSvgMarkup(type, options))).toEqual(normalize(fromReact));
   });
 
   it("data URL としてエンコードされる", () => {
@@ -37,16 +38,34 @@ describe("pinIconSvgMarkup", () => {
   });
 });
 
-describe("色の解決（pin-display-rules-v3 Task1）", () => {
+describe("色の解決（pin-categories Task1）", () => {
   it("getComputedStyle が値を返さない環境ではライトの既定色を埋め込む", () => {
-    expect(pinIconSvgMarkup("post")).toContain("#2f7fd8");
-    expect(pinIconSvgMarkup("saved")).toContain("#d9414a");
+    expect(pinIconSvgMarkup("post", { category: "グルメ" })).toContain("#e2703a");
+    expect(pinIconSvgMarkup("post", { category: "宿泊施設" })).toContain("#9a6b33");
+  });
+  it("カテゴリが無ければ灰色", () => {
+    expect(pinIconSvgMarkup("post")).toContain("#7b8794");
+  });
+  it("保存済みでも色はカテゴリのまま。赤はハートのバッジにだけ使う", () => {
+    const svg = pinIconSvgMarkup("saved", { category: "グルメ" });
+    expect(svg).toContain("#e2703a");
+    expect(svg).toContain("#d9414a");
   });
   it("旧種別名（normal / wishlist）も描ける", () => {
-    expect(pinIconSvgMarkup("normal")).toContain("#2f7fd8");
-    expect(pinIconSvgMarkup("wishlist")).toContain("#d9414a");
+    expect(pinIconSvgMarkup("normal", { category: "グルメ" })).toContain("#e2703a");
+    expect(pinIconSvgMarkup("wishlist", { category: "グルメ" })).toContain("#e2703a");
   });
   it("番号ピンは済みで灰色になる", () => {
     expect(pinIconSvgMarkup("numbered", { label: 1, dayIndex: 1, done: true })).toContain("#7b8794");
+  });
+});
+
+describe("座標を指す点（pin-categories Task1）", () => {
+  it("しずく型は先端（下端）で指す", () => {
+    expect(pinMarkerAnchor("post")).toEqual({ x: 16, y: 30.4 });
+    expect(pinMarkerAnchor("numbered")).toEqual({ x: 16, y: 30.4 });
+  });
+  it("クラスタは丸なので中央で指す", () => {
+    expect(pinMarkerAnchor("cluster")).toEqual({ x: 16, y: 16 });
   });
 });
