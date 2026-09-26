@@ -352,7 +352,21 @@ export function ItineraryDetailScreen({
   );
 
   // v3.1: 「地図で見る」中は上 1/3 に地図（開いている Day の番号ピン）、下 2/3 に一覧。押していなければ一覧だけ
-  return showMap ? <MapSheetLayout map={<ItineraryStaticMap itinerary={itinerary} day={day} className="h-full w-full" />}>{content}</MapSheetLayout> : <div className="min-h-screen bg-app">{content}</div>;
+  // map-sheet Task2: 地図を広くした段階でシートに出す 1 行（4.5.6）。しおり名・Day
+  const mapSummary = (
+    <p className="flex items-center gap-x-2 px-4 pb-3 text-[13px] font-semibold text-ink" data-sheet-summary-line>
+      <span className="truncate">{itinerary.title}</span>
+      <span className="shrink-0 font-normal text-muted">{day === "all" ? "ALL" : `Day ${day}`}</span>
+    </p>
+  );
+
+  return showMap ? (
+    <MapSheetLayout map={<ItineraryStaticMap itinerary={itinerary} day={day} className="h-full w-full" />} summary={mapSummary}>
+      {content}
+    </MapSheetLayout>
+  ) : (
+    <div className="min-h-screen bg-app">{content}</div>
+  );
 }
 
 /**

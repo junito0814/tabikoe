@@ -14,7 +14,7 @@ import { CardListSkeleton } from "@/components/skeleton/Skeletons";
 vi.mock("next/navigation", () => ({ useRouter: () => ({ replace: vi.fn(), push: vi.fn(), refresh: vi.fn() }), usePathname: () => "/search" }));
 vi.mock("@/components/map/StaticSpotMap", () => ({ StaticSpotMap: () => <div data-static-spot-map /> }));
 
-const spot: SpotSummary = { id: "spot-1", name: "東京駅", prefecture: "東京都", lat: 35.68, lng: 139.76, isManualSpot: false, postCount: 0, isWishlisted: false, latestStatus: null };
+const spot: SpotSummary = { id: "spot-1", name: "東京駅", prefecture: "東京都", lat: 35.68, lng: 139.76, isManualSpot: false, postCount: 0, ratingAverage: null, isWishlisted: false, latestStatus: null };
 
 function deferred<T>() {
   let resolve!: (value: T) => void;
