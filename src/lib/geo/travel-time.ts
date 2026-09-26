@@ -19,7 +19,12 @@ export const DEFAULT_TRAVEL_MODE: TravelMode = "walk";
 export const TRAVEL_MODE_LABELS: Record<TravelMode, string> = { walk: "徒歩", bicycle: "自転車", car: "車", train: "電車", bus: "バス" };
 
 /** 「近くのスポット」を探す半径（m） */
-export const TRAVEL_RADIUS_METERS: Record<TravelMode, number> = { walk: 1000, bicycle: 3000, car: 10000, train: 15000, bus: 5000 };
+/**
+ * 【初心者向け】半径は距離ではなく「移動にかけてよい時間」で揃えている（要件定義書 3.4.6）。
+ * 下の速度で割ると 徒歩・自転車が約 17 分、バス・車・電車が約 33〜40 分になる。
+ * バスは 2026-09-26 に 5km（約 25 分）→ 8km（約 40 分）へ。そこだけ短く、旅先で 30〜40 分のバスは普通のため。
+ */
+export const TRAVEL_RADIUS_METERS: Record<TravelMode, number> = { walk: 1000, bicycle: 3000, car: 10000, train: 15000, bus: 8000 };
 
 /**
  * 直線距離から所要時間を出すときの速度（m/分）。
