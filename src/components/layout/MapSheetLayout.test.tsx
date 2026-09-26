@@ -17,9 +17,17 @@ import { SHEET_DRAG_THRESHOLD_PX } from "./use-sheet-drag";
  * 「どこへスクロールしようとしたか」で判定する。地図を広くする段階だけは React の状態なので、
  * data-sheet-step（map / default / full）で見る。
  */
+/**
+ * 【初心者向け】jsdom の `offsetHeight` は常に 0 なので、ここでは HTMLElement 全体の定義を
+ * 一時的に書き換えて 300 を返させる。**全部のテストに影響する書き換えなので、必ず元に戻す**
+ * （戻さずに放置したら、実行の順番によって他のテストが落ちることがあった。2026-09-26）。
+ */
+const originalOffsetHeight = Object.getOwnPropertyDescriptor(HTMLElement.prototype, "offsetHeight");
+const originalScrollTo = Object.getOwnPropertyDescriptor(window, "scrollTo");
+
 function setup({ steps, summary }: { steps?: 2 | 3; summary?: boolean } = {}) {
   const scrollTo = vi.fn();
-  Object.defineProperty(window, "scrollTo", { value: scrollTo, writable: true });
+  Object.defineProperty(window, "scrollTo", { value: scrollTo, writable: true, configurable: true });
   Object.defineProperty(HTMLElement.prototype, "offsetHeight", { configurable: true, get: () => 300 });
   render(
     <MapSheetLayout map={<div data-testid="map" />} steps={steps} summary={summary ? <span>見出しの 1 行</span> : undefined}>
@@ -44,7 +52,12 @@ function drag(handle: HTMLElement, direction: "up" | "down") {
 const step = () => document.querySelector("[data-map-sheet-layout]")?.getAttribute("data-sheet-step");
 
 afterEach(() => {
-  Object.defineProperty(window, "scrollY", { value: 0, writable: true });
+  Object.defineProperty(window, "scrollY", { value: 0, writable: true, configurable: true });
+  // 書き換えた定義を元に戻す（元々無かったものは消す）
+  if (originalOffsetHeight) Object.defineProperty(HTMLElement.prototype, "offsetHeight", originalOffsetHeight);
+  else delete (HTMLElement.prototype as unknown as Record<string, unknown>).offsetHeight;
+  if (originalScrollTo) Object.defineProperty(window, "scrollTo", originalScrollTo);
+  else delete (window as unknown as Record<string, unknown>).scrollTo;
 });
 
 describe("MapSheetLayout（v3.1 Task11: スライド／map-sheet Task2: 3 段階）", () => {
