@@ -103,7 +103,8 @@ export function MyMapScreen({
   );
 
   const mapPins = useMemo<GoogleMapPin[]>(
-    () => pins.map((pin) => ({ id: pin.id, lat: pin.lat, lng: pin.lng, type: pin.kind, title: pin.name })),
+    // pin-categories Task2: 色と記号はカテゴリで決まる（SC-02 と同じ見た目にする。4.5.3）
+    () => pins.map((pin) => ({ id: pin.id, lat: pin.lat, lng: pin.lng, type: pin.kind, title: pin.name, category: pin.category })),
     [pins]
   );
 

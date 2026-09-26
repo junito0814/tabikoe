@@ -8,7 +8,7 @@ import { averageRating, MAX_MAP_PINS, mergeMapPins, parseMapBounds } from "./get
  * 出典: docs/tasks/map-search/map-display/01-spots-fetch-handler.md 単体テスト（v1 から引き継ぎ）
  * - 同一スポットへの複数投稿が1件のピンに集約される・非公開投稿のみのスポットは除外・最大100件
  */
-const spot = (id: string, posts: { user_id: string; visibility: string; rating: number | null }[]) => ({
+const spot = (id: string, posts: { user_id: string; visibility: string; rating: number | null; category?: string | null; created_at?: string | null }[]) => ({
   id,
   name: `スポット${id}`,
   lat: 35,
@@ -18,6 +18,8 @@ const spot = (id: string, posts: { user_id: string; visibility: string; rating: 
 });
 const plain = (id: string) => ({ id, name: `スポット${id}`, lat: 35, lng: 139, prefecture: "東京都" });
 const pub = (rating: number | null = 4) => ({ user_id: "u1", visibility: "public", rating });
+/** pin-categories Task2: カテゴリつきの公開投稿 */
+const pubCat = (category: string, createdAt: string) => ({ user_id: "u1", visibility: "public", rating: 4, category, created_at: createdAt });
 
 describe("mergeMapPins", () => {
   it("同一スポットへの複数投稿が1件のピンに集約され、件数と星平均が付く", () => {
@@ -86,5 +88,43 @@ describe("parseMapBounds", () => {
     expect(parseMapBounds(new URLSearchParams({ north: "35.7" }))).toBeNull();
     expect(parseMapBounds(new URLSearchParams({ north: "x", south: "35.6", east: "139.8", west: "139.7" }))).toBeNull();
     expect(parseMapBounds(new URLSearchParams({ north: "35.6", south: "35.7", east: "139.8", west: "139.7" }))).toBeNull();
+  });
+});
+
+/**
+ * 出典: docs/tasks/shared-ui/pin-categories/02-spot-category-resolution.md 単体テスト
+ * 要件定義書 4.5.3「スポットのカテゴリの決め方」
+ */
+describe("ピンのカテゴリ（pin-categories Task2）", () => {
+  it("公開投稿でいちばん多いカテゴリがピンに乗る", () => {
+    const pins = mergeMapPins(
+      [spot("a", [pubCat("グルメ", "2026-09-01T00:00:00Z"), pubCat("観光スポット", "2026-09-02T00:00:00Z"), pubCat("グルメ", "2026-09-03T00:00:00Z")])],
+      [],
+      []
+    );
+    expect(pins[0].category).toBe("グルメ");
+  });
+
+  it("非公開の投稿はカテゴリの数に入れない", () => {
+    const pins = mergeMapPins(
+      [spot("a", [pubCat("グルメ", "2026-09-01T00:00:00Z"), { user_id: "u1", visibility: "private", rating: 5, category: "宿泊施設", created_at: "2026-09-09T00:00:00Z" }])],
+      [],
+      []
+    );
+    expect(pins[0].category).toBe("グルメ");
+  });
+
+  it("カテゴリが分からなければ null（灰色のピンになる）", () => {
+    expect(mergeMapPins([spot("a", [pub(4)])], [], [])[0].category).toBeNull();
+  });
+
+  it("保存済みのピンにもカテゴリが乗る（色は状態ではなくカテゴリで決まる）", () => {
+    const pins = mergeMapPins([spot("a", [pubCat("宿泊施設", "2026-09-01T00:00:00Z")])], [plain("a")], []);
+    expect(pins[0]).toMatchObject({ kind: "saved", category: "宿泊施設" });
+  });
+
+  it("下書きのピンはカテゴリを持たない", () => {
+    const pins = mergeMapPins([], [], [{ id: "d1", lat: 35, lng: 139, spot: null }]);
+    expect(pins[0]).toMatchObject({ kind: "draft", category: null });
   });
 });

@@ -79,6 +79,7 @@ import { MapScreen } from "./MapScreen";
 const pin = (id: string, extra: Partial<MapPinData> = {}): MapPinData => ({
   id,
   kind: "post",
+  category: null,
   spotId: id,
   name: `スポット${id}`,
   lat: 35.65,
@@ -335,5 +336,24 @@ describe("v3.1（mentoring-7 Task7）: 地図の状態の復元", () => {
       expect(latestCurrentLocation).toBeNull();
       expect(screen.queryByRole("alert")).toBeNull();
     });
+  });
+
+  /**
+   * 出典: docs/tasks/shared-ui/pin-categories/01-teardrop-and-category-icons.md 単体テスト
+   * 凡例にカテゴリの色を並べない代わりに、吹き出しで名前を確かめられるようにする（4.5.3）
+   */
+  it("吹き出しにカテゴリ名が出る。カテゴリが無ければ出ない", async () => {
+    const { unmount } = render(
+      <MapScreen open={resolveMapOpen({})} fetchPins={async () => [pin("spot-1", { category: "グルメ" })]} resolveCenter={resolveCenter} />
+    );
+    await settle();
+    fireEvent.click(await screen.findByRole("button", { name: "spot-1:post" }));
+    expect((await screen.findByRole("dialog", { name: "スポットspot-1" })).querySelector("[data-callout-category]")).toHaveTextContent("グルメ");
+    unmount();
+
+    render(<MapScreen open={resolveMapOpen({})} fetchPins={async () => [pin("spot-2")]} resolveCenter={resolveCenter} />);
+    await settle();
+    fireEvent.click(await screen.findByRole("button", { name: "spot-2:post" }));
+    expect((await screen.findByRole("dialog", { name: "スポットspot-2" })).querySelector("[data-callout-category]")).toBeNull();
   });
 });
