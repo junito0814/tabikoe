@@ -42,6 +42,18 @@ describe("detectMapTheme", () => {
     vi.stubGlobal("matchMedia", vi.fn().mockReturnValue({ matches: false, addEventListener() {}, removeEventListener() {} }));
     expect(detectMapTheme()).toBe("light");
   });
+
+  it("map-style Bug1: 山・湖などの自然地形のラベルも消す（Google の緑のアイコンがピンと紛らわしいため）", () => {
+    const styles = buildMapStyles("light", 14);
+    const natural = styles.find((style) => style.featureType === "landscape.natural" && style.elementType === "labels");
+    expect(natural?.stylers).toEqual([{ visibility: "off" }]);
+  });
+
+  it("駅名は今までどおり残す（自然地形を消しても影響しない）", () => {
+    const styles = buildMapStyles("light", 14);
+    const rail = styles.find((style) => style.featureType === "transit.station.rail" && style.elementType === "labels");
+    expect(rail?.stylers).toEqual([{ visibility: "on" }]);
+  });
 });
 
 describe("buildMapOptions（map-display-v3 Task3）", () => {

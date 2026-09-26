@@ -8,6 +8,7 @@
  * 配列を渡すと見た目を変えられる。タビコエのピンを主役にするため、
  *   - 店舗・施設（poi）のラベルを消す（タビコエのピンだけが場所を示す）
  *   - 交通機関は駅名だけ残す
+ *   - 山・湖などの自然地形のラベルも消す（Google のアイコンがタビコエのピンと紛らわしいため）
  *   - 道路名はズーム 16 以上でだけ出す（ズームごとに styles を切り替える）
  *   - 色の彩度を落とす
  * ダークモードでは夜向けの配色に差し替える。
@@ -20,6 +21,12 @@ const HIDE_POI: google.maps.MapTypeStyle[] = [
   { featureType: "transit", elementType: "labels", stylers: [{ visibility: "off" }] },
   { featureType: "transit.station.rail", elementType: "labels", stylers: [{ visibility: "on" }] },
   { featureType: "transit.station.rail", elementType: "labels.icon", stylers: [{ visibility: "off" }] },
+  // map-style Bug1（2026-09-26）: 山・湖などの自然地形は `poi` ではなく `landscape.natural` なので、
+  // 上の poi の指定では消えない。投稿が無い富士山に Google の緑のアイコンが出ていて、
+  // 自然・景勝地のピン（緑＋山の記号）と見分けが付かなかった。
+  // 駅名と同じ「アイコンだけ消して名前は残す」は、この種別では Google の仕様上できない
+  // （labels.icon を消すと名前も消える。3 通り試して確認）。地名も消えるのは承知のうえで消す。
+  { featureType: "landscape.natural", elementType: "labels", stylers: [{ visibility: "off" }] },
 ];
 
 const LIGHT_BASE: google.maps.MapTypeStyle[] = [
