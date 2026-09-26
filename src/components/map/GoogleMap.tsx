@@ -6,7 +6,7 @@ import { ErrorNotice } from "@/components/notices/ErrorNotice";
 import { ERROR_MESSAGES } from "@/components/notices/error-messages";
 import { PIN_MARKER_SIZE, pinIconDataUrl, type PinMarkerOptions } from "@/components/pins/pin-marker-icon";
 import { getPinStyle, type AnyPinType } from "@/components/pins/pin-styles";
-import { buildMapOptions, buildMapStyles, detectMapTheme, watchMapTheme, type MapTheme } from "./map-styles";
+import { buildMapOptions, buildMapStyles, detectMapTheme, watchMapTheme, type MapGesture, type MapTheme } from "./map-styles";
 import type { MapBounds } from "@/lib/map/get-map-pins";
 import { useGoogleMaps } from "./use-google-maps";
 import { createLongPressDetector } from "./use-long-press";
@@ -50,8 +50,12 @@ interface GoogleMapProps {
   onDragStart?: () => void;
   /** 現在地（青い円）。精度（m）があれば円の大きさに反映する */
   currentLocation?: { lat: number; lng: number; accuracy?: number } | null;
-  /** v3.1（mentoring-7 Task4）: false なら見るだけの地図（ドラッグ・ズーム・長押し・ピンのクリックを受け付けない）。上 1/3 の地図に使う */
-  interactive?: boolean;
+  /**
+   * map-sheet Task1（4.5.8）: 指でどこまで操作できるか。既定は全画面の地図（1 本指でも動く）。
+   *   cooperative … 上部の地図。2 本指でだけ動き、1 本指のドラッグは画面の縦スクロールに使われる
+   *   none        … 完全に見るだけ
+   */
+  gesture?: MapGesture;
   ref?: Ref<GoogleMapHandle>;
   className?: string;
 }
@@ -86,7 +90,7 @@ export function GoogleMap({
   onMapClick,
   onDragStart,
   currentLocation = null,
-  interactive = true,
+  gesture = "greedy",
   ref,
   className,
 }: GoogleMapProps) {
@@ -159,9 +163,8 @@ export function GoogleMap({
         center: initialCenter,
         zoom: initialZoom,
         // 表示情報の削減（POI 非表示・道路名はズーム 16 以上）とコントロールの無効化（map-styles.ts）
-        ...buildMapOptions(detectMapTheme(), initialZoom),
-        // 見るだけの地図（上 1/3）は操作を全部止める。タップは親のリンクが受ける
-        ...(interactive ? {} : { gestureHandling: "none", keyboardShortcuts: false, clickableIcons: false }),
+        // 指でどこまで動かせるか（gesture）と、拡大縮小ボタンを出すかもここで決まる（4.5.8）
+        ...buildMapOptions(detectMapTheme(), initialZoom, gesture),
       });
     } catch (error) {
       console.error("Failed to initialise Google Map", error);
@@ -238,7 +241,7 @@ export function GoogleMap({
         { lat: center.lat(), lng: center.lng() }
       );
     });
-    // 初期位置と interactive は生成時にだけ使う（以降の移動は panTo 経由。見るだけの地図が途中で操作可能になることは無い）
+    // 初期位置と gesture は生成時にだけ使う（以降の移動は panTo 経由。途中で操作の可否が変わることは無い）
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mapsState]);
 

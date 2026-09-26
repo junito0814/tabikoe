@@ -58,4 +58,56 @@ describe("buildMapOptions（map-display-v3 Task3）", () => {
     expect(Array.isArray(options.styles)).toBe(true);
     expect(options.styles.length).toBeGreaterThan(0);
   });
+
+  /**
+   * map-sheet Task1（要件定義書 4.5.8）: 拡大縮小ボタンを出す条件
+   * 【初心者向け】matchMedia はテスト環境（jsdom）には無いので、ここで偽物を差し込んで
+   * 「指で触れる端末」を作っている。afterEach で元に戻す。
+   */
+  describe("拡大縮小ボタン（＋ −）を出す条件", () => {
+    const original = window.matchMedia;
+    afterEach(() => {
+      window.matchMedia = original;
+    });
+    const setPointer = (coarse: boolean) => {
+      window.matchMedia = ((query: string) => ({
+        matches: query.includes("pointer: coarse") ? coarse : false,
+        addEventListener: () => {},
+        removeEventListener: () => {},
+      })) as unknown as typeof window.matchMedia;
+    };
+
+    it("指で触れる端末では出さない", async () => {
+      const { buildMapOptions } = await import("./map-styles");
+      setPointer(true);
+      expect(buildMapOptions("light", 14, "greedy").zoomControl).toBe(false);
+    });
+
+    it("指で触れない端末（パソコン）では出す", async () => {
+      const { buildMapOptions } = await import("./map-styles");
+      setPointer(false);
+      expect(buildMapOptions("light", 14, "greedy").zoomControl).toBe(true);
+    });
+
+    it("上部の地図（cooperative）では端末を問わず出さない", async () => {
+      const { buildMapOptions } = await import("./map-styles");
+      setPointer(false);
+      expect(buildMapOptions("light", 14, "cooperative").zoomControl).toBe(false);
+    });
+
+    it("matchMedia が無い環境（サーバー側の描画）では出す側に倒す", async () => {
+      const { buildMapOptions } = await import("./map-styles");
+      // @ts-expect-error テストのために一時的に消す
+      delete window.matchMedia;
+      expect(buildMapOptions("light", 14, "greedy").zoomControl).toBe(true);
+    });
+  });
+
+  it("gesture をそのまま gestureHandling に渡し、見るだけの地図ではキーボード操作も止める", async () => {
+    const { buildMapOptions } = await import("./map-styles");
+    expect(buildMapOptions("light", 14, "cooperative").gestureHandling).toBe("cooperative");
+    expect(buildMapOptions("light", 14, "cooperative").keyboardShortcuts).toBe(true);
+    expect(buildMapOptions("light", 14, "none").gestureHandling).toBe("none");
+    expect(buildMapOptions("light", 14, "none").keyboardShortcuts).toBe(false);
+  });
 });

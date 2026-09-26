@@ -1,20 +1,26 @@
 "use client";
 
-import { useCallback, useRef } from "react";
+import { useCallback, useRef, useState } from "react";
 import Link from "next/link";
 import type { ItineraryDetail } from "@/lib/itineraries/get-itinerary";
 import type { DayTab } from "@/components/itineraries/DayTabs";
 import { GoogleMap, type GoogleMapHandle } from "./GoogleMap";
 import { buildItineraryPins } from "./ItineraryMapOverlay";
 import { TOKYO_STATION } from "./initial-center";
+import { isSameView, type MapView } from "./static-map-view";
+import type { LatLng } from "./initial-center";
 
 /**
- * mentoring-7 Task8（v3.1）: しおり詳細の上 1/3 に出す「見るだけの地図」（開いている Day の番号ピン）
+ * mentoring-7 Task8（v3.1）: しおり詳細の上 1/3 の地図（開いている Day の番号ピン）
+ * map-sheet Task1（2026-09-26）: 2 本指で動かせるようにし、全画面への入口を右下のボタンだけにした
  * 出典: docs/tasks/shared-ui/mentoring-7/08-itinerary-detail.md
- *       要件定義書 v3.1 3.11.6（「地図で見る」は上 1/3 に地図、下 2/3 に一覧。地図のタップで全画面）
+ *       docs/tasks/shared-ui/map-sheet/01-pinch-and-zoom-controls.md
+ *       要件定義書 4.5.8
  *
- * 【初心者向け】StaticSpotMap のしおり版。ピンは buildItineraryPins（開いている Day の訪問順の番号。ALL は Day の色分け）。
- * 最初の idle で全部のピンが収まるように fitBounds する。全体を覆うリンクで全画面の地図（/map?itinerary=&day=）へ。
+ * 【初心者向け】StaticSpotMap のしおり版。違うのは初期表示の決め方で、
+ * こちらは最初の idle で fitBounds（全部のピンが収まる範囲）を掛ける。
+ * つまり「初期表示」は計算されるまで分からないので、fitBounds が落ち着いた次の idle の
+ * 中心・ズームを覚えておき、「戻す」はそこへ帰る。
  */
 export function ItineraryStaticMap({ itinerary, day, className }: { itinerary: ItineraryDetail; day: DayTab; className?: string }) {
   const mapRef = useRef<GoogleMapHandle>(null);
@@ -22,12 +28,38 @@ export function ItineraryStaticMap({ itinerary, day, className }: { itinerary: I
   const first = pins[0];
   const fittedKeyRef = useRef<string | null>(null);
   const key = pins.map((pin) => pin.id).join(",");
-  // 地図が落ち着いたら（ピンが変わっていれば）全部が収まる範囲にする
-  const onBoundsChange = useCallback(() => {
-    if (fittedKeyRef.current === key || !mapRef.current || pins.length === 0) return;
-    fittedKeyRef.current = key;
-    mapRef.current.fitBounds(pins.map((pin) => ({ lat: pin.lat, lng: pin.lng })));
-  }, [key, pins]);
+  // fitBounds のあとに落ち着いた表示を「初期表示」として覚える。Day を切り替えたら取り直す
+  const initialRef = useRef<MapView | null>(null);
+  const [moved, setMoved] = useState(false);
+
+  const onBoundsChange = useCallback(
+    (_bounds: unknown, center: LatLng) => {
+      if (fittedKeyRef.current !== key && mapRef.current && pins.length > 0) {
+        fittedKeyRef.current = key;
+        initialRef.current = null;
+        setMoved(false);
+        mapRef.current.fitBounds(pins.map((pin) => ({ lat: pin.lat, lng: pin.lng })));
+        return;
+      }
+      const zoom = mapRef.current?.getZoom();
+      if (typeof zoom !== "number") return;
+      if (!initialRef.current) {
+        initialRef.current = { center, zoom };
+        setMoved(false);
+        return;
+      }
+      setMoved(!isSameView(initialRef.current, { center, zoom }));
+    },
+    [key, pins]
+  );
+
+  const reset = useCallback(() => {
+    const initial = initialRef.current;
+    if (!initial) return;
+    mapRef.current?.panTo(initial.center, initial.zoom);
+    setMoved(false);
+  }, []);
+
   const href = `/map?itinerary=${itinerary.id}&day=${day}`;
 
   return (
@@ -38,13 +70,25 @@ export function ItineraryStaticMap({ itinerary, day, className }: { itinerary: I
         initialZoom={13}
         pins={pins}
         cluster={false}
-        interactive={false}
+        gesture="cooperative"
         onBoundsChange={onBoundsChange}
         className="h-full w-full"
       />
-      <Link href={href} aria-label="しおりの地図を全画面で見る" className="absolute inset-0 z-10 block">
-        <span className="absolute right-3 bottom-3 rounded-full bg-ink/80 px-2.5 py-1 text-[11px] font-medium text-on-ink">タップで地図を全画面に</span>
-      </Link>
+      {/* シート（MapSheetLayout）が地図の下端に 16px かぶさるので、その分（12 + 16 = 28px）上げて隠れないようにする */}
+      <div className="absolute right-3 bottom-7 z-10 flex items-center gap-2">
+        {moved && (
+          <button
+            type="button"
+            onClick={reset}
+            className="rounded-full bg-surface/90 px-2.5 py-1 text-[11px] font-medium text-ink shadow-[0_1px_4px_rgba(30,42,56,0.25)]"
+          >
+            戻す
+          </button>
+        )}
+        <Link href={href} className="rounded-full bg-ink/80 px-2.5 py-1 text-[11px] font-medium text-on-ink">
+          地図を全画面に
+        </Link>
+      </div>
     </div>
   );
 }

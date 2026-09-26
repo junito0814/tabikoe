@@ -72,14 +72,38 @@ export const MAP_UI_OPTIONS = {
 } as const;
 
 /**
- * map-display-v3 Task3: `new google.maps.Map(...)` に渡すオプション一式（単体テストの対象）
- * 3D・建物・ストリートビュー・地図タイプ切替を無効化し、テーマとズームに応じたスタイルを付ける。
+ * 指で地図をどこまで操作できるか（map-sheet Task1 / 要件定義書 4.5.8）
+ *   none        … 何もできない（見るだけ）
+ *   cooperative … 2 本指でだけ動かせる。1 本指のドラッグは画面の縦スクロールに使われる
+ *   greedy      … 1 本指でも動かせる（全画面の地図）
  */
-export function buildMapOptions(theme: MapTheme, zoom: number) {
+export type MapGesture = "none" | "cooperative" | "greedy";
+
+/**
+ * 指で触れる端末（スマホ・タブレット）かどうか。
+ *
+ * 【初心者向け】画面の幅ではなく「指で触れるか」で見ている（`(pointer: coarse)`）。
+ * 幅で判断すると、小さな窓で開いたパソコンからも拡大縮小ボタンが消えてしまうため。
+ * サーバー側の描画とテストでは false（＝ボタンを出す側）に倒す。
+ */
+export function isCoarsePointer(): boolean {
+  if (typeof window === "undefined" || typeof window.matchMedia !== "function") return false;
+  return window.matchMedia("(pointer: coarse)").matches;
+}
+
+/**
+ * map-display-v3 Task3 / map-sheet Task1: `new google.maps.Map(...)` に渡すオプション一式（単体テストの対象）
+ * 3D・建物・ストリートビュー・地図タイプ切替を無効化し、テーマとズームに応じたスタイルを付ける。
+ *
+ * 拡大縮小ボタン（＋ −）を出すのは「全画面の地図（greedy）」で「指で触れない端末」のときだけ（4.5.8）。
+ * 上部の地図（cooperative）では、領域が狭いので端末を問わず出さない。
+ */
+export function buildMapOptions(theme: MapTheme, zoom: number, gesture: MapGesture = "greedy") {
   return {
     ...MAP_UI_OPTIONS,
-    zoomControl: true,
-    gestureHandling: "greedy" as const,
+    zoomControl: gesture === "greedy" && !isCoarsePointer(),
+    gestureHandling: gesture,
+    keyboardShortcuts: gesture !== "none",
     styles: buildMapStyles(theme, zoom),
   };
 }

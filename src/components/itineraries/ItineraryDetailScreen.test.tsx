@@ -207,7 +207,7 @@ describe("ItineraryDetailScreen（SC-23）", () => {
     expect(document.querySelector("[data-itinerary-static-map]")).toBeNull();
     fireEvent.click(screen.getByRole("button", { name: /地図で見る/ }));
     expect(document.querySelector("[data-map-sheet-layout]")).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "しおりの地図を全画面で見る" })).toHaveAttribute("href", "/map?itinerary=it-1&day=1");
+    expect(screen.getByRole("link", { name: "地図を全画面に" })).toHaveAttribute("href", "/map?itinerary=it-1&day=1");
     fireEvent.click(screen.getByRole("button", { name: /地図を閉じる/ }));
     expect(document.querySelector("[data-itinerary-static-map]")).toBeNull();
   });
