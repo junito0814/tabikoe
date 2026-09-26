@@ -39,6 +39,16 @@
   --star: #f2b233;
   --sky: linear-gradient(180deg, #bfddf7 0%, #e4f1fc 38%, #f3f8fd 62%, #ffffff 100%);
   --map-placeholder: #dce3ea;
+  /* pin-categories Task1（2026-09-26）: 地図のピンのカテゴリ色（要件定義書 4.5.3）。
+     7 色とも現在地の青（--accent）とは違う色にしてある（同じ色だと現在地と見分けが付かない） */
+  --pin-food: #e2703a;
+  --pin-sight: #c4478c;
+  --pin-nature: #3c8c5e;
+  --pin-activity: #7a57d1;
+  --pin-event: #d8425f;
+  --pin-shopping: #0e93a0;
+  --pin-stay: #9a6b33;
+  --pin-none: #7b8794;
   --shadow-card: 0 2px 16px rgba(30, 42, 56, 0.1);
   color-scheme: light;
 }
@@ -60,6 +70,15 @@
     --star: #f2b233;
     --sky: linear-gradient(180deg, #0e1e3d 0%, #0c172c 38%, #0b1220 62%, #0b1220 100%);
     --map-placeholder: #2a3442;
+    /* 暗い地図の上でも沈まないよう、1 段明るくする */
+    --pin-food: #f08c5a;
+    --pin-sight: #db6da8;
+    --pin-nature: #5bae7c;
+    --pin-activity: #9b7fe6;
+    --pin-event: #ee6b84;
+    --pin-shopping: #35b2be;
+    --pin-stay: #be8c52;
+    --pin-none: #8b97a6;
     --shadow-card: 0 2px 16px rgba(0, 0, 0, 0.45);
     color-scheme: dark;
   }

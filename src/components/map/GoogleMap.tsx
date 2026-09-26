@@ -4,8 +4,8 @@ import { useEffect, useImperativeHandle, useRef, useState, type Ref } from "reac
 import { MarkerClusterer } from "@googlemaps/markerclusterer";
 import { ErrorNotice } from "@/components/notices/ErrorNotice";
 import { ERROR_MESSAGES } from "@/components/notices/error-messages";
-import { PIN_MARKER_SIZE, pinIconDataUrl, type PinMarkerOptions } from "@/components/pins/pin-marker-icon";
-import { getPinStyle, type AnyPinType } from "@/components/pins/pin-styles";
+import { PIN_MARKER_SIZE, pinIconDataUrl, pinMarkerAnchor, type PinMarkerOptions } from "@/components/pins/pin-marker-icon";
+import { resolvePinLook, type AnyPinType } from "@/components/pins/pin-styles";
 import { buildMapOptions, buildMapStyles, detectMapTheme, watchMapTheme, type MapGesture, type MapTheme } from "./map-styles";
 import type { MapBounds } from "@/lib/map/get-map-pins";
 import { useGoogleMaps } from "./use-google-maps";
@@ -19,6 +19,7 @@ export interface GoogleMapPin extends PinMarkerOptions {
   lng: number;
   type: AnyPinType;
   title?: string;
+  /** pin-categories Task1: そのスポットのカテゴリ（PinMarkerOptions 側で型が付く。色と記号を決める） */
 }
 
 /** 親から地図を操作するためのハンドル（地名検索の移動など） */
@@ -287,7 +288,7 @@ export function GoogleMap({
   // ピンの描画。親が毎レンダー新しい配列を渡しても、中身（id・座標・種別）が同じなら置き直さない
   // （置き直すたびにマーカーが消えて再描画され、点滅して見えるため）
   const pinsSignature =
-    pins.map((pin) => `${pin.id}:${pin.lat}:${pin.lng}:${pin.type}:${pin.label ?? ""}:${pin.dayIndex ?? ""}:${pin.done ? 1 : 0}`).join("|") +
+    pins.map((pin) => `${pin.id}:${pin.lat}:${pin.lng}:${pin.type}:${pin.label ?? ""}:${pin.dayIndex ?? ""}:${pin.done ? 1 : 0}:${pin.category ?? ""}`).join("|") +
     `#${theme}`;
   const pinsRef = useRef(pins);
   useEffect(() => {
@@ -301,13 +302,15 @@ export function GoogleMap({
     markersRef.current.forEach((marker) => marker.setMap(null));
 
     const markers = pinsRef.current.map((pin) => {
+      // pin-categories Task1: しずく型なので、座標を指すのは中央ではなく先端（pinMarkerAnchor）
+      const anchor = pinMarkerAnchor(pin.type);
       const marker = new google.maps.Marker({
         position: { lat: pin.lat, lng: pin.lng },
-        title: pin.title ?? getPinStyle(pin.type).label,
+        title: pin.title ?? resolvePinLook(pin.type).label,
         icon: {
-          url: pinIconDataUrl(pin.type, { label: pin.label, dayIndex: pin.dayIndex, done: pin.done }),
+          url: pinIconDataUrl(pin.type, { label: pin.label, dayIndex: pin.dayIndex, done: pin.done, category: pin.category }),
           scaledSize: new google.maps.Size(PIN_MARKER_SIZE, PIN_MARKER_SIZE),
-          anchor: new google.maps.Point(PIN_MARKER_SIZE / 2, PIN_MARKER_SIZE / 2),
+          anchor: new google.maps.Point(anchor.x, anchor.y),
         },
       });
       marker.addListener("click", () => onPinClickRef.current?.(pin.id));
