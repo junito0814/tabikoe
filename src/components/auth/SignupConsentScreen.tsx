@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { outfit, lora } from "@/app/fonts";
 import { ErrorNotice } from "@/components/notices/ErrorNotice";
-import { AppLogoIcon } from "./AuthScreen";
+import { AppLogo } from "@/components/brand/AppLogo";
 import { ConsentCheckbox } from "./ConsentCheckbox";
 
 export interface SignupConsentApi {
@@ -65,7 +65,7 @@ export function SignupConsentScreen({ email, redirectTo = null, api = defaultApi
       <div className="flex w-full max-w-[360px] flex-col items-center">
         <div className="relative mb-6 flex h-[120px] w-[120px] items-center justify-center">
           <div className="absolute h-[120px] w-[120px] rounded-full border border-line opacity-60" />
-          <AppLogoIcon />
+          <AppLogo />
         </div>
         <h1 className={`${lora.className} mb-2.5 text-[22px] font-bold tracking-[2px] text-ink`}>タビコエ</h1>
         <p className="mb-8 text-center text-[13px] leading-[1.7] text-muted">
