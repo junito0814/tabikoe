@@ -130,4 +130,57 @@ describe("MapSheetLayout（v3.1 Task11: スライド／map-sheet Task2: 3 段階
     expect(screen.getByText("内容")).toBeInTheDocument();
     expect(screen.queryByText("見出しの 1 行")).toBeNull();
   });
+
+  /**
+   * 出典: docs/tasks/... map-sheet Bug1（2026-09-26）／要件定義書 4.5.6「操作できる範囲」
+   * 取っ手が掴みにくかったので、内容を下に引いても段階が縮むようにした
+   */
+  describe("内容のドラッグ（Bug1）", () => {
+    /**
+     * シート本体（取っ手の親）を指で引く。
+     * 【初心者向け】ここは pointer ではなく touch のイベントを送る。実機ではブラウザが
+     * スクロールと判断した時点で pointerup が来なくなるため、実装が touch を見ているから。
+     */
+    function dragContent(direction: "up" | "down", distance = SHEET_DRAG_THRESHOLD_PX) {
+      const sheet = document.querySelector("[data-sheet-handle]")!.parentElement as HTMLElement;
+      const move = direction === "up" ? -distance : distance;
+      const at = (y: number) => [{ clientY: y, clientX: 0 }];
+      fireEvent.touchStart(sheet, { touches: at(400) });
+      fireEvent.touchMove(sheet, { touches: at(400 + move) });
+      fireEvent.touchEnd(sheet, { changedTouches: at(400 + move), touches: [] });
+      return sheet;
+    }
+
+    it("先頭で内容を下に引くと段階が縮む（取っ手を掴まなくてよい）", () => {
+      setup();
+      expect(step()).toBe("default");
+      dragContent("down");
+      expect(step()).toBe("map");
+    });
+
+    it("動きが小さいとき（タップ）は何も起きない。リンクやカードの邪魔をしない", () => {
+      setup();
+      dragContent("down", SHEET_DRAG_THRESHOLD_PX / 2);
+      expect(step()).toBe("default");
+    });
+
+    it("上に引いても内容では段階を変えない（上方向はページのスクロールが担当する）", () => {
+      const { scrollTo } = setup();
+      dragContent("up");
+      expect(step()).toBe("default");
+      expect(scrollTo).not.toHaveBeenCalled();
+    });
+
+    it("先頭までスクロールしていないときは普通のスクロールとして扱う", () => {
+      setup();
+      Object.defineProperty(window, "scrollY", { value: 120, writable: true, configurable: true });
+      dragContent("down");
+      expect(step()).toBe("default");
+    });
+
+    it("取っ手の掴める範囲は 32px 以上（4.5.6）", () => {
+      const { handle } = setup();
+      expect(handle.className).toContain("h-8");
+    });
+  });
 });

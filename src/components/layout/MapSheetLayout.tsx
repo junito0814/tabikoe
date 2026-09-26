@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, type ReactNode } from "react";
-import { useSheetDrag } from "./use-sheet-drag";
+import { useSheetContentDrag, useSheetDrag } from "./use-sheet-drag";
 
 /**
  * mentoring-7 Task4・Task11（v3.1）: 上 1/3 地図＋下 2/3 シートの共通レイアウト
@@ -96,6 +96,8 @@ export function MapSheetLayout({
   const toggle = () => (expanded ? goDown() : goUp());
 
   const handle = useSheetDrag((snap) => (snap === "expand" ? goUp() : goDown()), toggle);
+  // map-sheet Bug1: 取っ手が掴みにくかったので、内容を下に引いても縮むようにする（4.5.6）
+  const content = useSheetContentDrag(goDown);
   const handleLabel = expanded ? "シートを戻す（地図を表示）" : tallMap ? "シートを広げる（地図を小さく）" : "シートを広げる（全画面）";
 
   return (
@@ -115,6 +117,7 @@ export function MapSheetLayout({
       </div>
       {/* 下のシート（パソコンでは右）: 上端が 2 つ目の吸い付き点（＝全画面） */}
       <div
+        {...content}
         className={`relative z-10 -mt-4 flex flex-1 flex-col rounded-t-[16px] border-t border-line bg-app shadow-card md:mt-0 md:min-h-dvh md:rounded-none md:border-l md:border-t-0 ${tallMap ? "min-h-[34dvh]" : "min-h-[66dvh]"}`}
         style={{ scrollSnapAlign: "start", scrollMarginTop: 0 }}
       >
@@ -125,7 +128,8 @@ export function MapSheetLayout({
           aria-label={handleLabel}
           aria-expanded={expanded}
           data-sheet-handle
-          className="flex h-5 w-full touch-none items-center justify-center md:hidden"
+          // 4.5.6: 掴める範囲は 32px 以上（h-8）。見た目の線は細いまま
+          className="flex h-8 w-full touch-none items-center justify-center md:hidden"
         >
           <span className="h-1 w-10 rounded-full bg-line" />
         </button>
