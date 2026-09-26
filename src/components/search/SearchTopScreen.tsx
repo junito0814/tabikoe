@@ -10,6 +10,7 @@ import { composeHref } from "@/lib/posts/compose-initial-state";
 import { buildSearchHref, type AddModeParams } from "@/lib/search/build-search-href";
 import type { DestinationSuggestion } from "@/lib/search/suggest-destinations";
 import { outfit, lora } from "@/app/fonts";
+import { AppLogo } from "@/components/brand/AppLogo";
 import { DestinationInput } from "./DestinationInput";
 
 export interface SearchTopApi {
@@ -110,7 +111,7 @@ export function SearchTopScreen({
         </p>
       )}
       <div className="flex flex-col items-center gap-3">
-        <AppLogoIcon />
+        <AppLogo size={64} />
         <h1 className={`${lora.className} text-[24px] font-bold tracking-[2px] text-ink`}>タビコエ</h1>
       </div>
 
@@ -156,19 +157,6 @@ export function SearchTopScreen({
       </div>
 
     </div>
-  );
-}
-
-function AppLogoIcon() {
-  return (
-    <svg width="64" height="64" viewBox="0 0 72 72" fill="none" aria-hidden>
-      <rect width="72" height="72" rx="20" fill="var(--accent)" />
-      <circle cx="36" cy="28" r="10" fill="rgba(255,255,255,0.25)" />
-      <circle cx="36" cy="28" r="5" fill="#FFFFFF" />
-      <path d="M36 38C36 38 26 50 26 54" stroke="rgba(255,255,255,0.5)" strokeWidth="2.5" strokeLinecap="round" />
-      <path d="M36 38C36 38 46 50 46 54" stroke="rgba(255,255,255,0.5)" strokeWidth="2.5" strokeLinecap="round" />
-      <path d="M36 38L36 54" stroke="rgba(255,255,255,0.7)" strokeWidth="2.5" strokeLinecap="round" />
-    </svg>
   );
 }
 

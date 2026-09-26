@@ -7,8 +7,7 @@ import { safeRedirectPath } from "@/lib/safe-redirect";
 import { ErrorNotice } from "@/components/notices/ErrorNotice";
 import { ERROR_MESSAGES } from "@/components/notices/error-messages";
 import { outfit, lora } from "@/app/fonts";
-
-const MAIN = "var(--accent)";
+import { AppLogo } from "@/components/brand/AppLogo";
 
 /**
  * F-AC-01 Task3（SC-01 ログイン画面）/ Task11（2026-09-22: 入口を「Google で続ける」1 つに）
@@ -47,22 +46,6 @@ function GoogleIcon() {
     );
 }
 
-export function AppLogoIcon() {
-    return (
-        <svg width="72" height="72" viewBox="0 0 72 72" fill="none" aria-hidden>
-            <rect width="72" height="72" rx="20" fill={MAIN} />
-            <circle cx="36" cy="28" r="10" fill="rgba(255,255,255,0.25)" />
-            <circle cx="36" cy="28" r="5" fill="#FFFFFF" />
-            <path d="M36 38C36 38 26 50 26 54" stroke="rgba(255,255,255,0.5)" strokeWidth="2.5" strokeLinecap="round" />
-            <path d="M36 38C36 38 46 50 46 54" stroke="rgba(255,255,255,0.5)" strokeWidth="2.5" strokeLinecap="round" />
-            <path d="M36 38L36 54" stroke="rgba(255,255,255,0.7)" strokeWidth="2.5" strokeLinecap="round" />
-            <circle cx="22" cy="46" r="2.5" fill="rgba(255,255,255,0.6)" />
-            <circle cx="50" cy="44" r="2" fill="rgba(255,255,255,0.5)" />
-            <circle cx="30" cy="56" r="1.5" fill="rgba(255,255,255,0.4)" />
-            <circle cx="48" cy="56" r="1.5" fill="rgba(255,255,255,0.4)" />
-        </svg>
-    );
-}
 
 export default function AuthScreen({ sky = false }: { /** Task12（2026-09-25）: 未ログインのホーム（/）では背景に空のグラデーションを敷く（4.5.5） */ sky?: boolean } = {}) {
     const searchParams = useSearchParams();
@@ -123,7 +106,7 @@ export default function AuthScreen({ sky = false }: { /** Task12（2026-09-25）
                 <div className="relative mb-6 flex h-[160px] w-[160px] items-center justify-center">
                     <div className="absolute h-[120px] w-[120px] rounded-full border border-line opacity-60" />
                     <div className="absolute h-[160px] w-[160px] rounded-full border border-line opacity-30" />
-                    <AppLogoIcon />
+                    <AppLogo />
                 </div>
 
                 <h1
