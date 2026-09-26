@@ -29,8 +29,8 @@ describe("travel-time", () => {
     expect(formatTravelMinutes(18, "bus")).toBe("バス 約 18分");
   });
 
-  it("半径は 徒歩 1km／自転車 3km／車 10km／電車 15km／バス 5km", () => {
-    expect(TRAVEL_RADIUS_METERS).toEqual({ walk: 1000, bicycle: 3000, car: 10000, train: 15000, bus: 5000 });
+  it("半径は 徒歩 1km／自転車 3km／車 10km／電車 15km／バス 8km（2026-09-26 にバスを拡大）", () => {
+    expect(TRAVEL_RADIUS_METERS).toEqual({ walk: 1000, bicycle: 3000, car: 10000, train: 15000, bus: 8000 });
   });
 
   it("電車・バスも受け付け、知らない値は徒歩に倒す", () => {

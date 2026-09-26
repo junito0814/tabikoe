@@ -20,9 +20,15 @@ export const NEARBY_RADIUS_OPTIONS = [500, 1000, 3000, 10000] as const;
 export type NearbyRadius = (typeof NEARBY_RADIUS_OPTIONS)[number];
 export const DEFAULT_NEARBY_RADIUS: NearbyRadius = 1000;
 export const NEARBY_POSTS_LIMIT = 20;
-/** v3.2: 移動手段 → 半径（NearbyRadius の値に揃える） */
-export function radiusForTravelMode(mode: TravelMode): NearbyRadius {
-  return TRAVEL_RADIUS_METERS[mode] as NearbyRadius;
+/**
+ * v3.2: 移動手段 → 半径（m）
+ *
+ * 【初心者向け】戻り値は `NearbyRadius`（500／1000／3000／10000）ではなく素の number。
+ * 電車 15000・バス 8000 はその 4 つに含まれないので、型を偽って通していた（`as NearbyRadius`）。
+ * `NearbyRadius` は v3.0 の `radius=` パラメータ（互換用）のためだけに残っている値の集合なので、混ぜない。
+ */
+export function radiusForTravelMode(mode: TravelMode): number {
+  return TRAVEL_RADIUS_METERS[mode];
 }
 /** 円判定の前に DB から取る上限（矩形の中には円の外も含まれるため多めに） */
 const NEARBY_FETCH_CAP = 200;
@@ -99,7 +105,7 @@ export async function getNearbyPosts(
   admin: SupabaseClient,
   viewerId: string,
   center: { lat: number; lng: number },
-  radiusMeters: NearbyRadius,
+  radiusMeters: number,
   mode: TravelMode = "walk",
   /** 差し替え口（単体テスト用）。既定は Routes API＋10 分キャッシュ */
   travelMinutesFetcher: (origin: { lat: number; lng: number }, destinations: { lat: number; lng: number }[], mode: TravelMode) => Promise<(number | null)[]> = getTravelMinutes
