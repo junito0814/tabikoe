@@ -13,17 +13,22 @@ const push = vi.fn();
 vi.mock("next/navigation", () => ({ useRouter: () => ({ push }) }));
 
 const BOUNDS: MapBounds = { north: 35.7, south: 35.6, east: 139.8, west: 139.7 };
+// map-current-location Task1: あしあとには現在地を出さない（要件定義書 4.5.10）
+let latestCurrentLocation: { lat: number; lng: number } | null | undefined;
 
 vi.mock("./GoogleMap", () => ({
   GoogleMap: ({
     pins,
     onBoundsChange,
     onPinClick,
+    currentLocation,
   }: {
     pins: { id: string; type: string }[];
     onBoundsChange?: (bounds: MapBounds, center: { lat: number; lng: number }) => void;
     onPinClick?: (id: string) => void;
+    currentLocation?: { lat: number; lng: number } | null;
   }) => {
+    latestCurrentLocation = currentLocation;
     useEffect(() => {
       onBoundsChange?.(BOUNDS, { lat: 35.65, lng: 139.75 });
       // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -102,5 +107,11 @@ describe("MyMapScreen（SC-12）", () => {
     expect(push).toHaveBeenCalledWith("/spots/s-saved?back=%2Fmymap");
     fireEvent.click(screen.getByRole("button", { name: "draft:d1:draft" }));
     expect(push).toHaveBeenCalledWith("/posts/new?draft=d1");
+  });
+
+  it("あしあとには現在地の点を出さない（4.5.10。自分の記録を見る画面なので）", async () => {
+    render(<MyMapScreen fetchPins={async () => []} resolveCenter={resolveCenter} />);
+    await screen.findByTestId("map-stub");
+    expect(latestCurrentLocation ?? null).toBeNull();
   });
 });

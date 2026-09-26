@@ -223,6 +223,28 @@ export function MapScreen({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // map-current-location Task1（2026-09-26）: 全画面の地図（SC-02）では、どのモードでも現在地の点を出す。
+  // 出典: docs/tasks/map-search/map-current-location/01-current-location-everywhere.md、要件定義書 4.5.10
+  //
+  // 【初心者向け】下の「中心が無いときだけ現在地を待つ」処理とは目的が違うので、別の useEffect にしている。
+  //   下 … 地図を「どこに開くか」を決めるための現在地（＝地図が動く）
+  //   ここ … 「今どこにいるか」の点を出すためだけの現在地（＝地図は動かさない）
+  // スポット一覧から開くと URL に中心（lat・lng）が付いてくるので下の処理は動かず、
+  // 青い点が一度も出なかった（Bug の原因）。取れなければ何もしない（エラーも出さない）。
+  useEffect(() => {
+    if (currentLocation) return; // 探すモード・復元では既に入っている
+    let cancelled = false;
+    requestCurrentPosition(geolocation ?? (typeof navigator === "undefined" ? undefined : navigator.geolocation)).then((result) => {
+      if (cancelled || !result.ok) return;
+      setCurrentLocation({ lat: result.lat, lng: result.lng });
+    });
+    return () => {
+      cancelled = true;
+    };
+    // 開いた直後に 1 回だけ（現在地を取り直すのは復元時の処理と「現在地」ボタンが担当する）
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   // 開き方に中心が無いときだけ現在地（→東京駅）を待つ
   useEffect(() => {
     if (initial || open.mode === "itinerary") return;
