@@ -58,6 +58,7 @@ const pin = (spotId: string, kind: "posted" | "saved" | "draft", latestPostId: s
   lng: 139.75,
   kind,
   latestPostId,
+  category: null,
   isWishlisted: kind === "saved",
 });
 

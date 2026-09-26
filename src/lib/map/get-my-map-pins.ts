@@ -1,6 +1,8 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { MAX_MAP_PINS, type MapBounds } from "./get-map-pins";
 import { UNNAMED_SPOT_NAME } from "@/lib/spots/finalize-spot";
+import { resolveSpotCategory } from "./spot-category";
+import type { PostCategory } from "@/lib/posts/constants";
 
 /**
  * F-RC-06 Task1: マイマップ用ピンデータ
@@ -33,6 +35,11 @@ export interface MyMapPin {
   kind: "posted" | "saved" | "draft";
   /** 投稿済みピンの遷移先（自分の最新の投稿）。下書きでは下書きの投稿 ID */
   latestPostId: string | null;
+  /**
+   * pin-categories Task2: ピンの色と記号を決めるカテゴリ（4.5.3）。
+   * SC-02 と同じ見た目にするため、**そのスポットの公開投稿全体**から決める（自分の投稿だけではない）。
+   */
+  category: PostCategory | null;
   isWishlisted: boolean;
 }
 
@@ -60,7 +67,9 @@ export function mergeMyMapPins(
   saved: { spot: SpotRow }[],
   mode: MyMapMode,
   drafts: MyMapDraft[] = [],
-  limit: number = MAX_MAP_PINS
+  limit: number = MAX_MAP_PINS,
+  /** スポット ID → カテゴリ（pin-categories Task2。無ければ灰色のピンになる） */
+  categoryBySpot: ReadonlyMap<string, PostCategory> = new Map()
 ): MyMapPin[] {
   const pins = new Map<string, MyMapPin>();
 
@@ -75,6 +84,7 @@ export function mergeMyMapPins(
         lng: item.spot.lng,
         kind: "posted",
         latestPostId: item.latestPostId,
+        category: categoryBySpot.get(item.spot.id) ?? null,
         isWishlisted: false,
       });
     }
@@ -95,6 +105,7 @@ export function mergeMyMapPins(
         lng: item.spot.lng,
         kind: "saved",
         latestPostId: null,
+        category: categoryBySpot.get(item.spot.id) ?? null,
         isWishlisted: true,
       });
     }
@@ -109,6 +120,8 @@ export function mergeMyMapPins(
       lng: draft.lng,
       kind: "draft",
       latestPostId: draft.id,
+      // 下書きはまだカテゴリが決まっていない
+      category: null,
       isWishlisted: false,
     });
   }
@@ -174,5 +187,36 @@ export async function getMyMapPins(
     spot: one(row.spot),
   }));
 
-  return mergeMyMapPins(posted, saved, mode, drafts);
+  // pin-categories Task2: ピンの色を SC-02 と揃えるため、集めたスポットの「公開投稿のカテゴリ」を取る。
+  // あしあとの取得は「自分の投稿」「保存済み」から引いているので、公開投稿の情報はここにしか無い（1 本だけ足す）
+  const spotIds = Array.from(new Set([...posted.map((row) => row.spot.id), ...saved.map((row) => row.spot.id)]));
+  const categoryBySpot = await findSpotCategories(admin, spotIds);
+
+  return mergeMyMapPins(posted, saved, mode, drafts, MAX_MAP_PINS, categoryBySpot);
+}
+
+/** スポットごとの「公開投稿から決めたカテゴリ」（4.5.3。いちばん多いカテゴリ、同数なら新しい方） */
+async function findSpotCategories(admin: SupabaseClient, spotIds: string[]): Promise<Map<string, PostCategory>> {
+  const map = new Map<string, PostCategory>();
+  if (spotIds.length === 0) return map;
+  const { data, error } = await admin
+    .from("posts")
+    .select("spot_id, category, created_at")
+    .in("spot_id", spotIds)
+    .eq("visibility", "public")
+    .eq("status", "published")
+    .is("hidden_at", null);
+  if (error) throw error;
+
+  const grouped = new Map<string, { category: string | null; createdAt: string | null }[]>();
+  for (const row of (data ?? []) as { spot_id: string; category: string | null; created_at: string | null }[]) {
+    const list = grouped.get(row.spot_id) ?? [];
+    list.push({ category: row.category, createdAt: row.created_at });
+    grouped.set(row.spot_id, list);
+  }
+  for (const [spotId, posts] of grouped) {
+    const category = resolveSpotCategory(posts);
+    if (category) map.set(spotId, category);
+  }
+  return map;
 }

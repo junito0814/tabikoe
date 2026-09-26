@@ -63,6 +63,7 @@ function nearbyPinFrom(post: NearbyPost, pins: MapPinData[]): MapPinData {
     lat: post.lat,
     lng: post.lng,
     kind: "post",
+    category: null,
     prefecture: null,
     postCount: 1,
     ratingAverage: null,
@@ -375,6 +376,8 @@ export function MapScreen({
       lng: pin.lng,
       type: pin.kind !== "draft" && pin.spotId === focusId ? "focus" : pin.kind,
       title: pin.name,
+      // pin-categories Task2: 色と記号はカテゴリで決まる（4.5.3）
+      category: pin.category,
     }));
     // 探すモードで「近くのスポット」にあるスポットが範囲内のピンに無ければ（100 件上限など）補う
     if (open.mode === "explore") {

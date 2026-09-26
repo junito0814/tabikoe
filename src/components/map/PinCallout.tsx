@@ -67,6 +67,15 @@ function SpotBody({ pin, backHref }: { pin: MapPinData; backHref: string | null 
         <span aria-hidden className="text-muted">›</span>
       </p>
       <p className="flex flex-wrap items-center gap-x-1.5 text-[11px] text-muted">
+        {/* pin-categories Task1: 凡例にカテゴリの色を並べない代わりに、ここで名前を確かめられるようにする（4.5.3） */}
+        {pin.category && (
+          <>
+            <span data-callout-category className="font-medium text-ink">
+              {pin.category}
+            </span>
+            <span aria-hidden>・</span>
+          </>
+        )}
         {pin.ratingAverage !== null && (
           <span>
             <span className="text-star" aria-hidden>

@@ -1,5 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { getBlockedUserIds } from "@/lib/blocks/get-blocked-user-ids";
+import { resolveSpotCategory } from "./spot-category";
+import type { PostCategory } from "@/lib/posts/constants";
 import { findLatestSpotStatuses } from "@/lib/posts/post-cards";
 import { UNNAMED_SPOT_NAME } from "@/lib/spots/finalize-spot";
 import type { LatestSpotStatus } from "@/lib/spots/format-status-label";
@@ -38,6 +40,8 @@ export interface MapPinData {
   postCount: number;
   /** 星評価の平均（小数 1 桁）。投稿が無ければ null */
   ratingAverage: number | null;
+  /** pin-categories Task2: ピンの色と記号を決めるカテゴリ（公開投稿から決める。無ければ null） */
+  category: PostCategory | null;
   /** 最新の「まだあった」報告（spot-status-report Task3） */
   latestStatus: LatestSpotStatus | null;
   /** kind = draft のとき、下書きの投稿 ID（「続きを書く」→ /posts/new?draft=） */
@@ -53,7 +57,7 @@ interface SpotRow {
 }
 
 export interface SpotWithPostsRow extends SpotRow {
-  posts: { user_id: string; visibility: string; rating: number | null }[];
+  posts: { user_id: string; visibility: string; rating: number | null; category?: string | null; created_at?: string | null }[];
 }
 
 export interface DraftRow {
@@ -108,11 +112,16 @@ export function mergeMapPins(
   latestStatusBySpot: ReadonlyMap<string, LatestSpotStatus> = new Map(),
   limit: number = MAX_MAP_PINS
 ): MapPinData[] {
-  const stats = new Map<string, { postCount: number; ratingAverage: number | null }>();
+  const stats = new Map<string, { postCount: number; ratingAverage: number | null; category: PostCategory | null }>();
   for (const row of postSpots) {
     const publicPosts = row.posts.filter((post) => post.visibility === "public");
     if (publicPosts.length === 0) continue;
-    stats.set(row.id, { postCount: publicPosts.length, ratingAverage: averageRating(publicPosts.map((post) => post.rating)) });
+    stats.set(row.id, {
+      postCount: publicPosts.length,
+      ratingAverage: averageRating(publicPosts.map((post) => post.rating)),
+      // pin-categories Task2: ピンの色と記号を決める（いちばん多いカテゴリ、同数なら新しい方）
+      category: resolveSpotCategory(publicPosts.map((post) => ({ category: post.category ?? null, createdAt: post.created_at ?? null }))),
+    });
   }
 
   const pins: MapPinData[] = [];
@@ -131,6 +140,7 @@ export function mergeMapPins(
       prefecture: spot.prefecture,
       postCount: stat?.postCount ?? 0,
       ratingAverage: stat?.ratingAverage ?? null,
+      category: stat?.category ?? null,
       latestStatus: latestStatusBySpot.get(spot.id) ?? null,
       draftId: null,
     });
@@ -146,6 +156,8 @@ export function mergeMapPins(
     pins.push({
       id,
       kind: "draft",
+      // 下書きはまだカテゴリが決まっていない（灰色の破線のピンになる）
+      category: null,
       spotId: draft.spot?.id ?? null,
       name: draft.spot?.name ?? UNNAMED_SPOT_NAME,
       lat: draft.lat,
@@ -183,7 +195,7 @@ export async function getMapPins(admin: SupabaseClient, userId: string, bounds: 
   let postQuery = inBounds(
     admin
       .from("spots")
-      .select("id, name, lat, lng, prefecture, posts!inner(user_id, visibility, rating)")
+      .select("id, name, lat, lng, prefecture, posts!inner(user_id, visibility, rating, category, created_at)")
       .eq("posts.visibility", "public")
       .eq("posts.status", "published")
       // F-AD-05: 非公開化された投稿・スポットは除く
