@@ -23,7 +23,7 @@ export type PinType =
   | "draft" // 自分の下書き
   | "focus" // 「地図で見る」で開いた対象・探すモードでめくったカード
   | "numbered" // しおりの訪問順（Day の色＋番号）
-  | "cluster"; // まとめ表示
+  | "cluster"; // まとめ表示。※ 地図のまとめ表示は MarkerClusterer が自前で描くので、今のところ未使用（4.5.3）
 
 /** v1 の呼び名。map-display-v3 で置き換えるまでの互換用 */
 export type LegacyPinType = "normal" | "wishlist";
