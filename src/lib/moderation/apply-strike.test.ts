@@ -29,7 +29,12 @@ function fakeAdmin(existingStrikes: number, existingUntil: string | null = null)
       }),
       update: (payload: unknown) => {
         calls.push({ table, op: "update", payload });
-        return { eq: async () => ({ error: null }) };
+        // 仮停止は update().eq().is().select() の形（suspend.ts）
+        const c: Record<string, unknown> = { then: (resolve: (v: unknown) => void) => resolve({ error: null }) };
+        c.eq = () => c;
+        c.is = () => c;
+        c.select = async () => ({ data: [{ id: "u1" }], error: null });
+        return c;
       },
     }),
   } as unknown as SupabaseClient;
@@ -53,6 +58,7 @@ describe("applyStrikeForReport", () => {
     expect(notification).toMatchObject({ user_id: "u1", type: "moderation_action", related_id: "s-new" });
     expect(JSON.stringify(notification)).not.toContain("reporter");
     expect(calls.some((c) => c.table === "users" && c.op === "update")).toBe(false);
+    expect(result.suspended).toBe(false);
   });
 
   it("2 つ目: 3 日間の投稿禁止になり、解除日時が users に入る", async () => {
@@ -70,10 +76,17 @@ describe("applyStrikeForReport", () => {
     expect(result.postingRestrictedUntil).toBe("2026-10-15T00:00:00Z");
   });
 
-  it("5 つ目は suspend、個人情報の掲載は 1 つ目でも severe", async () => {
-    const { client } = fakeAdmin(4);
-    expect((await applyStrikeForReport(client, input)).measure).toEqual({ kind: "suspend" });
-    const { client: c2 } = fakeAdmin(0);
-    expect((await applyStrikeForReport(c2, { ...input, reason: "personal_info" })).severe).toBe(true);
+  it("5 つ目は suspend になり仮停止する。個人情報の掲載は 1 つ目でも severe で仮停止（Task 4）", async () => {
+    const { client, calls } = fakeAdmin(4);
+    const result = await applyStrikeForReport(client, input);
+    expect(result.measure).toEqual({ kind: "suspend" });
+    expect(result.suspended).toBe(true);
+    expect(calls.find((c) => c.table === "users" && c.op === "update" && (c.payload as { suspension_kind?: string }).suspension_kind === "provisional")).toBeTruthy();
+    expect(calls.filter((c) => c.table === "notifications").map((c) => (c.payload as { type: string }).type)).toContain("account_suspended");
+    const { client: c2, calls: calls2 } = fakeAdmin(0);
+    const severe = await applyStrikeForReport(c2, { ...input, reason: "personal_info" });
+    expect(severe.severe).toBe(true);
+    expect(severe.suspended).toBe(true);
+    expect(calls2.find((c) => c.table === "admin_actions" && (c.payload as { action: string }).action === "user_provisional_suspend")).toBeTruthy();
   });
 });

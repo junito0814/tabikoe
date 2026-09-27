@@ -93,7 +93,7 @@ export default function AuthScreen({ sky = false }: { /** Task12（2026-09-25）
     };
 
     const errorMessage = hasSuspended
-        ? "このアカウントは一時停止されています"
+        ? "このアカウントは停止されています。理由はアプリ内の通知に書いてあります（解除後に確認できます）"
         : hasExpired
             ? "しばらく利用がなかったため、もう一度ログインしてください"
             : ERROR_MESSAGES.oauthFailure;
