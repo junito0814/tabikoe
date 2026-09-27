@@ -36,7 +36,7 @@ export function AdminDashboardScreen({ data }: { data: AdminDashboardData }) {
         <StatCard
           label="使った人"
           value={counts.activeUsers ? `今日 ${counts.activeUsers.today}` : "—"}
-          sub={counts.activeUsers ? `今週 ${counts.activeUsers.thisWeek}` : "最終利用日の記録（#547）の後に出ます"}
+          sub={counts.activeUsers ? `今週 ${counts.activeUsers.thisWeek}` : "記録がありません"}
         />
       </section>
 

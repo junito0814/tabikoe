@@ -30,7 +30,7 @@ describe("AdminDashboardScreen", () => {
     expect(within(section).getByRole("link", { name: /対応/ })).toHaveAttribute("href", "/admin/reports?status=open&sort=oldest");
   });
 
-  it("数字と今週の増分、使った人は #547 まで「—」", () => {
+  it("数字と今週の増分、使った人の記録が無ければ「—」", () => {
     render(<AdminDashboardScreen data={base} />);
     expect(screen.getByText("128 人")).toBeInTheDocument();
     expect(screen.getByText("今週 +12")).toBeInTheDocument();
