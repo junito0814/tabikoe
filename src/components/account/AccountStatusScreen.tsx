@@ -54,8 +54,8 @@ export function AccountStatusScreen({ status }: { status: AccountStatus }) {
               {status.history.map((h) => (
                 <li key={h.id} className={`py-2 ${h.state === "expired" ? "text-muted" : "text-ink"}`} data-state={h.state}>
                   <span className="tabular-nums text-muted">{shortDate(h.createdAt)}</span> {h.summary}。理由：{h.reasonLabel}。
-                  <Link href="/terms#prohibited" className="underline underline-offset-2">
-                    利用規約 第8条
+                  <Link href="/terms#article-4" className="underline underline-offset-2">
+                    利用規約 第4条
                   </Link>
                   {h.state === "expired" && <span className="ml-1">（{"90"}日経過のため失効）</span>}
                 </li>

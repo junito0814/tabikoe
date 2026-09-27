@@ -23,7 +23,7 @@ export const MENU_ITEMS: readonly MenuItem[] = [
 ] as const;
 
 /** メニューバーを出さない画面。前方一致で判定するものは末尾に "/" を付けない */
-const HIDDEN_EXACT_PATHS = new Set(["/login", "/signup"]);
+const HIDDEN_EXACT_PATHS = new Set(["/login", "/signup", "/consent/renew"]);
 const HIDDEN_PREFIXES = ["/admin", "/dev"];
 
 /**

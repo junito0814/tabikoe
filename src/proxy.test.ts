@@ -7,7 +7,13 @@ import { claimsResultOf } from "@/lib/auth/claims-result";
  * - 最終利用が 30 日以内: 認証確認（getClaims）が行われ、締め出されない
  * - 最終利用が 30 日超: リフレッシュせずセッションを破棄し、redirect_to 付きでログイン画面へ（API は 401）
  */
-const state = { user: { id: "u1" } as { id: string } | null, profile: { id: "u1", suspended_at: null } as { id: string; suspended_at: string | null } | null };
+const state = {
+  user: { id: "u1" } as { id: string } | null,
+  profile: { id: "u1", suspended_at: null } as { id: string; suspended_at: string | null } | null,
+  // legal-documents Task 3: 公開中の版と本人の同意
+  published: [] as { kind: string; version: string }[],
+  consents: [] as { kind: string; version: string }[],
+};
 // performance Task1: 認証確認は getClaims（手元の署名検証）
 const getClaims = vi.fn(async () => claimsResultOf(state.user));
 const signOut = vi.fn(async () => ({ error: null }));
@@ -17,12 +23,23 @@ vi.mock("@supabase/ssr", () => ({
   createServerClient: () => ({
     auth: { getClaims, signOut },
     rpc,
-    from: () => ({ select: () => ({ eq: () => ({ maybeSingle: async () => ({ data: state.profile, error: null }), single: async () => ({ data: { is_admin: false } }) }) }) }),
+    from: (table: string) => ({
+      select: () => ({
+        eq: () => {
+          const rows = table === "legal_documents" ? state.published : table === "user_consents" ? state.consents : [];
+          return Object.assign(Promise.resolve({ data: rows, error: null }), {
+            maybeSingle: async () => ({ data: state.profile, error: null }),
+            single: async () => ({ data: { is_admin: false } }),
+          });
+        },
+      }),
+    }),
   }),
 }));
 vi.mock("@/lib/supabase/env", () => ({ assertSupabaseEnv: () => {} }));
 
 import { proxy } from "./proxy";
+import { resetPublishedVersionsCache } from "@/lib/legal/published-versions-cache";
 
 const day = 24 * 60 * 60 * 1000;
 const request = (path: string, cookies: Record<string, string>) =>
@@ -37,6 +54,44 @@ beforeEach(() => {
   getClaims.mockClear();
   signOut.mockClear();
   rpc.mockClear();
+  state.published = [];
+  state.consents = [];
+  resetPublishedVersionsCache();
+});
+
+describe("proxy（legal-documents Task 3: 新しい版に同意するまで止める）", () => {
+  const cookie = "tabikoe-consented";
+
+  it("未同意なら画面は同意画面へ（元の場所つき）、API は 401 reconsent_required", async () => {
+    state.published = [{ kind: "terms", version: "1.2" }, { kind: "privacy", version: "1.0" }];
+    state.consents = [{ kind: "terms", version: "1.1" }, { kind: "privacy", version: "1.0" }];
+    const response = await proxy(request("/mypage", session));
+    expect(response.status).toBe(307);
+    expect(new URL(response.headers.get("location")!).pathname + new URL(response.headers.get("location")!).search).toBe("/consent/renew?redirect_to=%2Fmypage");
+    const api = await proxy(request("/api/posts", session));
+    expect(api.status).toBe(401);
+    expect(await api.json()).toEqual({ error: "reconsent_required" });
+    // 同意画面と規約の本文は通る
+    expect((await proxy(request("/consent/renew", session))).status).toBe(200);
+    expect((await proxy(request("/terms", session))).status).toBe(200);
+  });
+
+  it("同意済みなら通り、同意済みの印（Cookie）を書く。次からは Cookie が一致すれば DB を見ない", async () => {
+    state.published = [{ kind: "terms", version: "1.2" }, { kind: "privacy", version: "1.0" }];
+    state.consents = [{ kind: "terms", version: "1.2" }, { kind: "privacy", version: "1.0" }];
+    const response = await proxy(request("/mypage", session));
+    expect(response.status).toBe(200);
+    expect(response.cookies.get(cookie)?.value).toBe("privacy:1.0|terms:1.2");
+    // Cookie が一致していれば、同意が無くても（DB を見ないので）通る
+    state.consents = [];
+    expect((await proxy(request("/mypage", { ...session, [cookie]: "privacy:1.0|terms:1.2" }))).status).toBe(200);
+  });
+
+  it("公開中の版が無ければ何もしない", async () => {
+    const response = await proxy(request("/mypage", session));
+    expect(response.status).toBe(200);
+    expect(response.cookies.get(cookie)).toBeUndefined();
+  });
 });
 
 describe("proxy（admin-shell-dashboard Task 3: 最終利用日を 1 日 1 回だけ記録）", () => {
