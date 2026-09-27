@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, type FormEvent } from "react";
-import Link from "next/link";
 import { ErrorNotice } from "@/components/notices/ErrorNotice";
 import { fetchWithAuthRedirect, UnauthorizedError } from "@/lib/api/fetch-with-auth-redirect";
 import {
@@ -136,15 +135,8 @@ export function AnnouncementManager({
   };
 
   return (
-    <div className="flex min-h-screen flex-col items-center bg-app px-4 py-6">
-      <div className="flex w-full max-w-[640px] flex-col gap-5">
-        <header className="flex items-center justify-between">
-          <h1 className="text-[18px] font-bold text-ink">お知らせ管理</h1>
-          <Link href="/admin" className="text-[12px] text-muted underline underline-offset-2">
-            ダッシュボードへ
-          </Link>
-        </header>
-
+    <div className="flex w-full flex-col">
+      <div className="flex w-full flex-col gap-5">
         <form onSubmit={handleSubmit} className="flex flex-col gap-3 rounded-[12px] border border-line bg-surface p-4">
           <h2 className="text-[13px] font-bold text-ink">{editingId ? "お知らせを編集" : "新しいお知らせ"}</h2>
           <label className="text-[12px] font-medium text-muted">

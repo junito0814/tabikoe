@@ -66,10 +66,9 @@ export function ReportDetailScreen({
   const actionButton = "h-10 rounded-[8px] px-4 text-[13px] font-semibold disabled:opacity-45";
 
   return (
-    <div className="flex min-h-screen flex-col items-center bg-app px-4 py-6">
-      <div className="flex w-full max-w-[640px] flex-col gap-4">
-        <header className="flex items-center justify-between">
-          <h1 className="text-[18px] font-bold text-ink">通報の詳細</h1>
+    <div className="flex w-full flex-col">
+      <div className="flex w-full flex-col gap-4">
+        <header className="flex items-center justify-end">
           <Link href="/admin/reports" className="text-[12px] text-muted underline underline-offset-2">
             一覧へ
           </Link>

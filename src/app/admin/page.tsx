@@ -1,30 +1,25 @@
 import Link from "next/link";
+import { ADMIN_MENU_ITEMS } from "@/components/admin/admin-menu-config";
 
 /**
- * F-AD-02 Task1: 管理者ダッシュボード画面（SC-16）
- * 出典: docs/tasks/admin/admin-dashboard/01-dashboard-ui.md
+ * admin-shell-dashboard Task 1: 管理者ダッシュボード（SC-16）の仮の中身
+ * 出典: docs/tasks/admin/admin-shell-dashboard/01-admin-shell.md
  *
- * アクセス制御はsrc/proxy.ts（is_admin判定・404）に委ね、本ページは画面表示のみを扱う。
- * 遷移先: /admin/announcements（SC-17、F-AD-03）・/admin/reports（SC-18、F-AD-04/05）。
+ * 枠（メニュー）は src/app/admin/layout.tsx が付ける。「対応が要るもの」「数字」「最近の動き」は Task 2（#546）で
+ * ここに入る。それまでは各画面への入口をカードで並べておく（前の 2 ボタンと同じ役割）。
  */
 export default function AdminDashboardPage() {
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-app px-6">
-      <h1 className="mb-2 text-[18px] font-bold text-ink">管理者ダッシュボード</h1>
-      <div className="flex w-full max-w-[360px] flex-col gap-3">
+    <div className="grid w-full grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+      {ADMIN_MENU_ITEMS.filter((item) => item.key !== "dashboard").map((item) => (
         <Link
-          href="/admin/announcements"
-          className="flex h-14 items-center justify-center rounded-[10px] border border-line bg-surface text-[15px] font-semibold text-ink shadow-card"
+          key={item.key}
+          href={item.href}
+          className="flex h-16 items-center justify-center rounded-[10px] border border-line bg-surface text-[14px] font-semibold text-ink shadow-card"
         >
-          お知らせ管理
+          {item.label}
         </Link>
-        <Link
-          href="/admin/reports"
-          className="flex h-14 items-center justify-center rounded-[10px] border border-line bg-surface text-[15px] font-semibold text-ink shadow-card"
-        >
-          通報一覧・対応
-        </Link>
-      </div>
+      ))}
     </div>
   );
 }
