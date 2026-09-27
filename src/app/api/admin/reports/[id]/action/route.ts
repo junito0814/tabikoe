@@ -3,6 +3,9 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireAdminUser } from "@/lib/auth/require-admin";
 import { recordAdminAction, type AdminActionTargetType } from "@/lib/admin/admin-actions";
+import { applyStrikeForReport, type ApplyStrikeResult } from "@/lib/moderation/apply-strike";
+import { findReportTarget } from "@/lib/reports/find-report-target";
+import { REPORT_REASON_LABELS, type ReportReason } from "@/lib/reports/constants";
 import { createNotification } from "@/lib/notifications/create-notification";
 import { graphemeLength } from "@/lib/text/grapheme-length";
 import {
@@ -48,10 +51,14 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   if (graphemeLength(note) > MAX_NOTE_LENGTH) {
     return NextResponse.json({ error: "note_too_long" }, { status: 400 });
   }
+  // strike-system Task 2（3.10.6）: 非公開化・削除は本人に理由を通知するので、理由（メモ）を必須にする
+  if (body.action !== "no_issue" && note.length === 0) {
+    return NextResponse.json({ error: "note_required" }, { status: 400 });
+  }
 
   const { data: report, error: fetchError } = await admin
     .from("reports")
-    .select("id, reporter_id, target_type, target_id, status")
+    .select("id, reporter_id, target_type, target_id, status, reason")
     .eq("id", id)
     .maybeSingle();
   if (fetchError) {
@@ -63,6 +70,15 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
 
   const now = new Date();
   const effect = planModerationEffect(report.target_type as ReportTargetType, body.action);
+  // strike-system Task 2: 削除すると持ち主が辿れなくなるので、先に投稿者を確かめておく
+  let posterId: string | null = null;
+  if (body.action !== "no_issue") {
+    try {
+      posterId = (await findReportTarget(admin, report.target_type as ReportTargetType, report.target_id))?.ownerId ?? null;
+    } catch {
+      posterId = null;
+    }
+  }
   try {
     await applyModerationEffect(admin, effect, report.target_id, now);
   } catch {
@@ -95,6 +111,27 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     note,
   });
 
+  // strike-system Task 2（3.10.7）: 確定（非公開化・削除）で投稿者に 1 ストライク。本人には理由つきで通知される
+  let strike: ApplyStrikeResult | null = null;
+  if (body.action !== "no_issue" && posterId) {
+    try {
+      strike = await applyStrikeForReport(admin, {
+        adminId: user.id,
+        posterId,
+        reportId: id,
+        targetType: report.target_type as ReportTargetType,
+        reason: report.reason as ReportReason,
+        action: body.action,
+        targetLabel: `${REPORT_TARGET_LABELS[report.target_type as ReportTargetType]}（${REPORT_REASON_LABELS[report.reason as ReportReason]}）`,
+        note,
+        now,
+      });
+    } catch (error) {
+      // ストライクが付かなくても対応自体は済んでいる。記録に残して続ける
+      console.error("[admin] ストライクを付けられませんでした:", error instanceof Error ? error.message : error);
+    }
+  }
+
   // Task2: 削除の場合のみ通報者へ通知。被通報者へは送らない
   if (shouldNotifyReporter(body.action)) {
     await createNotification(admin, {
@@ -105,7 +142,12 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     });
   }
 
-  return NextResponse.json({ reportId: id, status, resolvedAt: now.toISOString() });
+  return NextResponse.json({
+    reportId: id,
+    status,
+    resolvedAt: now.toISOString(),
+    strike: strike ? { activeCount: strike.activeCount, measure: strike.measure, severe: strike.severe } : null,
+  });
 }
 
 /** 通報の対象種別 → 操作の記録の対象種別（感想・写真は投稿に、アルバムは trip に寄せる） */

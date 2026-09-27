@@ -5,6 +5,7 @@ import { requireUserOrRedirect } from "@/lib/auth/require-user-or-redirect";
 import { buildComposeInitialState, type ComposeQuery } from "@/lib/posts/compose-initial-state";
 import { loadExistingPostForCompose, loadSpotForCompose, loadItineraryForCompose } from "@/lib/posts/load-compose-data";
 import { PostComposeScreen } from "@/components/posts/PostComposeScreen";
+import { getPostingRestrictionUntil } from "@/lib/moderation/posting-restriction";
 
 /**
  * SC-03 投稿画面（新規作成・下書きの続き）
@@ -28,18 +29,21 @@ export default async function NewPostPage({
   const currentPath = `/posts/new${Object.keys(params).length ? `?${new URLSearchParams(query as Record<string, string>).toString()}` : ""}`;
   const user = await requireUserOrRedirect(supabase, currentPath);
   const admin = createAdminClient();
+  // strike-system Task 2: 投稿禁止中なら画面で理由と解除日を出す（最終判定は API 側）
+  const restrictedUntilPromise = getPostingRestrictionUntil(admin, user.id);
 
   // 下書きの続き: 本人の下書きだけを開ける
   if (query.draft) {
-    const existing = await loadExistingPostForCompose(admin, query.draft, user.id);
+    const [existing, postingRestrictedUntil] = await Promise.all([loadExistingPostForCompose(admin, query.draft, user.id), restrictedUntilPromise]);
     if (!existing || existing.status !== "draft") notFound();
-    return <PostComposeScreen initial={buildComposeInitialState(query)} existing={existing} />;
+    return <PostComposeScreen initial={buildComposeInitialState(query)} existing={existing} postingRestrictedUntil={postingRestrictedUntil} />;
   }
 
-  const [spot, itinerary] = await Promise.all([
+  const [spot, itinerary, postingRestrictedUntil] = await Promise.all([
     query.spot ? loadSpotForCompose(admin, query.spot) : Promise.resolve(null),
     query.itinerary ? loadItineraryForCompose(admin, query.itinerary, user.id, query.day) : Promise.resolve(null),
+    restrictedUntilPromise,
   ]);
   const initial = buildComposeInitialState(query, { spot, itinerary });
-  return <PostComposeScreen initial={initial} />;
+  return <PostComposeScreen initial={initial} postingRestrictedUntil={postingRestrictedUntil} />;
 }

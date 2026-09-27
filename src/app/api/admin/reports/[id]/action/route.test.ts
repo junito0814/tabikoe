@@ -16,6 +16,12 @@ const state = {
 };
 
 const reportUpdate = vi.fn(() => ({ eq: async () => ({ error: null }) }));
+// strike-system Task 2: ストライクの付与は apply-strike.test.ts で確かめるので、ここでは呼ばれ方だけ見る
+const { applyStrikeForReport } = vi.hoisted(() => ({
+  applyStrikeForReport: vi.fn(async () => ({ strikeId: "s1", activeCount: 1, measure: { kind: "warn" }, severe: false, postingRestrictedUntil: null })),
+}));
+vi.mock("@/lib/moderation/apply-strike", () => ({ applyStrikeForReport }));
+vi.mock("@/lib/reports/find-report-target", () => ({ findReportTarget: async () => ({ ownerId: "bad" }) }));
 const notificationInsert = vi.fn(async () => ({ error: null }));
 const effects: string[] = [];
 
@@ -79,6 +85,7 @@ beforeEach(() => {
   state.report = { id: "r1", reporter_id: "reporter", target_type: "comment", target_id: "c1", status: "unconfirmed" };
   reportUpdate.mockClear();
   notificationInsert.mockClear();
+  applyStrikeForReport.mockClear();
   effects.length = 0;
   vi.useRealTimers();
 });
@@ -100,9 +107,9 @@ describe("POST /api/admin/reports/[id]/action", () => {
   });
 
   it("削除: 対象を消し、通報者にのみ report_resolved 通知を送る", async () => {
-    await act("delete");
+    await act("delete", "スパム");
     expect(effects).toEqual(["comments.delete"]);
-    expect(reportUpdate).toHaveBeenCalledWith(expect.objectContaining({ status: "resolved_deleted", resolution_note: null }));
+    expect(reportUpdate).toHaveBeenCalledWith(expect.objectContaining({ status: "resolved_deleted", resolution_note: "スパム" }));
     expect(notificationInsert).toHaveBeenCalledTimes(1);
     expect(notificationInsert).toHaveBeenCalledWith({ user_id: "reporter", type: "report_resolved", related_id: "r1", is_read: false });
   });
@@ -116,7 +123,7 @@ describe("POST /api/admin/reports/[id]/action", () => {
 
   it("ユーザーへの対応はアカウントの一時停止に読み替える（被通報者へ通知しない）", async () => {
     state.report = { ...state.report!, target_type: "user", target_id: "bad-user" };
-    await act("delete");
+    await act("delete", "なりすまし");
     expect(effects).toEqual(["users.update:suspended_at"]);
     const recipients = notificationInsert.mock.calls.map((call) => (call as unknown as [{ user_id: string }])[0].user_id);
     expect(recipients).toEqual(["reporter"]);
@@ -127,5 +134,25 @@ describe("POST /api/admin/reports/[id]/action", () => {
     expect((await act("bogus")).status).toBe(400);
     state.isAdmin = false;
     expect((await act("hide")).status).toBe(404);
+  });
+
+  it("strike-system Task 2: 非公開化・削除は理由が空だと 400 で、何もしない", async () => {
+    const response = await act("hide", "");
+    expect(response.status).toBe(400);
+    expect(await response.json()).toEqual({ error: "note_required" });
+    expect(effects).toEqual([]);
+    expect(applyStrikeForReport).not.toHaveBeenCalled();
+  });
+
+  it("strike-system Task 2: 確定で投稿者にストライクを付け、応答に段階を返す。問題なしでは付けない", async () => {
+    const response = await act("hide", "不適切");
+    expect(applyStrikeForReport).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ adminId: "admin-1", posterId: "bad", reportId: "r1", action: "hide", note: "不適切" })
+    );
+    expect((await response.json()).strike).toEqual({ activeCount: 1, measure: { kind: "warn" }, severe: false });
+    applyStrikeForReport.mockClear();
+    await act("no_issue");
+    expect(applyStrikeForReport).not.toHaveBeenCalled();
   });
 });

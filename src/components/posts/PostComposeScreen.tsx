@@ -18,6 +18,7 @@ import { useSheetDrag } from "@/components/layout/use-sheet-drag";
 import { SpotField } from "./SpotField";
 import { useDraftAutosave } from "./use-draft-autosave";
 import { buildComposePayload, type UploadedMedia } from "./compose-payload";
+import { POSTING_RESTRICTED_ERROR, postingRestrictedMessage } from "@/lib/moderation/posting-restriction";
 
 const MAX_PHOTO_SIZE_BYTES = 10 * 1024 * 1024;
 const MAX_VIDEO_SIZE_BYTES = 100 * 1024 * 1024;
@@ -65,9 +66,12 @@ export function PostComposeScreen({
   resolveCenter,
   fetchTripSuggestions,
   searchSpots,
+  postingRestrictedUntil = null,
 }: {
   initial: ComposeInitialState;
   existing?: ExistingPostValues | null;
+  /** strike-system Task 2: 投稿禁止中なら解除日時（ISO）。理由を出して「投稿する」を無効にする */
+  postingRestrictedUntil?: string | null;
   /** 差し替え口（単体テスト用） */
   api?: ComposeApi;
   resolveCenter?: React.ComponentProps<typeof PostLocationMap>["resolveCenter"];
@@ -239,6 +243,12 @@ export function PostComposeScreen({
         setErrorMessage(`下書きは${MAX_DRAFTS_PER_USER}件までです。マイページで下書きを整理してください`);
         return;
       }
+      if (response.status === 403) {
+        // strike-system Task 2: 投稿禁止中
+        const data = (await response.json().catch(() => ({}))) as { error?: string; until?: string };
+        setErrorMessage(data.error === POSTING_RESTRICTED_ERROR && data.until ? postingRestrictedMessage(data.until) : "投稿できませんでした");
+        return;
+      }
       if (!response.ok) {
         setErrorMessage(status === "draft" ? "下書きを保存できませんでした" : "投稿できませんでした。入力内容をご確認ください");
         return;
@@ -297,7 +307,8 @@ export function PostComposeScreen({
     },
   });
 
-  const canPublish = isPostFormComplete(values, mediaCount) && position !== null && !isSubmitting;
+  const isPostingRestricted = !!postingRestrictedUntil;
+  const canPublish = isPostFormComplete(values, mediaCount) && position !== null && !isSubmitting && !isPostingRestricted;
 
   return (
     <div className="flex h-[calc(100dvh-60px)] flex-col bg-app md:h-dvh md:flex-row" data-post-compose>
@@ -374,6 +385,11 @@ export function PostComposeScreen({
               onFilesSelected={handleFilesSelected}
               fetchTripSuggestions={fetchTripSuggestions}
             />
+            {isPostingRestricted && postingRestrictedUntil && (
+              <p role="note" className="mt-3 rounded-[8px] bg-tint px-3 py-2 text-[12px] leading-[1.7] text-ink">
+                {postingRestrictedMessage(postingRestrictedUntil)}（下書きの保存はできます）
+              </p>
+            )}
             {errorMessage && <ErrorNotice className="mt-3" message={errorMessage} />}
             {isEditingPublished && (
               <p className="mt-4 text-center text-[12px] text-muted">

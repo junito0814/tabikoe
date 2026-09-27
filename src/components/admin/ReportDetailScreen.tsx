@@ -9,6 +9,7 @@ import { REPORT_REASON_LABELS, REPORT_TARGET_LABELS } from "@/lib/reports/consta
 import { REPORT_STATUS_LABELS } from "@/lib/admin/report-filters";
 import { MODERATION_ACTION_LABELS, type ModerationAction } from "@/lib/admin/moderation";
 import type { ReportDetail } from "@/lib/admin/report-detail";
+import type { ReportModerationContext } from "@/lib/admin/report-context";
 
 export type SubmitReportAction = (reportId: string, action: ModerationAction, note: string) => Promise<Response>;
 
@@ -25,9 +26,12 @@ export type SubmitReportAction = (reportId: string, action: ModerationAction, no
  */
 export function ReportDetailScreen({
   report,
+  context = null,
   submitAction = defaultSubmitAction,
 }: {
   report: ReportDetail;
+  /** strike-system Task 2: 判断の材料（投稿者のストライク・通報者の信頼度・同じ対象への通報） */
+  context?: ReportModerationContext | null;
   /** 差し替え口（単体テスト用） */
   submitAction?: SubmitReportAction;
 }) {
@@ -40,6 +44,8 @@ export function ReportDetailScreen({
 
   const isResolved = report.status !== "unconfirmed" && report.status !== "in_review";
   const targetLabel = REPORT_TARGET_LABELS[report.targetType];
+  // strike-system Task 2: 非公開化・削除は本人に理由を通知するので、理由が空なら押せない
+  const noteMissing = note.trim().length === 0;
 
   const run = async (action: ModerationAction) => {
     if (isSubmitting) return;
@@ -51,8 +57,12 @@ export function ReportDetailScreen({
         setErrorMessage("対応を記録できませんでした");
         return;
       }
-      const data = (await response.json()) as { status: keyof typeof REPORT_STATUS_LABELS };
-      setResult(`${MODERATION_ACTION_LABELS[action]}として記録しました（${REPORT_STATUS_LABELS[data.status]}）`);
+      const data = (await response.json()) as { status: keyof typeof REPORT_STATUS_LABELS; strike?: { activeCount: number } | null };
+      setResult(
+        `${MODERATION_ACTION_LABELS[action]}として記録しました（${REPORT_STATUS_LABELS[data.status]}）${
+          data.strike ? `。投稿者に 1 ストライク（有効 ${data.strike.activeCount}）` : ""
+        }`
+      );
       setConfirmingDelete(false);
       router.refresh();
     } catch (error) {
@@ -102,6 +112,15 @@ export function ReportDetailScreen({
                 <dd className="whitespace-pre-wrap">{report.resolutionNote}</dd>
               </>
             )}
+            {context && (
+              <>
+                <dt className="text-muted">この通報者</dt>
+                <dd className="text-muted">
+                  直近90日 問題なし {context.reporter.noIssueIn90Days}／全 {context.reporter.total} 件
+                  {context.reporter.noIssueIn90Days >= 3 && <span className="ml-1 rounded-full bg-line px-2 py-0.5 text-[11px]">自動非公開の人数に数えない</span>}
+                </dd>
+              </>
+            )}
           </dl>
         </section>
 
@@ -129,6 +148,20 @@ export function ReportDetailScreen({
               アプリ内で開く
             </Link>
           )}
+          {context && (
+            <p className="mt-2 text-[12px] text-muted">
+              {context.posterId && (
+                <>
+                  投稿者 {context.posterName ?? "（名前なし）"}（有効ストライク {context.posterActiveStrikes}）
+                  <Link href={`/admin/users/${context.posterId}`} className="ml-1 underline underline-offset-2">
+                    開く
+                  </Link>
+                  ・
+                </>
+              )}
+              この対象への通報 {context.distinctReporters} 人（異なる通報者 {context.autoHideReporters} 人で自動非公開）
+            </p>
+          )}
         </section>
 
         <section aria-labelledby="action-heading" className="rounded-[12px] border border-line bg-surface p-4">
@@ -139,8 +172,21 @@ export function ReportDetailScreen({
           {(report.targetType === "spot" || report.targetType === "trip") && (
             <p className="mb-2 text-[12px] text-muted">{targetLabel}への対応は{targetLabel}の非公開化として扱います（削除でも同じ）</p>
           )}
+          {context && !isResolved && (
+            <ul className="mb-2 list-disc pl-4 text-[12px] text-muted">
+              {context.posterId ? (
+                <li>
+                  確定（非公開化・削除）で本人に 1 ストライク（有効 {context.posterActiveStrikes} → {context.posterActiveStrikes + 1}：{context.nextMeasure}）
+                </li>
+              ) : (
+                <li>この対象には持ち主がいないため、ストライクは付きません</li>
+              )}
+              {context.severe && <li className="text-saved">個人情報の掲載・なりすましは 1 回で仮停止</li>}
+              <li>本人に理由が通知されます（通報者は伝えません）</li>
+            </ul>
+          )}
           <label className="block text-[12px] font-medium text-muted">
-            対応理由（任意メモ）
+            対応理由（メモ・非公開化と削除では必須）
             <textarea
               value={note}
               onChange={(event) => setNote(event.target.value)}
@@ -153,10 +199,10 @@ export function ReportDetailScreen({
           {result && <p role="status" className="mt-2 text-[12px] text-done">{result}</p>}
 
           <div className="mt-3 flex flex-wrap gap-2">
-            <button type="button" onClick={() => void run("hide")} disabled={isSubmitting || isResolved} className={`${actionButton} bg-ink text-on-ink`}>
+            <button type="button" onClick={() => void run("hide")} disabled={isSubmitting || isResolved || noteMissing} className={`${actionButton} bg-ink text-on-ink`}>
               非公開化
             </button>
-            <button type="button" onClick={() => setConfirmingDelete(true)} disabled={isSubmitting || isResolved} className={`${actionButton} bg-accent text-white`}>
+            <button type="button" onClick={() => setConfirmingDelete(true)} disabled={isSubmitting || isResolved || noteMissing} className={`${actionButton} bg-accent text-white`}>
               削除
             </button>
             <button type="button" onClick={() => void run("no_issue")} disabled={isSubmitting || isResolved} className={`${actionButton} border border-line bg-surface text-ink`}>
@@ -164,6 +210,7 @@ export function ReportDetailScreen({
             </button>
           </div>
           {isResolved && <p className="mt-2 text-[11px] text-muted">この通報は対応済みです</p>}
+          {!isResolved && noteMissing && <p className="mt-2 text-[11px] text-muted">非公開化・削除には理由が必要です</p>}
         </section>
 
         {confirmingDelete && (

@@ -4,6 +4,7 @@ import { ErrorNotice } from "@/components/notices/ErrorNotice";
 import { ERROR_MESSAGES } from "@/components/notices/error-messages";
 import { ReportDetailScreen } from "@/components/admin/ReportDetailScreen";
 import { getReportDetail, type ReportDetail } from "@/lib/admin/report-detail";
+import { loadReportModerationContext, type ReportModerationContext } from "@/lib/admin/report-context";
 
 /**
  * SC-18 通報詳細・対応操作
@@ -13,9 +14,13 @@ export default async function AdminReportDetailPage({ params }: { params: Promis
   const { id } = await params;
 
   let report: ReportDetail | null = null;
+  let context: ReportModerationContext | null = null;
   let failed = false;
   try {
-    report = await getReportDetail(createAdminClient(), id);
+    const admin = createAdminClient();
+    report = await getReportDetail(admin, id);
+    // strike-system Task 2: 判断の材料。取れなくても詳細は出す
+    if (report) context = await loadReportModerationContext(admin, report).catch(() => null);
   } catch {
     failed = true;
   }
@@ -31,5 +36,5 @@ export default async function AdminReportDetailPage({ params }: { params: Promis
     notFound();
   }
 
-  return <ReportDetailScreen report={report} />;
+  return <ReportDetailScreen report={report} context={context} />;
 }
