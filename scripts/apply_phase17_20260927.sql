@@ -1,5 +1,5 @@
 -- Phase 17（管理画面の作り直し）のマイグレーションをまとめて当てる（Supabase の SQL エディタに貼る）。上から順に実行される。
--- 追加した順: 20260927000001_admin_actions → 20260927000002_strikes
+-- 追加した順: 20260927000001_admin_actions → 20260927000002_strikes → 20260927000003_spots_created_at
 
 -- user-management Task 4: 操作の記録（admin_actions）
 -- 出典: docs/tasks/admin/user-management/04-admin-actions-log.md
@@ -170,3 +170,25 @@ insert into public.moderation_settings (key, value) values
   ('strikes_to_suspend', '5'),             -- 何個で仮停止か
   ('restriction_days', '[0, 3, 7, 30]')    -- 有効 1・2・3・4 個のときの投稿禁止日数（0 は警告だけ）
 on conflict (key) do nothing;
+
+-- 追加した順（続き）: 20260927000003_spots_created_at
+
+-- admin-shell-dashboard Task 2: spots.created_at（ダッシュボードの「最近のスポット」用）
+-- 出典: docs/tasks/admin/admin-shell-dashboard/02-dashboard-summary.md
+--       要件定義書 3.10.3
+--
+-- 【初心者向け】spots には作った日時が無く、「最近のスポット」「今週のスポット」を出せなかった。
+-- 列を足し、既存の行はそのスポットへの最初の投稿の日時で埋める（投稿が無ければ now()）。
+
+alter table public.spots add column if not exists created_at timestamptz not null default now();
+
+update public.spots s
+set created_at = p.first_post_at
+from (
+  select spot_id, min(created_at) as first_post_at
+  from public.posts
+  group by spot_id
+) p
+where p.spot_id = s.id;
+
+create index if not exists spots_created_at_idx on public.spots (created_at desc);

@@ -46,3 +46,15 @@ describe("parseReportFilters / buildReportWhereClauses", () => {
     expect(buildReportWhereClauses(filters)).toEqual([]);
   });
 });
+
+describe("admin-shell-dashboard Task 2: 未対応のまとめ・対象・並び", () => {
+  it("status=open は未確認＋確認中の in 条件になり、target_id と sort=oldest を読む", () => {
+    const filters = parseReportFilters(new URLSearchParams({ status: "open", target_id: "11111111-2222-3333-4444-555555555555", sort: "oldest" }));
+    expect(filters.sort).toBe("oldest");
+    expect(buildReportWhereClauses(filters)).toEqual([
+      { op: "in", column: "status", values: ["unconfirmed", "in_review"] },
+      { op: "eq", column: "target_id", value: "11111111-2222-3333-4444-555555555555" },
+    ]);
+    expect(parseReportFilters(new URLSearchParams({ target_id: "x", sort: "y" }))).toMatchObject({ targetId: null, sort: "newest" });
+  });
+});

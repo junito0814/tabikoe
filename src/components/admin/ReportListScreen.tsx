@@ -17,7 +17,6 @@ import {
   REPORT_STATUS_LABELS,
   REPORT_STATUSES,
   type ReportListItem,
-  type ReportStatus,
 } from "@/lib/admin/report-filters";
 import { buildReportListParams, EMPTY_REPORT_LIST_STATE, type ReportListState } from "./report-list-query";
 
@@ -35,14 +34,17 @@ export type FetchReports = (params: URLSearchParams) => Promise<{ reports: Repor
  */
 export function ReportListScreen({
   initialPage,
+  initialState = EMPTY_REPORT_LIST_STATE,
   fetchReports = defaultFetchReports,
 }: {
   initialPage: { reports: ReportListItem[]; nextOffset: number | null };
+  /** URL のクエリから作った初期の絞り込み（ダッシュボードから来たとき。admin-shell-dashboard Task 2） */
+  initialState?: ReportListState;
   /** 差し替え口（単体テスト用） */
   fetchReports?: FetchReports;
 }) {
-  const [draft, setDraft] = useState<ReportListState>(EMPTY_REPORT_LIST_STATE);
-  const [applied, setApplied] = useState<ReportListState>(EMPTY_REPORT_LIST_STATE);
+  const [draft, setDraft] = useState<ReportListState>(initialState);
+  const [applied, setApplied] = useState<ReportListState>(initialState);
   const [reports, setReports] = useState(initialPage.reports);
   const [nextOffset, setNextOffset] = useState(initialPage.nextOffset);
   const [isLoading, setIsLoading] = useState(false);
@@ -84,8 +86,9 @@ export function ReportListScreen({
         <form onSubmit={handleSubmit} className="flex flex-wrap items-end gap-2 rounded-[12px] border border-line bg-surface p-3">
           <label className="text-[11px] text-muted">
             対応状態
-            <select value={draft.status} onChange={(e) => setDraft({ ...draft, status: e.target.value as ReportStatus | "" })} className={`${selectClass} mt-0.5 block`}>
+            <select value={draft.status} onChange={(e) => setDraft({ ...draft, status: e.target.value as ReportListState["status"] })} className={`${selectClass} mt-0.5 block`}>
               <option value="">すべて</option>
+              <option value="open">未対応（未確認＋確認中）</option>
               {REPORT_STATUSES.map((status) => (
                 <option key={status} value={status}>{REPORT_STATUS_LABELS[status]}</option>
               ))}
