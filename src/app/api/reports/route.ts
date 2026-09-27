@@ -4,6 +4,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { getAuthenticatedUser } from "@/lib/auth/get-authenticated-user";
 import { isWithinRateLimit } from "@/lib/rate-limit/check-rate-limit";
 import { recordOperation } from "@/lib/logs/record-operation";
+import { notifyAdmins } from "@/lib/notifications/notify-admins";
 import { validateReportInput } from "@/lib/reports/validate-report-input";
 import { findReportTarget } from "@/lib/reports/find-report-target";
 import {
@@ -104,6 +105,9 @@ export async function POST(request: Request) {
     targetId: report.id,
     detail: { targetType, reason },
   });
+
+  // admin-shell-dashboard Task 4（要件 3.9.1）: 管理者全員に「新しい通報」を知らせる（通報者が管理者なら本人には送らない）
+  await notifyAdmins(admin, { type: "admin_report", relatedId: report.id, actorId: user.id });
 
   return NextResponse.json({ reportId: report.id }, { status: 201 });
 }

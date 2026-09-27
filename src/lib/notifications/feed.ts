@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { isNotificationType, type NotificationType } from "./catalog";
+import { REPORT_TARGET_LABELS, type ReportTargetType } from "@/lib/reports/constants";
 
 /**
  * F-NT-02 Task1・Task4・Task5: 通知一覧（個人向け通知＋お知らせのマージ、遷移先、90日フィルタ）
@@ -60,6 +61,10 @@ export const NOTIFICATION_MESSAGES: Record<NotificationType, string> = {
   report_resolved: "あなたの通報に対応しました（対象を削除しました）",
   itinerary_joined: "しおりに新しいメンバーが参加しました",
   itinerary_member_removed: "しおりから削除されました",
+  // Phase 17: 管理者向け（通報の対象名は adminMessage() で足す）
+  admin_report: "新しい通報が届きました",
+  admin_auto_hidden: "投稿が自動で非公開になりました（確認待ち）",
+  admin_suspended: "利用者を仮停止しました（確認待ち）",
 };
 
 export function retentionCutoff(now: Date = new Date()): Date {
@@ -106,6 +111,10 @@ export interface NotificationLookups {
   existingItineraryIds: ReadonlySet<string>;
   /** report_resolved 通知: 通報ID → 対象のリンク（対象が消えていれば null） */
   reportTargetHrefs: ReadonlyMap<string, string | null>;
+  /** Phase 17: admin_report 通知: 通報ID → 対象種別（存在する通報だけ） */
+  reportTargetTypes?: ReadonlyMap<string, string>;
+  /** Phase 17: admin_suspended 通知: 存在する利用者ID */
+  existingUserIds?: ReadonlySet<string>;
   /** v3.2: album_invited／itinerary_invited 通知: 招待ID → 状態・対象名・招待した人 */
   invitations?: ReadonlyMap<string, NonNullable<PersonalNotificationItem["invitation"]> & { targetId: string }>;
 }
@@ -143,6 +152,17 @@ export function resolveNotificationHref(
       return lookups.existingItineraryIds.has(relatedId)
         ? { href: `/itineraries/${relatedId}`, fallbackMessage: null }
         : { href: null, fallbackMessage: "このしおりは存在しません" };
+    // Phase 17（admin-shell-dashboard Task4）: 管理者向け。管理画面の該当ページへ
+    case "admin_report":
+      return lookups.reportTargetTypes?.has(relatedId)
+        ? { href: `/admin/reports/${relatedId}`, fallbackMessage: null }
+        : { href: null, fallbackMessage: "この通報は削除されました" };
+    case "admin_auto_hidden":
+      return { href: "/admin/hidden", fallbackMessage: null };
+    case "admin_suspended":
+      return lookups.existingUserIds?.has(relatedId)
+        ? { href: `/admin/users/${relatedId}`, fallbackMessage: null }
+        : { href: null, fallbackMessage: "この利用者は退会しました" };
     case "album_invited":
     case "itinerary_invited": {
       // v3.2: 未回答なら通知一覧の「参加する」「辞退」で応答する（リンクにしない）。回答済みなら対象へ
@@ -170,12 +190,13 @@ async function buildLookups(admin: SupabaseClient, rows: NotificationRow[]): Pro
   const commentIds = ids(["comment", "comment_replied"]);
   const likePostIds = ids(["like"]);
   const tripIds = ids(["album_join", "role_change", "member_removed", "new_owner"]);
-  const reportIds = ids(["report_resolved"]);
+  const reportIds = ids(["report_resolved", "admin_report"]);
+  const adminUserIds = ids(["admin_suspended"]);
   const itineraryIds = ids(["itinerary_joined", "itinerary_member_removed"]);
   const albumInvitationIds = ids(["album_invited"]);
   const itineraryInvitationIds = ids(["itinerary_invited"]);
 
-  const [comments, posts, trips, reports, itineraries, albumInvitations, itineraryInvitations] = await Promise.all([
+  const [comments, posts, trips, reports, itineraries, albumInvitations, itineraryInvitations, adminUsers] = await Promise.all([
     commentIds.length ? admin.from("comments").select("id, post_id").in("id", commentIds) : Promise.resolve({ data: [] }),
     likePostIds.length ? admin.from("posts").select("id").in("id", likePostIds) : Promise.resolve({ data: [] }),
     tripIds.length ? admin.from("trips").select("id").in("id", tripIds) : Promise.resolve({ data: [] }),
@@ -190,6 +211,7 @@ async function buildLookups(admin: SupabaseClient, rows: NotificationRow[]): Pro
     itineraryInvitationIds.length
       ? admin.from("itinerary_invitations").select("id, itinerary_id, status, expires_at, itineraries(trips(title)), users:created_by(display_name)").in("id", itineraryInvitationIds)
       : Promise.resolve({ data: [] }),
+    adminUserIds.length ? admin.from("users").select("id").in("id", adminUserIds) : Promise.resolve({ data: [] }),
   ]);
 
   const commentPostIds = new Map<string, string>();
@@ -211,8 +233,10 @@ async function buildLookups(admin: SupabaseClient, rows: NotificationRow[]): Pro
 
   // 通報対応（削除）の対象は消えているのが通常。残っていればリンクする
   const reportTargetHrefs = new Map<string, string | null>();
+  const reportTargetTypes = new Map<string, string>();
   for (const row of (reports.data ?? []) as { id: string; target_type: string; target_id: string }[]) {
     reportTargetHrefs.set(row.id, null);
+    reportTargetTypes.set(row.id, row.target_type);
     if (row.target_type === "post" || row.target_type === "post_review") {
       if (existingPostIds.has(row.target_id)) reportTargetHrefs.set(row.id, `/posts/${row.target_id}`);
     }
@@ -224,6 +248,8 @@ async function buildLookups(admin: SupabaseClient, rows: NotificationRow[]): Pro
     existingTripIds: new Set(((trips.data ?? []) as { id: string }[]).map((row) => row.id)),
     existingItineraryIds: new Set(((itineraries.data ?? []) as { id: string }[]).map((row) => row.id)),
     reportTargetHrefs,
+    reportTargetTypes,
+    existingUserIds: new Set(((adminUsers.data ?? []) as { id: string }[]).map((row) => row.id)),
     invitations: buildInvitationLookups(albumInvitations.data ?? [], itineraryInvitations.data ?? []),
   };
 }
@@ -283,7 +309,7 @@ export async function getNotificationFeed(
       relatedId: row.related_id,
       isRead: row.is_read,
       createdAt: row.created_at,
-      message: invitationMessage(type, row.related_id, lookups) ?? NOTIFICATION_MESSAGES[type],
+      message: invitationMessage(type, row.related_id, lookups) ?? adminReportMessage(type, row.related_id, lookups) ?? NOTIFICATION_MESSAGES[type],
       href,
       fallbackMessage,
       ...(row.related_id && lookups.invitations?.get(row.related_id) && (type === "album_invited" || type === "itinerary_invited")
@@ -307,6 +333,14 @@ export async function getNotificationFeed(
   }));
 
   return paginateFeed(mergeFeed(notifications, announcements), offset);
+}
+
+/** Phase 17: 新しい通報の通知は「新しい通報：〈対象〉」と対象の種別を足す（純粋関数） */
+export function adminReportMessage(type: NotificationType, relatedId: string | null, lookups: NotificationLookups): string | null {
+  if (type !== "admin_report" || !relatedId) return null;
+  const targetType = lookups.reportTargetTypes?.get(relatedId);
+  if (!targetType || !(targetType in REPORT_TARGET_LABELS)) return null;
+  return `新しい通報：${REPORT_TARGET_LABELS[targetType as ReportTargetType]}`;
 }
 
 /** v3.2: 招待の通知は「〈名前〉さんがしおり『…』に招待しました」と具体的に */
