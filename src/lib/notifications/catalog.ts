@@ -31,6 +31,9 @@ export const NOTIFICATION_TYPES = [
   "admin_report",
   "admin_auto_hidden",
   "admin_suspended",
+  // Phase 17（user-management Task2）。本人へ。related_id は本人の ID。20260927000006 で CHECK 制約に追加
+  "account_suspended",
+  "account_unsuspended",
 ] as const;
 
 export type NotificationType = (typeof NOTIFICATION_TYPES)[number];
@@ -119,6 +122,16 @@ export const NOTIFICATION_CATALOG: Record<NotificationType, NotificationTypeSpec
     relatedIdRefersTo: "利用者 ID（仮停止した人）",
     recipients: "管理者全員",
     producedBy: "safety/strike-system Task4（仮停止）",
+  },
+  account_suspended: {
+    relatedIdRefersTo: "本人の利用者 ID",
+    recipients: "停止された本人（解除後に読める）",
+    producedBy: "admin/user-management Task2・safety/strike-system Task4",
+  },
+  account_unsuspended: {
+    relatedIdRefersTo: "本人の利用者 ID",
+    recipients: "解除された本人",
+    producedBy: "admin/user-management Task2",
   },
 };
 
