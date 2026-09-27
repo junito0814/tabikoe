@@ -91,6 +91,7 @@ docs/
 | F-BG | ステータスバッジ | [status-badges.md](user-stories/badges/status-badges.md) | 6 |
 | F-SF-01 | 通報 | [reporting.md](user-stories/safety/reporting.md) | 5 |
 | F-SF-02 | ブロック | [blocking.md](user-stories/safety/blocking.md) | 4 |
+| F-SF-03 | ストライク制と自動対応（2026-09-27） | [strike-system.md](user-stories/safety/strike-system.md) | 6 |
 | F-NT-01 | 通知の発生条件 | [notification-triggers.md](user-stories/notifications/notification-triggers.md) | 3 |
 | F-NT-02 | 通知一覧画面 | [notification-list.md](user-stories/notifications/notification-list.md) | 6 |
 | F-AD-01 | 管理者ログイン | [admin-login.md](user-stories/admin/admin-login.md) | 3 |
@@ -98,6 +99,9 @@ docs/
 | F-AD-03 | お知らせ管理 | [announcement-management.md](user-stories/admin/announcement-management.md) | 4 |
 | F-AD-04 | 通報一覧 | [report-list.md](user-stories/admin/report-list.md) | 3 |
 | F-AD-05 | 通報対応操作 | [report-handling.md](user-stories/admin/report-handling.md) | 4 |
+| F-AD-06 | 管理画面の枠とダッシュボード（2026-09-27 作り直し） | [admin-shell-dashboard.md](user-stories/admin/admin-shell-dashboard.md) | 4 |
+| F-AD-07 | 利用者の管理・非公開の復元・操作の記録 | [user-management.md](user-stories/admin/user-management.md) | 4 |
+| F-AD-08 | 規約管理 | [legal-documents.md](user-stories/admin/legal-documents.md) | 3 |
 
 ## 横断ドキュメント（機能カテゴリに属さないもの）
 
