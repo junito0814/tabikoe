@@ -12,6 +12,8 @@ import type { ReportDetail } from "@/lib/admin/report-detail";
 import type { ReportModerationContext } from "@/lib/admin/report-context";
 
 export type SubmitReportAction = (reportId: string, action: ModerationAction, note: string) => Promise<Response>;
+/** strike-system Task 6: 登録者に修正を依頼する */
+export type SubmitSpotFixRequest = (reportId: string, note: string) => Promise<Response>;
 
 /**
  * F-AD-04 Task2（詳細確認）／F-AD-05 Task3: 通報詳細・対応操作（SC-18 詳細部分）
@@ -28,12 +30,14 @@ export function ReportDetailScreen({
   report,
   context = null,
   submitAction = defaultSubmitAction,
+  submitSpotFixRequest = defaultSubmitSpotFixRequest,
 }: {
   report: ReportDetail;
   /** strike-system Task 2: 判断の材料（投稿者のストライク・通報者の信頼度・同じ対象への通報） */
   context?: ReportModerationContext | null;
   /** 差し替え口（単体テスト用） */
   submitAction?: SubmitReportAction;
+  submitSpotFixRequest?: SubmitSpotFixRequest;
 }) {
   const router = useRouter();
   const [note, setNote] = useState(report.resolutionNote ?? "");
@@ -46,6 +50,28 @@ export function ReportDetailScreen({
   const targetLabel = REPORT_TARGET_LABELS[report.targetType];
   // strike-system Task 2: 非公開化・削除は本人に理由を通知するので、理由が空なら押せない
   const noteMissing = note.trim().length === 0;
+  const spotFix = !!context?.canRequestSpotFix;
+
+  // strike-system Task 6: スポット情報の誤りは登録者に直してもらう（ストライクは付かない）
+  const requestFix = async () => {
+    if (isSubmitting || noteMissing) return;
+    setIsSubmitting(true);
+    setErrorMessage(null);
+    try {
+      const response = await submitSpotFixRequest(report.id, note.trim());
+      if (!response.ok) {
+        setErrorMessage("依頼を記録できませんでした");
+        return;
+      }
+      setResult("登録者に修正を依頼しました（確認中）。直されると自動で対応済みになります");
+      router.refresh();
+    } catch (error) {
+      if (error instanceof UnauthorizedError) return;
+      setErrorMessage("依頼を記録できませんでした");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   const run = async (action: ModerationAction) => {
     if (isSubmitting) return;
@@ -198,13 +224,25 @@ export function ReportDetailScreen({
           {errorMessage && <ErrorNotice className="mt-2" message={errorMessage} />}
           {result && <p role="status" className="mt-2 text-[12px] text-done">{result}</p>}
 
+          {spotFix && !isResolved && (
+            <p className="mb-2 text-[12px] text-muted">
+              「タビコエだけの場所」の情報の誤りは、登録者に直してもらいます（依頼はストライクになりません。直されると通報は自動で対応済み）
+            </p>
+          )}
           <div className="mt-3 flex flex-wrap gap-2">
-            <button type="button" onClick={() => void run("hide")} disabled={isSubmitting || isResolved || noteMissing} className={`${actionButton} bg-ink text-on-ink`}>
-              非公開化
+            {spotFix && (
+              <button type="button" onClick={() => void requestFix()} disabled={isSubmitting || isResolved || noteMissing} className={`${actionButton} bg-accent text-white`}>
+                登録者に修正を依頼する
+              </button>
+            )}
+            <button type="button" onClick={() => void run("hide")} disabled={isSubmitting || isResolved || noteMissing} className={`${actionButton} ${spotFix ? "border border-line bg-surface text-ink" : "bg-ink text-on-ink"}`}>
+              {spotFix ? "スポットを非公開化する" : "非公開化"}
             </button>
-            <button type="button" onClick={() => setConfirmingDelete(true)} disabled={isSubmitting || isResolved || noteMissing} className={`${actionButton} bg-accent text-white`}>
-              削除
-            </button>
+            {!spotFix && (
+              <button type="button" onClick={() => setConfirmingDelete(true)} disabled={isSubmitting || isResolved || noteMissing} className={`${actionButton} bg-accent text-white`}>
+                削除
+              </button>
+            )}
             <button type="button" onClick={() => void run("no_issue")} disabled={isSubmitting || isResolved} className={`${actionButton} border border-line bg-surface text-ink`}>
               問題なし
             </button>
@@ -234,6 +272,14 @@ export function ReportDetailScreen({
       </div>
     </div>
   );
+}
+
+function defaultSubmitSpotFixRequest(reportId: string, note: string): Promise<Response> {
+  return fetchWithAuthRedirect(`/api/admin/reports/${reportId}/request-fix`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ note }),
+  });
 }
 
 function defaultSubmitAction(reportId: string, action: ModerationAction, note: string): Promise<Response> {

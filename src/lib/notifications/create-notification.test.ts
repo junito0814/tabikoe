@@ -136,13 +136,13 @@ describe("createNotificationsForMany（複数通知先）", () => {
 });
 
 describe("通知種別カタログ（Task2）", () => {
-  it("3.9.1の個人向け通知7種類＋v3.0 のしおり 2 種類＋v3.2 の返信・招待 3 種類＋Phase 17 の管理者向け 3 種類・本人向け 3 種類をすべて持つ", () => {
+  it("3.9.1の個人向け通知7種類＋v3.0 のしおり 2 種類＋v3.2 の返信・招待 3 種類＋Phase 17 の管理者向け 3 種類・本人向け 4 種類をすべて持つ", () => {
     expect([...NOTIFICATION_TYPES].sort()).toEqual(
       [
         "album_join", "comment", "like", "member_removed", "new_owner", "report_resolved", "role_change",
         "itinerary_joined", "itinerary_member_removed", "comment_replied", "album_invited", "itinerary_invited",
         "admin_report", "admin_auto_hidden", "admin_suspended",
-        "account_suspended", "account_unsuspended", "moderation_action",
+        "account_suspended", "account_unsuspended", "moderation_action", "spot_fix_request",
       ].sort()
     );
   });

@@ -68,6 +68,7 @@ export const NOTIFICATION_MESSAGES: Record<NotificationType, string> = {
   account_suspended: "アカウントが停止されました。理由はマイページの「アカウントの状態」で確認できます",
   account_unsuspended: "アカウントの停止が解除されました",
   moderation_action: "あなたの投稿に対応が行われました。理由は「アカウントの状態」で確認できます",
+  spot_fix_request: "あなたが登録したスポットの情報に指摘があります。内容を確認して直してください",
 };
 
 export function retentionCutoff(now: Date = new Date()): Date {
@@ -120,6 +121,8 @@ export interface NotificationLookups {
   existingUserIds?: ReadonlySet<string>;
   /** Phase 17: moderation_action 通知: ストライク ID → 対象・理由・措置 */
   strikes?: ReadonlyMap<string, { targetLabel: string; reason: string; action: string }>;
+  /** Phase 17: spot_fix_request 通知: スポット ID → 名前と依頼の内容（存在するスポットだけ） */
+  spotFixes?: ReadonlyMap<string, { name: string; note: string | null }>;
   /** v3.2: album_invited／itinerary_invited 通知: 招待ID → 状態・対象名・招待した人 */
   invitations?: ReadonlyMap<string, NonNullable<PersonalNotificationItem["invitation"]> & { targetId: string }>;
 }
@@ -169,6 +172,10 @@ export function resolveNotificationHref(
     case "account_unsuspended":
     case "moderation_action":
       return { href: "/account/status", fallbackMessage: null };
+    case "spot_fix_request":
+      return lookups.spotFixes?.has(relatedId)
+        ? { href: `/spots/${relatedId}/edit`, fallbackMessage: null }
+        : { href: null, fallbackMessage: "このスポットは存在しません" };
     case "admin_suspended":
       return lookups.existingUserIds?.has(relatedId)
         ? { href: `/admin/users/${relatedId}`, fallbackMessage: null }
@@ -203,11 +210,12 @@ async function buildLookups(admin: SupabaseClient, rows: NotificationRow[]): Pro
   const reportIds = ids(["report_resolved", "admin_report"]);
   const adminUserIds = ids(["admin_suspended"]);
   const strikeIds = ids(["moderation_action"]);
+  const spotFixIds = ids(["spot_fix_request"]);
   const itineraryIds = ids(["itinerary_joined", "itinerary_member_removed"]);
   const albumInvitationIds = ids(["album_invited"]);
   const itineraryInvitationIds = ids(["itinerary_invited"]);
 
-  const [comments, posts, trips, reports, itineraries, albumInvitations, itineraryInvitations, adminUsers, strikeRows] = await Promise.all([
+  const [comments, posts, trips, reports, itineraries, albumInvitations, itineraryInvitations, adminUsers, strikeRows, spotRows, spotFixNotes] = await Promise.all([
     commentIds.length ? admin.from("comments").select("id, post_id").in("id", commentIds) : Promise.resolve({ data: [] }),
     likePostIds.length ? admin.from("posts").select("id").in("id", likePostIds) : Promise.resolve({ data: [] }),
     tripIds.length ? admin.from("trips").select("id").in("id", tripIds) : Promise.resolve({ data: [] }),
@@ -224,6 +232,10 @@ async function buildLookups(admin: SupabaseClient, rows: NotificationRow[]): Pro
       : Promise.resolve({ data: [] }),
     adminUserIds.length ? admin.from("users").select("id").in("id", adminUserIds) : Promise.resolve({ data: [] }),
     strikeIds.length ? admin.from("strikes").select("id, target_label, reason, action").in("id", strikeIds) : Promise.resolve({ data: [] }),
+    spotFixIds.length ? admin.from("spots").select("id, name").in("id", spotFixIds) : Promise.resolve({ data: [] }),
+    spotFixIds.length
+      ? admin.from("admin_actions").select("target_id, note, created_at").eq("action", "spot_fix_request").in("target_id", spotFixIds).order("created_at", { ascending: false })
+      : Promise.resolve({ data: [] }),
   ]);
 
   const commentPostIds = new Map<string, string>();
@@ -268,6 +280,7 @@ async function buildLookups(admin: SupabaseClient, rows: NotificationRow[]): Pro
         { targetLabel: row.target_label ?? "投稿", reason: row.reason, action: row.action },
       ])
     ),
+    spotFixes: buildSpotFixLookups(spotRows.data ?? [], spotFixNotes.data ?? []),
     invitations: buildInvitationLookups(albumInvitations.data ?? [], itineraryInvitations.data ?? []),
   };
 }
@@ -331,6 +344,7 @@ export async function getNotificationFeed(
         invitationMessage(type, row.related_id, lookups) ??
         adminReportMessage(type, row.related_id, lookups) ??
         moderationActionMessage(type, row.related_id, lookups) ??
+        spotFixMessage(type, row.related_id, lookups) ??
         NOTIFICATION_MESSAGES[type],
       href,
       fallbackMessage,
@@ -363,6 +377,23 @@ export function adminReportMessage(type: NotificationType, relatedId: string | n
   const targetType = lookups.reportTargetTypes?.get(relatedId);
   if (!targetType || !(targetType in REPORT_TARGET_LABELS)) return null;
   return `新しい通報：${REPORT_TARGET_LABELS[targetType as ReportTargetType]}`;
+}
+
+/** Phase 17: スポット ID → 名前と最新の依頼の内容（純粋関数） */
+export function buildSpotFixLookups(spotRows: unknown[], noteRows: unknown[]): Map<string, { name: string; note: string | null }> {
+  const notes = new Map<string, string>();
+  for (const row of noteRows as { target_id: string; note: string | null }[]) {
+    if (row.note && !notes.has(row.target_id)) notes.set(row.target_id, row.note);
+  }
+  return new Map((spotRows as { id: string; name: string }[]).map((row) => [row.id, { name: row.name, note: notes.get(row.id) ?? null }]));
+}
+
+/** Phase 17: 修正依頼の通知は「「〈スポット名〉」の情報に指摘があります：〈依頼の内容〉」（純粋関数） */
+export function spotFixMessage(type: NotificationType, relatedId: string | null, lookups: NotificationLookups): string | null {
+  if (type !== "spot_fix_request" || !relatedId) return null;
+  const spot = lookups.spotFixes?.get(relatedId);
+  if (!spot) return null;
+  return `「${spot.name}」の情報に指摘があります${spot.note ? `：${spot.note}` : ""}`;
 }
 
 /** Phase 17: 非公開化・削除の通知は「〈対象〉を非公開にしました。理由：〈理由〉」と具体的に（純粋関数） */
