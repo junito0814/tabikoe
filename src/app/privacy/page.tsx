@@ -1,0 +1,21 @@
+import { notFound } from "next/navigation";
+import { createAdminClient } from "@/lib/supabase/admin";
+import { LegalDocumentScreen } from "@/components/legal/LegalDocumentScreen";
+import { getLegalDocument, listLegalVersions } from "@/lib/legal/legal-documents";
+
+export const dynamic = "force-dynamic";
+
+/**
+ * legal-documents Task 1: 個人情報保護方針の公開ページ（/privacy）
+ * 出典: docs/tasks/admin/legal-documents/01-legal-data-and-pages.md
+ *
+ * 未ログインでも読める（同意画面 SC-20 からのリンク先）。?version= で過去の版
+ */
+export default async function PrivacyPage({ searchParams }: PageProps<"/privacy">) {
+  const params = await searchParams;
+  const version = typeof params.version === "string" ? params.version : null;
+  const admin = createAdminClient();
+  const [document, versions] = await Promise.all([getLegalDocument(admin, "privacy", version).catch(() => null), listLegalVersions(admin, "privacy").catch(() => [])]);
+  if (!document) notFound();
+  return <LegalDocumentScreen document={document} versions={versions} />;
+}

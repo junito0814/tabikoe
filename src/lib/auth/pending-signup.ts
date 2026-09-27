@@ -14,6 +14,8 @@ export const PENDING_SIGNUP_PATH = "/signup";
 /** 登録待ちでも開ける path。画面は同意画面とログイン画面、API は認証まわりだけ */
 export function isAllowedWhilePendingSignup(pathname: string): boolean {
   if (pathname === "/signup" || pathname === "/login") return true;
+  // legal-documents Task 1: 同意する前に規約を読めるように
+  if (pathname === "/terms" || pathname === "/privacy" || pathname.startsWith("/api/legal/")) return true;
   return pathname.startsWith("/api/auth/");
 }
 
