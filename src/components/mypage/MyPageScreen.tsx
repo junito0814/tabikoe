@@ -27,6 +27,7 @@ export function MyPageScreen({
   tripOptions,
   drafts,
   wishlistCount,
+  restrictedUntil = null,
   fetchPosts,
 }: {
   profile: MyPageProfile;
@@ -36,11 +37,19 @@ export function MyPageScreen({
   /** v3.0: 下書き（あるときだけ段を出す） */
   drafts?: DraftListPage;
   wishlistCount?: number;
+  /** strike-system Task 5: 投稿禁止中なら解除日時。先頭に帯を出す */
+  restrictedUntil?: string | null;
   fetchPosts?: FetchMyPosts;
 }) {
   return (
     <div className="flex min-h-screen flex-col items-center bg-app px-4 py-6">
       <div className="flex w-full max-w-[520px] flex-col gap-5">
+        {/* strike-system Task 5: 投稿禁止中は先頭に帯（詳しくはアカウントの状態へ） */}
+        {restrictedUntil && (
+          <Link href="/account/status" role="note" className="rounded-[12px] border border-accent/40 bg-tint p-3 text-[12px] leading-[1.7] text-ink">
+            いま、投稿とコメントができません（{new Date(restrictedUntil).getMonth() + 1}/{new Date(restrictedUntil).getDate()} まで）。理由はアカウントの状態で確認できます ›
+          </Link>
+        )}
         {/* 1. プロフィール */}
         <section aria-label="プロフィール" className="flex items-center gap-3 rounded-[12px] border border-line bg-surface p-4">
           {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -76,7 +85,7 @@ export function MyPageScreen({
         </section>
 
         {/* 3. 遷移メニュー */}
-        <MyPageMenu wishlistCount={wishlistCount} />
+        <MyPageMenu wishlistCount={wishlistCount} isRestricted={!!restrictedUntil} />
 
         {/* 4. 自分の投稿一覧 */}
         <MyPostsList initialPage={initialPosts} tripOptions={tripOptions} fetchPosts={fetchPosts} />

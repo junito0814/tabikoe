@@ -8,6 +8,7 @@ import Link from "next/link";
  *
  * 【初心者向け】4 つだけ。しおりはメニューバー（旅行と結びつくもの）へ移し、ここには置かない
  * （自分の手元にあるもの＝行きたい・アルバム・あしあと・バッジ）。
+ * strike-system Task 5（2026-09-27）: その下に「アカウントの状態」（SC-28）への 1 行を足す。制限中は赤い印を付ける。
  */
 export const MY_PAGE_MENU = [
   { key: "wishlist", label: "行きたい", href: "/wishlist" },
@@ -16,9 +17,16 @@ export const MY_PAGE_MENU = [
   { key: "badges", label: "バッジ", href: "/badges" },
 ] as const;
 
-export function MyPageMenu({ wishlistCount }: { wishlistCount?: number }) {
+export function MyPageMenu({ wishlistCount, isRestricted = false }: { wishlistCount?: number; /** 投稿禁止中（アカウントの状態に印を付ける） */ isRestricted?: boolean }) {
   return (
     <nav aria-label="マイページメニュー">
+      <Link
+        href="/account/status"
+        className="mb-2 flex h-11 items-center justify-between rounded-[10px] border border-line bg-surface px-4 text-[13px] font-medium text-ink"
+      >
+        アカウントの状態
+        <span className={`text-[11px] ${isRestricted ? "font-semibold text-saved" : "text-muted"}`}>{isRestricted ? "制限中 ›" : "›"}</span>
+      </Link>
       <ul className="grid grid-cols-2 gap-2">
         {MY_PAGE_MENU.map((item) => (
           <li key={item.key}>
