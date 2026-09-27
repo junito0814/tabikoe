@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireAdminUser } from "@/lib/auth/require-admin";
-import { recordOperation } from "@/lib/logs/record-operation";
+import { recordAdminAction, type AdminActionTargetType } from "@/lib/admin/admin-actions";
 import { createNotification } from "@/lib/notifications/create-notification";
 import { graphemeLength } from "@/lib/text/grapheme-length";
 import {
@@ -12,7 +12,7 @@ import {
   resolveReportStatus,
   shouldNotifyReporter,
 } from "@/lib/admin/moderation";
-import type { ReportTargetType } from "@/lib/reports/constants";
+import { REPORT_TARGET_LABELS, type ReportTargetType } from "@/lib/reports/constants";
 
 /** 対応理由（任意メモ）の上限 */
 const MAX_NOTE_LENGTH = 1000;
@@ -83,12 +83,16 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     return NextResponse.json({ error: "update_failed" }, { status: 500 });
   }
 
-  // 要件7.5: 管理者による対応操作
-  await recordOperation(admin, {
-    actionType: "admin_action",
-    userId: user.id,
-    targetId: id,
-    detail: { action: body.action, targetType: report.target_type, targetId: report.target_id, status },
+  // 要件 3.10.12: 操作の記録（中で要件 7.5 の operation_logs にも残す）
+  await recordAdminAction(admin, {
+    actorId: user.id,
+    action: body.action === "hide" ? "report_hide" : body.action === "delete" ? "report_delete" : "report_no_issue",
+    target: {
+      type: adminActionTargetOf(report.target_type as ReportTargetType),
+      id: report.target_id,
+      label: `${REPORT_TARGET_LABELS[report.target_type as ReportTargetType]}（通報 ${id.slice(0, 8)}）`,
+    },
+    note,
   });
 
   // Task2: 削除の場合のみ通報者へ通知。被通報者へは送らない
@@ -102,4 +106,22 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   }
 
   return NextResponse.json({ reportId: id, status, resolvedAt: now.toISOString() });
+}
+
+/** 通報の対象種別 → 操作の記録の対象種別（感想・写真は投稿に、アルバムは trip に寄せる） */
+function adminActionTargetOf(targetType: ReportTargetType): AdminActionTargetType {
+  switch (targetType) {
+    case "post":
+    case "post_photo":
+    case "post_review":
+      return "post";
+    case "comment":
+      return "comment";
+    case "user":
+      return "user";
+    case "spot":
+      return "spot";
+    case "trip":
+      return "trip";
+  }
 }

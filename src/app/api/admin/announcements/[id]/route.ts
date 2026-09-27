@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireAdminUser } from "@/lib/auth/require-admin";
-import { recordOperation } from "@/lib/logs/record-operation";
+import { recordAdminAction } from "@/lib/admin/admin-actions";
 import { validateAnnouncementInput } from "@/lib/announcements/validate-announcement";
 
 /**
@@ -49,11 +49,10 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
     return NextResponse.json({ error: "not_found" }, { status: 404 });
   }
 
-  await recordOperation(admin, {
-    actionType: "admin_action",
-    userId: user.id,
-    targetId: id,
-    detail: { action: "announcement_update" },
+  await recordAdminAction(admin, {
+    actorId: user.id,
+    action: "announcement_update",
+    target: { type: "announcement", id, label: `お知らせ「${data.title}」` },
   });
 
   return NextResponse.json({ announcement: data });
@@ -81,11 +80,10 @@ export async function DELETE(_request: Request, { params }: { params: Promise<{ 
     return NextResponse.json({ error: "not_found" }, { status: 404 });
   }
 
-  await recordOperation(admin, {
-    actionType: "admin_action",
-    userId: user.id,
-    targetId: id,
-    detail: { action: "announcement_delete" },
+  await recordAdminAction(admin, {
+    actorId: user.id,
+    action: "announcement_delete",
+    target: { type: "announcement", id, label: `お知らせ ${id.slice(0, 8)}` },
   });
 
   return NextResponse.json({ deleted: true });
