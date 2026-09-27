@@ -88,7 +88,10 @@ export async function applyModerationEffect(
     case "none":
       return;
     case "hide": {
-      const { error } = await admin.from(effect.table).update({ [effect.column]: now.toISOString() }).eq("id", targetId);
+      // strike-system Task 3: 投稿・コメントは「誰の判断で隠したか」（hidden_reason）も残す。自動非公開の上書きも管理者の判断になる
+      const payload: Record<string, unknown> = { [effect.column]: now.toISOString() };
+      if ((effect.table === "posts" || effect.table === "comments") && effect.column === "hidden_at") payload.hidden_reason = "moderation";
+      const { error } = await admin.from(effect.table).update(payload).eq("id", targetId);
       if (error) throw error;
       return;
     }

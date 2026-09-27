@@ -30,6 +30,8 @@ export interface PostDetailData {
   /** v3.0（spot-status-report）: スポットの最新の「まだあった」報告と自分の報告 */
   spotStatus: SpotStatusSummary;
   isOwner: boolean;
+  /** strike-system Task 3: 本人だけに出す非公開の理由（auto＝確認中、moderation＝運営の判断、suspension＝停止）。隠れていなければ null */
+  hiddenReason: "auto" | "moderation" | "suspension" | null;
   /** いいね・コメントを付けられるか（公開投稿のみ。3.3.6） */
   canInteract: boolean;
 }
@@ -81,6 +83,7 @@ export interface PostDetailRow {
   visibility: string;
   created_at: string;
   hidden_at?: string | null;
+  hidden_reason?: string | null;
   review_hidden_at?: string | null;
   spots:
     | { id: string; name: string; prefecture: string | null; lat?: number; lng?: number; source?: string }
@@ -116,7 +119,7 @@ export async function getPostDetail(
   const { data, error } = await admin
     .from("posts")
     .select(
-      "id, user_id, trip_id, spot_id, category, visit_date, duration, cost, rating, comment, visibility, status, created_at, hidden_at, review_hidden_at, " +
+      "id, user_id, trip_id, spot_id, category, visit_date, duration, cost, rating, comment, visibility, status, created_at, hidden_at, hidden_reason, review_hidden_at, " +
         "spots(id, name, prefecture, lat, lng, source), users(id, display_name, avatar_url, is_deleted), " +
         "post_photos(id, storage_url, video_url, media_type, display_order, hidden_at)"
     )
@@ -217,6 +220,13 @@ export async function getPostDetail(
     isWishlisted: wishlist.data !== null,
     spotStatus,
     isOwner,
+    // strike-system Task 3: 隠れている理由は本人にだけ返す（他人にはそもそも詳細を返さない）
+    hiddenReason: isOwner && row.hidden_at ? hiddenReasonOf(row.hidden_reason) : null,
     canInteract: row.visibility === "public",
   };
+}
+
+/** hidden_reason の値を型に寄せる（想定外・NULL は運営の判断として扱う） */
+function hiddenReasonOf(value: string | null | undefined): "auto" | "moderation" | "suspension" {
+  return value === "auto" || value === "suspension" ? value : "moderation";
 }

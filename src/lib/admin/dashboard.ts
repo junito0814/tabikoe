@@ -132,6 +132,8 @@ export async function loadAdminDashboard(admin: SupabaseClient, now: Date = new 
     spotsManual,
     activeToday,
     activeWeek,
+    autoHiddenPosts,
+    autoHiddenComments,
     recentPosts,
     recentSpots,
     openReportRows,
@@ -147,6 +149,8 @@ export async function loadAdminDashboard(admin: SupabaseClient, now: Date = new 
     counting("spots").eq("source", "manual"),
     counting("users").gte("last_active_at", dayStart),
     counting("users").gte("last_active_at", weekStart),
+    counting("posts").eq("hidden_reason", "auto"),
+    counting("comments").eq("hidden_reason", "auto"),
     admin
       .from("posts")
       .select("id, category, visibility, hidden_at, published_at, spots(name), users(display_name)")
@@ -187,8 +191,8 @@ export async function loadAdminDashboard(admin: SupabaseClient, now: Date = new 
   return {
     needsAction: {
       openReports: { count: openReports.count ?? 0, oldestDays: oldestReport.data?.created_at ? daysSince(oldestReport.data.created_at as string, now) : null },
-      // #553 で auto_hidden_at が入ってから数える。それまでは 0
-      autoHiddenPending: 0,
+      // strike-system Task 3: 自動で隠れたまま（hidden_reason = auto）の投稿・コメント
+      autoHiddenPending: (autoHiddenPosts.count ?? 0) + (autoHiddenComments.count ?? 0),
       provisionalSuspensions: provisional.count ?? 0,
     },
     counts: {

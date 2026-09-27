@@ -33,6 +33,7 @@ const post: PostDetailData = {
   viewerHasLiked: false,
   isWishlisted: false,
   isOwner: false,
+  hiddenReason: null,
   canInteract: true,
   spotStatus: { latest: null, mine: null },
 };
@@ -130,5 +131,10 @@ describe("PostDetailScreen（SC-05）", () => {
     });
     expect(screen.queryByRole("status", { name: "コメントを読み込んでいます" })).toBeNull();
     expect(screen.getByRole("heading", { name: /コメント/ })).toBeInTheDocument();
+  });
+
+  it("strike-system Task 3: 自動で非公開になった投稿は本人に「確認中」と出る", () => {
+    render(<PostDetailScreen post={{ ...post, isOwner: true, hiddenReason: "auto" }} initialComments={noComments} />);
+    expect(screen.getByRole("note")).toHaveTextContent("運営が確認するまで他の人には表示されません");
   });
 });
