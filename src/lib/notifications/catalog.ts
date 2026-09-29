@@ -27,6 +27,10 @@ export const NOTIFICATION_TYPES = [
   // v3.2（feedback-0919 Task6）。related_id は招待の id（album_invitations／itinerary_invitations）。20260919000005 で CHECK 制約に追加
   "album_invited",
   "itinerary_invited",
+  // Phase 17（admin-shell-dashboard Task4）。管理者全員へ。20260927000005 で CHECK 制約に追加
+  "admin_report",
+  "admin_auto_hidden",
+  "admin_suspended",
 ] as const;
 
 export type NotificationType = (typeof NOTIFICATION_TYPES)[number];
@@ -100,6 +104,21 @@ export const NOTIFICATION_CATALOG: Record<NotificationType, NotificationTypeSpec
     relatedIdRefersTo: "itinerary_id",
     recipients: "削除されたメンバー本人",
     producedBy: "itinerary/itinerary-sharing",
+  },
+  admin_report: {
+    relatedIdRefersTo: "report_id（新しい通報）",
+    recipients: "管理者全員（通報した本人が管理者なら除く）",
+    producedBy: "safety/reporting（POST /api/reports）",
+  },
+  admin_auto_hidden: {
+    relatedIdRefersTo: "投稿 ID またはコメント ID（自動で非公開になったもの）",
+    recipients: "管理者全員",
+    producedBy: "safety/strike-system Task3（自動非公開）",
+  },
+  admin_suspended: {
+    relatedIdRefersTo: "利用者 ID（仮停止した人）",
+    recipients: "管理者全員",
+    producedBy: "safety/strike-system Task4（仮停止）",
   },
 };
 

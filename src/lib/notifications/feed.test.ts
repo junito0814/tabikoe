@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import {
+  adminReportMessage,
   getNotificationFeed,
   isNewAnnouncement,
   mergeFeed,
@@ -150,5 +151,30 @@ describe("isNewAnnouncement", () => {
     const now = new Date("2026-09-14T00:00:00Z");
     expect(isNewAnnouncement("2026-09-10T00:00:00Z", now)).toBe(true);
     expect(isNewAnnouncement("2026-09-01T00:00:00Z", now)).toBe(false);
+  });
+});
+
+describe("Phase 17: 管理者向けの通知（admin-shell-dashboard Task4）", () => {
+  const lookups: NotificationLookups = {
+    commentPostIds: new Map(),
+    existingPostIds: new Set(),
+    existingTripIds: new Set(),
+    existingItineraryIds: new Set(),
+    reportTargetHrefs: new Map(),
+    reportTargetTypes: new Map([["r1", "post_review"]]),
+    existingUserIds: new Set(["u1"]),
+  };
+
+  it("新しい通報は通報詳細へ、文言に対象の種別を足す。通報が消えていれば行き先なし", () => {
+    expect(resolveNotificationHref("admin_report", "r1", lookups)).toEqual({ href: "/admin/reports/r1", fallbackMessage: null });
+    expect(adminReportMessage("admin_report", "r1", lookups)).toBe("新しい通報：感想テキスト");
+    expect(resolveNotificationHref("admin_report", "r9", lookups).href).toBeNull();
+    expect(adminReportMessage("comment", "r1", lookups)).toBeNull();
+  });
+
+  it("自動非公開は非公開の一覧へ、仮停止は利用者詳細へ（退会済みなら行き先なし）", () => {
+    expect(resolveNotificationHref("admin_auto_hidden", "p1", lookups).href).toBe("/admin/hidden");
+    expect(resolveNotificationHref("admin_suspended", "u1", lookups).href).toBe("/admin/users/u1");
+    expect(resolveNotificationHref("admin_suspended", "u9", lookups)).toEqual({ href: null, fallbackMessage: "この利用者は退会しました" });
   });
 });
