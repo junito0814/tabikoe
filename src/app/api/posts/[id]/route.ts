@@ -6,6 +6,7 @@ import { resolveTripId, TripTitleValidationError } from "@/lib/trips/resolve-tri
 import { validatePostInput } from "@/lib/posts/validate-post-input";
 import { finalizeSpotForPost } from "@/lib/spots/finalize-spot";
 import { afterPostPublished } from "@/lib/posts/publish-post";
+import { getPostingRestrictionUntil, postingRestrictedResponse } from "@/lib/moderation/posting-restriction";
 import { isWithinRateLimit } from "@/lib/rate-limit/check-rate-limit";
 import { RATE_LIMIT_ACTIONS } from "@/lib/rate-limit/actions";
 import { removeStorageObjects } from "@/lib/posts/photos";
@@ -101,6 +102,12 @@ export async function PATCH(
     return NextResponse.json({ error: "cannot_unpublish" }, { status: 400 });
   }
   const isPublishing = wasDraft && requestedStatus === "published";
+
+  // strike-system Task 2: 投稿禁止中は下書きを公開できない（下書きのまま保存・公開済みの編集は通す）
+  if (isPublishing) {
+    const restrictedUntil = await getPostingRestrictionUntil(admin, user.id);
+    if (restrictedUntil) return postingRestrictedResponse(restrictedUntil);
+  }
 
   // 位置が省略されたら現在の値を使う（下書きの部分更新に対応）
   const validation = validatePostInput({

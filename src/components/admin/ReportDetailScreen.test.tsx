@@ -28,6 +28,8 @@ describe("ReportDetailScreen（SC-18 詳細・対応操作）", () => {
   it("削除は確認ダイアログを経ないと API を呼ばず、キャンセルできる", async () => {
     const submitAction = vi.fn(async () => Response.json({ status: "resolved_deleted" }));
     render(<ReportDetailScreen report={report} submitAction={submitAction} />);
+    // strike-system Task 2: 理由が無いと押せないので、先に入れる
+    fireEvent.change(screen.getByLabelText(/対応理由/), { target: { value: "スパム" } });
     fireEvent.click(screen.getByRole("button", { name: "削除" }));
     expect(screen.getByRole("dialog")).toBeInTheDocument();
     expect(screen.getByText(/復元できません/)).toBeInTheDocument();
@@ -51,13 +53,30 @@ describe("ReportDetailScreen（SC-18 詳細・対応操作）", () => {
   it("非公開化・問題なしはダイアログなしで送る", async () => {
     const submitAction = vi.fn(async () => Response.json({ status: "resolved_hidden" }));
     render(<ReportDetailScreen report={report} submitAction={submitAction} />);
+    fireEvent.change(screen.getByLabelText(/対応理由/), { target: { value: "不適切" } });
     fireEvent.click(screen.getByRole("button", { name: "非公開化" }));
-    await waitFor(() => expect(submitAction).toHaveBeenCalledWith("r1", "hide", ""));
+    await waitFor(() => expect(submitAction).toHaveBeenCalledWith("r1", "hide", "不適切"));
   });
 
   it("対応済みの通報では操作ボタンが無効", () => {
     render(<ReportDetailScreen report={{ ...report, status: "no_issue" }} submitAction={vi.fn()} />);
     expect(screen.getByRole("button", { name: "削除" })).toBeDisabled();
     expect(screen.getByRole("button", { name: "非公開化" })).toBeDisabled();
+  });
+
+  it("strike-system Task 2: 理由が空だと非公開化・削除は押せず、判断の材料（ストライクの予告）が出る", () => {
+    render(
+      <ReportDetailScreen
+        report={report}
+        context={{ posterId: "bad", posterName: "はなこ", posterActiveStrikes: 1, nextMeasure: "3日間 投稿・コメント禁止", severe: false, reporter: { noIssueIn90Days: 0, total: 2 }, distinctReporters: 3, autoHideReporters: 3 }}
+      />
+    );
+    expect(screen.getByRole("button", { name: "非公開化" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "削除" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "問題なし" })).toBeEnabled();
+    expect(screen.getByText(/有効 1 → 2：3日間 投稿・コメント禁止/)).toBeInTheDocument();
+    expect(screen.getByText(/直近90日 問題なし 0／全 2 件/)).toBeInTheDocument();
+    fireEvent.change(screen.getByLabelText(/対応理由/), { target: { value: "電話番号" } });
+    expect(screen.getByRole("button", { name: "非公開化" })).toBeEnabled();
   });
 });

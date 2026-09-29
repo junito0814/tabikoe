@@ -12,6 +12,7 @@ import {
   COMMENT_RATE_LIMIT_MAX_ATTEMPTS,
   COMMENT_RATE_LIMIT_WINDOW_SECONDS,
 } from "@/lib/comments/constants";
+import { getPostingRestrictionUntil, postingRestrictedResponse } from "@/lib/moderation/posting-restriction";
 
 /**
  * F-VW-03 Task3: コメント一覧取得（新着順・20件ページング）
@@ -81,6 +82,11 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   }
 
   const admin = createAdminClient();
+
+  // strike-system Task 2: 投稿禁止中はコメントもできない。403 と解除日時を返す
+  const restrictedUntil = await getPostingRestrictionUntil(admin, user.id);
+  if (restrictedUntil) return postingRestrictedResponse(restrictedUntil);
+
   let target;
   try {
     target = await findLikeTarget(admin, user.id, id);

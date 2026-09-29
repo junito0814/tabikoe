@@ -25,6 +25,7 @@ import { validatePostInput } from "@/lib/posts/validate-post-input";
 import { parseMediaInput, toPostPhotoRows } from "@/lib/posts/media-input";
 import { canCreateDraft, countDrafts } from "@/lib/posts/draft-limits";
 import { afterPostPublished } from "@/lib/posts/publish-post";
+import { getPostingRestrictionUntil, postingRestrictedResponse } from "@/lib/moderation/posting-restriction";
 import { finalizeSpotForPost } from "@/lib/spots/finalize-spot";
 import {
   POST_RATE_LIMIT_MAX_ATTEMPTS,
@@ -76,6 +77,12 @@ export async function POST(request: Request) {
   }
   const fields = validation.fields;
   const isDraft = fields.status === "draft";
+
+  // strike-system Task 2: 投稿禁止中は公開できない（下書きの保存は通す）。403 と解除日時を返す
+  if (!isDraft) {
+    const restrictedUntil = await getPostingRestrictionUntil(admin, user.id);
+    if (restrictedUntil) return postingRestrictedResponse(restrictedUntil);
+  }
 
   // ③ レート制限。公開は 1 時間 20 件、下書きは 1 時間 60 件（自動保存を含む）
   let allowed: boolean;

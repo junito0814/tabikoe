@@ -34,6 +34,8 @@ export const NOTIFICATION_TYPES = [
   // Phase 17（user-management Task2）。本人へ。related_id は本人の ID。20260927000006 で CHECK 制約に追加
   "account_suspended",
   "account_unsuspended",
+  // Phase 17（strike-system Task2）。本人へ。related_id は strikes.id。20260927000007 で CHECK 制約に追加
+  "moderation_action",
 ] as const;
 
 export type NotificationType = (typeof NOTIFICATION_TYPES)[number];
@@ -132,6 +134,11 @@ export const NOTIFICATION_CATALOG: Record<NotificationType, NotificationTypeSpec
     relatedIdRefersTo: "本人の利用者 ID",
     recipients: "解除された本人",
     producedBy: "admin/user-management Task2",
+  },
+  moderation_action: {
+    relatedIdRefersTo: "strikes.id（非公開化／削除とストライク）",
+    recipients: "対象の投稿者本人（通報者は載せない）",
+    producedBy: "safety/strike-system Task2（通報対応の確定）",
   },
 };
 

@@ -1,6 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { isNotificationType, type NotificationType } from "./catalog";
-import { REPORT_TARGET_LABELS, type ReportTargetType } from "@/lib/reports/constants";
+import { REPORT_REASON_LABELS, REPORT_TARGET_LABELS, type ReportReason, type ReportTargetType } from "@/lib/reports/constants";
 
 /**
  * F-NT-02 Task1・Task4・Task5: 通知一覧（個人向け通知＋お知らせのマージ、遷移先、90日フィルタ）
@@ -67,6 +67,7 @@ export const NOTIFICATION_MESSAGES: Record<NotificationType, string> = {
   admin_suspended: "利用者を仮停止しました（確認待ち）",
   account_suspended: "アカウントが停止されました。理由はマイページの「アカウントの状態」で確認できます",
   account_unsuspended: "アカウントの停止が解除されました",
+  moderation_action: "あなたの投稿に対応が行われました。理由は「アカウントの状態」で確認できます",
 };
 
 export function retentionCutoff(now: Date = new Date()): Date {
@@ -117,6 +118,8 @@ export interface NotificationLookups {
   reportTargetTypes?: ReadonlyMap<string, string>;
   /** Phase 17: admin_suspended 通知: 存在する利用者ID */
   existingUserIds?: ReadonlySet<string>;
+  /** Phase 17: moderation_action 通知: ストライク ID → 対象・理由・措置 */
+  strikes?: ReadonlyMap<string, { targetLabel: string; reason: string; action: string }>;
   /** v3.2: album_invited／itinerary_invited 通知: 招待ID → 状態・対象名・招待した人 */
   invitations?: ReadonlyMap<string, NonNullable<PersonalNotificationItem["invitation"]> & { targetId: string }>;
 }
@@ -164,6 +167,7 @@ export function resolveNotificationHref(
     // Phase 17（user-management Task2）: 本人向け。アカウントの状態（SC-28、#557）へ
     case "account_suspended":
     case "account_unsuspended":
+    case "moderation_action":
       return { href: "/account/status", fallbackMessage: null };
     case "admin_suspended":
       return lookups.existingUserIds?.has(relatedId)
@@ -198,11 +202,12 @@ async function buildLookups(admin: SupabaseClient, rows: NotificationRow[]): Pro
   const tripIds = ids(["album_join", "role_change", "member_removed", "new_owner"]);
   const reportIds = ids(["report_resolved", "admin_report"]);
   const adminUserIds = ids(["admin_suspended"]);
+  const strikeIds = ids(["moderation_action"]);
   const itineraryIds = ids(["itinerary_joined", "itinerary_member_removed"]);
   const albumInvitationIds = ids(["album_invited"]);
   const itineraryInvitationIds = ids(["itinerary_invited"]);
 
-  const [comments, posts, trips, reports, itineraries, albumInvitations, itineraryInvitations, adminUsers] = await Promise.all([
+  const [comments, posts, trips, reports, itineraries, albumInvitations, itineraryInvitations, adminUsers, strikeRows] = await Promise.all([
     commentIds.length ? admin.from("comments").select("id, post_id").in("id", commentIds) : Promise.resolve({ data: [] }),
     likePostIds.length ? admin.from("posts").select("id").in("id", likePostIds) : Promise.resolve({ data: [] }),
     tripIds.length ? admin.from("trips").select("id").in("id", tripIds) : Promise.resolve({ data: [] }),
@@ -218,6 +223,7 @@ async function buildLookups(admin: SupabaseClient, rows: NotificationRow[]): Pro
       ? admin.from("itinerary_invitations").select("id, itinerary_id, status, expires_at, itineraries(trips(title)), users:created_by(display_name)").in("id", itineraryInvitationIds)
       : Promise.resolve({ data: [] }),
     adminUserIds.length ? admin.from("users").select("id").in("id", adminUserIds) : Promise.resolve({ data: [] }),
+    strikeIds.length ? admin.from("strikes").select("id, target_label, reason, action").in("id", strikeIds) : Promise.resolve({ data: [] }),
   ]);
 
   const commentPostIds = new Map<string, string>();
@@ -256,6 +262,12 @@ async function buildLookups(admin: SupabaseClient, rows: NotificationRow[]): Pro
     reportTargetHrefs,
     reportTargetTypes,
     existingUserIds: new Set(((adminUsers.data ?? []) as { id: string }[]).map((row) => row.id)),
+    strikes: new Map(
+      ((strikeRows.data ?? []) as { id: string; target_label: string | null; reason: string; action: string }[]).map((row) => [
+        row.id,
+        { targetLabel: row.target_label ?? "投稿", reason: row.reason, action: row.action },
+      ])
+    ),
     invitations: buildInvitationLookups(albumInvitations.data ?? [], itineraryInvitations.data ?? []),
   };
 }
@@ -315,7 +327,11 @@ export async function getNotificationFeed(
       relatedId: row.related_id,
       isRead: row.is_read,
       createdAt: row.created_at,
-      message: invitationMessage(type, row.related_id, lookups) ?? adminReportMessage(type, row.related_id, lookups) ?? NOTIFICATION_MESSAGES[type],
+      message:
+        invitationMessage(type, row.related_id, lookups) ??
+        adminReportMessage(type, row.related_id, lookups) ??
+        moderationActionMessage(type, row.related_id, lookups) ??
+        NOTIFICATION_MESSAGES[type],
       href,
       fallbackMessage,
       ...(row.related_id && lookups.invitations?.get(row.related_id) && (type === "album_invited" || type === "itinerary_invited")
@@ -347,6 +363,15 @@ export function adminReportMessage(type: NotificationType, relatedId: string | n
   const targetType = lookups.reportTargetTypes?.get(relatedId);
   if (!targetType || !(targetType in REPORT_TARGET_LABELS)) return null;
   return `新しい通報：${REPORT_TARGET_LABELS[targetType as ReportTargetType]}`;
+}
+
+/** Phase 17: 非公開化・削除の通知は「〈対象〉を非公開にしました。理由：〈理由〉」と具体的に（純粋関数） */
+export function moderationActionMessage(type: NotificationType, relatedId: string | null, lookups: NotificationLookups): string | null {
+  if (type !== "moderation_action" || !relatedId) return null;
+  const strike = lookups.strikes?.get(relatedId);
+  if (!strike) return null;
+  const reason = REPORT_REASON_LABELS[strike.reason as ReportReason] ?? strike.reason;
+  return `${strike.targetLabel}を${strike.action === "delete" ? "削除" : "非公開に"}しました。理由：${reason}。詳しくは「アカウントの状態」で確認できます`;
 }
 
 /** v3.2: 招待の通知は「〈名前〉さんがしおり『…』に招待しました」と具体的に */

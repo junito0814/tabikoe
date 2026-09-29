@@ -9,6 +9,7 @@ import { fetchWithAuthRedirect, UnauthorizedError } from "@/lib/api/fetch-with-a
 import { MAX_COMMENT_LENGTH } from "@/lib/comments/constants";
 import type { CommentData, CommentPage } from "@/lib/comments/list-comments";
 import { graphemeLength } from "@/lib/text/grapheme-length";
+import { POSTING_RESTRICTED_ERROR, postingRestrictedMessage } from "@/lib/moderation/posting-restriction";
 
 export interface CommentApi {
   fetchPage: (postId: string, offset: number) => Promise<CommentPage>;
@@ -73,6 +74,12 @@ export function CommentSection({
       const response = await api.submit(postId, draft, replyTo?.id ?? null);
       if (response.status === 429) {
         setErrorMessage("コメントの投稿が多すぎます。1分ほど待ってから再度お試しください");
+        return;
+      }
+      if (response.status === 403) {
+        // strike-system Task 2: 投稿・コメント禁止中
+        const data = (await response.json().catch(() => ({}))) as { error?: string; until?: string };
+        setErrorMessage(data.error === POSTING_RESTRICTED_ERROR && data.until ? postingRestrictedMessage(data.until) : "コメントを投稿できませんでした");
         return;
       }
       if (!response.ok) {

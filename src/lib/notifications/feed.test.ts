@@ -3,6 +3,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import {
   adminReportMessage,
   getNotificationFeed,
+  moderationActionMessage,
   isNewAnnouncement,
   mergeFeed,
   paginateFeed,
@@ -176,5 +177,12 @@ describe("Phase 17: 管理者向けの通知（admin-shell-dashboard Task4）", 
     expect(resolveNotificationHref("admin_auto_hidden", "p1", lookups).href).toBe("/admin/hidden");
     expect(resolveNotificationHref("admin_suspended", "u1", lookups).href).toBe("/admin/users/u1");
     expect(resolveNotificationHref("admin_suspended", "u9", lookups)).toEqual({ href: null, fallbackMessage: "この利用者は退会しました" });
+  });
+
+  it("Phase 17（strike-system Task2）: 非公開化・削除の通知は対象と理由を含み、アカウントの状態へ", () => {
+    const withStrike: NotificationLookups = { ...lookups, strikes: new Map([["s1", { targetLabel: "感想テキスト", reason: "personal_info", action: "hide" }]]) };
+    expect(moderationActionMessage("moderation_action", "s1", withStrike)).toBe("感想テキストを非公開にしました。理由：個人情報の掲載。詳しくは「アカウントの状態」で確認できます");
+    expect(moderationActionMessage("moderation_action", "s9", withStrike)).toBeNull();
+    expect(resolveNotificationHref("moderation_action", "s1", withStrike).href).toBe("/account/status");
   });
 });
