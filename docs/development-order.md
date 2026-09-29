@@ -318,7 +318,7 @@ Phase 15 の後に着手し、**2026-09-19 に全部マージ**（PR #454〜#460
 
 ## Phase 18 — 管理画面の二段階確認 ⬜
 
-出典は要求定義書「変更点 17（2026-09-29）」・要件定義書 3.10.1（改訂）・7.2・7.3・8 章 80〜84・ワイヤーフレーム決定事項 63。ストーリーは [admin-login](user-stories/admin/admin-login.md)、タスクは [tasks/admin/admin-login](tasks/admin/admin-login/00-index.md) の Task 4〜9。進め方は Phase 17 と同じ（**Task 単位で 1 ブランチ・1 PR**、`Closes #N`、前の PR が未マージなら積む）。
+出典は要求定義書「変更点 17（2026-09-29）」・要件定義書 3.10.1（改訂）・7.2・7.3・8 章 80〜84・ワイヤーフレーム決定事項 63。ストーリーは [admin-login](user-stories/admin/admin-login.md)、タスクは [tasks/admin/admin-login](tasks/admin/admin-login/00-index.md) の Task 4〜9。Issue は #599〜#604（Epic は作らない）。進め方は Phase 17 と同じ（**Task 単位で 1 ブランチ・1 PR**、`Closes #N`、前の PR が未マージなら積む）。
 
 背景: 管理画面の入口は「一般と同じ Google ログイン ＋ `is_admin`」だけで、Google アカウント 1 つが破られれば通報の中身・利用者のメールアドレス・操作の記録に手が届いた。X・Meta・Google・GitHub の運用を調べ、**管理操作にだけ二段階確認を課す**方式にした。あわせて GitHub の sudo mode にならい、取り消せない操作の前に短い時間窓での再確認を入れる。
 
@@ -328,12 +328,12 @@ Phase 15 の後に着手し、**2026-09-19 に全部マージ**（PR #454〜#460
 
 | # | Task | Issue | 状態 | 依存 | 内容 |
 |---|---|---|---|---|---|
-| 1 | admin-login Task 4: 二段階確認の判定を純粋関数に切り出す | 未 | ⬜ | なし | `src/lib/admin/mfa-gate.ts`（`adminGateDecision`・`needsStepUp`・60 分と 10 分の定数）。判定の順番は `is_admin` → factor の有無 → `aal` → 経過時間 |
-| 2 | admin-login Task 5: SC-32 と Supabase MFA の登録・確認 | 未 | ⬜ | 1 | `/admin/mfa`、QR コードと 6 桁、`enroll`/`challenge`/`verify`、確認時刻の Cookie。メニューバーは出さない |
-| 3 | admin-login Task 8: 認証アプリを失ったときの復旧 | 未 | ⬜ | 2 | `scripts/admin-mfa-reset.mjs`（`listFactors`/`deleteFactor`）、deployment.md に手順。**画面には解除の導線を作らない** |
-| 4 | admin-login Task 6: 関所で `aal2` と 60 分を必須にする | 未 | ⬜ | 1, 2 | `proxy.ts` に `aal` 判定を追加（`getClaims()` で通信を増やさない）、画面は `/admin/mfa` へ・API は 401 `admin_mfa_required`、`/admin/mfa` 自身は通す |
-| 5 | admin-login Task 7: 重い操作の前の再確認（10 分） | 未 | ⬜ | 1, 2, 4 | 削除・停止・解除・仮停止の確定・ストライクの取り消し・規約の公開の 6 つの API に関門、409 `step_up_required`、画面は移らない小窓で入れ直して再送 |
-| 6 | admin-login Task 9: 受入テスト（E2E） | 未 | ⬜ | 1〜5 | 受入条件 80〜84 を本物の DB で通し、終わったらテスト用のアカウントとデータを消す |
+| 1 | admin-login Task 4: 二段階確認の判定を純粋関数に切り出す | #599 | ⬜ | なし | `src/lib/admin/mfa-gate.ts`（`adminGateDecision`・`needsStepUp`・60 分と 10 分の定数）。判定の順番は `is_admin` → factor の有無 → `aal` → 経過時間 |
+| 2 | admin-login Task 5: SC-32 と Supabase MFA の登録・確認 | #600 | ⬜ | 1 | `/admin/mfa`、QR コードと 6 桁、`enroll`/`challenge`/`verify`、確認時刻の Cookie。メニューバーは出さない |
+| 3 | admin-login Task 8: 認証アプリを失ったときの復旧 | #601 | ⬜ | 2 | `scripts/admin-mfa-reset.mjs`（`listFactors`/`deleteFactor`）、deployment.md に手順。**画面には解除の導線を作らない** |
+| 4 | admin-login Task 6: 関所で `aal2` と 60 分を必須にする | #602 | ⬜ | 1, 2 | `proxy.ts` に `aal` 判定を追加（`getClaims()` で通信を増やさない）、画面は `/admin/mfa` へ・API は 401 `admin_mfa_required`、`/admin/mfa` 自身は通す |
+| 5 | admin-login Task 7: 重い操作の前の再確認（10 分） | #603 | ⬜ | 1, 2, 4 | 削除・停止・解除・仮停止の確定・ストライクの取り消し・規約の公開の 6 つの API に関門、409 `step_up_required`、画面は移らない小窓で入れ直して再送 |
+| 6 | admin-login Task 9: 受入テスト（E2E） | #604 | ⬜ | 1〜5 | 受入条件 80〜84 を本物の DB で通し、終わったらテスト用のアカウントとデータを消す |
 
 ---
 
