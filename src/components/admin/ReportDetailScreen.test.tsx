@@ -97,3 +97,45 @@ describe("ReportDetailScreen（SC-18 詳細・対応操作）", () => {
     expect(await screen.findByRole("status")).toHaveTextContent("登録者に修正を依頼しました");
   });
 });
+
+describe("admin-login Task 7: 削除の前の再確認（10 分）", () => {
+  it("409 が返ったら小窓で 6 桁を聞き、通ったら理由メモを保ったまま送り直す", async () => {
+    const submitAction = vi
+      .fn()
+      .mockResolvedValueOnce(Response.json({ error: "step_up_required" }, { status: 409 }))
+      .mockResolvedValueOnce(Response.json({ status: "resolved_deleted" }));
+    const verify = vi.fn(async () => Response.json({ ok: true }));
+    vi.stubGlobal("fetch", verify);
+    render(<ReportDetailScreen report={report} submitAction={submitAction} />);
+
+    fireEvent.change(screen.getByLabelText(/対応理由/), { target: { value: "電話番号を含むため" } });
+    fireEvent.click(screen.getByRole("button", { name: "削除" }));
+    fireEvent.click(screen.getByRole("button", { name: "削除する" }));
+    // 削除の確認 → さらに 6 桁の小窓
+    await waitFor(() => expect(screen.getByLabelText("認証アプリの 6 桁")).toBeInTheDocument());
+    // まだ削除は実行されていない
+    expect(submitAction).toHaveBeenCalledTimes(1);
+
+    fireEvent.change(screen.getByLabelText("認証アプリの 6 桁"), { target: { value: "123456" } });
+    fireEvent.click(screen.getByRole("button", { name: "確認して続ける" }));
+
+    await waitFor(() => expect(submitAction).toHaveBeenCalledTimes(2));
+    // 書いた理由メモがそのまま渡る（画面ごと移していないので消えない）
+    expect(submitAction).toHaveBeenNthCalledWith(2, "r1", "delete", "電話番号を含むため");
+    vi.unstubAllGlobals();
+  });
+
+  it("やめたらエラー文を出さず、理由メモも残る", async () => {
+    const submitAction = vi.fn(async () => Response.json({ error: "step_up_required" }, { status: 409 }));
+    render(<ReportDetailScreen report={report} submitAction={submitAction} />);
+    fireEvent.change(screen.getByLabelText(/対応理由/), { target: { value: "電話番号を含むため" } });
+    fireEvent.click(screen.getByRole("button", { name: "削除" }));
+    fireEvent.click(screen.getByRole("button", { name: "削除する" }));
+    await waitFor(() => expect(screen.getByLabelText("認証アプリの 6 桁")).toBeInTheDocument());
+
+    fireEvent.click(screen.getByRole("button", { name: "やめる" }));
+    await waitFor(() => expect(screen.queryByLabelText("認証アプリの 6 桁")).not.toBeInTheDocument());
+    expect(screen.queryByText("対応を記録できませんでした")).not.toBeInTheDocument();
+    expect(screen.getByLabelText(/対応理由/)).toHaveValue("電話番号を含むため");
+  });
+});

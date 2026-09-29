@@ -6,6 +6,9 @@ const state = { user: { id: "admin-1" } as { id: string } | null, isAdmin: true 
 // vi.mock は先頭に巻き上げられるので、モック関数は vi.hoisted で先に作る
 const { suspendUser } = vi.hoisted(() => ({ suspendUser: vi.fn(async () => ({ hiddenPosts: 2 })) }));
 
+// admin-login Task 7: 重い操作の前の再確認。ここでは「直前に 6 桁を入れ終えた状態」にする
+//（再確認そのものの試験は src/lib/admin/require-step-up.test.ts）
+vi.mock("next/headers", () => ({ cookies: async () => ({ get: () => ({ value: String(Date.now()) }) }) }));
 vi.mock("@/lib/supabase/server", () => ({ createClient: async () => ({ auth: { getClaims: async () => claimsResultOf(state.user) } }) }));
 vi.mock("@/lib/supabase/admin", () => ({
   createAdminClient: () => ({

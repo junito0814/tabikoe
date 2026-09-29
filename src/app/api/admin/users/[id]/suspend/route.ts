@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireAdminUser } from "@/lib/auth/require-admin";
+import { requireStepUp } from "@/lib/admin/require-step-up";
 import { suspendUser, validateActionNote } from "@/lib/admin/user-actions";
 
 /**
@@ -25,6 +26,11 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   }
   const note = validateActionNote(body.note);
   if (!note.ok) return NextResponse.json({ error: note.error }, { status: 400 });
+
+  // admin-login Task 7: 利用者の停止は取り消せない・影響が大きいので、直前に 6 桁を求める（要件 3.10.1）。
+  // 入力の検証より後ろに置く。6 桁を入れさせたあとで「理由が空です」と返すのは二度手間になるため
+  const stepUp = await requireStepUp();
+  if (stepUp) return stepUp;
 
   const { data: target } = await admin.from("users").select("id").eq("id", id).maybeSingle();
   if (!target) return NextResponse.json({ error: "not_found" }, { status: 404 });

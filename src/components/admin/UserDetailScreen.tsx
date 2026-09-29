@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ErrorNotice } from "@/components/notices/ErrorNotice";
 import { fetchWithAuthRedirect, UnauthorizedError } from "@/lib/api/fetch-with-auth-redirect";
+import { StepUpCancelledError, useStepUp } from "./use-step-up";
 import type { AdminUserDetail } from "@/lib/admin/user-detail";
 import { StrikeDots } from "./StrikeDots";
 import { StatusChip } from "./UserListScreen";
@@ -25,6 +26,8 @@ export type SubmitUserAction = (kind: UserActionKind, targetId: string, body: Re
  */
 export function UserDetailScreen({ user, submitAction = defaultSubmit }: { user: AdminUserDetail; submitAction?: SubmitUserAction }) {
   const router = useRouter();
+  // admin-login Task 7: 停止・解除・仮停止の確定・ストライクの取り消しは、確定の直前に 6 桁を聞き直す
+  const { submit: submitActionWithStepUp, dialog: stepUpDialog } = useStepUp(submitAction);
   const [note, setNote] = useState("");
   const [hidePosts, setHidePosts] = useState(true);
   const [restorePosts, setRestorePosts] = useState(true);
@@ -47,7 +50,7 @@ export function UserDetailScreen({ user, submitAction = defaultSubmit }: { user:
       const body: Record<string, unknown> = { note: confirming.noteValue };
       if (confirming.kind === "suspend") body.hidePosts = hidePosts;
       if (confirming.kind === "unsuspend") body.restorePosts = restorePosts;
-      const response = await submitAction(confirming.kind, confirming.targetId, body);
+      const response = await submitActionWithStepUp(confirming.kind, confirming.targetId, body);
       if (!response.ok) {
         const data = (await response.json().catch(() => ({}))) as { error?: string };
         setErrorMessage(data.error === "note_required" ? "理由を入力してください" : "操作を記録できませんでした");
@@ -59,6 +62,8 @@ export function UserDetailScreen({ user, submitAction = defaultSubmit }: { user:
       router.refresh();
     } catch (error) {
       if (error instanceof UnauthorizedError) return;
+      // 6 桁の確認をやめただけ。失敗ではないので何も出さない（書いた理由メモもそのまま）
+      if (error instanceof StepUpCancelledError) return;
       setErrorMessage("操作を記録できませんでした");
     } finally {
       setIsSubmitting(false);
@@ -281,6 +286,8 @@ export function UserDetailScreen({ user, submitAction = defaultSubmit }: { user:
           </div>
         </div>
       )}
+
+      {stepUpDialog}
     </div>
   );
 }

@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ErrorNotice } from "@/components/notices/ErrorNotice";
 import { fetchWithAuthRedirect, UnauthorizedError } from "@/lib/api/fetch-with-auth-redirect";
+import { StepUpCancelledError, useStepUp } from "./use-step-up";
 import { REPORT_REASON_LABELS, REPORT_TARGET_LABELS } from "@/lib/reports/constants";
 import { REPORT_STATUS_LABELS } from "@/lib/admin/report-filters";
 import { MODERATION_ACTION_LABELS, type ModerationAction } from "@/lib/admin/moderation";
@@ -40,6 +41,8 @@ export function ReportDetailScreen({
   submitSpotFixRequest?: SubmitSpotFixRequest;
 }) {
   const router = useRouter();
+  // admin-login Task 7: 削除のときだけサーバーが 409 を返す。そのとき小窓で 6 桁を聞き、同じ操作を送り直す
+  const { submit: submitActionWithStepUp, dialog: stepUpDialog } = useStepUp(submitAction);
   const [note, setNote] = useState(report.resolutionNote ?? "");
   const [confirmingDelete, setConfirmingDelete] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -78,7 +81,7 @@ export function ReportDetailScreen({
     setIsSubmitting(true);
     setErrorMessage(null);
     try {
-      const response = await submitAction(report.id, action, note.trim());
+      const response = await submitActionWithStepUp(report.id, action, note.trim());
       if (!response.ok) {
         setErrorMessage("対応を記録できませんでした");
         return;
@@ -93,6 +96,8 @@ export function ReportDetailScreen({
       router.refresh();
     } catch (error) {
       if (error instanceof UnauthorizedError) return;
+      // 6 桁の確認をやめただけ。失敗ではないので何も出さない（書いた理由メモもそのまま）
+      if (error instanceof StepUpCancelledError) return;
       setErrorMessage("対応を記録できませんでした");
     } finally {
       setIsSubmitting(false);
@@ -269,6 +274,8 @@ export function ReportDetailScreen({
             </div>
           </div>
         )}
+
+        {stepUpDialog}
       </div>
     </div>
   );
