@@ -190,6 +190,16 @@ export function PostDetailScreen({
                 </span>
               )}
             </h1>
+            {/* strike-system Task 3: 本人にだけ、隠れている理由を出す（他人にはこの画面自体が出ない） */}
+            {post.hiddenReason && (
+              <p role="note" className="mb-2 rounded-[8px] bg-tint px-3 py-2 text-[12px] leading-[1.7] text-ink">
+                {post.hiddenReason === "auto"
+                  ? "この投稿は通報が重なったため、運営が確認するまで他の人には表示されません（確認中）"
+                  : post.hiddenReason === "suspension"
+                    ? "この投稿はアカウントの停止に伴い非公開になっています"
+                    : "この投稿は運営の判断で非公開になっています。理由はマイページの「アカウントの状態」で確認できます"}
+              </p>
+            )}
             <p className="flex flex-wrap items-center gap-x-1.5 text-[12px] text-muted">
               <span>{post.spot.prefecture ?? "都道府県未設定"}</span>
               <span aria-hidden>・</span>

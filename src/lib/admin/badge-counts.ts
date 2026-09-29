@@ -8,13 +8,14 @@ import type { AdminBadgeCounts } from "@/components/admin/admin-menu-config";
  *
  * 【初心者向け】`count: "exact", head: true` は「行の中身は要らない、件数だけ数えて」という指定。
  * 通報の「未対応」は 未確認（unconfirmed）＋確認中（in_review）（3.8.1）。
- * 「非公開のもの」の確認待ち（自動で非公開になったもの）は strike-system Task 3（#553）で `auto_hidden_at` が
- * 入ってから数える。それまでは 0 のまま（丸は出ない）。
+ * 「非公開のもの」の確認待ちは、自動で隠れたまま（hidden_reason = 'auto'）の投稿・コメント（strike-system Task 3）。
  */
 export async function countAdminBadges(admin: SupabaseClient): Promise<AdminBadgeCounts> {
-  const { count } = await admin
-    .from("reports")
-    .select("id", { count: "exact", head: true })
-    .in("status", ["unconfirmed", "in_review"]);
-  return { reports: count ?? 0, hidden: 0 };
+  const counting = (table: string) => admin.from(table).select("id", { count: "exact", head: true });
+  const [reports, autoPosts, autoComments] = await Promise.all([
+    counting("reports").in("status", ["unconfirmed", "in_review"]),
+    counting("posts").eq("hidden_reason", "auto"),
+    counting("comments").eq("hidden_reason", "auto"),
+  ]);
+  return { reports: reports.count ?? 0, hidden: (autoPosts.count ?? 0) + (autoComments.count ?? 0) };
 }

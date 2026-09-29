@@ -50,14 +50,19 @@ vi.mock("@/lib/supabase/admin", () => ({
           update: reportUpdate,
         };
       }
-      // 対象テーブル（comments 等）
+      // 対象テーブル（comments 等）。strike-system Task 3 の restoreAutoHidden は update().eq().eq().select() の形で呼ぶ
       return {
-        update: (payload: Record<string, unknown>) => ({
-          eq: async () => {
-            effects.push(`${table}.update:${Object.keys(payload).join(",")}`);
-            return { error: null };
-          },
-        }),
+        update: (payload: Record<string, unknown>) => {
+          const chain = {
+            eq: () => chain,
+            select: async () => ({ data: [], error: null }),
+            then: (resolve: (v: unknown) => void) => {
+              effects.push(`${table}.update:${Object.keys(payload).join(",")}`);
+              resolve({ error: null });
+            },
+          };
+          return chain;
+        },
         delete: () => ({
           eq: async () => {
             effects.push(`${table}.delete`);
@@ -96,7 +101,7 @@ describe("POST /api/admin/reports/[id]/action", () => {
     vi.setSystemTime(new Date("2026-09-14T12:00:00Z"));
     const response = await act("hide", "不適切な表現のため");
     expect(response.status).toBe(200);
-    expect(effects).toEqual(["comments.update:hidden_at"]);
+    expect(effects).toEqual(["comments.update:hidden_at,hidden_reason"]);
     expect(reportUpdate).toHaveBeenCalledWith({
       status: "resolved_hidden",
       resolved_by: "admin-1",

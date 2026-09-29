@@ -4,6 +4,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { requireAdminUser } from "@/lib/auth/require-admin";
 import { recordAdminAction, type AdminActionTargetType } from "@/lib/admin/admin-actions";
 import { applyStrikeForReport, type ApplyStrikeResult } from "@/lib/moderation/apply-strike";
+import { restoreAutoHidden } from "@/lib/moderation/auto-hide";
 import { findReportTarget } from "@/lib/reports/find-report-target";
 import { REPORT_REASON_LABELS, type ReportReason } from "@/lib/reports/constants";
 import { createNotification } from "@/lib/notifications/create-notification";
@@ -81,6 +82,8 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   }
   try {
     await applyModerationEffect(admin, effect, report.target_id, now);
+    // strike-system Task 3: 「問題なし」なら自動で隠した分（hidden_reason = auto）を公開に戻す
+    if (body.action === "no_issue") await restoreAutoHidden(admin, report.target_type as ReportTargetType, report.target_id);
   } catch {
     return NextResponse.json({ error: "action_failed" }, { status: 500 });
   }

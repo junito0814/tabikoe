@@ -94,7 +94,8 @@ describe("applyModerationEffect", () => {
     const { admin, calls } = fakeAdmin();
     const now = new Date("2026-09-14T00:00:00Z");
     await applyModerationEffect(admin, { kind: "hide", table: "comments", column: "hidden_at" }, "c1", now);
-    expect(calls).toEqual([{ table: "comments", op: "update", payload: { hidden_at: now.toISOString() }, id: "c1" }]);
+    // strike-system Task 3: 投稿・コメントは「誰の判断か」（hidden_reason）も残す
+    expect(calls).toEqual([{ table: "comments", op: "update", payload: { hidden_at: now.toISOString(), hidden_reason: "moderation" }, id: "c1" }]);
   });
 
   it("ユーザーの一時停止は users.suspended_at を更新する", async () => {
