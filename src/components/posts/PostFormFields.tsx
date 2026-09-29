@@ -309,7 +309,8 @@ export function isPostFormComplete(
       costNumber < MIN_POST_COST ||
       costNumber > MAX_POST_COST);
   return (
-    values.tripTitle.trim().length > 0 &&
+    // #590: アルバム名は任意（空なら「日常」アルバムに入る。要件 3.3.1・3.3.4）。ここで必須にしていたため、
+    // 入力欄に「空なら『日常』に入ります」と出ているのに「投稿する」が押せなかった
     values.category !== "" &&
     values.duration !== "" &&
     values.visitDate.length > 0 &&
