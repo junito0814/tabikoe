@@ -11,10 +11,12 @@ const state = { user: { id: "u1" } as { id: string } | null, profile: { id: "u1"
 // performance Task1: 認証確認は getClaims（手元の署名検証）
 const getClaims = vi.fn(async () => claimsResultOf(state.user));
 const signOut = vi.fn(async () => ({ error: null }));
+const rpc = vi.fn(async () => ({ error: null }));
 
 vi.mock("@supabase/ssr", () => ({
   createServerClient: () => ({
     auth: { getClaims, signOut },
+    rpc,
     from: () => ({ select: () => ({ eq: () => ({ maybeSingle: async () => ({ data: state.profile, error: null }), single: async () => ({ data: { is_admin: false } }) }) }) }),
   }),
 }));
@@ -34,6 +36,33 @@ beforeEach(() => {
   state.profile = { id: "u1", suspended_at: null };
   getClaims.mockClear();
   signOut.mockClear();
+  rpc.mockClear();
+});
+
+describe("proxy（admin-shell-dashboard Task 3: 最終利用日を 1 日 1 回だけ記録）", () => {
+  const today = new Date(Date.now() + 9 * 60 * 60 * 1000).toISOString().slice(0, 10);
+
+  it("今日の印が無ければ touch_last_active を呼び、今日の日付を Cookie に書く", async () => {
+    const response = await proxy(request("/mypage", session));
+    expect(rpc).toHaveBeenCalledWith("touch_last_active");
+    const cookie = response.cookies.get("tabikoe-last-active-day");
+    expect(cookie?.value).toBe(today);
+    expect(cookie?.httpOnly).toBe(true);
+  });
+
+  it("同じ日の 2 回目は DB に触らない", async () => {
+    const response = await proxy(request("/mypage", { ...session, "tabikoe-last-active-day": today }));
+    expect(rpc).not.toHaveBeenCalled();
+    expect(response.cookies.get("tabikoe-last-active-day")).toBeUndefined();
+  });
+
+  it("先読み（prefetch）と未ログインでは呼ばない", async () => {
+    const prefetch = new NextRequest("http://localhost/mypage", { headers: { cookie: "sb-abc-auth-token=token", "next-router-prefetch": "1" } });
+    await proxy(prefetch);
+    state.user = null;
+    await proxy(request("/", {}));
+    expect(rpc).not.toHaveBeenCalled();
+  });
 });
 
 describe("proxy（F-AC-02 Task3: 最終利用から 30 日で再ログイン）", () => {

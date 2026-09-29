@@ -4,6 +4,7 @@ import { assertSupabaseEnv } from "@/lib/supabase/env";
 import { sessionCookieOptions } from "@/lib/supabase/cookie-options";
 import { pendingSignupAction } from "@/lib/auth/pending-signup";
 import { getAuthUserFromClaims } from "@/lib/auth/auth-user";
+import { jstDayOf, LAST_ACTIVE_DAY_COOKIE, lastActiveDayCookieOptions, shouldTouchLastActiveDay } from "@/lib/auth/last-active-day";
 import {
   buildExpiredLoginPath,
   isSessionExpiredByInactivity,
@@ -124,6 +125,13 @@ export async function proxy(request: NextRequest) {
         response.cookies.getAll().forEach((cookie) => redirect.cookies.set(cookie));
         return redirect;
       }
+    }
+    // admin-shell-dashboard Task 3: 最終利用日を 1 人 1 日 1 回だけ記録する（Cookie が今日なら DB に触らない）。
+    // 書き込みは security definer の関数（本人の行に now() を入れるだけ）。失敗しても画面は止めない
+    if (profile && !profile.suspended_at && shouldTouchLastActiveDay(request.cookies.get(LAST_ACTIVE_DAY_COOKIE)?.value, now)) {
+      const { error: touchError } = await supabase.rpc("touch_last_active");
+      if (touchError) console.error("[proxy] 最終利用日を記録できませんでした:", touchError.message);
+      else response.cookies.set(LAST_ACTIVE_DAY_COOKIE, jstDayOf(now), lastActiveDayCookieOptions(sessionCookieOptions.secure));
     }
     if (profile?.suspended_at) {
       await supabase.auth.signOut();

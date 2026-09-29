@@ -22,7 +22,7 @@ export interface AdminDashboardData {
     users: { total: number; thisWeek: number };
     posts: { total: number; thisWeek: number };
     spots: { total: number; manual: number };
-    /** #547 で入る。それまで null（画面は「—」） */
+    /** 最終利用日（users.last_active_at）が今日／今週の人数（admin-shell-dashboard Task 3） */
     activeUsers: { today: number; thisWeek: number } | null;
   };
   /** 下段: 最近の動き */
@@ -116,6 +116,7 @@ const OPEN_STATUSES = ["unconfirmed", "in_review"];
 
 export async function loadAdminDashboard(admin: SupabaseClient, now: Date = new Date()): Promise<AdminDashboardData> {
   const weekStart = startOfWeekJst(now).toISOString();
+  const dayStart = startOfDayJst(now).toISOString();
   // 【初心者向け】`select("id", { count: "exact", head: true })` は「件数だけ数えて、行は返さない」
   const counting = (table: string) => admin.from(table).select("id", { count: "exact", head: true });
 
@@ -129,6 +130,8 @@ export async function loadAdminDashboard(admin: SupabaseClient, now: Date = new 
     postsWeek,
     spotsTotal,
     spotsManual,
+    activeToday,
+    activeWeek,
     recentPosts,
     recentSpots,
     openReportRows,
@@ -142,6 +145,8 @@ export async function loadAdminDashboard(admin: SupabaseClient, now: Date = new 
     counting("posts").eq("status", "published").gte("published_at", weekStart),
     counting("spots"),
     counting("spots").eq("source", "manual"),
+    counting("users").gte("last_active_at", dayStart),
+    counting("users").gte("last_active_at", weekStart),
     admin
       .from("posts")
       .select("id, category, visibility, hidden_at, published_at, spots(name), users(display_name)")
@@ -190,7 +195,7 @@ export async function loadAdminDashboard(admin: SupabaseClient, now: Date = new 
       users: { total: usersTotal.count ?? 0, thisWeek: usersWeek.count ?? 0 },
       posts: { total: postsTotal.count ?? 0, thisWeek: postsWeek.count ?? 0 },
       spots: { total: spotsTotal.count ?? 0, manual: spotsManual.count ?? 0 },
-      activeUsers: null,
+      activeUsers: { today: activeToday.count ?? 0, thisWeek: activeWeek.count ?? 0 },
     },
     recentPosts: posts,
     recentSpots: spots,
