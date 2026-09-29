@@ -48,6 +48,16 @@ describe("shouldShowMenuBar", () => {
     }
   );
 
+  // #583: 規約ページは未ログインでも開ける「読むだけ」のページ。メニューバーを出すと未読件数 API を呼び、
+  // 再同意待ち・登録待ちの人が 401 でログイン画面へ飛ばされて規約を読めなくなる
+  it.each(["/terms", "/privacy"])("規約ページ %s では非表示（#583）", (path) => {
+    expect(shouldShowMenuBar(path)).toBe(false);
+  });
+
+  it("再同意画面では非表示", () => {
+    expect(shouldShowMenuBar("/consent/renew")).toBe(false);
+  });
+
   it("開発用プレビューでは非表示", () => {
     expect(shouldShowMenuBar("/dev/preview")).toBe(false);
   });
