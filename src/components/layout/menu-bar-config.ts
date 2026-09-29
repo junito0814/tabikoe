@@ -22,8 +22,14 @@ export const MENU_ITEMS: readonly MenuItem[] = [
   { key: "mypage", label: "マイページ", href: "/mypage" },
 ] as const;
 
-/** メニューバーを出さない画面。前方一致で判定するものは末尾に "/" を付けない */
-const HIDDEN_EXACT_PATHS = new Set(["/login", "/signup", "/consent/renew"]);
+/**
+ * メニューバーを出さない画面。前方一致で判定するものは末尾に "/" を付けない
+ *
+ * 【初心者向け】`/terms`・`/privacy` は**未ログインでも開ける「読むだけ」のページ**（同意画面・再同意画面からの
+ * リンク先）なので、メニューバーを出す前提がない。出してしまうと、メニューバーが未読件数 API を呼び、
+ * 再同意待ち・登録待ちの人には 401 が返ってログイン画面へ飛ばされ、規約が読めなくなる（#583）。
+ */
+const HIDDEN_EXACT_PATHS = new Set(["/login", "/signup", "/consent/renew", "/terms", "/privacy"]);
 const HIDDEN_PREFIXES = ["/admin", "/dev"];
 
 /**
