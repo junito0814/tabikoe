@@ -35,7 +35,7 @@ flowchart TD
     P13 --> P14["Phase 14\n記録（マイページ・あしあと）\n✅"]
     P14 --> P15["Phase 15\nv3.1 メンタリング 7 の反映\n✅"]
     P15 --> P16["Phase 16\nv3.2 追加要望\n✅"]
-    P16 --> P17["Phase 17\n管理画面の作り直し（ストライク制・規約管理）\n⬜"]
+    P16 --> P17["Phase 17\n管理画面の作り直し（ストライク制・規約管理）\n🔷"]
 ```
 
 ---
@@ -284,33 +284,35 @@ Phase 15 の後に着手し、**2026-09-19 に全部マージ**（PR #454〜#460
 
 **Phase 16 の後にやったこと（2026-09-20〜09-26。Phase 番号は付けていない）**: 戻る・シート・ダークの修正（PR #470〜#477）、ログインの作り直し（Google 1 回で新規登録・キャッチフレーズ。#479〜#482）、通信回数の削減とストリーミング（#489・#491）、探すモードの所要時間を Routes API の実測に（#496・#499）、地図の復元と吹き出し（#500〜#512）、ロゴとファビコン（#516・#519・#520）、上部の地図の 2 本指操作とシート 3 段階（#513・#521・#522・#540〜#542）、現在地とピンのカテゴリ色（#523・#528〜#530・#533）、バスの半径 8km（#535・#537）、AGENTS.md の約束（#532・#539）。いずれも「ドキュメントの PR → 実装の PR」の 2 本で進めた。
 
-## Phase 17 — 管理画面の作り直し（ストライク制・規約管理） ⬜
+## Phase 17 — 管理画面の作り直し（ストライク制・規約管理） 🔷
 
 出典は要求定義書「変更点 16（2026-09-27）」・要件定義書 3.10（全面改訂）・PR #543・#544。ストーリーは [admin-shell-dashboard](user-stories/admin/admin-shell-dashboard.md)・[strike-system](user-stories/safety/strike-system.md)・[user-management](user-stories/admin/user-management.md)・[legal-documents](user-stories/admin/legal-documents.md)、見た目は管理画面キャンバス https://claude.ai/artifact/KoY91teZdaTPQahdk2LEhM 。Issue は #545〜#561（Epic は作らない）。進め方は Phase 15・16 と同じ（**Task 単位で 1 ブランチ・1 PR**、`Closes #N`、前の PR が未マージなら積む）。
 
 背景: 管理画面は 2 つのボタンだけのダッシュボードと通報・お知らせの 3 画面で、通報が来ても気づけず、停止の解除・非公開の復元・利用者の検索・操作の記録・規約の本文が無かった。X・Meta・Reddit・Google マップ・Mastodon の運用を調べ、**通報の件数では止めず、人が確定した違反（ストライク）を数える**方式にした。
 
+**2026-09-27 に 17 本すべて PR 化**（#563 → #564 → … → #579 の積み上げ。base は 1 つ前の PR）。マイグレーション 10 本は `scripts/apply_phase17_20260927.sql` にまとめてあり、マージ後に SQL エディタで当てる（当てるまで管理画面の新しい部分は「読み込めませんでした」になる）。タスク文書との違いは各 PR の本文に書いた（主なもの: 自動非公開は `auto_hidden_at` ではなく `hidden_reason='auto'`、規約の改定通知はお知らせとして配信、`spots.created_at` を追加）。
+
 順番: **#545（枠）→ #550（操作の記録）・#549（ルール）→ #546 → #547 → #548 → #551 → #554 → #552 → #553 → #555 → #556 → #557 → #558 → #559 → #560 → #561**。#559（規約の本文と公開ページ）は依存が無いので、途中で前に出してもよい。テーブルの変更（#547・#549・#550・#553・#559）は 1 本ずつマイグレーションを足し、`scripts/apply_*.sql` にまとめて SQL エディタで当てる。
 
 | # | Task | Issue | 状態 | 依存 | 内容 |
 |---|---|---|---|---|---|
-| 1 | admin-shell-dashboard Task 1: 共通の枠と既存 3 画面 | #545 | ⬜ | なし | `src/app/admin/layout.tsx`（PC は左メニュー 7 項目、スマホは下のバー 5 項目）、未対応件数の赤い丸、ダッシュボード・お知らせ・通報の 3 画面を枠に入れて PC 幅に |
-| 2 | user-management Task 4: 操作の記録 | #550 | ⬜ | #545 | `admin_actions`（INSERT のみ。UPDATE・DELETE 不可）、`recordAdminAction`、SC-27 |
-| 3 | strike-system Task 1: ストライクのデータとルール | #549 | ⬜ | なし | `strikes`・`moderation_settings`・`users.posting_restricted_until`、`strike-rules.ts`（有効数・段階・重大な違反・自動非公開の判定） |
-| 4 | admin-shell-dashboard Task 2: ダッシュボードの集計 | #546 | ⬜ | #545 | `loadAdminDashboard`（未対応・自動非公開・仮停止／利用者・投稿・スポット／最近の動き・通報が集中している対象）、SC-16 |
-| 5 | admin-shell-dashboard Task 3: 最終利用日と「使った人」 | #547 | ⬜ | #546 | `users.last_active_at` を Cookie で 1 日 1 回だけ更新、今日／今週の人数 |
-| 6 | admin-shell-dashboard Task 4: 管理者への通知 | #548 | ⬜ | #545 | `notifyAdmins`、新しい通報・自動非公開・仮停止を管理者全員に |
-| 7 | user-management Task 1: 利用者一覧 | #551 | ⬜ | #545 | `GET /api/admin/users`（検索・状態・並び）、`userStatusOf`、SC-24 一覧 |
-| 8 | user-management Task 2: 利用者詳細と停止・解除 | #554 | ⬜ | #551、#549 | 停止（理由必須・公開投稿の一括非公開）、解除、仮停止の確定、ストライクの取り消し、SC-24 詳細 |
-| 9 | strike-system Task 2: 確定でストライク | #552 | ⬜ | #549、#550 | 通報対応の理由を必須に、非公開化／削除でストライク付与・本人通知・投稿禁止（API で 403） |
-| 10 | strike-system Task 3: 自動非公開 | #553 | ⬜ | #549、#548 | `auto_hidden_at`、異なる通報者 3 人（信頼度の低い通報者を除く）で非公開、「問題なし」で復元 |
-| 11 | user-management Task 3: 非公開のものと復元 | #555 | ⬜ | #545、#553 | 3 タブ（自動・管理者・停止）、復元（理由必須）、SC-25 |
-| 12 | strike-system Task 4: 仮停止 | #556 | ⬜ | #552、#554 | 有効 5 または重大な違反で仮停止、本人・管理者に通知、確定と解除 |
-| 13 | strike-system Task 5: アカウントの状態 | #557 | ⬜ | #552 | `GET /api/users/me/account-status`、SC-28（制限・丸 5 つ・履歴）、マイページの導線 |
-| 14 | strike-system Task 6: スポットの修正依頼 | #558 | ⬜ | #552 | 「登録者に修正を依頼する」、`PATCH /api/spots/[id]`（本人の手動スポットだけ）、SC-29、直すと通報が対応済み |
-| 15 | legal-documents Task 1: 規約の本文と公開ページ | #559 | ⬜ | なし | `legal_documents`・`user_consents`、初期データ 1.0（素案）、`/terms`・`/privacy`、登録時に版を記録 |
-| 16 | legal-documents Task 2: 規約管理画面 | #560 | ⬜ | #559、#545 | 下書き・公開（前の版は archived）・版の一覧と同意済み人数、全員向け通知、SC-26 |
-| 17 | legal-documents Task 3: 再同意 | #561 | ⬜ | #560 | `needsReconsent`、proxy で SC-30 へ送る（Cookie で往復を増やさない）、`POST /api/legal/consent` |
+| 1 | admin-shell-dashboard Task 1: 共通の枠と既存 3 画面 | #545 | 🔷 PR #563 | なし | `src/app/admin/layout.tsx`（PC は左メニュー 7 項目、スマホは下のバー 5 項目）、未対応件数の赤い丸、ダッシュボード・お知らせ・通報の 3 画面を枠に入れて PC 幅に |
+| 2 | user-management Task 4: 操作の記録 | #550 | 🔷 PR #564 | #545 | `admin_actions`（INSERT のみ。UPDATE・DELETE 不可）、`recordAdminAction`、SC-27 |
+| 3 | strike-system Task 1: ストライクのデータとルール | #549 | 🔷 PR #565 | なし | `strikes`・`moderation_settings`・`users.posting_restricted_until`、`strike-rules.ts`（有効数・段階・重大な違反・自動非公開の判定） |
+| 4 | admin-shell-dashboard Task 2: ダッシュボードの集計 | #546 | 🔷 PR #566 | #545 | `loadAdminDashboard`（未対応・自動非公開・仮停止／利用者・投稿・スポット／最近の動き・通報が集中している対象）、SC-16 |
+| 5 | admin-shell-dashboard Task 3: 最終利用日と「使った人」 | #547 | 🔷 PR #567 | #546 | `users.last_active_at` を Cookie で 1 日 1 回だけ更新、今日／今週の人数 |
+| 6 | admin-shell-dashboard Task 4: 管理者への通知 | #548 | 🔷 PR #568 | #545 | `notifyAdmins`、新しい通報・自動非公開・仮停止を管理者全員に |
+| 7 | user-management Task 1: 利用者一覧 | #551 | 🔷 PR #569 | #545 | `GET /api/admin/users`（検索・状態・並び）、`userStatusOf`、SC-24 一覧 |
+| 8 | user-management Task 2: 利用者詳細と停止・解除 | #554 | 🔷 PR #570 | #551、#549 | 停止（理由必須・公開投稿の一括非公開）、解除、仮停止の確定、ストライクの取り消し、SC-24 詳細 |
+| 9 | strike-system Task 2: 確定でストライク | #552 | 🔷 PR #571 | #549、#550 | 通報対応の理由を必須に、非公開化／削除でストライク付与・本人通知・投稿禁止（API で 403） |
+| 10 | strike-system Task 3: 自動非公開 | #553 | 🔷 PR #572 | #549、#548 | `auto_hidden_at`、異なる通報者 3 人（信頼度の低い通報者を除く）で非公開、「問題なし」で復元 |
+| 11 | user-management Task 3: 非公開のものと復元 | #555 | 🔷 PR #573 | #545、#553 | 3 タブ（自動・管理者・停止）、復元（理由必須）、SC-25 |
+| 12 | strike-system Task 4: 仮停止 | #556 | 🔷 PR #574 | #552、#554 | 有効 5 または重大な違反で仮停止、本人・管理者に通知、確定と解除 |
+| 13 | strike-system Task 5: アカウントの状態 | #557 | 🔷 PR #575 | #552 | `GET /api/users/me/account-status`、SC-28（制限・丸 5 つ・履歴）、マイページの導線 |
+| 14 | strike-system Task 6: スポットの修正依頼 | #558 | 🔷 PR #576 | #552 | 「登録者に修正を依頼する」、`PATCH /api/spots/[id]`（本人の手動スポットだけ）、SC-29、直すと通報が対応済み |
+| 15 | legal-documents Task 1: 規約の本文と公開ページ | #559 | 🔷 PR #577 | なし | `legal_documents`・`user_consents`、初期データ 1.0（素案）、`/terms`・`/privacy`、登録時に版を記録 |
+| 16 | legal-documents Task 2: 規約管理画面 | #560 | 🔷 PR #578 | #559、#545 | 下書き・公開（前の版は archived）・版の一覧と同意済み人数、全員向け通知、SC-26 |
+| 17 | legal-documents Task 3: 再同意 | #561 | 🔷 PR #579 | #560 | `needsReconsent`、proxy で SC-30 へ送る（Cookie で往復を増やさない）、`POST /api/legal/consent` |
 
 ---
 
