@@ -92,6 +92,15 @@ describe("isPostFormComplete", () => {
     expect(isPostFormComplete({ ...complete, rating: 0 }, 1)).toBe(false);
     expect(isPostFormComplete({ ...complete, category: "" }, 1)).toBe(false);
   });
+  // #590: アルバム名は任意（空なら「日常」アルバムに入る。要件 3.3.1・3.3.4）
+  it("アルバム名が空でも true（空なら「日常」アルバムに入る）", () => {
+    expect(isPostFormComplete({ ...complete, tripTitle: "" }, 1)).toBe(true);
+    expect(isPostFormComplete({ ...complete, tripTitle: "   " }, 1)).toBe(true);
+  });
+  it("滞在時間・訪問日が空なら今までどおり false", () => {
+    expect(isPostFormComplete({ ...complete, duration: "" }, 1)).toBe(false);
+    expect(isPostFormComplete({ ...complete, visitDate: "" }, 1)).toBe(false);
+  });
 });
 
 describe("hasAnyPostInput", () => {
