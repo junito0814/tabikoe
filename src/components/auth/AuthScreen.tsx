@@ -100,6 +100,8 @@ export default function AuthScreen({ sky = false }: { /** Task12（2026-09-25）
 
     return (
         <div
+            // #592: 未ログインのホーム（SC-00）でも上下に動かさない。`/login` は対象外（sky が付くのはホームだけ）
+            {...(sky ? { "data-home-fixed": "" } : {})}
             className={`${outfit.className} flex min-h-screen flex-col items-center justify-center px-6 ${sky ? "bg-sky" : "bg-app"}`}
         >
             <div className="flex w-full max-w-[360px] flex-col items-center">
