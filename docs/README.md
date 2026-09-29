@@ -173,7 +173,7 @@ docs/tasks/<カテゴリ>/<スラッグ>/01-〇〇.md     ③ タスク 1 件の
 
 | 機能ID | ストーリー | 内容 | タスク |
 |---|---|---|---|
-| F-AD-01 | [admin-login](user-stories/admin/admin-login.md) | 管理者ログイン（SC-15） | 3 |
+| F-AD-01 | [admin-login](user-stories/admin/admin-login.md) | 管理者ログイン（SC-15）・二段階確認（SC-32。2026-09-29 で追加） | 9 |
 | F-AD-02 | [admin-dashboard](user-stories/admin/admin-dashboard.md) | 管理者ダッシュボード（v1。2 ボタンだけの版） | 2 |
 | F-AD-02 | [admin-shell-dashboard](user-stories/admin/admin-shell-dashboard.md) | 管理画面の枠とダッシュボード（2026-09-27 の作り直し。3.10.2・3.10.3） | 4 |
 | F-AD-03 | [announcement-management](user-stories/admin/announcement-management.md) | お知らせ管理（SC-17） | 4 |
