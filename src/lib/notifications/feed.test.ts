@@ -4,6 +4,8 @@ import {
   adminReportMessage,
   getNotificationFeed,
   moderationActionMessage,
+  spotFixMessage,
+  buildSpotFixLookups,
   isNewAnnouncement,
   mergeFeed,
   paginateFeed,
@@ -184,5 +186,13 @@ describe("Phase 17: 管理者向けの通知（admin-shell-dashboard Task4）", 
     expect(moderationActionMessage("moderation_action", "s1", withStrike)).toBe("感想テキストを非公開にしました。理由：個人情報の掲載。詳しくは「アカウントの状態」で確認できます");
     expect(moderationActionMessage("moderation_action", "s9", withStrike)).toBeNull();
     expect(resolveNotificationHref("moderation_action", "s1", withStrike).href).toBe("/account/status");
+  });
+
+  it("Phase 17（strike-system Task6）: 修正依頼の通知はスポット名と依頼の内容を含み、修正画面へ", () => {
+    const spotFixes = buildSpotFixLookups([{ id: "s1", name: "路地裏の喫茶店" }], [{ target_id: "s1", note: "住所の確認をお願いします" }, { target_id: "s1", note: "古い方" }]);
+    const withSpot: NotificationLookups = { ...lookups, spotFixes };
+    expect(spotFixMessage("spot_fix_request", "s1", withSpot)).toBe("「路地裏の喫茶店」の情報に指摘があります：住所の確認をお願いします");
+    expect(resolveNotificationHref("spot_fix_request", "s1", withSpot).href).toBe("/spots/s1/edit");
+    expect(resolveNotificationHref("spot_fix_request", "s9", withSpot)).toEqual({ href: null, fallbackMessage: "このスポットは存在しません" });
   });
 });

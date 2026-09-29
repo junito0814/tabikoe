@@ -36,6 +36,8 @@ export const NOTIFICATION_TYPES = [
   "account_unsuspended",
   // Phase 17（strike-system Task2）。本人へ。related_id は strikes.id。20260927000007 で CHECK 制約に追加
   "moderation_action",
+  // Phase 17（strike-system Task6）。スポットの登録者へ。related_id はスポット ID。20260927000009 で CHECK 制約に追加
+  "spot_fix_request",
 ] as const;
 
 export type NotificationType = (typeof NOTIFICATION_TYPES)[number];
@@ -139,6 +141,11 @@ export const NOTIFICATION_CATALOG: Record<NotificationType, NotificationTypeSpec
     relatedIdRefersTo: "strikes.id（非公開化／削除とストライク）",
     recipients: "対象の投稿者本人（通報者は載せない）",
     producedBy: "safety/strike-system Task2（通報対応の確定）",
+  },
+  spot_fix_request: {
+    relatedIdRefersTo: "スポット ID（タビコエだけの場所）",
+    recipients: "そのスポットの登録者（spots.created_by）",
+    producedBy: "safety/strike-system Task6（管理者の修正依頼）",
   },
 };
 

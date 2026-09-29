@@ -1,5 +1,5 @@
 -- Phase 17（管理画面の作り直し）のマイグレーションをまとめて当てる（Supabase の SQL エディタに貼る）。上から順に実行される。
--- 追加した順: 20260927000001_admin_actions → 20260927000002_strikes → 20260927000003_spots_created_at → 20260927000004_last_active_at → 20260927000005_admin_notifications → 20260927000006_user_management → 20260927000007_moderation_action → 20260927000008_auto_hide
+-- 追加した順: 20260927000001_admin_actions → 20260927000002_strikes → 20260927000003_spots_created_at → 20260927000004_last_active_at → 20260927000005_admin_notifications → 20260927000006_user_management → 20260927000007_moderation_action → 20260927000008_auto_hide → 20260927000009_spot_fix_request
 
 -- user-management Task 4: 操作の記録（admin_actions）
 -- 出典: docs/tasks/admin/user-management/04-admin-actions-log.md
@@ -316,3 +316,26 @@ alter table public.comments add constraint comments_hidden_reason_check
 
 create index if not exists posts_hidden_reason_idx on public.posts (hidden_reason) where hidden_reason is not null;
 create index if not exists comments_hidden_reason_idx on public.comments (hidden_reason) where hidden_reason is not null;
+
+-- 追加した順（続き）: 20260927000009_spot_fix_request
+
+-- strike-system Task 6: スポットの修正依頼（通知の種類 spot_fix_request）
+-- 出典: docs/tasks/safety/strike-system/06-spot-fix-request.md
+--       要件定義書 3.10.6「スポット情報の誤り」・3.10.13
+--
+-- related_id はスポット ID（タップで /spots/[id]/edit を開く）。管理者のメモは admin_actions（spot_fix_request）の note から引く
+
+alter table public.notifications drop constraint if exists notifications_type_check;
+alter table public.notifications
+  add constraint notifications_type_check
+  check (type in (
+    'comment', 'like', 'album_join', 'role_change', 'member_removed', 'new_owner', 'report_resolved',
+    'itinerary_joined', 'itinerary_member_removed', 'comment_replied',
+    'album_invited', 'itinerary_invited',
+    'admin_report', 'admin_auto_hidden', 'admin_suspended',
+    'account_suspended', 'account_unsuspended',
+    'moderation_action',
+    'spot_fix_request'
+  ));
+
+notify pgrst, 'reload schema';

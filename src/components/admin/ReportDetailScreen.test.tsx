@@ -68,7 +68,7 @@ describe("ReportDetailScreen（SC-18 詳細・対応操作）", () => {
     render(
       <ReportDetailScreen
         report={report}
-        context={{ posterId: "bad", posterName: "はなこ", posterActiveStrikes: 1, nextMeasure: "3日間 投稿・コメント禁止", severe: false, reporter: { noIssueIn90Days: 0, total: 2 }, distinctReporters: 3, autoHideReporters: 3 }}
+        context={{ posterId: "bad", posterName: "はなこ", posterActiveStrikes: 1, nextMeasure: "3日間 投稿・コメント禁止", severe: false, reporter: { noIssueIn90Days: 0, total: 2 }, distinctReporters: 3, autoHideReporters: 3, canRequestSpotFix: false }}
       />
     );
     expect(screen.getByRole("button", { name: "非公開化" })).toBeDisabled();
@@ -78,5 +78,22 @@ describe("ReportDetailScreen（SC-18 詳細・対応操作）", () => {
     expect(screen.getByText(/直近90日 問題なし 0／全 2 件/)).toBeInTheDocument();
     fireEvent.change(screen.getByLabelText(/対応理由/), { target: { value: "電話番号" } });
     expect(screen.getByRole("button", { name: "非公開化" })).toBeEnabled();
+  });
+
+  it("strike-system Task 6: スポット情報の誤り（タビコエだけの場所）では主ボタンが「登録者に修正を依頼する」になり、削除は出ない", async () => {
+    const submitSpotFixRequest = vi.fn(async () => Response.json({ ok: true, status: "in_review" }));
+    render(
+      <ReportDetailScreen
+        report={{ ...report, targetType: "spot", reason: "wrong_spot_info", target: { ...report.target, ownerId: null, summary: "スポット: 路地裏の喫茶店" } }}
+        context={{ posterId: null, posterName: null, posterActiveStrikes: 0, nextMeasure: "警告", severe: false, reporter: { noIssueIn90Days: 0, total: 1 }, distinctReporters: 1, autoHideReporters: 3, canRequestSpotFix: true }}
+        submitSpotFixRequest={submitSpotFixRequest}
+      />
+    );
+    expect(screen.queryByRole("button", { name: "削除" })).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "スポットを非公開化する" })).toBeInTheDocument();
+    fireEvent.change(screen.getByLabelText(/対応理由/), { target: { value: "住所の確認をお願いします" } });
+    fireEvent.click(screen.getByRole("button", { name: "登録者に修正を依頼する" }));
+    await waitFor(() => expect(submitSpotFixRequest).toHaveBeenCalledWith("r1", "住所の確認をお願いします"));
+    expect(await screen.findByRole("status")).toHaveTextContent("登録者に修正を依頼しました");
   });
 });
