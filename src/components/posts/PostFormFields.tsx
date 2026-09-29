@@ -321,18 +321,3 @@ export function isPostFormComplete(
   );
 }
 
-/** 何か 1 つでも入力があるか（自動保存の判定。draft Task2） */
-export function hasAnyPostInput(
-  values: PostFormValues,
-  mediaCount: number,
-): boolean {
-  return (
-    values.tripTitle.trim().length > 0 ||
-    values.category !== "" ||
-    values.duration !== "" ||
-    values.cost !== "" ||
-    values.rating > 0 ||
-    values.comment.trim().length > 0 ||
-    mediaCount > 0
-  );
-}

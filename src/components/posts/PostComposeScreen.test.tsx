@@ -1,7 +1,7 @@
 /**
  * 出典: docs/tasks/posts/post-creation-v3/03-split-screen-layout.md（単体テスト）
  *       docs/tasks/posts/spot-selection-v3/04-change-spot-by-name.md（自宅保護の 4 分岐）
- *       docs/tasks/posts/draft/02-draft-ui-autosave.md（未入力では自動保存しない／既存の下書きは PATCH）
+ *       docs/tasks/posts/draft/02-draft-ui-autosave.md（#591 で自動保存は廃止。要件 3.3.7）
  */
 import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
 import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
@@ -111,22 +111,15 @@ describe("PostComposeScreen", () => {
     await waitFor(() => expect(push).toHaveBeenCalledWith("/mypage?draftSaved=1"));
   });
 
-  it("未入力では自動保存が走らず、入力後 3 秒で下書きが作られ、以降は PATCH になる", async () => {
+  // #591: 自動保存は廃止。下書きができるのは「下書きに保存」を押したときだけ（要件 3.3.7）
+  it("入力しても時間が経つだけでは下書きが作られない", async () => {
     const api = makeApi();
     render(<PostComposeScreen initial={currentLocation} api={api} />);
-    await act(async () => {
-      vi.advanceTimersByTime(4000);
-    });
-    expect(api.create).not.toHaveBeenCalled();
     fireEvent.change(screen.getByLabelText("感想（任意）"), { target: { value: "メモ" } });
     await act(async () => {
-      vi.advanceTimersByTime(3100);
+      vi.advanceTimersByTime(30000);
     });
-    await waitFor(() => expect(api.create).toHaveBeenCalledTimes(1));
-    fireEvent.change(screen.getByLabelText("感想（任意）"), { target: { value: "メモ2" } });
-    await act(async () => {
-      vi.advanceTimersByTime(3100);
-    });
-    await waitFor(() => expect(api.update).toHaveBeenCalledWith("new-post", expect.objectContaining({ status: "draft", comment: "メモ2" })));
+    expect(api.create).not.toHaveBeenCalled();
+    expect(api.update).not.toHaveBeenCalled();
   });
 });

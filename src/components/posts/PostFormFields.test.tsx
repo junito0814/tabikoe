@@ -6,7 +6,7 @@
 import { describe, expect, it, vi } from "vitest";
 import { createRef } from "react";
 import { fireEvent, render, screen } from "@testing-library/react";
-import { EMPTY_POST_FORM_VALUES, hasAnyPostInput, isPostFormComplete, PostFormFields } from "./PostFormFields";
+import { EMPTY_POST_FORM_VALUES, isPostFormComplete, PostFormFields } from "./PostFormFields";
 
 function renderFields(values = EMPTY_POST_FORM_VALUES) {
   return render(
@@ -100,13 +100,5 @@ describe("isPostFormComplete", () => {
   it("滞在時間・訪問日が空なら今までどおり false", () => {
     expect(isPostFormComplete({ ...complete, duration: "" }, 1)).toBe(false);
     expect(isPostFormComplete({ ...complete, visitDate: "" }, 1)).toBe(false);
-  });
-});
-
-describe("hasAnyPostInput", () => {
-  it("何も無ければ false、1 つでもあれば true", () => {
-    expect(hasAnyPostInput(EMPTY_POST_FORM_VALUES, 0)).toBe(false);
-    expect(hasAnyPostInput({ ...EMPTY_POST_FORM_VALUES, comment: "a" }, 0)).toBe(true);
-    expect(hasAnyPostInput(EMPTY_POST_FORM_VALUES, 1)).toBe(true);
   });
 });
