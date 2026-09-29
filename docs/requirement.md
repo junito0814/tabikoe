@@ -1075,6 +1075,7 @@ SC-03 へは次の入口から入る。メニューバーに「投稿」は置�
 | SC-28 | アカウントの状態（マイページ。2026-09-27 で新設） | 不可 | F-SF-03 |
 | SC-29 | スポットの修正（登録者向け。2026-09-27 で新設） | 不可 | F-SF-04 |
 | SC-30 | 規約の再同意（2026-09-27 で新設） | 不可 | F-AD-08 |
+| SC-31 | 規約の本文（利用規約 `/terms`・個人情報保護方針 `/privacy`。2026-09-29 で追加） | **可**（同意する前に読めなければ意味がないため） | F-AD-08 |
 | SC-19 | （廃止。SC-03 上部の地図が手動登録を兼ねる） | ― | F-PO-01（3.3.5） |
 | SC-20 | アカウント新規作成画面 | 可 | F-AC-01 |
 | SC-21 | アルバム写真一覧画面 | 不可 | F-RC-02 |
@@ -1087,7 +1088,9 @@ SC-13・SC-19 は画面 ID を欠番として残し、再利用しない。SC-20
 
 ### 4.2 メニューバー（v3.0で変更）
 
-全画面共通のメニューバーを画面下部に設置し、以下の 4 項目で構成する。左端は「ホーム」（家のアイコン）とし、SC-00 検索トップへ戻る（SC-00 の未ログイン表示・ログイン画面・アカウント新規作成画面・管理画面を除く）。パソコン幅では同じ 4 項目を左サイドバーに縦に並べる。
+全画面共通のメニューバーを画面下部に設置し、以下の 4 項目で構成する。左端は「ホーム」（家のアイコン）とし、SC-00 検索トップへ戻る。パソコン幅では同じ 4 項目を左サイドバーに縦に並べる。
+
+**メニューバーを出さない画面**（2026-09-29 に追記）: SC-00 の未ログイン表示・SC-01 ログイン画面・SC-20 アカウント新規作成画面・**SC-30 規約の再同意**・**SC-31 規約の本文**。管理画面（SC-15〜18・SC-24〜27）は利用者向けのバーの代わりに管理用のバーを出す（3.10.2）。SC-30 は同意するまで他の画面へ進めない画面、SC-31 は未ログインでも開ける「読むだけ」の画面なので、どちらも他の画面への導線を置かない。**メニューバーは未読件数の取得などログイン前提の通信を行うため、これらの画面に置くと、同意前・登録前の利用者が締め出される**（2026-09-29 の不具合）。
 
 | 項目 | 遷移先 |
 |---|---|
@@ -1320,7 +1323,7 @@ SC-13・SC-19 は画面 ID を欠番として残し、再利用しない。SC-20
 | strikes | 違反の記録（2026-09-27で新設、3.10.7）。user_id・report_id・reason・action（hide／delete）・target_label（対象の言い方。対象が消えても本人に説明できるよう文字で持つ）・created_by・expires_at（付与から 90 日）・revoked_at／revoked_by／revoke_note（管理者の取り消し）。**通報の件数では作らない**。管理者が非公開化・削除を確定したときだけ 1 行作る |
 | moderation_settings | 違反対応のしきい値（2026-09-27で新設、3.10.7・3.10.8）。key・value（jsonb）。auto_hide_reporters（自動非公開に要る異なる通報者の数）・unreliable_reporter_no_issue（数えない通報者の「問題なし」件数）・strike_expiry_days・strikes_to_suspend・restriction_days。コードに直書きせずここを読む |
 | operation_logs | 操作ログ |
-| admin_actions | 管理者の操作と自動処理の記録（2026-09-27で新設、3.10.12）。actor_id（NULL＝自動処理）・action・target_type・target_id・target_label・note（理由）・created_at。**後から説明できる台帳なので書き換え・削除ができない**（5.3「操作の記録の保護」）。利用者の操作を残す operation_logs（7.5、90 日で消す）とは別 |
+| admin_actions | 管理者の操作と自動処理の記録（2026-09-27で新設、3.10.12）。actor_id・**actor_label（記録した時の管理者の表示名。2026-09-29 で追加）**・action・target_type・target_id・target_label・note（理由）・created_at。actor_label が無い行＝自動処理。actor_id が NULL で actor_label がある行＝退会した管理者の操作。**後から説明できる台帳なので書き換え・削除ができない**（5.3「操作の記録の保護」）。利用者の操作を残す operation_logs（7.5、90 日で消す）とは別 |
 | notifications | 個人向け通知。user_id・type・related_id・is_read・created_atを保持する |
 | system_announcements | 運営からのお知らせ。title・body・published_atを保持する。ユーザーごとの複製は行わない |
 | legal_documents | 利用規約・個人情報保護方針の本文（2026-09-27で新設、3.10.11）。kind（terms／privacy）・version（kind と組で UNIQUE）・summary（利用者に見せる変更の要点）・body（Markdown）・status（draft／published／archived）・published_at・published_by。公開中・過去の版は未ログインでも読める（/terms・/privacy） |
@@ -1357,7 +1360,7 @@ SC-13・SC-19 は画面 ID を欠番として残し、再利用しない。SC-20
 | スポット登録者（v3.2で追加） | spots.created_by は、そのスポットへの最初の公開投稿を作る Route Handlers で埋める（source = manual のときだけ）。既存行は最も古い公開投稿の投稿者で一括更新する。バッジ判定は投稿の公開処理の中で created_by が自分の行数を数える |
 | コメントの返信（v3.2で追加） | comments.parent_id は同じ post_id のコメントを参照する（CHECK で post_id の一致を保証する）。親の削除は deleted_at による論理削除とし、返信が無ければ物理削除する。取得は post_id ごとに parent_id NULL の 20 件＋その返信をまとめて返す |
 | アプリ内招待（v3.2で追加） | album_invitations／itinerary_invitations の invitee_user_id が NULL ならリンク招待（token で受諾）、値ありならアプリ内招待（本人だけが受諾・辞退できる）。未回答の同じ相手への招待は部分ユニーク索引 `(trip_id or itinerary_id, invitee_user_id) where status = 'pending'` で 1 件に限る。候補ユーザーは album_members と itinerary_members を自分と同じ trip_id／itinerary_id で結合して求める |
-| 操作の記録の保護（2026-09-27で追加） | admin_actions は INSERT と SELECT だけを許し、UPDATE・DELETE・TRUNCATE はどの役割にも GRANT しない（service_role にも与えない）。所有者が SQL エディタから直接書き換えることも防ぐため、`before update or delete` のトリガーで例外を投げる。管理者は他人のデータを消したりアカウントを止めたりできるので、後から説明できる記録が要る（3.10.12） |
+| 操作の記録の保護（2026-09-27で追加。2026-09-29 に補足） | admin_actions は INSERT と SELECT だけを許し、UPDATE・DELETE・TRUNCATE はどの役割にも GRANT しない（service_role にも与えない）。さらに `before update or delete` のトリガーで例外を投げ、**アプリからも SQL エディタからも書き換え・削除できない**ようにする。ただし**テーブルの所有者による TRUNCATE はこのトリガーでは止まらない**（行単位のトリガーは TRUNCATE で動かないため）。運営者自身が DB を直接操作する経路までは塞げない、という前提で運用する。**例外が 1 つある**（2026-09-29、#585）: actor_id は「利用者が消えたら NULL にする」外部キーなので、その NULL 化だけはトリガーが通す（ほかの列が 1 つでも変われば拒否）。これを許さないと、管理者として操作したことがある利用者を物理削除できない。誰がやったかは actor_label（記録した時の表示名）に残るため、NULL 化されても台帳としては読める |
 | 非公開の理由（2026-09-27で追加） | 投稿・コメントを隠すのは今までどおり hidden_at 1 列で行い、**誰の判断で隠れているか**は hidden_reason（moderation／suspension／auto）で区別する。自動非公開に別の列（auto_hidden_at）を設けないのは、`hidden_at is null` で除外している箇所が RLS を含めて 20 か所以上あり、条件を足し忘れると非公開のものが見えてしまうため。復元の画面（SC-25）のタブもこの列で分ける |
 | 最終利用日の記録（2026-09-27で追加） | users.last_active_at は、関所（proxy）でログイン中の利用者のリクエストのたびに更新するのではなく、**1 人 1 日 1 回だけ**書く。「今日はもう書いた」の印は httpOnly の Cookie（日本時間の日付）に持ち、Cookie が今日なら DB に触らない。値を書くのは本人ではなく security definer の関数（本人の行に now() を入れるだけ）とし、任意の日時を入れられないようにする（7.4） |
 

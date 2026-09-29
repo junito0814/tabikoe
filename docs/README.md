@@ -178,7 +178,7 @@ docs/tasks/<カテゴリ>/<スラッグ>/01-〇〇.md     ③ タスク 1 件の
 | F-AD-04 | [report-list](user-stories/admin/report-list.md) | 通報一覧（SC-18） | 3 |
 | F-AD-05 | [report-handling](user-stories/admin/report-handling.md) | 通報対応操作 | 4 |
 | F-AD-06・07・09 | [user-management](user-stories/admin/user-management.md) | 利用者の管理（SC-24）・非公開の復元（SC-25）・操作の記録（SC-27） | 4 |
-| F-AD-08 | [legal-documents](user-stories/admin/legal-documents.md) | 規約管理（SC-26）と再同意（SC-30） | 3 |
+| F-AD-08 | [legal-documents](user-stories/admin/legal-documents.md) | 規約管理（SC-26）・本文の公開ページ（SC-31）・再同意（SC-30） | 3 |
 
 ### F-IT しおり（3.11）
 
