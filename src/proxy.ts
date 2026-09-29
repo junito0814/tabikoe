@@ -5,6 +5,8 @@ import { sessionCookieOptions } from "@/lib/supabase/cookie-options";
 import { pendingSignupAction } from "@/lib/auth/pending-signup";
 import { getAuthUserFromClaims } from "@/lib/auth/auth-user";
 import { jstDayOf, LAST_ACTIVE_DAY_COOKIE, lastActiveDayCookieOptions, shouldTouchLastActiveDay } from "@/lib/auth/last-active-day";
+import { CONSENT_COOKIE, consentCookieOptions, cookieCoversPublished, encodeConsentCookie, needsReconsent, reconsentAction } from "@/lib/auth/reconsent";
+import { getPublishedVersionsCached } from "@/lib/legal/published-versions-cache";
 import {
   buildExpiredLoginPath,
   isSessionExpiredByInactivity,
@@ -132,6 +134,27 @@ export async function proxy(request: NextRequest) {
       const { error: touchError } = await supabase.rpc("touch_last_active");
       if (touchError) console.error("[proxy] 最終利用日を記録できませんでした:", touchError.message);
       else response.cookies.set(LAST_ACTIVE_DAY_COOKIE, jstDayOf(now), lastActiveDayCookieOptions(sessionCookieOptions.secure));
+    }
+    // legal-documents Task 3（3.10.11）: 新しい版が公開されていて未同意なら、同意画面（SC-30）以外へ進めない。
+    // 同意済みの版は Cookie に持ち、公開中の版と一致していれば DB（user_consents）は見ない
+    if (profile && !profile.suspended_at) {
+      const published = await getPublishedVersionsCached(supabase);
+      if (!cookieCoversPublished(request.cookies.get(CONSENT_COOKIE)?.value, published)) {
+        const { data: consents } = await supabase.from("user_consents").select("kind, version").eq("user_id", user.id);
+        if (needsReconsent(published, (consents ?? []) as { kind: string; version: string }[])) {
+          const action = reconsentAction(request.nextUrl.pathname, request.nextUrl.search);
+          if (action.kind === "api_denied") {
+            return NextResponse.json({ error: "reconsent_required" }, { status: 401 });
+          }
+          if (action.kind === "redirect") {
+            const redirect = NextResponse.redirect(new URL(action.to, request.url));
+            response.cookies.getAll().forEach((cookie) => redirect.cookies.set(cookie));
+            return redirect;
+          }
+        } else {
+          response.cookies.set(CONSENT_COOKIE, encodeConsentCookie(published), consentCookieOptions(sessionCookieOptions.secure));
+        }
+      }
     }
     if (profile?.suspended_at) {
       await supabase.auth.signOut();

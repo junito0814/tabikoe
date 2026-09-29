@@ -23,7 +23,7 @@ describe("AccountStatusScreen", () => {
     expect(screen.getByRole("note")).toHaveTextContent("いま、投稿とコメントができません");
     expect(screen.getByLabelText("有効なストライク 2/5")).toBeInTheDocument();
     expect(screen.getByText(/次の記録で 7日間 投稿・コメント禁止/)).toBeInTheDocument();
-    expect(screen.getAllByRole("link", { name: "利用規約 第8条" })).toHaveLength(2);
+    expect(screen.getAllByRole("link", { name: "利用規約 第4条" })).toHaveLength(2);
     expect(screen.getByText(/90日経過のため失効/)).toBeInTheDocument();
   });
 
