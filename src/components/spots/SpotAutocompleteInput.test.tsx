@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it } from "vitest";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { useState } from "react";
 import { SpotAutocompleteInput, type SpotCandidate } from "./SpotAutocompleteInput";
@@ -8,13 +8,11 @@ import { ERROR_MESSAGES } from "@/components/notices/error-messages";
 /**
  * 出典: docs/tasks/posts/spot-selection/03-spot-autocomplete-ui.md 単体テスト
  *       docs/tasks/shared-ui/error-display/02-service-specific-error-integration.md 単体テスト
- *       （スポット検索API障害時：規定メッセージ表示＋SC-19導線の維持）
+ *       （スポット検索API障害時：規定メッセージを出しつつ候補の表示は続ける）
  *
- * SC-19モーダル自体はGoogle Mapsを要するため、ここでは開く導線までを検証する。
+ * #527: 手動登録モーダル（SC-19）は廃止済み。候補が無いときは「地図でピンを合わせて『新しい場所』として
+ * 投稿できます」と案内するだけで、この部品からは何も開かない（登録は SC-03 の上 1/3 の地図が兼ねる）。
  */
-vi.mock("./ManualSpotRegistrationModal", () => ({
-  ManualSpotRegistrationModal: () => <div data-testid="sc19-modal">SC-19</div>,
-}));
 
 const REGISTERED: SpotCandidate = {
   id: "spot-1",
@@ -68,28 +66,20 @@ describe("SpotAutocompleteInput", () => {
     expect(screen.getByRole("combobox")).toHaveValue("");
   });
 
-  it("候補が無い場合はSC-19への導線を表示する", async () => {
+  // #527: 手動登録モーダル（SC-19）は廃止。候補が無いときは案内文だけを出し、開くものは無い
+  it("候補が無い場合は「地図でピンを合わせて」の案内だけを出す", async () => {
     render(<Harness searchSpots={async () => ({ candidates: [], placesUnavailable: false })} />);
     fireEvent.change(screen.getByRole("combobox"), { target: { value: "存在しない場所" } });
 
-    expect(await screen.findByText(/候補が見つかりません/)).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "地図でスポットを登録する" })).toBeInTheDocument();
+    expect(await screen.findByText(/候補が見つかりません。地図でピンを合わせて/)).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "地図でスポットを登録する" })).not.toBeInTheDocument();
   });
 
-  it("導線を押すとSC-19モーダルが開く", async () => {
-    render(<Harness searchSpots={async () => ({ candidates: [], placesUnavailable: false })} />);
-    fireEvent.change(screen.getByRole("combobox"), { target: { value: "x" } });
-    fireEvent.click(await screen.findByRole("button", { name: "地図でスポットを登録する" }));
-
-    expect(screen.getByTestId("sc19-modal")).toBeInTheDocument();
-  });
-
-  it("Places API障害時は規定メッセージを出しつつ、手動登録の導線は維持する（要件6.2）", async () => {
+  it("Places API障害時は規定メッセージを出す（要件6.2）", async () => {
     render(<Harness searchSpots={async () => ({ candidates: [], placesUnavailable: true })} />);
     fireEvent.change(screen.getByRole("combobox"), { target: { value: "x" } });
 
     expect(await screen.findByText(ERROR_MESSAGES.placeSearchFailure)).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "地図でスポットを登録する" })).toBeInTheDocument();
   });
 
   it("Places API障害時でも登録済みスポットの候補は表示される", async () => {

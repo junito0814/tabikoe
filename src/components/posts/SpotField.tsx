@@ -53,7 +53,6 @@ export function SpotField({
               setIsSearching(false);
             }}
             searchSpots={searchSpots}
-            manualRegistration={false}
             onCancel={() => setIsSearching(false)}
             autoFocus
           />
