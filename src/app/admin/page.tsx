@@ -1,25 +1,30 @@
-import Link from "next/link";
-import { ADMIN_MENU_ITEMS } from "@/components/admin/admin-menu-config";
+import { createAdminClient } from "@/lib/supabase/admin";
+import { ErrorNotice } from "@/components/notices/ErrorNotice";
+import { ERROR_MESSAGES } from "@/components/notices/error-messages";
+import { AdminDashboardScreen } from "@/components/admin/AdminDashboardScreen";
+import { loadAdminDashboard, type AdminDashboardData } from "@/lib/admin/dashboard";
+
+// 数字は毎リクエスト集める（ビルド時に固定しない）
+export const dynamic = "force-dynamic";
 
 /**
- * admin-shell-dashboard Task 1: 管理者ダッシュボード（SC-16）の仮の中身
- * 出典: docs/tasks/admin/admin-shell-dashboard/01-admin-shell.md
+ * admin-shell-dashboard Task 2: 管理者ダッシュボード（SC-16）
+ * 出典: docs/tasks/admin/admin-shell-dashboard/02-dashboard-summary.md
  *
- * 枠（メニュー）は src/app/admin/layout.tsx が付ける。「対応が要るもの」「数字」「最近の動き」は Task 2（#546）で
- * ここに入る。それまでは各画面への入口をカードで並べておく（前の 2 ボタンと同じ役割）。
+ * アクセス制御は src/proxy.ts（/admin 配下の is_admin 判定・404）に委ね、枠は layout.tsx が付ける。
+ * ここは lib/admin/dashboard.ts で数字を集めて AdminDashboardScreen に渡すだけ。
  */
-export default function AdminDashboardPage() {
-  return (
-    <div className="grid w-full grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-      {ADMIN_MENU_ITEMS.filter((item) => item.key !== "dashboard").map((item) => (
-        <Link
-          key={item.key}
-          href={item.href}
-          className="flex h-16 items-center justify-center rounded-[10px] border border-line bg-surface text-[14px] font-semibold text-ink shadow-card"
-        >
-          {item.label}
-        </Link>
-      ))}
-    </div>
-  );
+export default async function AdminDashboardPage() {
+  let data: AdminDashboardData | null = null;
+  try {
+    data = await loadAdminDashboard(createAdminClient());
+  } catch (error) {
+    console.error("[admin] ダッシュボードの集計に失敗しました:", error instanceof Error ? error.message : error);
+    data = null;
+  }
+
+  if (!data) {
+    return <ErrorNotice message={ERROR_MESSAGES.dbLoadFailure} retryable className="w-full" />;
+  }
+  return <AdminDashboardScreen data={data} />;
 }

@@ -3,6 +3,7 @@ import { ErrorNotice } from "@/components/notices/ErrorNotice";
 import { ERROR_MESSAGES } from "@/components/notices/error-messages";
 import { ReportListScreen } from "@/components/admin/ReportListScreen";
 import { listReports, parseReportFilters } from "@/lib/admin/report-filters";
+import { buildReportListParams, reportListStateFromParams } from "@/components/admin/report-list-query";
 
 // 管理データは毎リクエスト取得する（ビルド時に固定しない）
 export const dynamic = "force-dynamic";
@@ -13,10 +14,16 @@ export const dynamic = "force-dynamic";
  *
  * アクセス制御は src/proxy.ts（/admin 配下の is_admin 判定・404）に委ねる。
  */
-export default async function AdminReportsPage() {
+export default async function AdminReportsPage({ searchParams }: PageProps<"/admin/reports">) {
+  // admin-shell-dashboard Task 2: ダッシュボードのリンク（?status=open&sort=oldest など）を初期の絞り込みにする
+  const raw = new URLSearchParams();
+  for (const [key, value] of Object.entries(await searchParams)) {
+    if (typeof value === "string") raw.set(key, value);
+  }
+  const initialState = reportListStateFromParams(raw);
   let initialPage: Awaited<ReturnType<typeof listReports>> | null = null;
   try {
-    initialPage = await listReports(createAdminClient(), parseReportFilters(new URLSearchParams()), 0);
+    initialPage = await listReports(createAdminClient(), parseReportFilters(buildReportListParams(initialState, 0)), 0);
   } catch {
     initialPage = null;
   }
@@ -29,5 +36,5 @@ export default async function AdminReportsPage() {
     );
   }
 
-  return <ReportListScreen initialPage={initialPage} />;
+  return <ReportListScreen initialPage={initialPage} initialState={initialState} />;
 }

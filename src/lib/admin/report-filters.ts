@@ -32,8 +32,16 @@ export const REPORT_STATUS_LABELS: Record<ReportStatus, string> = {
   no_issue: "問題なし",
 };
 
+/** 「未対応」＝未確認＋確認中（3.8.1）。ダッシュボードの入口とメニューの件数が使う */
+export const OPEN_REPORT_STATUSES: readonly ReportStatus[] = ["unconfirmed", "in_review"];
+
 export interface ReportFilters {
-  status: ReportStatus | null;
+  /** "open" は未確認＋確認中のまとめ（admin-shell-dashboard Task 2） */
+  status: ReportStatus | "open" | null;
+  /** 特定の対象への通報だけ（ダッシュボードの「通報が集中している対象」から） */
+  targetId: string | null;
+  /** 並び。既定は新しい順。"oldest" は古い順（未対応を溜めないため、ダッシュボードから来たとき） */
+  sort: "newest" | "oldest";
   reason: ReportReason | null;
   targetType: ReportTargetType | null;
   /** 通報日時の範囲（ISO 8601）。from は含む、to は翌日0時未満で扱うため呼び出し側で丸めない */
@@ -48,10 +56,13 @@ export function parseReportFilters(searchParams: URLSearchParams): ReportFilters
   const status = searchParams.get("status") ?? "";
   const reason = searchParams.get("reason") ?? "";
   const targetType = searchParams.get("target_type") ?? "";
+  const targetId = searchParams.get("target_id") ?? "";
   const from = searchParams.get("from") ?? "";
   const to = searchParams.get("to") ?? "";
   return {
-    status: (REPORT_STATUSES as readonly string[]).includes(status) ? (status as ReportStatus) : null,
+    status: status === "open" ? "open" : (REPORT_STATUSES as readonly string[]).includes(status) ? (status as ReportStatus) : null,
+    targetId: /^[0-9a-f-]{36}$/i.test(targetId) ? targetId : null,
+    sort: searchParams.get("sort") === "oldest" ? "oldest" : "newest",
     reason: (REPORT_REASONS as readonly string[]).includes(reason) ? (reason as ReportReason) : null,
     targetType: (REPORT_TARGET_TYPES as readonly string[]).includes(targetType)
       ? (targetType as ReportTargetType)
@@ -67,12 +78,15 @@ export function parseReportFilters(searchParams: URLSearchParams): ReportFilters
  */
 export type WhereClause =
   | { op: "eq"; column: string; value: string }
+  | { op: "in"; column: string; values: readonly string[] }
   | { op: "gte"; column: string; value: string }
   | { op: "lte"; column: string; value: string };
 
 export function buildReportWhereClauses(filters: ReportFilters): WhereClause[] {
   const clauses: WhereClause[] = [];
-  if (filters.status) clauses.push({ op: "eq", column: "status", value: filters.status });
+  if (filters.status === "open") clauses.push({ op: "in", column: "status", values: OPEN_REPORT_STATUSES });
+  else if (filters.status) clauses.push({ op: "eq", column: "status", value: filters.status });
+  if (filters.targetId) clauses.push({ op: "eq", column: "target_id", value: filters.targetId });
   if (filters.reason) clauses.push({ op: "eq", column: "reason", value: filters.reason });
   if (filters.targetType) clauses.push({ op: "eq", column: "target_type", value: filters.targetType });
   if (filters.from) clauses.push({ op: "gte", column: "created_at", value: filters.from });
@@ -103,11 +117,12 @@ export async function listReports(
     .select("id, target_type, target_id, reason, detail, status, created_at, resolved_at, resolution_note", {
       count: "exact",
     })
-    .order("created_at", { ascending: false })
+    .order("created_at", { ascending: filters.sort === "oldest" })
     .range(offset, offset + limit - 1);
 
   for (const clause of buildReportWhereClauses(filters)) {
     if (clause.op === "eq") query = query.eq(clause.column, clause.value);
+    else if (clause.op === "in") query = query.in(clause.column, [...clause.values]);
     else if (clause.op === "gte") query = query.gte(clause.column, clause.value);
     else query = query.lte(clause.column, clause.value);
   }
