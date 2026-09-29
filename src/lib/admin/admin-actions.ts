@@ -10,6 +10,10 @@ import { recordOperation } from "@/lib/logs/record-operation";
  * すべて recordAdminAction() を通してここに残す。書き込みに失敗しても本来の操作は失敗させない
  * （operation_logs の recordOperation と同じ約束。失敗は console.error に残す）。
  * 管理者の操作は要件 7.5 の operation_logs（admin_action）にも同時に残すので、呼び出し側は 1 回呼べばよい。
+ *
+ * #585: 誰がやったかは actor_id（利用者への参照）だけでなく、**書き込み時の表示名（actor_label）も文字で持つ**。
+ * その管理者が退会・削除されると actor_id は NULL になるが、台帳としては「誰がやったか」が残らないと意味がない。
+ * 対象を target_label で文字に残しているのと同じ考え方。actor_label が無い行＝自動処理。
  */
 export const ADMIN_ACTION_TYPES = [
   "report_hide",
@@ -68,8 +72,11 @@ export interface RecordAdminActionInput {
 /** 1 行残す。例外は投げない */
 export async function recordAdminAction(admin: SupabaseClient, input: RecordAdminActionInput): Promise<void> {
   try {
+    // #585: 退会しても「誰がやったか」が残るよう、書き込み時の表示名も持つ（自動処理は null のまま）
+    const actorLabel = input.actorId ? await displayNameOf(admin, input.actorId) : null;
     const { error } = await admin.from("admin_actions").insert({
       actor_id: input.actorId,
+      actor_label: actorLabel,
       action: input.action,
       target_type: input.target?.type ?? null,
       target_id: input.target?.id ?? null,
@@ -88,6 +95,16 @@ export async function recordAdminAction(admin: SupabaseClient, input: RecordAdmi
       targetId: input.target?.id ?? null,
       detail: { action: input.action, targetType: input.target?.type ?? null, note: input.note ?? null },
     });
+  }
+}
+
+/** 記録に残す管理者の表示名。取れなければ null（記録自体は残す） */
+async function displayNameOf(admin: SupabaseClient, userId: string): Promise<string | null> {
+  try {
+    const { data } = await admin.from("users").select("display_name").eq("id", userId).maybeSingle();
+    return (data?.display_name as string | null) ?? null;
+  } catch {
+    return null;
   }
 }
 
@@ -127,8 +144,10 @@ function endOfDayIso(value: string): string {
 export interface AdminActionItem {
   id: string;
   actorId: string | null;
-  /** 表示名。自動処理は「自動」 */
+  /** 表示名。自動処理は「自動」、退会した管理者は「〈名前〉（退会済み）」 */
   actorName: string;
+  /** 自動処理の行か（#585: actor_id が NULL でも、退会した管理者の行と区別する） */
+  isAutomatic: boolean;
   action: AdminActionType;
   targetType: AdminActionTargetType | null;
   targetId: string | null;
@@ -145,7 +164,7 @@ export async function listAdminActions(
 ): Promise<{ actions: AdminActionItem[]; nextOffset: number | null }> {
   let query = admin
     .from("admin_actions")
-    .select("id, actor_id, action, target_type, target_id, target_label, note, created_at, actor:users(display_name)", {
+    .select("id, actor_id, actor_label, action, target_type, target_id, target_label, note, created_at, actor:users(display_name)", {
       count: "exact",
     })
     .order("created_at", { ascending: false })
@@ -164,7 +183,7 @@ export async function listAdminActions(
     return {
       id: row.id as string,
       actorId: (row.actor_id as string | null) ?? null,
-      actorName: row.actor_id ? (name ?? "（退会済み）") : "自動",
+      ...resolveActor(row.actor_id as string | null, (row.actor_label as string | null) ?? null, name ?? null),
       action: row.action as AdminActionType,
       targetType: (row.target_type as AdminActionTargetType | null) ?? null,
       targetId: (row.target_id as string | null) ?? null,
@@ -175,4 +194,20 @@ export async function listAdminActions(
   });
   const total = count ?? 0;
   return { actions, nextOffset: offset + actions.length < total ? offset + actions.length : null };
+}
+
+/**
+ * #585: 「誰がやったか」の表示。純粋関数
+ *   actor_label が無い          → 自動処理（「自動」）
+ *   利用者が残っている          → いまの表示名
+ *   利用者が消えている（NULL）  → 「〈記録した時の名前〉（退会済み）」
+ */
+export function resolveActor(
+  actorId: string | null,
+  actorLabel: string | null,
+  currentName: string | null
+): { actorName: string; isAutomatic: boolean } {
+  if (!actorLabel && !actorId) return { actorName: "自動", isAutomatic: true };
+  if (actorId) return { actorName: currentName ?? actorLabel ?? "（名前なし）", isAutomatic: false };
+  return { actorName: `${actorLabel}（退会済み）`, isAutomatic: false };
 }
