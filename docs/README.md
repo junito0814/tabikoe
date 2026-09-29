@@ -19,6 +19,7 @@ docs/
 ├── development-process.md  タスク → Issue → 実装 → PR の進め方（ブランチ運用・コミット規約）
 ├── development-order.md    実装の順番と進み具合（Phase 別）。「いま何が終わっているか」はここ
 ├── deployment.md           Vercel への出し方・環境変数（本番／プレビュー）
+├── source-structure.md     src/ のフォルダ構成。どのフォルダが何を担当しているか
 ├── README.md               このファイル
 ├── user-stories/           機能ごとの「誰が・何を・なぜ」と受入条件
 └── tasks/                  ユーザーストーリーを実装できる単位に割ったもの（user-stories と同じカテゴリ構成）
@@ -36,6 +37,7 @@ docs/
 | いま何が実装済みか・次に何をやるか | [development-order.md](development-order.md) |
 | 実装の進め方・PR の書き方 | [development-process.md](development-process.md)、[rule.md](rule.md)、[AGENTS.md](../AGENTS.md) |
 | デプロイ・環境変数 | [deployment.md](deployment.md) |
+| コードのどこを見ればよいか | [source-structure.md](source-structure.md) |
 | ある機能の詳しい仕様と作業単位 | `user-stories/` → `tasks/`（下記） |
 
 ## 1 つの機能をどう読むか
