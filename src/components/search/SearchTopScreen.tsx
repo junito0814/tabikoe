@@ -104,7 +104,7 @@ export function SearchTopScreen({
   };
 
   return (
-    <div className={`${outfit.className} bg-sky flex min-h-[calc(100dvh-60px)] flex-col items-center justify-center gap-7 px-6 md:min-h-dvh`} data-search-top>
+    <div className={`${outfit.className} bg-sky flex min-h-[calc(100dvh-60px)] flex-col items-center justify-center gap-7 px-6 md:min-h-dvh`} data-search-top data-home-fixed>
       {addMode && (
         <p className="w-full max-w-[360px] rounded-[10px] bg-accent/10 px-3 py-2 text-center text-[12px] font-medium text-accent">
           しおりに追加するスポットの行き先を入力してください
