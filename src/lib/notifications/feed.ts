@@ -65,6 +65,8 @@ export const NOTIFICATION_MESSAGES: Record<NotificationType, string> = {
   admin_report: "新しい通報が届きました",
   admin_auto_hidden: "投稿が自動で非公開になりました（確認待ち）",
   admin_suspended: "利用者を仮停止しました（確認待ち）",
+  account_suspended: "アカウントが停止されました。理由はマイページの「アカウントの状態」で確認できます",
+  account_unsuspended: "アカウントの停止が解除されました",
 };
 
 export function retentionCutoff(now: Date = new Date()): Date {
@@ -159,6 +161,10 @@ export function resolveNotificationHref(
         : { href: null, fallbackMessage: "この通報は削除されました" };
     case "admin_auto_hidden":
       return { href: "/admin/hidden", fallbackMessage: null };
+    // Phase 17（user-management Task2）: 本人向け。アカウントの状態（SC-28、#557）へ
+    case "account_suspended":
+    case "account_unsuspended":
+      return { href: "/account/status", fallbackMessage: null };
     case "admin_suspended":
       return lookups.existingUserIds?.has(relatedId)
         ? { href: `/admin/users/${relatedId}`, fallbackMessage: null }
