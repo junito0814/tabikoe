@@ -87,7 +87,7 @@ describe("SC-01 ログイン画面", () => {
   it("一時停止・30 日失効のエラーはそれぞれの文言を出す", () => {
     searchParams = new URLSearchParams({ error: "suspended" });
     const { unmount } = render(<AuthScreen />);
-    expect(screen.getByText("このアカウントは一時停止されています")).toBeInTheDocument();
+    expect(screen.getByText(/このアカウントは停止されています。理由はアプリ内の通知に書いてあります/)).toBeInTheDocument();
     unmount();
     searchParams = new URLSearchParams({ error: "expired" });
     render(<AuthScreen />);

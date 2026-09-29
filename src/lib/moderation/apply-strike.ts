@@ -3,6 +3,8 @@ import { recordAdminAction } from "@/lib/admin/admin-actions";
 import { createNotification } from "@/lib/notifications/create-notification";
 import { REPORT_TARGET_LABELS, type ReportReason, type ReportTargetType } from "@/lib/reports/constants";
 import { loadModerationSettings } from "@/lib/moderation/settings";
+import { provisionallySuspend } from "@/lib/moderation/suspend";
+import { REPORT_REASON_LABELS } from "@/lib/reports/constants";
 import {
   activeStrikeCount,
   isSevereReason,
@@ -20,8 +22,7 @@ import {
  *
  * 【初心者向け】流れは 1) strikes に 1 行 → 2) 有効な数を数える → 3) 段階に応じて posting_restricted_until を進める
  * → 4) 本人に通知（理由・対象・措置・解除日）→ 5) 操作の記録。通報者は本人に伝えない（通知に載せない）。
- * 「5 個で仮停止」「個人情報・なりすましは 1 回で仮停止」の**停止そのもの**は strike-system Task 4（#556）が行う。
- * ここは measure に "suspend" を返すところまで。
+ * 「5 個で仮停止」「個人情報・なりすましは 1 回で仮停止」は、判定のあと provisionallySuspend（suspend.ts）を呼ぶ（Task 4）。
  */
 export interface ApplyStrikeInput {
   adminId: string;
@@ -43,6 +44,8 @@ export interface ApplyStrikeResult {
   /** 1 回で仮停止にする重大な違反 */
   severe: boolean;
   postingRestrictedUntil: string | null;
+  /** strike-system Task 4: このストライクで仮停止になったか */
+  suspended: boolean;
 }
 
 export async function applyStrikeForReport(admin: SupabaseClient, input: ApplyStrikeInput): Promise<ApplyStrikeResult> {
@@ -101,5 +104,14 @@ export async function applyStrikeForReport(admin: SupabaseClient, input: ApplySt
     note: input.note,
   });
 
-  return { strikeId: inserted.id as string, activeCount, measure, severe, postingRestrictedUntil };
+  // 6) strike-system Task 4: 有効 5 個、または重大な違反なら仮停止（確認待ち）
+  let suspended = false;
+  if (measure.kind === "suspend" || severe) {
+    const reason = severe
+      ? `重大な違反（${REPORT_REASON_LABELS[input.reason]}）のため 1 回で仮停止`
+      : `有効なストライクが ${activeCount} 個になったため仮停止`;
+    suspended = (await provisionallySuspend(admin, { userId: input.posterId, reason, now })).suspended;
+  }
+
+  return { strikeId: inserted.id as string, activeCount, measure, severe, postingRestrictedUntil, suspended };
 }
