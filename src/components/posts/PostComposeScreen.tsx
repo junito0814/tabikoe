@@ -12,11 +12,10 @@ import { MAX_DRAFTS_PER_USER, type PostCategory, type PostDuration, type PostVis
 import type { NearbySpot } from "@/lib/spots/nearby";
 import type { RegisteredSpot } from "@/lib/spots/types";
 import { isVideoFile } from "@/lib/video/media-kind";
-import { EMPTY_POST_FORM_VALUES, hasAnyPostInput, isPostFormComplete, PostFormFields, type PostFormValues } from "./PostFormFields";
+import { EMPTY_POST_FORM_VALUES, isPostFormComplete, PostFormFields, type PostFormValues } from "./PostFormFields";
 import { PostLocationMap } from "./PostLocationMap";
 import { useSheetDrag } from "@/components/layout/use-sheet-drag";
 import { SpotField } from "./SpotField";
-import { useDraftAutosave } from "./use-draft-autosave";
 import { buildComposePayload, type UploadedMedia } from "./compose-payload";
 import { POSTING_RESTRICTED_ERROR, postingRestrictedMessage } from "@/lib/moderation/posting-restriction";
 
@@ -55,7 +54,8 @@ export interface ComposeApi {
  *   - position: 地図の中心＝投稿の位置。動くたびに 300ms 待って /api/spots/resolve で近くのスポットを調べる
  *   - lockedSpot: 入口や「変更」の検索で決めたスポット。あるときは地図を動かしても位置は変わらない
  *   - 「投稿する」: 写真をアップロード → POST（新規）または PATCH（下書き・編集）→ 投稿詳細へ
- *   - 「下書きに保存」: 必須項目が空でも保存できる。入力があれば 3 秒止まったときにも自動保存する（useDraftAutosave）
+ *   - 「下書きに保存」: 必須項目が空でも保存できる。**このボタンを押したときだけ**下書きができる
+ *     （#591 で自動保存を廃止。要件 3.3.7。自動保存は「地図を動かした」だけでも走り、空の下書きが増えていた）
  *   - 自宅の保護: 現在地から開いて地図を動かさず「新しい場所」のまま投稿しようとしたら確認ダイアログ
  *   - フォームを上に引くと全画面（地図は隠れる）、下に引くと 1：2 に戻る。パソコン幅では左右 1：2
  */
@@ -283,29 +283,6 @@ export function PostComposeScreen({
     }
     void save("published");
   };
-
-  // draft Task2: 入力が 3 秒止まったら自動で下書きを保存（公開済みの編集では行わない）
-  useDraftAutosave({
-    enabled: !isEditingPublished && !isSubmitting,
-    hasInput: hasAnyPostInput(values, mediaCount) || moved,
-    snapshot: JSON.stringify({ values, position, spotId: lockedSpot?.id ?? resolvedSpot?.id ?? null, newPlaceName }),
-    save: async () => {
-      if (!position) return;
-      const payload = buildComposePayload({
-        status: "draft",
-        values,
-        position,
-        spotId: lockedSpot?.id ?? resolvedSpot?.id ?? null,
-        spotName: newPlaceName,
-        media: [],
-      });
-      const response = postId ? await api.update(postId, payload) : await api.create(payload);
-      if (response.ok && !postId) {
-        const result = (await response.json()) as { postId: string };
-        setPostId(result.postId);
-      }
-    },
-  });
 
   const isPostingRestricted = !!postingRestrictedUntil;
   const canPublish = isPostFormComplete(values, mediaCount) && position !== null && !isSubmitting && !isPostingRestricted;
