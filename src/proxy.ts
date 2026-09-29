@@ -1,9 +1,14 @@
 import { createServerClient } from "@supabase/ssr";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { NextResponse, type NextRequest } from "next/server";
 import { assertSupabaseEnv } from "@/lib/supabase/env";
 import { sessionCookieOptions } from "@/lib/supabase/cookie-options";
 import { pendingSignupAction } from "@/lib/auth/pending-signup";
-import { getAuthUserFromClaims } from "@/lib/auth/auth-user";
+import { aalFromClaims, authUserFromClaims } from "@/lib/auth/auth-user";
+import { adminGatePath } from "@/lib/admin/admin-gate-paths";
+import { adminGateDecision } from "@/lib/admin/mfa-gate";
+import { buildAdminMfaPath } from "@/lib/admin/mfa-redirect";
+import { ADMIN_MFA_VERIFIED_COOKIE, parseMfaVerifiedAt } from "@/lib/admin/mfa-verified-cookie";
 import { jstDayOf, LAST_ACTIVE_DAY_COOKIE, lastActiveDayCookieOptions, shouldTouchLastActiveDay } from "@/lib/auth/last-active-day";
 import { CONSENT_COOKIE, consentCookieOptions, cookieCoversPublished, encodeConsentCookie, needsReconsent, reconsentAction } from "@/lib/auth/reconsent";
 import { getPublishedVersionsCached } from "@/lib/legal/published-versions-cache";
@@ -90,7 +95,11 @@ export async function proxy(request: NextRequest) {
   // performance Task1（2026-09-22）: 認証確認は getClaims（手元で署名検証。通信なし）。アクセストークンが期限切れなら
   // リフレッシュトークンで更新され、新しい Cookie が setAll 経由でレスポンスに載る（ここは従来どおり）。
   // リフレッシュトークンが失効している場合も null として返る（以降は一律「未ログイン」として扱う）
-  const user = await getAuthUserFromClaims(supabase);
+  // admin-login Task 6: 同じ claims から `aal`（二段階確認まで通ったか）も読む。
+  // getClaims は手元の署名検証なので、2 つ取り出しても通信は増えない
+  const { data: claimsData } = await supabase.auth.getClaims();
+  const user = authUserFromClaims(claimsData?.claims);
+  const aal = aalFromClaims(claimsData?.claims);
 
   // performance Task1: リンクの先読み（prefetch）は 1 画面で 20 本以上飛ぶ。認証の確認だけ行い、
   // users への問い合わせ（一時停止・登録待ち）は本命のリクエストに任せる
@@ -168,7 +177,10 @@ export async function proxy(request: NextRequest) {
     }
   }
 
-  if (request.nextUrl.pathname.startsWith("/admin")) {
+  // admin-login Task 1・Task 6: 管理画面の関門。
+  // ①管理者か（違えば 404。画面の存在自体を見せない） → ②二段階確認を通しているか
+  const gateKind = adminGatePath(request.nextUrl.pathname);
+  if (gateKind !== null) {
     if (!user) {
       return new NextResponse(null, { status: 404 });
     }
@@ -182,9 +194,53 @@ export async function proxy(request: NextRequest) {
     if (!profile?.is_admin) {
       return new NextResponse(null, { status: 404 });
     }
+
+    // 二段階確認そのものの入口（SC-32 とその API）は、ここを通ることで aal2 になるので素通しする。
+    // ここで 6 桁を求めると、登録も確認もできず堂々巡りになる
+    if (gateKind === "mfa_entry") {
+      return response;
+    }
+
+    // factor を持っているかは JWT に入っていない。aal2 なら持っているに決まっているので、
+    // aal1 のときだけ確かめる（毎回の通信を増やさないため。要件 7.1）
+    const hasFactor = aal === "aal2" ? true : await hasVerifiedTotpFactor(supabase);
+    const decision = adminGateDecision({
+      isAdmin: true,
+      aal,
+      hasFactor,
+      verifiedAt: parseMfaVerifiedAt(request.cookies.get(ADMIN_MFA_VERIFIED_COOKIE)?.value),
+      now,
+    });
+
+    if (decision !== "allow") {
+      // API を 302 で画面へ送らない。fetch は転送を黙って追うので、画面の HTML が JSON として返る（#583 と同じ失敗）
+      if (gateKind === "api") {
+        return NextResponse.json({ error: "admin_mfa_required" }, { status: 401 });
+      }
+      const to = buildAdminMfaPath(`${request.nextUrl.pathname}${request.nextUrl.search}`);
+      const redirect = NextResponse.redirect(new URL(to, request.url));
+      response.cookies.getAll().forEach((cookie) => redirect.cookies.set(cookie));
+      return redirect;
+    }
   }
 
   return response;
+}
+
+/**
+ * 確認済みの認証アプリを持っているか。
+ * 【初心者向け】読めなかったときは「持っている」と答える。持っていないことにすると、
+ * Supabase が一時的に応答しないだけで管理者が登録画面に送られ、factor を作り直そうとしてしまう。
+ * 持っている扱いなら 6 桁を聞かれるだけで、間違って登録が増えることはない（安全側）。
+ */
+async function hasVerifiedTotpFactor(supabase: SupabaseClient): Promise<boolean> {
+  try {
+    const { data, error } = await supabase.auth.mfa.listFactors();
+    if (error || !data) return true;
+    return data.totp.length > 0;
+  } catch {
+    return true;
+  }
 }
 
 export const config = {

@@ -15,6 +15,8 @@
  * API を呼んだときも 401 を返す。これを一律でログイン画面に飛ばすと、規約を読もうとしただけの人が
  * 締め出されてしまうので、本文の `error` を見て行き先を変える。
  */
+import { buildAdminMfaPath } from "@/lib/admin/mfa-redirect";
+
 export class UnauthorizedError extends Error {}
 
 /** 401 の `error` → 送る先（純粋関数。単体テストの対象） */
@@ -22,6 +24,8 @@ export function loginRedirectFor(error: string | undefined, currentPath: string)
   // 認証は済んでいるが、まだ同意していない人。ログインし直しても解決しないので同意の画面へ送る
   if (error === "reconsent_required") return "/consent/renew";
   if (error === "signup_required") return "/signup";
+  // admin-login Task 6: 管理者だが二段階確認がまだ（未登録・期限切れ）。ログイン画面ではなく SC-32 へ
+  if (error === "admin_mfa_required") return buildAdminMfaPath(currentPath);
   return `/login?redirect_to=${encodeURIComponent(currentPath)}`;
 }
 

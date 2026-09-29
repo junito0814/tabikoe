@@ -12,6 +12,12 @@ describe("loginRedirectFor", () => {
     expect(loginRedirectFor("session_expired", "/mypage")).toBe("/login?redirect_to=%2Fmypage");
     expect(loginRedirectFor(undefined, "/mypage")).toBe("/login?redirect_to=%2Fmypage");
   });
+
+  it("管理者の二段階確認待ちは、ログインではなく SC-32 へ送る（元の画面つき）", () => {
+    expect(loginRedirectFor("admin_mfa_required", "/admin/reports")).toBe("/admin/mfa?redirect_to=%2Fadmin%2Freports");
+    // 戻り先が既定（/admin）になるときは redirect_to を付けない
+    expect(loginRedirectFor("admin_mfa_required", "/admin")).toBe("/admin/mfa");
+  });
 });
 
 /** window.location.href への代入を記録する */
