@@ -5,8 +5,8 @@ import type { AdminActionItem } from "@/lib/admin/admin-actions";
 
 /** 出典: docs/tasks/admin/user-management/04-admin-actions-log.md 単体テスト */
 const rows: AdminActionItem[] = [
-  { id: "a1", actorId: "admin-1", actorName: "たろう", action: "report_hide", targetType: "post", targetId: "p1", targetLabel: "投稿「たこ焼き」", note: "電話番号", createdAt: "2026-09-26T09:12:00Z" },
-  { id: "a2", actorId: null, actorName: "自動", action: "auto_hide", targetType: "post", targetId: "p1", targetLabel: "投稿「たこ焼き」", note: "異なる通報者 3 人", createdAt: "2026-09-26T08:50:00Z" },
+  { id: "a1", actorId: "admin-1", actorName: "たろう", isAutomatic: false, action: "report_hide", targetType: "post", targetId: "p1", targetLabel: "投稿「たこ焼き」", note: "電話番号", createdAt: "2026-09-26T09:12:00Z" },
+  { id: "a2", actorId: null, actorName: "自動", isAutomatic: true, action: "auto_hide", targetType: "post", targetId: "p1", targetLabel: "投稿「たこ焼き」", note: "異なる通報者 3 人", createdAt: "2026-09-26T08:50:00Z" },
 ];
 
 describe("AdminActionsScreen", () => {
@@ -39,5 +39,17 @@ describe("AdminActionsScreen", () => {
   it("buildAdminActionParams は空の条件を乗せない", () => {
     expect(buildAdminActionParams({ actor: "", action: "", from: "", to: "" }, 0).toString()).toBe("");
     expect(buildAdminActionParams({ actor: "auto", action: "", from: "2026-09-01", to: "" }, 20).toString()).toBe("actor=auto&from=2026-09-01&offset=20");
+  });
+
+  it("#585: 退会した管理者の行は「自動」ではなく「〈名前〉（退会済み）」と出る", () => {
+    render(
+      <AdminActionsScreen
+        initialPage={{ actions: [{ ...rows[0], id: "a3", actorId: null, actorName: "たろう（退会済み）", isAutomatic: false }], nextOffset: null }}
+        admins={[]}
+      />
+    );
+    expect(screen.getByRole("cell", { name: "たろう（退会済み）" })).toBeInTheDocument();
+    // 「自動」は絞り込みの選択肢にもあるので、表の中だけを見る
+    expect(screen.queryByRole("cell", { name: "自動" })).not.toBeInTheDocument();
   });
 });

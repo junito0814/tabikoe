@@ -148,7 +148,8 @@ export function AdminActionsScreen({
               <tr key={item.id} className="border-b border-line last:border-b-0">
                 <td className="whitespace-nowrap px-3 py-2 tabular-nums text-muted">{formatDateTime(item.createdAt)}</td>
                 <td className="whitespace-nowrap px-3 py-2">
-                  {item.actorId ? item.actorName : <span className="rounded-full border border-line px-1.5 py-0.5 text-[10px] text-muted">自動</span>}
+                  {/* #585: actor_id が NULL でも、退会した管理者の行は「自動」と区別する */}
+                  {item.isAutomatic ? <span className="rounded-full border border-line px-1.5 py-0.5 text-[10px] text-muted">自動</span> : item.actorName}
                 </td>
                 <td className="whitespace-nowrap px-3 py-2 font-semibold">{ADMIN_ACTION_LABELS[item.action]}</td>
                 <td className="px-3 py-2">{item.targetLabel ?? "—"}</td>
