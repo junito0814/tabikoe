@@ -6,7 +6,6 @@ import { ERROR_MESSAGES } from "@/components/notices/error-messages";
 import { fetchWithAuthRedirect, UnauthorizedError } from "@/lib/api/fetch-with-auth-redirect";
 import type { RegisteredSpot } from "@/lib/spots/types";
 import type { NearbySpot } from "@/lib/spots/nearby";
-import { ManualSpotRegistrationModal } from "./ManualSpotRegistrationModal";
 
 export interface SpotCandidate {
   /** 既に`spots`に存在する場合のみ入る。Google由来の未登録候補ではnull */
@@ -54,7 +53,6 @@ export function SpotAutocompleteInput({
   selectedSpot,
   onSelect,
   searchSpots = searchSpotsFromApi,
-  manualRegistration = true,
   onCancel,
   autoFocus = false,
 }: {
@@ -63,7 +61,6 @@ export function SpotAutocompleteInput({
   /** 検索の差し替え口（単体テスト・開発用プレビューでモックを注入するため） */
   searchSpots?: (query: string) => Promise<SearchResult>;
   /** v3.0（spot-selection-v3 Task4）: SC-03 では手動登録モーダルを使わない（地図のピンが手動登録を兼ねる） */
-  manualRegistration?: boolean;
   /** 検索をやめて元の表示に戻す（SC-03 の「変更」の取消） */
   onCancel?: () => void;
   autoFocus?: boolean;
@@ -74,7 +71,6 @@ export function SpotAutocompleteInput({
   const [placesUnavailable, setPlacesUnavailable] = useState(false);
   /** 直近で検索を完了したクエリ。現在の入力と一致する時だけ結果を表示に使う */
   const [searchedQuery, setSearchedQuery] = useState<string | null>(null);
-  const [isModalOpen, setIsModalOpen] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const trimmedQuery = query.trim();
@@ -234,19 +230,7 @@ export function SpotAutocompleteInput({
       )}
       {errorMessage && <ErrorNotice className="mt-2" message={errorMessage} />}
 
-      {hasSearched && visibleCandidates.length === 0 && manualRegistration && (
-        <p className="mt-2 text-[12px] leading-[1.6] text-muted">
-          候補が見つかりません。
-          <button
-            type="button"
-            onClick={() => setIsModalOpen(true)}
-            className="font-medium text-accent underline underline-offset-2"
-          >
-            地図でスポットを登録する
-          </button>
-        </p>
-      )}
-      {hasSearched && visibleCandidates.length === 0 && !manualRegistration && (
+      {hasSearched && visibleCandidates.length === 0 && (
         <p className="mt-2 text-[12px] leading-[1.6] text-muted">
           候補が見つかりません。地図でピンを合わせて「新しい場所」として投稿できます
         </p>
@@ -257,27 +241,6 @@ export function SpotAutocompleteInput({
         </button>
       )}
 
-      {isModalOpen && manualRegistration && (
-        <ManualSpotRegistrationModal
-          initialName={query.trim()}
-          onRegistered={(spot) => {
-            onSelect(spot);
-            setIsModalOpen(false);
-          }}
-          onSelectExisting={(spot) => {
-            onSelect({
-              id: spot.id,
-              name: spot.name,
-              lat: spot.lat,
-              lng: spot.lng,
-              prefecture: spot.prefecture,
-              source: spot.source,
-            });
-            setIsModalOpen(false);
-          }}
-          onClose={() => setIsModalOpen(false)}
-        />
-      )}
     </div>
   );
 }
