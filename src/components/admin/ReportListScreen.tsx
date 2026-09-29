@@ -79,15 +79,8 @@ export function ReportListScreen({
   const selectClass = "h-9 rounded-[8px] border border-line bg-surface px-2 text-[12px] text-ink";
 
   return (
-    <div className="flex min-h-screen flex-col items-center bg-app px-4 py-6">
-      <div className="flex w-full max-w-[760px] flex-col gap-4">
-        <header className="flex items-center justify-between">
-          <h1 className="text-[18px] font-bold text-ink">通報一覧</h1>
-          <Link href="/admin" className="text-[12px] text-muted underline underline-offset-2">
-            ダッシュボードへ
-          </Link>
-        </header>
-
+    <div className="flex w-full flex-col">
+      <div className="flex w-full flex-col gap-4">
         <form onSubmit={handleSubmit} className="flex flex-wrap items-end gap-2 rounded-[12px] border border-line bg-surface p-3">
           <label className="text-[11px] text-muted">
             対応状態
