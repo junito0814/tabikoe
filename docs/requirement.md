@@ -1295,18 +1295,18 @@ SC-13・SC-19 は画面 ID を欠番として残し、再利用しない。SC-20
 
 別紙「ER図」に定義する（v2.6でpost_photosのカラム追加を反映）。
 
-### 5.2 テーブル一覧（v3.0で更新）
+### 5.2 テーブル一覧（v3.0で更新。2026-09-27 に管理画面の作り直しで 5 テーブルを追加）
 
 | テーブル名 | 概要 |
 |---|---|
-| users | ユーザー情報。idp_provider・idp_subject・is_adminを保持する |
+| users | ユーザー情報。idp_provider・idp_subject・is_adminを保持する。2026-09-27 で last_active_at（最終利用日。1 日 1 回だけ更新）・posting_restricted_until（投稿・コメント禁止の解除日時。NULL＝制限なし）・suspension_kind（suspended_at と対で使う。provisional＝自動の仮停止／confirmed＝管理者が確定）を追加 |
 | trips | 旅行（旅行ID・アルバム名） |
 | album_members | アルバムのメンバーと権限（owner／editor／viewer）。joined_at（参加日時）を持つ |
 | album_invitations | 招待リンクのトークン・付与する権限・有効期限。v3.2 で invitee_user_id（NULL＝リンク招待、値あり＝アプリ内招待）・responded_at・status（pending／accepted／declined／revoked）を追加 |
-| spots | スポット（Google Places由来・手動登録の双方）。v3.2 で created_by（最初に公開投稿した利用者。NULL 可）を追加 |
-| posts | 投稿。costは整数型・1人あたりの金額として保持する。v3.0 で status（draft／published）・lat・lng・published_at を追加。下書きは spot_id を NULL にできる |
+| spots | スポット（Google Places由来・手動登録の双方）。v3.2 で created_by（最初に公開投稿した利用者。NULL 可）を追加。2026-09-27 で created_at（登録日時。既存行は最初の投稿の日時で埋める。管理画面の「最近のスポット」に使う）を追加 |
+| posts | 投稿。costは整数型・1人あたりの金額として保持する。v3.0 で status（draft／published）・lat・lng・published_at を追加。下書きは spot_id を NULL にできる。2026-09-27 で hidden_reason（非公開になった理由。moderation＝管理者の通報対応／suspension＝アカウント停止に伴う一括／auto＝通報が重なった自動非公開。NULL＝hidden_reason を足す前の行）を追加 |
 | post_photos | 投稿に紐づく写真・動画。media_type（photo／video）で種別を区別し、動画の場合のみduration_seconds（再生時間・秒）を保持する。テーブル名・display_orderの扱いはv2.5から変更しない |
-| comments | コメント。v3.2 で parent_id（返信先のコメント。NULL＝最上位。ON DELETE SET NULL にせず親は論理削除して枠を残す）を追加 |
+| comments | コメント。v3.2 で parent_id（返信先のコメント。NULL＝最上位。ON DELETE SET NULL にせず親は論理削除して枠を残す）を追加。2026-09-27 で hidden_reason（posts と同じ 3 値）を追加 |
 | likes | いいね |
 | wishlist | 「行きたい」保存（行きたいスポット） |
 | itineraries | しおり（v3.0で新設）。trip_id（trips と 1 対 1、UNIQUE）・start_date・end_date（NULL 可）・updated_at |
@@ -1317,9 +1317,14 @@ SC-13・SC-19 は画面 ID を欠番として残し、再利用しない。SC-20
 | badges | 獲得済みバッジ。v3.2 でバッジ種別に spot_registration（段階 1／3／5／10／20／30／50）を追加 |
 | reports | 通報。対応状態（未確認／確認中／対応済み（非公開化）／対応済み（削除）／問題なし）を持つ |
 | blocks | ブロック関係 |
+| strikes | 違反の記録（2026-09-27で新設、3.10.7）。user_id・report_id・reason・action（hide／delete）・target_label（対象の言い方。対象が消えても本人に説明できるよう文字で持つ）・created_by・expires_at（付与から 90 日）・revoked_at／revoked_by／revoke_note（管理者の取り消し）。**通報の件数では作らない**。管理者が非公開化・削除を確定したときだけ 1 行作る |
+| moderation_settings | 違反対応のしきい値（2026-09-27で新設、3.10.7・3.10.8）。key・value（jsonb）。auto_hide_reporters（自動非公開に要る異なる通報者の数）・unreliable_reporter_no_issue（数えない通報者の「問題なし」件数）・strike_expiry_days・strikes_to_suspend・restriction_days。コードに直書きせずここを読む |
 | operation_logs | 操作ログ |
+| admin_actions | 管理者の操作と自動処理の記録（2026-09-27で新設、3.10.12）。actor_id（NULL＝自動処理）・action・target_type・target_id・target_label・note（理由）・created_at。**後から説明できる台帳なので書き換え・削除ができない**（5.3「操作の記録の保護」）。利用者の操作を残す operation_logs（7.5、90 日で消す）とは別 |
 | notifications | 個人向け通知。user_id・type・related_id・is_read・created_atを保持する |
 | system_announcements | 運営からのお知らせ。title・body・published_atを保持する。ユーザーごとの複製は行わない |
+| legal_documents | 利用規約・個人情報保護方針の本文（2026-09-27で新設、3.10.11）。kind（terms／privacy）・version（kind と組で UNIQUE）・summary（利用者に見せる変更の要点）・body（Markdown）・status（draft／published／archived）・published_at・published_by。公開中・過去の版は未ログインでも読める（/terms・/privacy） |
+| user_consents | 規約への同意の記録（2026-09-27で新設、3.10.11・7.4）。user_id・kind・version（組で UNIQUE）・agreed_at。**どの版に同意したか**を残し、新しい版が公開されたら再同意を求める判定（SC-30）に使う。登録時の同意もここに版つきで記録する |
 | rate_limits | レート制限のカウント。subject（user_idまたはIPアドレス）・action_type・window_start・countを保持する |
 
 ### 5.3 主要な設計方針
@@ -1352,6 +1357,9 @@ SC-13・SC-19 は画面 ID を欠番として残し、再利用しない。SC-20
 | スポット登録者（v3.2で追加） | spots.created_by は、そのスポットへの最初の公開投稿を作る Route Handlers で埋める（source = manual のときだけ）。既存行は最も古い公開投稿の投稿者で一括更新する。バッジ判定は投稿の公開処理の中で created_by が自分の行数を数える |
 | コメントの返信（v3.2で追加） | comments.parent_id は同じ post_id のコメントを参照する（CHECK で post_id の一致を保証する）。親の削除は deleted_at による論理削除とし、返信が無ければ物理削除する。取得は post_id ごとに parent_id NULL の 20 件＋その返信をまとめて返す |
 | アプリ内招待（v3.2で追加） | album_invitations／itinerary_invitations の invitee_user_id が NULL ならリンク招待（token で受諾）、値ありならアプリ内招待（本人だけが受諾・辞退できる）。未回答の同じ相手への招待は部分ユニーク索引 `(trip_id or itinerary_id, invitee_user_id) where status = 'pending'` で 1 件に限る。候補ユーザーは album_members と itinerary_members を自分と同じ trip_id／itinerary_id で結合して求める |
+| 操作の記録の保護（2026-09-27で追加） | admin_actions は INSERT と SELECT だけを許し、UPDATE・DELETE・TRUNCATE はどの役割にも GRANT しない（service_role にも与えない）。所有者が SQL エディタから直接書き換えることも防ぐため、`before update or delete` のトリガーで例外を投げる。管理者は他人のデータを消したりアカウントを止めたりできるので、後から説明できる記録が要る（3.10.12） |
+| 非公開の理由（2026-09-27で追加） | 投稿・コメントを隠すのは今までどおり hidden_at 1 列で行い、**誰の判断で隠れているか**は hidden_reason（moderation／suspension／auto）で区別する。自動非公開に別の列（auto_hidden_at）を設けないのは、`hidden_at is null` で除外している箇所が RLS を含めて 20 か所以上あり、条件を足し忘れると非公開のものが見えてしまうため。復元の画面（SC-25）のタブもこの列で分ける |
+| 最終利用日の記録（2026-09-27で追加） | users.last_active_at は、関所（proxy）でログイン中の利用者のリクエストのたびに更新するのではなく、**1 人 1 日 1 回だけ**書く。「今日はもう書いた」の印は httpOnly の Cookie（日本時間の日付）に持ち、Cookie が今日なら DB に触らない。値を書くのは本人ではなく security definer の関数（本人の行に now() を入れるだけ）とし、任意の日時を入れられないようにする（7.4） |
 
 
 ### 5.4 画像・動画の取り扱い
