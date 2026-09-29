@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { hasFullConsent } from "@/lib/auth/consent";
+import { recordCurrentConsents } from "@/lib/legal/legal-documents";
 import { resolvePostLoginRedirect } from "@/lib/auth/post-login-redirect";
 import { ensureUserRecord } from "@/lib/users/ensure-user-record";
 import { recordOperation } from "@/lib/logs/record-operation";
@@ -51,6 +52,8 @@ export async function POST(request: Request) {
   } catch {
     return NextResponse.json({ error: "create_failed" }, { status: 500 });
   }
+  // legal-documents Task 1（要件 3.10.11・7.4）: どの版に同意したかを残す
+  await recordCurrentConsents(admin, user.id);
   // 要件 7.5: アカウントの登録と、その直後のログイン
   await recordOperation(admin, { actionType: "account_create", userId: user.id, targetId: user.id });
   await recordOperation(admin, { actionType: "login_success", userId: user.id, detail: { flow: "signup" } });

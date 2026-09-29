@@ -5,7 +5,18 @@
  * 【初心者向け】実際の checkbox を視覚的に隠して置き（sr-only）、見た目は隣の span で描く。
  * こうするとキーボード（Tab → Space）とスクリーンリーダーでも操作できる（要件定義書 7.7）。
  */
-export function ConsentCheckbox({ checked, onChange, label }: { checked: boolean; onChange: (next: boolean) => void; label: string }) {
+export function ConsentCheckbox({
+    checked,
+    onChange,
+    label,
+    href,
+}: {
+    checked: boolean;
+    onChange: (next: boolean) => void;
+    label: string;
+    /** legal-documents Task 1: 本文を読むページ（/terms・/privacy）。新しいタブで開く */
+    href?: string;
+}) {
     return (
         <label className="flex w-full cursor-pointer items-start gap-2.5">
             <input
@@ -26,7 +37,14 @@ export function ConsentCheckbox({ checked, onChange, label }: { checked: boolean
                 )}
             </span>
             <span className="select-none text-[13px] leading-[1.65] text-ink">
-                <span className="font-medium text-accent">{label}</span>
+                {href ? (
+                    // 本文を読みに行ってもチェック欄の状態が消えないよう、新しいタブで開く
+                    <a href={href} target="_blank" rel="noreferrer" onClick={(event) => event.stopPropagation()} className="font-medium text-accent underline underline-offset-2">
+                        {label}
+                    </a>
+                ) : (
+                    <span className="font-medium text-accent">{label}</span>
+                )}
                 {" に同意する"}
             </span>
         </label>
