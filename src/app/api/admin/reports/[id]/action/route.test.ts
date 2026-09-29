@@ -37,7 +37,7 @@ vi.mock("@/lib/supabase/admin", () => ({
         };
       }
       if (table === "notifications") return { insert: notificationInsert };
-      if (table === "operation_logs") return { insert: async () => ({ error: null }) };
+      if (table === "operation_logs" || table === "admin_actions") return { insert: async () => ({ error: null }) };
       if (table === "reports") {
         return {
           select: () => ({ eq: () => ({ maybeSingle: async () => ({ data: state.report, error: null }) }) }),

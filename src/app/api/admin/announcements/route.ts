@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireAdminUser } from "@/lib/auth/require-admin";
-import { recordOperation } from "@/lib/logs/record-operation";
+import { recordAdminAction } from "@/lib/admin/admin-actions";
 import { validateAnnouncementInput } from "@/lib/announcements/validate-announcement";
 
 /**
@@ -62,11 +62,11 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "insert_failed" }, { status: 500 });
   }
 
-  await recordOperation(admin, {
-    actionType: "admin_action",
-    userId: user.id,
-    targetId: data.id,
-    detail: { action: "announcement_create" },
+  // 要件 3.10.12: 操作の記録（中で要件 7.5 の operation_logs にも残す）
+  await recordAdminAction(admin, {
+    actorId: user.id,
+    action: "announcement_create",
+    target: { type: "announcement", id: data.id, label: `お知らせ「${data.title}」` },
   });
 
   return NextResponse.json({ announcement: data }, { status: 201 });

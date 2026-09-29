@@ -30,7 +30,7 @@ vi.mock("@/lib/supabase/admin", () => ({
       if (table === "users") {
         return { select: () => ({ eq: () => ({ maybeSingle: async () => ({ data: { is_admin: state.isAdmin } }) }) }) };
       }
-      if (table === "operation_logs") return { insert: async () => ({ error: null }) };
+      if (table === "operation_logs" || table === "admin_actions") return { insert: async () => ({ error: null }) };
       return { insert, update, delete: remove };
     },
   }),
