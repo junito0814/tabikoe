@@ -107,71 +107,133 @@ node scripts/admin-mfa-reset.mjs <メールアドレス>
 
 ### 手順
 
-**① Supabase で新しいプロジェクトを作る**
+**手元を先に切り替えて、動くことを確かめてから Vercel に進む。** 逆にすると、うまくいかないときに「設定が悪いのか、コードが悪いのか」が分からなくなる。
 
-- 名前は `tabikoe-staging`
-- リージョンは本番と同じにする
-- データベースのパスワードを控える
-- **無料枠は動いているプロジェクト 2 つまで**。本番とあわせてちょうど 2 つになる
+#### 先に確認すること
 
-**② テーブルを作る**
+Supabase の管理画面で、**いま動いているプロジェクトが何個あるか**を見る。無料枠は 2 つまでで、本番とあわせてちょうど 2 つになる。すでに 2 つあるなら、使っていない方を一時停止する。
 
-SQL エディタで **`scripts/setup_staging.sql`** を貼って実行する。`supabase/migrations/` の全 43 本をファイル名の順に並べたもので、テーブル・RLS・関数・ストレージのバケット・規約の初期データまで入る。
+#### ① 新しいプロジェクトを作る
 
-**本番のプロジェクトでは流さないこと**（すでに当たっているためエラーになる）。
+Supabase → New project
 
-**③ Google ログインを使えるようにする**
+- Organization: 本番と同じ
+- Name: `tabikoe-staging`
+- Database Password: **控えておく**（あとで見られない）
+- Region: 本番と同じ（Northeast Asia / Tokyo）
 
-1. Supabase（新しい方）: Authentication → Sign In / Providers → Google を有効にし、**本番と同じ**クライアント ID とシークレットを入れる
-2. Google Cloud: APIs & Services → 認証情報 → OAuth 2.0 クライアント ID の「承認済みのリダイレクト URI」に、**新しいプロジェクトの**コールバックを足す
-   - `https://<新しい project-ref>.supabase.co/auth/v1/callback`
-   - **本番のぶんは消さない。両方を並べて登録する**
+作成に 2 分ほどかかる。
 
-**④ 戻り先を登録する**
+#### ② テーブルを作る
 
-Supabase（新しい方）: Authentication → URL Configuration
+新しいプロジェクトの SQL Editor → New query に、**`scripts/setup_staging.sql` の中身をすべて貼って Run**。
+
+43 本ぶんが上から順に走る。テーブル・RLS・関数・ストレージのバケット（`post-media`・`avatars`）・規約の初期データまで入る。
+
+**本番のプロジェクトでは流さないこと。** エラーが出たら、そのエラー文を控える。
+
+終わったら Table Editor に `users`・`posts`・`spots` などが並んでいることを確かめる。
+
+#### ③ キーを 3 つ控える
+
+新しいプロジェクトの Settings → API
+
+| 控えるもの | 使う先 |
+|---|---|
+| Project URL | `NEXT_PUBLIC_SUPABASE_URL` |
+| publishable キー | `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` |
+| secret キー | `SUPABASE_SECRET_KEY` |
+
+**secret キーは人に見せない。** 画面共有や貼り付けに注意する。
+
+#### ④ Google ログインを有効にする（Supabase 側）
+
+新しいプロジェクトの Authentication → Sign In / Providers → Google
+
+- 有効にする
+- **本番と同じ**クライアント ID とシークレットを入れる（本番のプロジェクトの同じ画面からコピーする）
+- 保存すると、この画面に **Callback URL** が出る。**これを控える**（次の ⑤ で使う）
+
+#### ⑤ Google Cloud にコールバックを足す
+
+Google Cloud Console → APIs & Services → 認証情報 → OAuth 2.0 クライアント ID
+
+「承認済みのリダイレクト URI」に、④ で控えた Callback URL を**足す**。
+
+**本番のぶんは消さないこと。** 2 つ並んだ状態にする。片方を消すと、そちらのログインが壊れる。
+
+#### ⑥ 戻り先を登録する（Supabase 側）
+
+新しいプロジェクトの Authentication → URL Configuration
 
 - Site URL: `http://localhost:3000`
-- Redirect URLs に次を足す
+- Redirect URLs に 3 つ足す
   - `http://localhost:3000/api/auth/callback`
-  - `http://localhost:3001/api/auth/callback`（手元で別のポートを使うときのため）
-  - `https://*.vercel.app/api/auth/callback`（プレビューは PR ごとに URL が変わるのでワイルドカード）
+  - `http://localhost:3001/api/auth/callback`
+  - `https://*.vercel.app/api/auth/callback`
 
-**⑤ Vercel の環境変数を Preview だけ差し替える**
+最後のワイルドカードは、プレビューの URL が PR ごとに変わるため。
 
-Settings → Environment Variables で、次の 3 つを **Preview 環境だけ**ステージングの値にする。**Production は触らない。**
+#### ⑦ 手元の `.env.local` を差し替える
 
-| 変数 | 値 |
-|---|---|
-| `NEXT_PUBLIC_SUPABASE_URL` | ステージングの URL |
-| `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | ステージングの publishable キー |
-| `SUPABASE_SECRET_KEY` | ステージングの secret キー |
+③ で控えた 3 つに書き換える。**書き換える前に、いまの値をどこかに控えておく**（本番に戻したくなったときのため）。
 
-Google のキー（Maps・Places・Geocoding・Routes）は本番と同じままでよい。
+開発サーバーが動いていたら、**いったん止めて起動し直す**。環境変数は起動時に読むので、動かしたままだと古い値のままになる。
 
-**⑥ 手元の `.env.local` もステージングに向ける**
+#### ⑧ ここで動作確認する（関門）
 
-同じ 3 つをステージングの値に書き換える。**これで手元の作業が本番に入らなくなる。**
+`npm run dev` して `http://localhost:3000` を開く。
 
-**⑦ Google Maps のキー制限にプレビューのドメインを足す**
+- **「Google で続ける」でログインできるか**
+- ログインすると同意画面（新規登録）が出るはず。**ステージングは別のデータベースなので、あなたも「初めての人」になる**
+- 登録すると、投稿が 1 件も無いホームが出る
 
-APIs & Services → 認証情報 → Maps のキー → HTTP リファラーの制限に `https://*.vercel.app/*` を足す。
+ここで止まったら先に進まない。多いのは ⑤ の登録漏れと、⑦ のサーバー再起動忘れ。
 
-**⑧ ダミーデータを入れる**
+#### ⑨ 自分を管理者にして、二段階確認を登録する
+
+1. 新しいプロジェクトの SQL Editor で自分を管理者にする
+   ```sql
+   update public.users set is_admin = true where email = '<あなたのメールアドレス>';
+   ```
+2. `http://localhost:3000/admin` を開く。**二段階確認の登録画面（SC-32）が出る**
+3. QR を認証アプリで読み取って 6 桁を入れる
+   - **認証アプリの中で「タビコエ（ステージング）」のように名前を分ける**。本番のぶんと取り違えないため
+
+#### ⑩ ダミーデータを入れる
 
 ```
 node scripts/seed/seed-tokyo.mjs
 ```
 
-`.env.local` がステージングを向いているので、ステージングに入る。消すときは `node scripts/seed/clean-seed.mjs`。
+`.env.local` がステージングを向いているので、ステージングに入る。**⑨ で一度ログインしてからでないと動かない**（`users` にあなたの行が要る）。
 
-**⑨ 自分を管理者にする**
+東京中心に約 50 投稿が入る。消すときは `node scripts/seed/clean-seed.mjs`。
 
-ステージングで一度ログインしてから、SQL エディタで `users` の自分の行の `is_admin` を true にする（要件定義書 3.10.1）。
+#### ⑪ Vercel の Preview を差し替える
 
-**⑩ 二段階確認を登録する**
+Vercel → プロジェクト → Settings → Environment Variables
 
-ステージングは別のプロジェクトなので、**認証アプリの登録もやり直し**になる（`auth.mfa_factors` は共有されない）。`/admin` を開いて登録する。認証アプリには「タビコエ（ステージング）」のように分かる名前を付けると、本番のぶんと取り違えない。
+③ の 3 つを、**Preview 環境だけ**ステージングの値にする。
+
+- 既存の行を編集して、**Production のチェックを外さない**まま Preview だけ別の値にする（Vercel は同じ変数名で環境ごとに別の値を持てる）
+- **Production の値は絶対に触らない**
+
+Google のキー（Maps・Places・Geocoding・Routes）は本番と同じままでよい。
+
+#### ⑫ Maps のキー制限にプレビューを足す
+
+Google Cloud Console → APIs & Services → 認証情報 → Maps のキー → アプリケーションの制限（HTTP リファラー）
+
+`https://*.vercel.app/*` を足す。プレビューの URL が PR ごとに変わるため。
+
+#### ⑬ プレビューで確かめる
+
+開いている PR のプレビュー URL をパソコンで開く（Vercel にログインしていれば通る）。
+
+- ログインできるか
+- **⑩ で入れたダミーデータが出るか**（出れば、プレビューがステージングを見ている証拠）
+- 本番（`tabikoe.vercel.app`）がこれまでどおり動くか
 
 ### 気をつけること
 
