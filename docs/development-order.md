@@ -339,7 +339,7 @@ Phase 15 の後に着手し、**2026-09-19 に全部マージ**（PR #454〜#460
 
 ## Phase 19 — 読み込み中の見せ方（利用者側のみ） ⬜
 
-出典は要求定義書「変更点 18（2026-09-30）」・要件定義書 4.5.11・8 章 85〜88。ストーリーは [loading-feedback](user-stories/shared-ui/loading-feedback.md)、タスクは [tasks/shared-ui/loading-feedback](tasks/shared-ui/loading-feedback/00-index.md)。Issue は #612〜#614・#620・#621（Epic は作らない）。
+出典は要求定義書「変更点 18（2026-09-30）」・要件定義書 4.5.11・8 章 85〜88。ストーリーは [loading-feedback](user-stories/shared-ui/loading-feedback.md)、タスクは [tasks/shared-ui/loading-feedback](tasks/shared-ui/loading-feedback/00-index.md)。Issue は #612〜#614・#620・#621・#623・#624（Epic は作らない）。
 
 背景: 通信を待つ場面の見せ方に決まりが無く、画面ごとにばらばらだった。2026-09-30 に全画面を調べたところ、いちばん多いのが**「押せなくするだけ」**で、利用者からは押せていないのか処理中なのか区別が付かない。さらに 2 か所で、読み込み中に「ありません」「見つかりませんでした」と**事実と違う案内**が出ていた。
 
@@ -356,8 +356,8 @@ Phase 15 の後に着手し、**2026-09-19 に全部マージ**（PR #454〜#460
 | 3 | loading-feedback Task 3: 押したとき・条件を変えたときの待ち表示 | #614 | ⬜ | なし | しおり詳細・保存シート・投稿画面（下書き保存と写真削除）・一覧 3 画面の条件変更 |
 | 4 | loading-feedback Task 4: 残りの「押したとき」の待ち表示 | #620 | ⬜ | なし | スポット候補の登録（**二重登録を止める**）・近くのコエの移動手段・行き先の自由入力・地図 2 つ・スポット照合・新規登録の「やめる」・しおりのダイアログ 3 つ・アルバムの操作・入力欄の候補取得 3 つ |
 | 5 | loading-feedback Task 5: 画面を移るときの受け皿 | #621 | ⬜ | なし | `loading.tsx` を 8 枚追加（規約の再同意・アカウントの状態・アカウント・新規登録・投稿作成・バッジ・招待 2 つ） |
-| 6 | loading-feedback Task 6: 画面の拡大（ズーム）の扱い | 未 | ⬜ | なし | 入力欄を 16px に・`touch-action: manipulation`・指 2 本の拡大を止める。地図は影響させない |
-| 7 | loading-feedback Bug 1: 起動直後が白いまま | 未 | ⬜ | なし | iOS はマニフェストの色を起動画面に使わない。`apple-touch-startup-image` を 8 枚渡す |
+| 6 | loading-feedback Task 6: 画面の拡大（ズーム）の扱い | #624 | ⬜ | なし | 入力欄を 16px に・`touch-action: manipulation`・指 2 本の拡大を止める。地図は影響させない |
+| 7 | loading-feedback Bug 1: 起動直後が白いまま | #623 | ⬜ | なし | iOS はマニフェストの色を起動画面に使わない。`apple-touch-startup-image` を 8 枚渡す |
 
 ---
 
