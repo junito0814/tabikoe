@@ -54,6 +54,10 @@ export function MyMapScreen({
   const [pins, setPins] = useState<MyMapPin[]>([]);
   const [bounds, setBounds] = useState<MapBounds | null>(null);
   const [fetchFailed, setFetchFailed] = useState(false);
+  // loading-feedback Task 2（2026-09-30）: 「どの条件で取り終えたか」を覚えておく。
+  // これが無いと「取得中もピンは 0 件」なので、記録があるのに「ありません」と出ていた（要件 4.5.11）。
+  // 取得中かどうかは state を足さず、これと今の条件を見比べて求める（描画のたびに計算するだけ）
+  const [loadedFor, setLoadedFor] = useState<{ mode: MyMapMode; bounds: MapBounds } | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -76,15 +80,20 @@ export function MyMapScreen({
           if (requestIdRef.current !== requestId) return;
           setPins(result);
           setFetchFailed(false);
+          setLoadedFor({ mode, bounds });
         })
         .catch((error) => {
           if (error instanceof UnauthorizedError) return;
           if (requestIdRef.current !== requestId) return;
           setFetchFailed(true);
+          setLoadedFor({ mode, bounds });
         });
     }, FETCH_DEBOUNCE_MS);
     return () => clearTimeout(timer);
   }, [mode, bounds, fetchPins]);
+
+  // 取得中か（デバウンスで待っている間も含む）。今の条件と「取り終えた条件」が違えばまだ取得中
+  const isFetching = bounds !== null && (loadedFor === null || loadedFor.mode !== mode || !isSameBounds(loadedFor.bounds, bounds));
 
   // idle が連続しても範囲が同じなら state を変えない（MapScreen と同じ理由）
   const handleBoundsChange = useCallback((next: MapBounds) => {
@@ -167,9 +176,10 @@ export function MyMapScreen({
         </div>
       )}
 
-      {bounds && !fetchFailed && pins.length === 0 && (
+      {/* 取得が終わるまでは「ありません」と言わない（要件 4.5.11 の共通の決まり） */}
+      {bounds && !fetchFailed && (isFetching || pins.length === 0) && (
         <p className="pointer-events-none absolute inset-x-0 bottom-6 z-10 text-center text-[12px] text-ink">
-          この範囲に表示できるスポットはありません
+          {isFetching ? "読み込んでいます…" : "この範囲に表示できるスポットはありません"}
         </p>
       )}
     </div>
