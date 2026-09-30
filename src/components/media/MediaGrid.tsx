@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { FadeInImage } from "./FadeInImage";
 import Link from "next/link";
 import { MediaModal } from "./MediaModal";
 
@@ -87,8 +88,8 @@ export function MediaThumbnail({
 }) {
   return (
     <span className={`relative block h-full w-full ${className ?? ""}`}>
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src={item.thumbnailUrl} alt={item.alt} className="h-full w-full object-cover" />
+      {/* loading-feedback Task 7: 届いた瞬間に薄く重ねて出す（要件 4.5.11 の場面 5） */}
+      <FadeInImage src={item.thumbnailUrl} alt={item.alt} className="h-full w-full object-cover" />
 
       {item.mediaType === "video" && (
         <span className="absolute inset-0 flex items-center justify-center" data-video-overlay>
