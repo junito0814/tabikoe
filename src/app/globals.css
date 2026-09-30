@@ -129,3 +129,34 @@ html:has([data-home-fixed]),
 html:has([data-home-fixed]) body {
   overscroll-behavior-y: none;
 }
+
+/*
+ * loading-feedback Task 6（2026-09-30）: 入力欄は 16px 以上にする（要件 4.5.12 の 1）
+ *
+ * 【初心者向け】iOS は **16px 未満の入力欄**にカーソルが入ると、勝手に画面を拡大する。
+ * しかも拡大したまま戻らない。このアプリの入力欄は 11〜14px だったので、
+ * 行き先の入力・コメント・メモのどれでも起きていた。
+ *
+ * ここは Tailwind の層の外に書いてあるので、`text-[12px]` のような指定より強い。
+ * わざと 16px より大きくしている入力欄（管理者の 6 桁など）は `data-keep-size` で外す。
+ * チェックボックスとラジオは文字を持たないので対象外。
+ */
+input:not([type="checkbox"]):not([type="radio"]):not([type="file"]):not([data-keep-size]),
+textarea:not([data-keep-size]),
+select:not([data-keep-size]) {
+  font-size: 16px;
+}
+
+/*
+ * loading-feedback Task 6（2026-09-30）: ダブルタップの拡大を止める（要件 4.5.12 の 2）
+ *
+ * 【初心者向け】`manipulation` は「指でなぞる・つまんで拡大する」は許し、
+ * **ダブルタップの拡大だけを止める**。おまけにタップの反応が速くなる。
+ * ブラウザは「2 回目のタップが来るか」を 300ms ほど待ってから反応していたため。
+ *
+ * 地図には影響しない。Google マップは自分の要素に自前の `touch-action` を付けており、
+ * そちらが優先される。また `manipulation` はつまむ操作自体を禁じていない。
+ */
+body {
+  touch-action: manipulation;
+}

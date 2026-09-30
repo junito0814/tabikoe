@@ -141,6 +141,8 @@ export function AdminMfaScreen({
             inputMode="numeric"
             autoComplete="one-time-code"
             maxLength={8}
+            // わざと大きくしている入力欄（要件 4.5.12 の 1 の対象外）
+            data-keep-size=""
             value={code}
             onChange={(event) => setCode(event.target.value)}
             onKeyDown={(event) => {
