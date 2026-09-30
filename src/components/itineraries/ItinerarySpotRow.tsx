@@ -39,6 +39,7 @@ export function ItinerarySpotRow({
   onUpdate,
   onRemove,
   onMoveDay,
+  pending = null,
 }: {
   spot: ItinerarySpotItem;
   /** その Day の中での番号（1 始まり） */
@@ -55,6 +56,11 @@ export function ItinerarySpotRow({
   onUpdate: (spotId: string, patch: { arrivalTime?: string | null; memo?: string | null; checked?: boolean }) => Promise<void>;
   onRemove: (spotId: string) => void;
   onMoveDay: (spotId: string, day: DayKey) => void;
+  /**
+   * loading-feedback Task 3（2026-09-30）: この行が処理中なら、その操作の種類。
+   * 押した直後に文言を変え、二重に押せないようにする（要件 4.5.11 の場面 3）
+   */
+  pending?: "remove" | "move" | null;
 }) {
   const [isPickingTime, setIsPickingTime] = useState(false);
   const [memo, setMemo] = useState(spot.memo ?? "");
@@ -161,8 +167,8 @@ export function ItinerarySpotRow({
             </Link>
           )}
           <span className="ml-auto flex items-center gap-1">
-            <DayMoveDropdown value={spot.dayIndex} dayCount={dayCount} onChange={(day) => onMoveDay(spot.spotId, day)} />
-            <button type="button" onClick={() => onRemove(spot.spotId)} className="h-7 rounded-full px-2 text-[11px] font-medium text-saved">
+            <DayMoveDropdown value={spot.dayIndex} dayCount={dayCount} onChange={(day) => onMoveDay(spot.spotId, day)} disabled={pending !== null} />
+            <button type="button" onClick={() => onRemove(spot.spotId)} disabled={pending !== null} className="h-7 rounded-full px-2 text-[11px] font-medium text-saved disabled:opacity-45">
               削除
             </button>
             {/* v3.1: 時刻の無い行だけ取っ手 ≡（ドラッグで並べ替え。↑↓ キーでも動く） */}

@@ -40,6 +40,20 @@ import { defaultItineraryApi, type ItineraryApi } from "./itinerary-api";
  * サーバーから受け取った `initial` を state に持ち、操作のたびに API を呼んで `api.get` で取り直す（表示は常にサーバーの並び順）。
  * `?day=&spot=` で開かれたら（地図の番号ピンから）その Day を開き、該当行を強調する。
  */
+/**
+ * loading-feedback Task 3（2026-09-30）: いま処理中の操作
+ * 出典: docs/tasks/shared-ui/loading-feedback/03-pending-feedback.md、要件定義書 4.5.11
+ */
+type PendingOp = { kind: "remove"; spotId: string } | { kind: "move"; spotId: string } | { kind: "rename" } | { kind: "delete" } | null;
+
+/** 処理中に出す文言。要件 4.5.11 の「〜中…」で揃える */
+const PENDING_LABELS: Record<NonNullable<PendingOp>["kind"], string> = {
+  remove: "しおりから外しています…",
+  move: "移動しています…",
+  rename: "名前を変えています…",
+  delete: "しおりを削除しています…",
+};
+
 export function ItineraryDetailScreen({
   initial,
   viewerId,
@@ -65,6 +79,14 @@ export function ItineraryDetailScreen({
   const [error, setError] = useState<string | null>(null);
   const [dialog, setDialog] = useState<"period" | "invite" | "members" | "rename" | null>(null);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  /**
+   * loading-feedback Task 3（2026-09-30）: いま何をしている最中か。
+   * 【初心者向け】この画面は押してから API と再取得の 2 往復が終わるまで何も変わらず、
+   * 押せていないのか処理中なのか分からなかった（要件 4.5.11 の場面 3）。
+   * 「どの操作か」を持ち、文言を出しつつ二重に押せないようにする。
+   * 時刻・メモ・チェックはここに含めない（押した瞬間に画面が変わる楽観更新のため）。
+   */
+  const [pending, setPending] = useState<PendingOp>(null);
   const menuRef = useRef<HTMLDivElement>(null);
   const isOwner = itinerary.role === "owner";
 
@@ -88,20 +110,24 @@ export function ItineraryDetailScreen({
     }
   }, [api, itinerary.id]);
 
-  const run = async (request: () => Promise<Response>, failure: string): Promise<boolean> => {
+  const run = async (request: () => Promise<Response>, failure: string, op: PendingOp = null): Promise<boolean> => {
     setError(null);
+    if (op) setPending(op);
     try {
       const response = await request();
       if (!response.ok) {
         setError(response.status === 403 ? "この操作はオーナーだけができます" : failure);
         return false;
       }
+      // 再取得が終わるまで処理中のままにする（2 往復目で無反応に戻らないように）
       await reload();
       return true;
     } catch (caught) {
       if (caught instanceof UnauthorizedError) return false;
       setError(failure);
       return false;
+    } finally {
+      if (op) setPending(null);
     }
   };
 
@@ -155,29 +181,37 @@ export function ItineraryDetailScreen({
   const removeSpot = async (spotId: string) => {
     const spot = itinerary.spots.find((item) => item.spotId === spotId);
     if (!spot || !window.confirm(`「${spot.name}」をしおりから外しますか？（投稿と行きたいはそのままです）`)) return;
-    await run(() => api.removeSpot(itinerary.id, spotId), "外せませんでした");
+    await run(() => api.removeSpot(itinerary.id, spotId), "外せませんでした", { kind: "remove", spotId });
   };
 
   const moveDay = async (spotId: string, target: DayKey) => {
-    const ok = await run(() => api.updateSpot(itinerary.id, spotId, { dayIndex: target }), "移動できませんでした");
+    const ok = await run(() => api.updateSpot(itinerary.id, spotId, { dayIndex: target }), "移動できませんでした", { kind: "move", spotId });
     if (ok) setToast({ text: `${dayLabel(target)} に移動しました`, action: { label: `${dayLabel(target)} を見る`, onClick: () => setDay(target ?? ALL_TAB) } });
   };
 
   const deleteItinerary = async () => {
     if (!window.confirm("このしおりを削除しますか？\n同じ旅行のアルバム（投稿）は残ります。")) return;
-    const response = await api.remove(itinerary.id);
-    if (!response.ok) {
-      setError("削除できませんでした");
-      return;
+    setPending({ kind: "delete" });
+    try {
+      const response = await api.remove(itinerary.id);
+      if (!response.ok) {
+        setError("削除できませんでした");
+        setPending(null);
+        return;
+      }
+      // 画面ごと移るので、ここでは処理中のままにしておく（一覧に着くまで押せないように）
+      router.push("/itineraries");
+      router.refresh();
+    } catch (caught) {
+      if (!(caught instanceof UnauthorizedError)) setError("削除できませんでした");
+      setPending(null);
     }
-    router.push("/itineraries");
-    router.refresh();
   };
 
   const rename = async () => {
     const next = window.prompt("アルバム名", itinerary.title);
     if (next === null || next.trim() === itinerary.title) return;
-    await run(() => api.rename(itinerary.id, next.trim()), "タイトルを変更できませんでした");
+    await run(() => api.rename(itinerary.id, next.trim()), "タイトルを変更できませんでした", { kind: "rename" });
   };
 
   const periodLabel = formatPeriodLabel(itinerary.startDate, itinerary.endDate);
@@ -277,6 +311,12 @@ export function ItineraryDetailScreen({
 
         <DayTabs dayCount={itinerary.dayCount} dayDates={itinerary.dayDates} spots={itinerary.spots} value={day} onChange={setDay} className="mt-3" />
 
+        {/* loading-feedback Task 3: 押した直後に必ず画面が変わるようにする（要件 4.5.11） */}
+        {pending && (
+          <p role="status" className="mt-2 rounded-[10px] border border-line bg-surface px-3 py-2 text-[12px] text-muted">
+            {PENDING_LABELS[pending.kind]}
+          </p>
+        )}
         {error && <ErrorNotice className="mt-2" message={error} />}
 
         {visibleCount === 0 ? (
@@ -294,6 +334,7 @@ export function ItineraryDetailScreen({
               onUpdate={updateSpot}
               onRemove={(spotId) => void removeSpot(spotId)}
               onMoveDay={(spotId, target) => void moveDay(spotId, target)}
+              pending={pending && "spotId" in pending ? pending : null}
               onReorder={(from, to) => void reorderUntimed(group.day, from, to)}
             />
           ))
@@ -384,6 +425,7 @@ function DayGroup({
   onRemove,
   onMoveDay,
   onReorder,
+  pending,
 }: {
   day: DayKey;
   spots: ItinerarySpotItem[];
@@ -395,6 +437,8 @@ function DayGroup({
   onRemove: (spotId: string) => void;
   onMoveDay: (spotId: string, target: DayKey) => void;
   onReorder: (from: number, to: number) => void;
+  /** loading-feedback Task 3: 処理中の行と、その操作の種類 */
+  pending: { kind: "remove" | "move"; spotId: string } | null;
 }) {
   const { dragging, registerRow, handleProps } = useRowDrag(onReorder);
   // 時刻の無い行の中での順番（取っ手のインデックス）。時刻のある行は -1
@@ -425,6 +469,7 @@ function DayGroup({
               onUpdate={onUpdate}
               onRemove={onRemove}
               onMoveDay={onMoveDay}
+              pending={pending?.spotId === spot.spotId ? pending.kind : null}
             />
           );
         })}

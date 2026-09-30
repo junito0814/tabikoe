@@ -4,6 +4,7 @@ import { useCallback, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ErrorNotice } from "@/components/notices/ErrorNotice";
+import { CardListSkeleton } from "@/components/skeleton/Skeletons";
 import { ERROR_MESSAGES } from "@/components/notices/error-messages";
 import { fetchWithAuthRedirect, UnauthorizedError } from "@/lib/api/fetch-with-auth-redirect";
 import { walkMinutesBetween } from "@/lib/geo/walk-minutes";
@@ -78,6 +79,8 @@ export function SpotSearchScreen({
       const requestId = ++requestIdRef.current;
       setIsLoading(true);
       setErrorMessage(null);
+      // loading-feedback Task 3（2026-09-30）: 条件を変えたときは古い一覧を残さない（要件 4.5.11 の場面 4）
+      if (replace) setSpots([]);
       try {
         const page = await fetchPage(buildPostSearchParams(nextState, context, offset));
         if (requestIdRef.current !== requestId) return null;
@@ -162,7 +165,9 @@ export function SpotSearchScreen({
             initialPage={initialMediaPage && initialMediaPage.key === mediaParams.toString() ? initialMediaPage.page : { items: [], nextOffset: 0 }}
             fetchPage={fetchMediaPage}
           />
-        ) : spots.length === 0 && !isLoading && !errorMessage ? (
+        ) : spots.length === 0 && isLoading ? (
+          <CardListSkeleton />
+        ) : spots.length === 0 && !errorMessage ? (
           <p className="py-16 text-center text-[13px] text-muted">{emptyMessage}</p>
         ) : (
           <ul className="flex flex-col gap-3" data-spot-list>

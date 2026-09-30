@@ -225,3 +225,37 @@ describe("PostCard（v3.2: コメントのプレビュー）", () => {
     expect(preview).toHaveAttribute("href", "/posts/p1#comments");
   });
 });
+
+describe("loading-feedback Task 3: 条件を変えたら古い一覧を残さない", () => {
+  const filled = { posts: [card("p1")], nextOffset: null };
+
+  it("並び替えを変えた直後に古いカードが消え、骨組みが出る", async () => {
+    let resolvePage: (page: typeof empty) => void = () => {};
+    const fetchPage = vi.fn(() => new Promise<typeof empty>((resolve) => { resolvePage = resolve; }));
+    render(
+      <PostSearchScreen
+        context={pref}
+        initialState={EMPTY_SEARCH_STATE}
+        initialPage={filled}
+        title="大阪府"
+        backHref="/"
+        backLabel="ホーム"
+        fetchPage={fetchPage}
+      />
+    );
+    // 最初は 1 件出ている
+    expect(screen.getByText("たこ焼き〇〇")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "並び替え: 新着順" }));
+    fireEvent.click(screen.getByRole("option", { name: "評価順" }));
+
+    // 古いカードは残らず、読み込んでいることが分かる
+    await waitFor(() => expect(screen.queryByText("たこ焼き〇〇")).not.toBeInTheDocument());
+    expect(screen.getByRole("status", { name: "読み込んでいます" })).toBeInTheDocument();
+    // 条件を変えただけなのに「ありません」とは言わない
+    expect(screen.queryByText("条件に合う投稿がありません")).not.toBeInTheDocument();
+
+    resolvePage({ posts: [], nextOffset: null });
+    await waitFor(() => expect(screen.getByText("条件に合う投稿がありません")).toBeInTheDocument());
+  });
+});

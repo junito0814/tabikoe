@@ -5,6 +5,7 @@ import Link from "next/link";
 import { appendBackHref } from "@/lib/search/list-state";
 import { useRouter } from "next/navigation";
 import { ErrorNotice } from "@/components/notices/ErrorNotice";
+import { CardListSkeleton } from "@/components/skeleton/Skeletons";
 import { ERROR_MESSAGES } from "@/components/notices/error-messages";
 import { fetchWithAuthRedirect, UnauthorizedError } from "@/lib/api/fetch-with-auth-redirect";
 import { walkMinutesBetween } from "@/lib/geo/walk-minutes";
@@ -101,6 +102,10 @@ export function PostSearchScreen({
       const requestId = ++requestIdRef.current;
       setIsLoading(true);
       setErrorMessage(null);
+      // loading-feedback Task 3（2026-09-30）: 条件を変えたときは古い一覧を残さない。
+      // 残すと「絞り込んだのに変わっていない」ように見える（要件 4.5.11 の場面 4）。
+      // 追加読み込み（replace が false）では消さない
+      if (replace) setPosts([]);
       try {
         const page = await fetchPage(buildPostSearchParams(nextState, context, offset));
         if (requestIdRef.current !== requestId) return null;
@@ -193,7 +198,9 @@ export function PostSearchScreen({
             initialPage={initialMediaPage && initialMediaPage.key === mediaParams.toString() ? initialMediaPage.page : { items: [], nextOffset: 0 }}
             fetchPage={fetchMediaPage}
           />
-        ) : posts.length === 0 && !isLoading && !errorMessage ? (
+        ) : posts.length === 0 && isLoading ? (
+          <CardListSkeleton />
+        ) : posts.length === 0 && !errorMessage ? (
           <p className="py-16 text-center text-[13px] text-muted">{emptyMessage}</p>
         ) : (
           <ul className="flex flex-col gap-3">

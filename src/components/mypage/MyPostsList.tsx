@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { ErrorNotice } from "@/components/notices/ErrorNotice";
+import { CardListSkeleton } from "@/components/skeleton/Skeletons";
 import { ERROR_MESSAGES } from "@/components/notices/error-messages";
 import { fetchWithAuthRedirect, UnauthorizedError } from "@/lib/api/fetch-with-auth-redirect";
 import type { MyPost, MyPostsPage } from "@/lib/users/my-page";
@@ -41,6 +42,8 @@ export function MyPostsList({
     async (nextTripId: string | null, offset: number, replace: boolean) => {
       const requestId = ++requestIdRef.current;
       setIsLoading(true);
+      // loading-feedback Task 3（2026-09-30）: 旅行を変えたときは古い一覧を残さない（要件 4.5.11 の場面 4）
+      if (replace) setPosts([]);
       setErrorMessage(null);
       try {
         const page = await fetchPosts(nextTripId, offset);
@@ -93,7 +96,9 @@ export function MyPostsList({
         </select>
       </div>
 
-      {posts.length === 0 && !isLoading ? (
+      {posts.length === 0 && isLoading ? (
+        <CardListSkeleton count={2} />
+      ) : posts.length === 0 ? (
         <p className="py-10 text-center text-[13px] text-muted">まだ投稿がありません</p>
       ) : (
         <ul className="flex flex-col gap-2">
