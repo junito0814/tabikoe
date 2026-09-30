@@ -99,3 +99,51 @@ describe("SaveButton / SaveSheet", () => {
     expect(screen.getByRole("button", { name: "しおりに追加" })).toHaveAttribute("aria-pressed", "false");
   });
 });
+
+describe("loading-feedback Task 3: 保存シートは押した瞬間にチェックが入る", () => {
+  it("行きたいのチェックが、API の結果を待たずに入る", async () => {
+    const api = makeApi();
+    let resolveToggle: (response: Response) => void = () => {};
+    api.toggleWishlist = vi.fn(() => new Promise<Response>((resolve) => { resolveToggle = resolve; }));
+    render(<SaveButton spotId="s1" initialSaved={false} api={api} />);
+    fireEvent.click(screen.getByRole("button", { name: "保存する" }));
+
+    const checkbox = await screen.findByRole("checkbox", { name: /行きたいスポット/ });
+    expect(checkbox).not.toBeChecked();
+    fireEvent.click(checkbox);
+    // 通信が終わる前にチェックが入っている（楽観更新）
+    expect(checkbox).toBeChecked();
+
+    resolveToggle(Response.json({}));
+    await waitFor(() => expect(api.toggleWishlist).toHaveBeenCalledWith("s1", true));
+    expect(checkbox).toBeChecked();
+  });
+
+  it("失敗したらチェックが元に戻り、理由が出る", async () => {
+    const api = makeApi();
+    api.toggleWishlist = vi.fn(async () => Response.json({ error: "x" }, { status: 500 }));
+    render(<SaveButton spotId="s1" initialSaved={false} api={api} />);
+    fireEvent.click(screen.getByRole("button", { name: "保存する" }));
+
+    const checkbox = await screen.findByRole("checkbox", { name: /行きたいスポット/ });
+    fireEvent.click(checkbox);
+    expect(checkbox).toBeChecked();
+
+    await waitFor(() => expect(screen.getByText("保存できませんでした")).toBeInTheDocument());
+    expect(checkbox).not.toBeChecked();
+  });
+
+  it("しおりのチェックも押した瞬間に入り、失敗したら戻る", async () => {
+    const api = makeApi();
+    api.itineraries.addSpot = vi.fn(async () => Response.json({ error: "x" }, { status: 500 }));
+    render(<SaveButton spotId="s1" initialSaved={false} api={api} />);
+    fireEvent.click(screen.getByRole("button", { name: "保存する" }));
+
+    const checkbox = await screen.findByRole("checkbox", { name: /大阪旅行/ });
+    fireEvent.click(checkbox);
+    expect(checkbox).toBeChecked();
+
+    await waitFor(() => expect(screen.getByText("しおりに保存できませんでした")).toBeInTheDocument());
+    expect(checkbox).not.toBeChecked();
+  });
+});

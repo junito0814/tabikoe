@@ -212,3 +212,52 @@ describe("ItineraryDetailScreen（SC-23）", () => {
     expect(document.querySelector("[data-itinerary-static-map]")).toBeNull();
   });
 });
+
+describe("loading-feedback Task 3: 押した直後に画面が変わる", () => {
+  it("スポットを外している間は文言が出て、その行のボタンが押せなくなる", async () => {
+    const current = detail();
+    const api = makeApi(current);
+    let resolveRemove: (response: Response) => void = () => {};
+    api.removeSpot = vi.fn(() => new Promise<Response>((resolve) => { resolveRemove = resolve; }));
+    render(<ItineraryDetailScreen initial={current} viewerId="me" api={api} />);
+
+    const row = document.querySelector("[data-spot-row='b']") ?? screen.getByText("スポットb").closest("li")!;
+    fireEvent.click(within(row as HTMLElement).getByRole("button", { name: "削除" }));
+
+    // 押した直後に出る（API の結果を待たない）
+    expect(await screen.findByRole("status")).toHaveTextContent("しおりから外しています…");
+    expect(within(row as HTMLElement).getByRole("button", { name: "削除" })).toBeDisabled();
+
+    resolveRemove(Response.json({ ok: true }));
+    await waitFor(() => expect(screen.queryByRole("status")).not.toBeInTheDocument());
+  });
+
+  it("再取得が終わるまで文言を出したままにする（2 往復目で無反応に戻らない）", async () => {
+    const current = detail();
+    const api = makeApi(current);
+    let resolveGet: (data: { itinerary: ItineraryDetail }) => void = () => {};
+    api.get = vi.fn(() => new Promise<{ itinerary: ItineraryDetail }>((resolve) => { resolveGet = resolve; }));
+    render(<ItineraryDetailScreen initial={current} viewerId="me" api={api} />);
+
+    const row = screen.getByText("スポットb").closest("li")!;
+    fireEvent.click(within(row).getByRole("button", { name: "削除" }));
+
+    // 1 往復目（removeSpot）は終わったが、再取得はまだ
+    await waitFor(() => expect(api.get).toHaveBeenCalled());
+    expect(screen.getByRole("status")).toHaveTextContent("しおりから外しています…");
+
+    resolveGet({ itinerary: current });
+    await waitFor(() => expect(screen.queryByRole("status")).not.toBeInTheDocument());
+  });
+
+  it("失敗したら文言を消してエラーを出す", async () => {
+    const current = detail();
+    const api = makeApi(current);
+    api.removeSpot = vi.fn(async () => Response.json({ error: "x" }, { status: 500 }));
+    render(<ItineraryDetailScreen initial={current} viewerId="me" api={api} />);
+
+    fireEvent.click(within(screen.getByText("スポットb").closest("li")!).getByRole("button", { name: "削除" }));
+    await waitFor(() => expect(screen.getByText("外せませんでした")).toBeInTheDocument());
+    expect(screen.queryByRole("status")).not.toBeInTheDocument();
+  });
+});

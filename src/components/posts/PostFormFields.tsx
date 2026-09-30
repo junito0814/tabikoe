@@ -100,6 +100,7 @@ export function PostFormFields({
   spotField,
   mediaItems,
   onRemoveMedia,
+  removingMediaKey = null,
   onAddMedia,
   fileInputRef,
   onFilesSelected,
@@ -111,6 +112,8 @@ export function PostFormFields({
   spotField: React.ReactNode;
   mediaItems: SelectedMedia[];
   onRemoveMedia: (key: string) => void;
+  /** loading-feedback Task 3: 消している最中の写真 */
+  removingMediaKey?: string | null;
   onAddMedia: () => void;
   fileInputRef: React.RefObject<HTMLInputElement | null>;
   onFilesSelected: (event: React.ChangeEvent<HTMLInputElement>) => void;
@@ -239,6 +242,7 @@ export function PostFormFields({
         <SelectedMediaThumbnails
           items={mediaItems}
           onRemove={onRemoveMedia}
+          removingKey={removingMediaKey}
           onAdd={onAddMedia}
           addLabel="写真・動画を追加"
         />

@@ -121,36 +121,67 @@ function SaveSheetBody({
     }
   };
 
+  /**
+   * loading-feedback Task 3（2026-09-30）: 取り消せる操作は先に画面を変える（要件 4.5.11）。
+   * 【初心者向け】これまでは結果が返ってからチェックを入れていたので、押してもチェックが入らず
+   * 「押せていない」ように見えていた。先に入れて、失敗したときだけ戻す（楽観更新）。
+   */
   const toggleWishlist = () =>
     guard(async () => {
       const next = !wishlisted;
-      const response = await api.toggleWishlist(spotId, next);
-      if (!response.ok) throw new Error("wishlist");
+      const delta = next ? 1 : -1;
       setWishlisted(next);
-      setWishlistCount((count) => (count === null ? count : count + (next ? 1 : -1)));
+      setWishlistCount((count) => (count === null ? count : count + delta));
+      try {
+        const response = await api.toggleWishlist(spotId, next);
+        if (!response.ok) throw new Error("wishlist");
+      } catch (caught) {
+        setWishlisted(!next);
+        setWishlistCount((count) => (count === null ? count : count - delta));
+        throw caught;
+      }
     }, "保存できませんでした");
 
   const toggleItinerary = (item: ItineraryListItem) =>
     guard(async () => {
-      if (item.containsSpot) {
-        const response = await api.itineraries.removeSpot(item.id, spotId);
-        if (!response.ok) throw new Error("remove");
-        setItems((current) => (current ?? []).map((it) => (it.id === item.id ? { ...it, containsSpot: false, spotDayIndex: null, spotCount: it.spotCount - 1 } : it)));
-      } else {
-        // 既定は「日付なし」（Day は後から選べる）
-        const response = await api.itineraries.addSpot(item.id, spotId, null);
-        if (!response.ok) throw new Error("add");
-        setItems((current) => (current ?? []).map((it) => (it.id === item.id ? { ...it, containsSpot: true, spotDayIndex: null, spotCount: it.spotCount + 1 } : it)));
-        setSavedItinerary({ id: item.id, title: item.title });
+      const adding = !item.containsSpot;
+      // 押した瞬間の見た目を作り、失敗したら元の値に戻せるよう「前の状態」を控えておく
+      const setRow = (containsSpot: boolean, spotDayIndex: DayKey | null, spotCount: number) =>
+        setItems((current) => (current ?? []).map((it) => (it.id === item.id ? { ...it, containsSpot, spotDayIndex, spotCount } : it)));
+      // 型のうえでは省略できる項目なので、無いときの既定（入っていない・日付なし）に寄せる
+      const before = { containsSpot: item.containsSpot === true, spotDayIndex: item.spotDayIndex ?? null, spotCount: item.spotCount };
+      const previousSaved = savedItinerary;
+
+      // 既定は「日付なし」（Day は後から選べる）
+      setRow(adding, null, item.spotCount + (adding ? 1 : -1));
+      if (adding) setSavedItinerary({ id: item.id, title: item.title });
+      try {
+        const response = adding ? await api.itineraries.addSpot(item.id, spotId, null) : await api.itineraries.removeSpot(item.id, spotId);
+        if (!response.ok) throw new Error(adding ? "add" : "remove");
+      } catch (caught) {
+        setRow(before.containsSpot, before.spotDayIndex, before.spotCount);
+        setSavedItinerary(previousSaved);
+        throw caught;
       }
     }, "しおりに保存できませんでした");
 
   const changeDay = (item: ItineraryListItem, day: DayKey) =>
     guard(async () => {
-      const response = await api.itineraries.updateSpot(item.id, spotId, { dayIndex: day });
-      if (!response.ok) throw new Error("day");
-      setItems((current) => (current ?? []).map((it) => (it.id === item.id ? { ...it, spotDayIndex: day } : it)));
+      const setDayIndex = (value: DayKey | null) =>
+        setItems((current) => (current ?? []).map((it) => (it.id === item.id ? { ...it, spotDayIndex: value } : it)));
+      const before = item.spotDayIndex ?? null;
+      const previousSaved = savedItinerary;
+
+      setDayIndex(day);
       setSavedItinerary({ id: item.id, title: item.title });
+      try {
+        const response = await api.itineraries.updateSpot(item.id, spotId, { dayIndex: day });
+        if (!response.ok) throw new Error("day");
+      } catch (caught) {
+        setDayIndex(before);
+        setSavedItinerary(previousSaved);
+        throw caught;
+      }
     }, "Day を変更できませんでした");
 
   const createItinerary = (event: FormEvent) => {
@@ -249,8 +280,9 @@ function SaveSheetBody({
                 autoFocus
                 className="h-10 min-w-0 flex-1 rounded-[10px] border border-line bg-surface px-3 text-[13px] text-ink focus:outline-none focus:ring-1 focus:ring-accent"
               />
+              {/* loading-feedback Task 3: しおりを作る → スポットを入れる の 2 往復があるので文言を変える（要件 4.5.11） */}
               <button type="submit" disabled={busy || !newTitle.trim()} className="h-10 shrink-0 rounded-[10px] bg-accent px-3 text-[12px] font-semibold text-white disabled:opacity-45">
-                作る
+                {busy ? "作成中…" : "作る"}
               </button>
             </form>
           ) : (

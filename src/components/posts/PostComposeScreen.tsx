@@ -131,6 +131,13 @@ export function PostComposeScreen({
   const mediaCount = mediaItems.length;
 
   const [isSubmitting, setIsSubmitting] = useState(false);
+  /**
+   * loading-feedback Task 3（2026-09-30）: いま送っているのが「投稿」か「下書き」か。
+   * 「下書きに保存」は写真・動画のアップロードを含むので最も長く待つのに、文言が変わらなかった（要件 4.5.11）
+   */
+  const [submittingStatus, setSubmittingStatus] = useState<"draft" | "published" | null>(null);
+  /** 消している最中の写真。二重に押せないようにし、押したことが分かるように薄くする */
+  const [removingMediaKey, setRemovingMediaKey] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [confirmingHome, setConfirmingHome] = useState(false);
   const [sheetExpanded, setSheetExpanded] = useState(false);
@@ -167,7 +174,8 @@ export function PostComposeScreen({
       return;
     }
     const photoId = key.slice("existing:".length);
-    if (!existing) return;
+    if (!existing || removingMediaKey !== null) return;
+    setRemovingMediaKey(key);
     try {
       const response = await api.deletePhoto(existing.postId, photoId);
       if (response.status === 400) {
@@ -182,6 +190,8 @@ export function PostComposeScreen({
     } catch (error) {
       if (error instanceof UnauthorizedError) return;
       setErrorMessage("写真を削除できませんでした");
+    } finally {
+      setRemovingMediaKey(null);
     }
   };
 
@@ -220,6 +230,7 @@ export function PostComposeScreen({
       return;
     }
     setIsSubmitting(true);
+    setSubmittingStatus(status);
     setErrorMessage(null);
     try {
       const media = await uploadPendingFiles(postId);
@@ -271,6 +282,7 @@ export function PostComposeScreen({
       setErrorMessage(status === "draft" ? "下書きを保存できませんでした" : "投稿できませんでした。入力内容をご確認ください");
     } finally {
       setIsSubmitting(false);
+      setSubmittingStatus(null);
     }
   };
 
@@ -357,6 +369,7 @@ export function PostComposeScreen({
               }
               mediaItems={mediaItems}
               onRemoveMedia={(key) => void handleRemoveMedia(key)}
+              removingMediaKey={removingMediaKey}
               onAddMedia={() => fileInputRef.current?.click()}
               fileInputRef={fileInputRef}
               onFilesSelected={handleFilesSelected}
@@ -386,7 +399,7 @@ export function PostComposeScreen({
             disabled={!canPublish}
             className="h-12 flex-1 rounded-[10px] bg-accent text-[15px] font-semibold text-white disabled:cursor-not-allowed disabled:opacity-45"
           >
-            {isSubmitting ? "送信中..." : isEditingPublished ? "更新する" : "投稿する"}
+            {submittingStatus === "published" ? "送信中..." : isEditingPublished ? "更新する" : "投稿する"}
           </button>
           {!isEditingPublished && (
             <button
@@ -395,7 +408,7 @@ export function PostComposeScreen({
               disabled={isSubmitting || position === null}
               className="h-12 flex-1 rounded-[10px] border border-line bg-surface text-[14px] font-semibold text-ink disabled:opacity-45"
             >
-              下書きに保存
+              {submittingStatus === "draft" ? "保存中…" : "下書きに保存"}
             </button>
           )}
         </div>

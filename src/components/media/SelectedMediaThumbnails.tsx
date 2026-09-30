@@ -25,9 +25,15 @@ export function SelectedMediaThumbnails({
   onRemove,
   onAdd,
   addLabel = "追加",
+  removingKey = null,
 }: {
   items: SelectedMedia[];
   onRemove: (key: string) => void;
+  /**
+   * loading-feedback Task 3（2026-09-30）: いま消している最中の写真。
+   * 押したのに何も起きないように見えていたので、薄くして二重に押せないようにする（要件 4.5.11）
+   */
+  removingKey?: string | null;
   /** 「＋」を押したときの処理（file input を開く）。無ければ「＋」を出さない */
   onAdd?: () => void;
   addLabel?: string;
@@ -36,7 +42,12 @@ export function SelectedMediaThumbnails({
   return (
     <ul className="flex gap-2 overflow-x-auto pb-1" aria-label="選択中の写真・動画">
       {items.map((item) => (
-        <li key={item.key} className="relative h-20 w-20 shrink-0 overflow-hidden rounded-[8px] bg-line" data-selected-media={item.key}>
+        <li
+          key={item.key}
+          className={`relative h-20 w-20 shrink-0 overflow-hidden rounded-[8px] bg-line ${removingKey === item.key ? "opacity-40" : ""}`}
+          data-selected-media={item.key}
+          data-removing={removingKey === item.key ? "" : undefined}
+        >
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src={item.url} alt={item.alt} className="h-full w-full object-cover" />
           {item.mediaType === "video" && (
@@ -50,8 +61,9 @@ export function SelectedMediaThumbnails({
           <button
             type="button"
             onClick={() => onRemove(item.key)}
-            aria-label={`${item.alt}を外す`}
-            className="absolute right-1 top-1 flex h-6 w-6 items-center justify-center rounded-full bg-black/55 text-[13px] leading-none text-white"
+            disabled={removingKey !== null}
+            aria-label={removingKey === item.key ? `${item.alt}を外しています` : `${item.alt}を外す`}
+            className="absolute right-1 top-1 flex h-6 w-6 items-center justify-center rounded-full bg-black/55 text-[13px] leading-none text-white disabled:opacity-60"
           >
             ×
           </button>

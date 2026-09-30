@@ -123,3 +123,20 @@ describe("PostComposeScreen", () => {
     expect(api.update).not.toHaveBeenCalled();
   });
 });
+
+describe("loading-feedback Task 3: 押した直後に文言が変わる", () => {
+  it("「下書きに保存」は保存中に文言が変わり、投稿ボタンの文言は変わらない", async () => {
+    let resolveCreate: (response: Response) => void = () => {};
+    const api = makeApi({ create: vi.fn(() => new Promise<Response>((resolve) => { resolveCreate = resolve; })) });
+    render(<PostComposeScreen initial={currentLocation} api={api} />);
+
+    fireEvent.click(screen.getByRole("button", { name: "下書きに保存" }));
+    // 押した直後に変わる（写真のアップロードを含むので最も長く待つ）
+    expect(await screen.findByRole("button", { name: "保存中…" })).toBeInTheDocument();
+    // 下書きを保存している間に「送信中...」とは出さない
+    expect(screen.getByRole("button", { name: "投稿する" })).toBeInTheDocument();
+
+    resolveCreate(Response.json({ postId: "p1" }, { status: 201 }));
+    await waitFor(() => expect(api.create).toHaveBeenCalled());
+  });
+});
