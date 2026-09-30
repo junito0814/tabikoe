@@ -29,6 +29,10 @@ export function InAppInvitePanel({ api, className }: { api: InAppInviteApi; clas
   const [results, setResults] = useState<UserSummary[]>([]);
   const [sent, setSent] = useState<Set<string>>(new Set());
   const [busyId, setBusyId] = useState<string | null>(null);
+  // loading-feedback Task 2（2026-09-30）: 「どの語で探し終えたか」を覚えておく。
+  // これが無いと、結果が返るまでの間ずっと「見つかりませんでした」と出ていた（要件 4.5.11）。
+  // 探している最中かどうかは state を足さず、これと今の入力を見比べて求める
+  const [searchedQuery, setSearchedQuery] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -59,11 +63,14 @@ export function InAppInvitePanel({ api, className }: { api: InAppInviteApi; clas
       api
         .searchUsers(q)
         .then((data) => {
-          if (!cancelled) setResults(data.users);
+          if (cancelled) return;
+          setResults(data.users);
+          setSearchedQuery(q);
         })
         .catch((caught) => {
           if (cancelled || caught instanceof UnauthorizedError) return;
           setResults([]);
+          setSearchedQuery(q);
         });
     }, 300);
     return () => {
@@ -104,6 +111,8 @@ export function InAppInvitePanel({ api, className }: { api: InAppInviteApi; clas
   const isSent = (user: UserSummary & { pendingInvitationId?: string | null }) => sent.has(user.id) || Boolean(user.pendingInvitationId);
   const candidateIds = new Set((candidates ?? []).map((candidate) => candidate.id));
   const searchOnly = results.filter((user) => !candidateIds.has(user.id) || query.trim().length >= 2);
+  // 探している最中か（デバウンスで待っている間も含む）。今の入力と「探し終えた語」が違えばまだ探している
+  const isSearching = query.trim().length >= 2 && searchedQuery !== query.trim();
 
   const row = (user: UserSummary & { pendingInvitationId?: string | null }) => (
     <li key={user.id} className="flex items-center gap-2" data-invite-user={user.id}>
@@ -138,7 +147,14 @@ export function InAppInvitePanel({ api, className }: { api: InAppInviteApi; clas
       />
       {query.trim().length >= 2 && (
         <ul className="flex flex-col gap-2" aria-label="検索結果">
-          {searchOnly.length === 0 ? <li className="text-[12px] text-muted">見つかりませんでした</li> : searchOnly.map((user) => row(user))}
+          {/* 探し終わるまでは「見つかりませんでした」と言わない（要件 4.5.11 の共通の決まり） */}
+          {isSearching ? (
+            <li className="text-[12px] text-muted">探しています…</li>
+          ) : searchOnly.length === 0 ? (
+            <li className="text-[12px] text-muted">見つかりませんでした</li>
+          ) : (
+            searchOnly.map((user) => row(user))
+          )}
         </ul>
       )}
       <div>
