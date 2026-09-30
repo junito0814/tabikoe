@@ -111,7 +111,10 @@ describe("ItineraryDetailScreen（SC-23）", () => {
     expect(screen.getByRole("link", { name: "しおり一覧" })).toHaveAttribute("href", "/itineraries");
   });
 
-  it("v3.1: 期間は年つきでタップで変更、タイトルは ✎ で名前変更、値段は出ない", () => {
+  // 2026-09-30（#632）: 既定の 5 秒だと、209 ファイルを並列で流したときに機械の負荷で超えることがあった。
+  // コードの不具合ではなく待ち時間の問題なので、**このテストだけ**上限を延ばす。
+  // 全体の上限は 5 秒のままにする（延ばすと、本当に固まったテストの発見が遅れるため）。
+  it("v3.1: 期間は年つきでタップで変更、タイトルは ✎ で名前変更、値段は出ない", { timeout: 15000 }, () => {
     render(<ItineraryDetailScreen initial={detail()} viewerId="me" api={makeApi(detail())} />);
     expect(screen.getByRole("button", { name: "期間 2026/9/20（日） 〜 2026/9/22（火）（変更）" })).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "期間を変更" })).toBeNull();

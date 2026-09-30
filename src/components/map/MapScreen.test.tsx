@@ -178,7 +178,10 @@ describe("MapScreen（SC-02 v3.0）", () => {
     expect(await screen.findByRole("dialog", { name: "スポットspot-1" })).toBeInTheDocument();
   });
 
-  it("探すモード: 近くのスポットが出て、半径切替で再取得、カード切替でフォーカスピンが変わる", async () => {
+  // 2026-09-30（#632）: 既定の 5 秒だと、209 ファイルを並列で流したときに機械の負荷で超えることがあった。
+  // コードの不具合ではなく待ち時間の問題なので、**このテストだけ**上限を延ばす。
+  // 全体の上限は 5 秒のままにする（延ばすと、本当に固まったテストの発見が遅れるため）。
+  it("探すモード: 近くのスポットが出て、半径切替で再取得、カード切替でフォーカスピンが変わる", { timeout: 15000 }, async () => {
     const fetchNearby = vi.fn(async () => [
       { id: "p1", spotId: "s1", spotName: "展望台", commentExcerpt: "夕日", thumbnailUrl: null, lat: 35.66, lng: 139.76, distanceMeters: 480, walkMinutes: 6, minutes: 6, mode: "walk" as const },
       { id: "p2", spotId: "s2", spotName: "直売所", commentExcerpt: "トマト", thumbnailUrl: null, lat: 35.67, lng: 139.77, distanceMeters: 900, walkMinutes: 12, minutes: 12, mode: "walk" as const },
