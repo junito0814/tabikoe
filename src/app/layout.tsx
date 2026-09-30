@@ -16,6 +16,21 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+/**
+ * #623: iOS の起動画面の画像。`public/splash/` に置いた 8 枚を、端末の大きさごとに指す。
+ * 画像は scratchpad の gen-splash.mjs で作った（空の青 + 4.5.9 のロゴ）。作り直すときも同じ手順で。
+ */
+const APPLE_STARTUP_IMAGES = [
+  { url: "/splash/splash-1290x2796.png", media: "(device-width: 430px) and (device-height: 932px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" },
+  { url: "/splash/splash-1284x2778.png", media: "(device-width: 428px) and (device-height: 926px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" },
+  { url: "/splash/splash-1242x2688.png", media: "(device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" },
+  { url: "/splash/splash-1179x2556.png", media: "(device-width: 393px) and (device-height: 852px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" },
+  { url: "/splash/splash-1170x2532.png", media: "(device-width: 390px) and (device-height: 844px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" },
+  { url: "/splash/splash-1125x2436.png", media: "(device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" },
+  { url: "/splash/splash-828x1792.png", media: "(device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)" },
+  { url: "/splash/splash-750x1334.png", media: "(device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)" },
+];
+
 export const metadata: Metadata = {
   title: "タビコエ",
   description: "あなたのコエが、だれかのタビへ。",
@@ -24,6 +39,16 @@ export const metadata: Metadata = {
     capable: true,
     title: "タビコエ",
     statusBarStyle: "default",
+    /*
+     * #623: 起動直後の白い一瞬を消す。
+     *
+     * 【初心者向け】**iOS はマニフェストの `background_color` を起動画面に使わない**（Android は使う）。
+     * 画面の幅・高さ・解像度が**ぴったり一致する画像**を渡したときだけ、それを起動画面に出す。
+     * 一致するものが無ければ白のまま。だから端末の大きさごとに 1 枚ずつ用意する。
+     * 中身は空の青（マニフェストの `background_color` と同じ）にロゴを中央へ置いたもの。
+     * このアプリは縦向きが前提なので、縦のぶんだけ用意する。
+     */
+    startupImage: APPLE_STARTUP_IMAGES,
   },
 };
 
