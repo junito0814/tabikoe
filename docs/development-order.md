@@ -339,7 +339,7 @@ Phase 15 の後に着手し、**2026-09-19 に全部マージ**（PR #454〜#460
 
 ## Phase 19 — 読み込み中の見せ方（利用者側のみ） ⬜
 
-出典は要求定義書「変更点 18（2026-09-30）」・要件定義書 4.5.11・8 章 85〜88。ストーリーは [loading-feedback](user-stories/shared-ui/loading-feedback.md)、タスクは [tasks/shared-ui/loading-feedback](tasks/shared-ui/loading-feedback/00-index.md)。Issue は #612〜#614・#620・#621・#623・#624（Epic は作らない）。
+出典は要求定義書「変更点 18（2026-09-30）」・要件定義書 4.5.11・8 章 85〜88。ストーリーは [loading-feedback](user-stories/shared-ui/loading-feedback.md)、タスクは [tasks/shared-ui/loading-feedback](tasks/shared-ui/loading-feedback/00-index.md)。Issue は #612〜#614・#620・#621・#623・#624・#626〜#628（Epic は作らない）。
 
 背景: 通信を待つ場面の見せ方に決まりが無く、画面ごとにばらばらだった。2026-09-30 に全画面を調べたところ、いちばん多いのが**「押せなくするだけ」**で、利用者からは押せていないのか処理中なのか区別が付かない。さらに 2 か所で、読み込み中に「ありません」「見つかりませんでした」と**事実と違う案内**が出ていた。
 
@@ -358,6 +358,9 @@ Phase 15 の後に着手し、**2026-09-19 に全部マージ**（PR #454〜#460
 | 5 | loading-feedback Task 5: 画面を移るときの受け皿 | #621 | ⬜ | なし | `loading.tsx` を 8 枚追加（規約の再同意・アカウントの状態・アカウント・新規登録・投稿作成・バッジ・招待 2 つ） |
 | 6 | loading-feedback Task 6: 画面の拡大（ズーム）の扱い | #624 | ⬜ | なし | 入力欄を 16px に・`touch-action: manipulation`・指 2 本の拡大を止める。地図は影響させない |
 | 7 | loading-feedback Bug 1: 起動直後が白いまま | #623 | ⬜ | なし | iOS はマニフェストの色を起動画面に使わない。`apple-touch-startup-image` を 8 枚渡す |
+| 8 | loading-feedback Task 7: 写真がふわっと出るようにする | #626 | ⬜ | なし | 届いた瞬間に薄く重ねて出す。CSS だけ。**時間あたりの効きが最大** |
+| 9 | loading-feedback Task 8: 切り替わる瞬間の動き | #627 | ⬜ | 5 | 骨組みが本物に受け渡す・写真が繋がって育つ。**まず 30 分で実機で動くか見極める** |
+| 10 | loading-feedback Task 9: 引っ張って更新 | #628 | ⬜ | なし | 一覧 6 画面。上 1/3 地図の 3 枚には付けない |
 
 ---
 
