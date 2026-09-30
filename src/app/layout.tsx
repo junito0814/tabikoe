@@ -37,6 +37,19 @@ export const metadata: Metadata = {
  * 値は globals.css の `--app` と同じ（src/lib/theme/colors.ts。ずれはテストで止めている）。
  */
 export const viewport: Viewport = {
+  /*
+   * loading-feedback Task 6（2026-09-30）: 指 2 本の拡大を止める（要件 4.5.12 の 3）
+   *
+   * 【初心者向け】ホーム画面から単独のアプリとして開く以上、意図しない拡大で
+   * 表示が崩れるのを防ぐ。**副作用を承知のうえでの決定**で、見えにくいときに
+   * 文字を大きくする逃げ道が無くなる（本文が 11〜13px で 503 か所ある）。
+   * 文字の大きさそのものの見直しは提出後（要件 9 章 未決定事項 No.16）。
+   *
+   * 地図の 2 本指の拡大・縮小は影響を受けない。Google マップが自前で持っている
+   * 仕組みで、ページの拡大とは別のため。
+   */
+  maximumScale: 1,
+  userScalable: false,
   themeColor: [
     { media: "(prefers-color-scheme: light)", color: APP_BACKGROUND.light },
     { media: "(prefers-color-scheme: dark)", color: APP_BACKGROUND.dark },
