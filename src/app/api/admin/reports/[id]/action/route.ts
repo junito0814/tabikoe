@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireAdminUser } from "@/lib/auth/require-admin";
+import { requireStepUp } from "@/lib/admin/require-step-up";
 import { recordAdminAction, type AdminActionTargetType } from "@/lib/admin/admin-actions";
 import { applyStrikeForReport, type ApplyStrikeResult } from "@/lib/moderation/apply-strike";
 import { restoreAutoHidden } from "@/lib/moderation/auto-hide";
@@ -55,6 +56,13 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   // strike-system Task 2（3.10.6）: 非公開化・削除は本人に理由を通知するので、理由（メモ）を必須にする
   if (body.action !== "no_issue" && note.length === 0) {
     return NextResponse.json({ error: "note_required" }, { status: 400 });
+  }
+
+  // admin-login Task 7: 削除は元に戻せないので、直前に 6 桁を求める（要件 3.10.1）。
+  // 非公開化（hide）と問題なし（no_issue）は復元できるので求めない
+  if (body.action === "delete") {
+    const stepUp = await requireStepUp();
+    if (stepUp) return stepUp;
   }
 
   const { data: report, error: fetchError } = await admin

@@ -25,6 +25,18 @@ vi.mock("@/lib/reports/find-report-target", () => ({ findReportTarget: async () 
 const notificationInsert = vi.fn(async () => ({ error: null }));
 const effects: string[] = [];
 
+// admin-login Task 7: 重い操作の前の再確認。既定は「直前に 6 桁を入れ終えた状態」。
+// 時刻は呼ばれたときに作る（偽の時計を使うテストとずれないように）
+const stepUpState = { mode: "fresh" as "fresh" | "stale" | "none" };
+vi.mock("next/headers", () => ({
+  cookies: async () => ({
+    get: () => {
+      if (stepUpState.mode === "none") return undefined;
+      const ago = stepUpState.mode === "stale" ? 11 * 60 * 1000 : 0;
+      return { value: String(Date.now() - ago) };
+    },
+  }),
+}));
 vi.mock("@/lib/supabase/server", () => ({
   createClient: async () => ({ auth: { getClaims: async () => claimsResultOf(state.user) } }),
 }));
@@ -92,6 +104,7 @@ beforeEach(() => {
   notificationInsert.mockClear();
   applyStrikeForReport.mockClear();
   effects.length = 0;
+  stepUpState.mode = "fresh";
   vi.useRealTimers();
 });
 
@@ -159,5 +172,29 @@ describe("POST /api/admin/reports/[id]/action", () => {
     applyStrikeForReport.mockClear();
     await act("no_issue");
     expect(applyStrikeForReport).not.toHaveBeenCalled();
+  });
+});
+
+describe("admin-login Task 7: 削除の前の再確認（10 分）", () => {
+  it("11 分前だと削除できず、409 step_up_required を返す（DB に書かない）", async () => {
+    stepUpState.mode = "stale";
+    const response = await act("delete", "個人情報のため");
+    expect(response.status).toBe(409);
+    expect(await response.json()).toEqual({ error: "step_up_required" });
+    expect(reportUpdate).not.toHaveBeenCalled();
+    expect(effects).toHaveLength(0);
+  });
+
+  it("非公開化と問題なしでは求めない（元に戻せるため）", async () => {
+    stepUpState.mode = "stale";
+    expect((await act("hide", "不適切な表現")).status).toBe(200);
+    expect((await act("no_issue", "")).status).toBe(200);
+  });
+
+  it("理由が空なら、6 桁を聞く前に 400 を返す（二度手間にしない）", async () => {
+    stepUpState.mode = "none";
+    const response = await act("delete", "");
+    expect(response.status).toBe(400);
+    expect(await response.json()).toEqual({ error: "note_required" });
   });
 });

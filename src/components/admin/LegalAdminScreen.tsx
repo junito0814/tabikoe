@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ErrorNotice } from "@/components/notices/ErrorNotice";
 import { fetchWithAuthRedirect, UnauthorizedError } from "@/lib/api/fetch-with-auth-redirect";
+import { StepUpCancelledError, useStepUp } from "./use-step-up";
 import { LEGAL_KIND_LABELS, LEGAL_KIND_PATHS, LEGAL_KINDS, type LegalDocument, type LegalKind } from "@/lib/legal/legal-documents";
 import { MAX_LEGAL_SUMMARY_LENGTH, type LegalVersionRow } from "@/lib/legal/legal-admin";
 
@@ -37,6 +38,8 @@ export function LegalAdminScreen({
   api?: LegalAdminApi;
 }) {
   const router = useRouter();
+  // admin-login Task 7: 規約の公開は全員に再同意を求める操作なので、確定の直前に 6 桁を聞き直す
+  const { submit: publishWithStepUp, dialog: stepUpDialog } = useStepUp(api.publish);
   const published = versions.find((v) => v.status === "published") ?? null;
   // id が空の draft は「公開中の本文を下敷きにした新しい下書き」（まだ保存していない）
   const [draftId, setDraftId] = useState<string | null>(draft?.id || null);
@@ -96,7 +99,7 @@ export function LegalAdminScreen({
     if (!id) return;
     setIsSubmitting(true);
     try {
-      const response = await api.publish(id);
+      const response = await publishWithStepUp(id);
       if (!response.ok) {
         setErrorMessage("公開できませんでした");
         return;
@@ -105,6 +108,8 @@ export function LegalAdminScreen({
       router.refresh();
     } catch (error) {
       if (error instanceof UnauthorizedError) return;
+      // 6 桁の確認をやめただけ。失敗ではないので何も出さない（書いた本文も下書きとして残っている）
+      if (error instanceof StepUpCancelledError) return;
       setErrorMessage("公開できませんでした");
     } finally {
       setIsSubmitting(false);
@@ -224,6 +229,8 @@ export function LegalAdminScreen({
           </div>
         </div>
       )}
+
+      {stepUpDialog}
     </div>
   );
 }
