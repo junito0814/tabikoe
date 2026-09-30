@@ -1,3 +1,5 @@
+import { BRAND_GROUND } from "@/lib/theme/colors";
+
 /**
  * brand-logo Task2（2026-09-26）: アプリのロゴ
  * 出典: 要件定義書 4.5.9「ロゴとファビコン」、docs/tasks/shared-ui/brand-logo/02-app-logo-in-screens.md
@@ -13,13 +15,13 @@
  *   吹き出しの縁は中心から 11.5〜15、内側の輪の内縁は 19.9 で、どの向きでも触れないようにしてある。
  *   触れると 16 ピクセル（タブの大きさ）でつながって 1 つの塊に見えてしまう。
  *   地の青は var(--accent) ではなく固定値。ダークモードでも明るい四角として見せたいので色を変えない（4.5.9）。
+ *   地の青は 2026-09-30 に src/lib/theme/colors.ts へ移した（マニフェストでも同じ色を使うため。同じ値を 2 か所に書かない）。
  */
-const GROUND = "#2F7FD8";
 
 export function AppLogo({ size = 72 }: { size?: number }) {
     return (
         <svg width={size} height={size} viewBox="0 0 72 72" fill="none" aria-hidden>
-            <rect width="72" height="72" rx="20" fill={GROUND} />
+            <rect width="72" height="72" rx="20" fill={BRAND_GROUND} />
             <circle cx="36" cy="32.8" r="11.5" fill="#FFFFFF" />
             <path d="M32 42L36 51L40 42Z" fill="#FFFFFF" />
             <circle cx="36" cy="36" r="22" fill="none" stroke="#FFFFFF" strokeOpacity="0.6" strokeWidth="4.2" />
