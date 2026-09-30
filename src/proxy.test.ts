@@ -13,15 +13,25 @@ const state = {
   // legal-documents Task 3: 公開中の版と本人の同意
   published: [] as { kind: string; version: string }[],
   consents: [] as { kind: string; version: string }[],
+  // admin-login Task 6: 管理者かどうか・二段階確認の段階・認証アプリの登録
+  isAdmin: false,
+  aal: "aal1" as string | null,
+  totpFactors: [] as { id: string }[],
 };
 // performance Task1: 認証確認は getClaims（手元の署名検証）
-const getClaims = vi.fn(async () => claimsResultOf(state.user));
+// admin-login Task 6: 同じ claims から aal も読むので、テストでも入れておく
+const getClaims = vi.fn(async () => {
+  const result = claimsResultOf(state.user);
+  if (result.data) (result.data.claims as Record<string, unknown>).aal = state.aal;
+  return result;
+});
+const listFactors = vi.fn(async () => ({ data: { all: state.totpFactors, totp: state.totpFactors }, error: null }));
 const signOut = vi.fn(async () => ({ error: null }));
 const rpc = vi.fn(async () => ({ error: null }));
 
 vi.mock("@supabase/ssr", () => ({
   createServerClient: () => ({
-    auth: { getClaims, signOut },
+    auth: { getClaims, signOut, mfa: { listFactors } },
     rpc,
     from: (table: string) => ({
       select: () => ({
@@ -29,7 +39,7 @@ vi.mock("@supabase/ssr", () => ({
           const rows = table === "legal_documents" ? state.published : table === "user_consents" ? state.consents : [];
           return Object.assign(Promise.resolve({ data: rows, error: null }), {
             maybeSingle: async () => ({ data: state.profile, error: null }),
-            single: async () => ({ data: { is_admin: false } }),
+            single: async () => ({ data: { is_admin: state.isAdmin } }),
           });
         },
       }),
@@ -56,6 +66,10 @@ beforeEach(() => {
   rpc.mockClear();
   state.published = [];
   state.consents = [];
+  state.isAdmin = false;
+  state.aal = "aal1";
+  state.totpFactors = [];
+  listFactors.mockClear();
   resetPublishedVersionsCache();
 });
 
@@ -194,6 +208,130 @@ describe("proxy（F-AC-02 Task3: 最終利用から 30 日で再ログイン）"
       const response = await proxy(req);
       expect(response.status).toBe(200);
       expect(getClaims).toHaveBeenCalled();
+    });
+  });
+});
+
+describe("proxy（admin-login Task 1・Task 6: 管理画面の関門）", () => {
+  const verified = (msAgo: number) => ({ "tabikoe-admin-mfa": String(Date.now() - msAgo) });
+  const minute = 60 * 1000;
+
+  describe("① 管理者かどうか", () => {
+    it("一般利用者は画面も API も 404（管理画面の存在自体を見せない）", async () => {
+      state.isAdmin = false;
+      for (const path of ["/admin", "/admin/reports", "/admin/mfa", "/api/admin/reports", "/api/admin/mfa/enroll"]) {
+        expect((await proxy(request(path, session))).status).toBe(404);
+      }
+    });
+
+    it("未ログインも同じく 404", async () => {
+      state.user = null;
+      state.profile = null;
+      for (const path of ["/admin", "/admin/mfa", "/api/admin/reports"]) {
+        expect((await proxy(request(path, {}))).status).toBe(404);
+      }
+    });
+
+    it("管理画面以外は関門を通さない", async () => {
+      state.isAdmin = false;
+      expect((await proxy(request("/mypage", session))).status).toBe(200);
+      expect((await proxy(request("/api/posts", session))).status).toBe(200);
+    });
+  });
+
+  describe("② 二段階確認", () => {
+    beforeEach(() => {
+      state.isAdmin = true;
+    });
+
+    it("認証アプリが未登録なら SC-32 へ送る（元の場所つき）", async () => {
+      state.totpFactors = [];
+      const response = await proxy(request("/admin/reports", session));
+      expect(response.status).toBe(307);
+      const url = new URL(response.headers.get("location")!);
+      expect(url.pathname + url.search).toBe("/admin/mfa?redirect_to=%2Fadmin%2Freports");
+    });
+
+    it("登録済みでも aal1 なら SC-32 へ送る", async () => {
+      state.totpFactors = [{ id: "f1" }];
+      state.aal = "aal1";
+      expect((await proxy(request("/admin", session))).status).toBe(307);
+    });
+
+    it("aal2 かつ 59 分前に確認済みなら通す", async () => {
+      state.totpFactors = [{ id: "f1" }];
+      state.aal = "aal2";
+      const response = await proxy(request("/admin/reports", { ...session, ...verified(59 * minute) }));
+      expect(response.status).toBe(200);
+    });
+
+    it("aal2 でも 61 分前なら聞き直す（60 分の期限）", async () => {
+      state.totpFactors = [{ id: "f1" }];
+      state.aal = "aal2";
+      expect((await proxy(request("/admin", { ...session, ...verified(61 * minute) }))).status).toBe(307);
+    });
+
+    it("確認時刻の Cookie が無ければ聞き直す", async () => {
+      state.totpFactors = [{ id: "f1" }];
+      state.aal = "aal2";
+      expect((await proxy(request("/admin", session))).status).toBe(307);
+    });
+
+    it("aal2 のときは認証アプリの登録を問い合わせない（通信を増やさない）", async () => {
+      state.aal = "aal2";
+      state.totpFactors = [{ id: "f1" }];
+      await proxy(request("/admin", { ...session, ...verified(1 * minute) }));
+      expect(listFactors).not.toHaveBeenCalled();
+    });
+
+    it("aal1 のときだけ登録の有無を問い合わせる", async () => {
+      state.aal = "aal1";
+      await proxy(request("/admin", session));
+      expect(listFactors).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  describe("③ 二段階確認そのものの入口は素通しする（堂々巡りを防ぐ）", () => {
+    beforeEach(() => {
+      state.isAdmin = true;
+      state.aal = "aal1";
+      state.totpFactors = [];
+    });
+
+    it("SC-32 と登録・確認の API は、aal1 でも通る", async () => {
+      for (const path of ["/admin/mfa", "/api/admin/mfa/enroll", "/api/admin/mfa/verify"]) {
+        expect((await proxy(request(path, session))).status).toBe(200);
+      }
+    });
+  });
+
+  describe("④ API は転送せず 401 を返す", () => {
+    beforeEach(() => {
+      state.isAdmin = true;
+      state.aal = "aal1";
+      state.totpFactors = [{ id: "f1" }];
+    });
+
+    it("管理 API は 401 admin_mfa_required（302 を返さない。fetch が転送を追ってしまうため）", async () => {
+      const response = await proxy(request("/api/admin/reports", session));
+      expect(response.status).toBe(401);
+      expect(response.headers.get("location")).toBeNull();
+      expect(await response.json()).toEqual({ error: "admin_mfa_required" });
+    });
+  });
+
+  describe("⑤ 読めなかったときは安全側", () => {
+    it("認証アプリの登録を読めないときは「持っている」とみなす（間違って登録を増やさない）", async () => {
+      state.isAdmin = true;
+      state.aal = "aal1";
+      listFactors.mockImplementationOnce(async () => {
+        throw new Error("down");
+      });
+      const response = await proxy(request("/admin/reports", session));
+      // 登録ではなく確認（6 桁）を求める
+      expect(response.status).toBe(307);
+      const url = new URL(response.headers.get("location")!);
+      expect(url.pathname).toBe("/admin/mfa");
     });
   });
 });

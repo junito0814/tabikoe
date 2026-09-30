@@ -28,3 +28,16 @@ export async function getAuthUserFromClaims(supabase: SupabaseClient): Promise<A
   if (error || !data) return null;
   return authUserFromClaims(data.claims);
 }
+
+/**
+ * admin-login Task 6: JWT の `aal`（どれくらい強く本人確認したか）を読む。純粋関数
+ * 出典: docs/tasks/admin/admin-login/06-proxy-aal2-gate.md
+ *
+ * 【初心者向け】`aal` は Supabase の JWT の必須項目なので、手元の署名検証だけで読める。
+ * Google ログインだけなら `aal1`、認証アプリの 6 桁まで通ると `aal2`。
+ * 入っていない・文字列でないときは null（呼び出し側は「aal2 ではない」として扱う）。
+ */
+export function aalFromClaims(claims: { aal?: unknown } | null | undefined): string | null {
+  if (!claims || typeof claims.aal !== "string" || claims.aal.length === 0) return null;
+  return claims.aal;
+}

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { authUserFromClaims, getAuthUserFromClaims } from "./auth-user";
+import { aalFromClaims, authUserFromClaims, getAuthUserFromClaims } from "./auth-user";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 /**
@@ -26,5 +26,20 @@ describe("auth-user（getClaims による認証確認）", () => {
     expect(await getAuthUserFromClaims(client({ data: null, error: new Error("invalid") }))).toBeNull();
     expect(await getAuthUserFromClaims(client({ data: null, error: null }))).toBeNull();
     expect(await getAuthUserFromClaims(client({ data: { claims: { sub: "u1", email: "a@b" } }, error: null }))).toEqual({ id: "u1", email: "a@b" });
+  });
+});
+
+describe("aalFromClaims（admin-login Task 6）", () => {
+  it("aal をそのまま読む", () => {
+    expect(aalFromClaims({ aal: "aal1" })).toBe("aal1");
+    expect(aalFromClaims({ aal: "aal2" })).toBe("aal2");
+  });
+
+  it("無い・文字列でない・空なら null（呼び出し側は「aal2 ではない」として扱う）", () => {
+    expect(aalFromClaims({})).toBeNull();
+    expect(aalFromClaims(null)).toBeNull();
+    expect(aalFromClaims(undefined)).toBeNull();
+    expect(aalFromClaims({ aal: "" })).toBeNull();
+    expect(aalFromClaims({ aal: 2 })).toBeNull();
   });
 });
