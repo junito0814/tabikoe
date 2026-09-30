@@ -91,8 +91,97 @@ node scripts/admin-mfa-reset.mjs <メールアドレス>
 - スクリプトは `.env.local` の `NEXT_PUBLIC_SUPABASE_URL` と `SUPABASE_SECRET_KEY` を読む。**キーを別の場所に書き写さない。** 手元に `.env.local` が無いときは、Vercel の環境変数から一時的にコピーし、終わったら消す
 - 本番に対して実行するので、メールアドレスの打ち間違いに注意する。引数は 1 つしか受け付けない（複数人を巻き込んで消さないため）
 
+## 8. ステージング環境を作る（2026-09-30 で追加）
+
+**プレビューと手元の開発が、本番のデータを触らないようにする。** これまでは 1 つの Supabase プロジェクトを本番とプレビューと手元で共用していた。手元で試した投稿がそのまま本番に入るので、消し忘れると利用者に見える。
+
+### 何が変わるか
+
+| | これまで | これから |
+|---|---|---|
+| 本番（`tabikoe.vercel.app`） | 本番の Supabase | 本番の Supabase（変わらない） |
+| プレビュー（PR ごと） | **本番の Supabase** | ステージングの Supabase |
+| 手元（`npm run dev`） | **本番の Supabase** | ステージングの Supabase |
+
+**手元が本番を触らなくなるのが、いちばん大きい。**
+
+### 手順
+
+**① Supabase で新しいプロジェクトを作る**
+
+- 名前は `tabikoe-staging`
+- リージョンは本番と同じにする
+- データベースのパスワードを控える
+- **無料枠は動いているプロジェクト 2 つまで**。本番とあわせてちょうど 2 つになる
+
+**② テーブルを作る**
+
+SQL エディタで **`scripts/setup_staging.sql`** を貼って実行する。`supabase/migrations/` の全 43 本をファイル名の順に並べたもので、テーブル・RLS・関数・ストレージのバケット・規約の初期データまで入る。
+
+**本番のプロジェクトでは流さないこと**（すでに当たっているためエラーになる）。
+
+**③ Google ログインを使えるようにする**
+
+1. Supabase（新しい方）: Authentication → Sign In / Providers → Google を有効にし、**本番と同じ**クライアント ID とシークレットを入れる
+2. Google Cloud: APIs & Services → 認証情報 → OAuth 2.0 クライアント ID の「承認済みのリダイレクト URI」に、**新しいプロジェクトの**コールバックを足す
+   - `https://<新しい project-ref>.supabase.co/auth/v1/callback`
+   - **本番のぶんは消さない。両方を並べて登録する**
+
+**④ 戻り先を登録する**
+
+Supabase（新しい方）: Authentication → URL Configuration
+
+- Site URL: `http://localhost:3000`
+- Redirect URLs に次を足す
+  - `http://localhost:3000/api/auth/callback`
+  - `http://localhost:3001/api/auth/callback`（手元で別のポートを使うときのため）
+  - `https://*.vercel.app/api/auth/callback`（プレビューは PR ごとに URL が変わるのでワイルドカード）
+
+**⑤ Vercel の環境変数を Preview だけ差し替える**
+
+Settings → Environment Variables で、次の 3 つを **Preview 環境だけ**ステージングの値にする。**Production は触らない。**
+
+| 変数 | 値 |
+|---|---|
+| `NEXT_PUBLIC_SUPABASE_URL` | ステージングの URL |
+| `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | ステージングの publishable キー |
+| `SUPABASE_SECRET_KEY` | ステージングの secret キー |
+
+Google のキー（Maps・Places・Geocoding・Routes）は本番と同じままでよい。
+
+**⑥ 手元の `.env.local` もステージングに向ける**
+
+同じ 3 つをステージングの値に書き換える。**これで手元の作業が本番に入らなくなる。**
+
+**⑦ Google Maps のキー制限にプレビューのドメインを足す**
+
+APIs & Services → 認証情報 → Maps のキー → HTTP リファラーの制限に `https://*.vercel.app/*` を足す。
+
+**⑧ ダミーデータを入れる**
+
+```
+node scripts/seed/seed-tokyo.mjs
+```
+
+`.env.local` がステージングを向いているので、ステージングに入る。消すときは `node scripts/seed/clean-seed.mjs`。
+
+**⑨ 自分を管理者にする**
+
+ステージングで一度ログインしてから、SQL エディタで `users` の自分の行の `is_admin` を true にする（要件定義書 3.10.1）。
+
+**⑩ 二段階確認を登録する**
+
+ステージングは別のプロジェクトなので、**認証アプリの登録もやり直し**になる（`auth.mfa_factors` は共有されない）。`/admin` を開いて登録する。認証アプリには「タビコエ（ステージング）」のように分かる名前を付けると、本番のぶんと取り違えない。
+
+### 気をつけること
+
+- **無料プランのプロジェクトは、しばらく使わないと一時停止する。** 停止するとプレビューも手元も動かなくなる。管理画面から再開できるので、間があいたら作業前に開いて確かめる
+- **ストレージ（写真・動画）も別々になる。** ステージングで投稿した写真は本番には無い
+- **規約の初期データは ② で入る。** 本番とは別々に版を管理することになるので、文面を直したら両方に反映する
+- **プレビューは Vercel のログインで守られたままにする。** ステージングのデータとはいえ、誰でも開ける状態にはしない
+
 ## 注意
 
 - `SUPABASE_SECRET_KEY` を漏らさない。Vercel の環境変数は Production / Preview / Development を分けて設定できる。
-- ステージングと本番で Supabase プロジェクトは同じものを使う（データも同じ）。ダミーデータは `[seed]` の目印付きで、`node scripts/seed/clean-seed.mjs` で消せる。
+- ~~ステージングと本番で Supabase プロジェクトは同じものを使う（データも同じ）~~ → **2026-09-30 に変更**。**本番とステージングで Supabase プロジェクトを分ける**（上記 8）。プレビューと手元はステージングを見るので、**手元の作業は本番に入らない**。ダミーデータは `[seed]` の目印付きで、`node scripts/seed/clean-seed.mjs` で消せる。
 - 動画の投稿は `VIDEO_UPLOAD_DISABLED=1` の間は 503 を返す（画面にはその旨が出る）。
