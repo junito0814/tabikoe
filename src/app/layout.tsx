@@ -1,8 +1,9 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { AppMenuBar } from "@/components/layout/AppMenuBar";
 import { createClient } from "@/lib/supabase/server";
 import { getAuthUserFromClaims } from "@/lib/auth/auth-user";
+import { APP_BACKGROUND } from "@/lib/theme/colors";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -18,6 +19,28 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "タビコエ",
   description: "あなたのコエが、だれかのタビへ。",
+  // loading-feedback Task 1: iPhone のホーム画面に置いたとき、単独のアプリとして開く（4.5.11 の場面 1）
+  appleWebApp: {
+    capable: true,
+    title: "タビコエ",
+    statusBarStyle: "default",
+  },
+};
+
+/**
+ * loading-feedback Task 1: ブラウザの上下の帯の色（4.5.11 の場面 1）
+ * 出典: docs/tasks/shared-ui/loading-feedback/01-app-shell-color.md
+ *
+ * 【初心者向け】`theme-color` はスマホのブラウザの帯（上のアドレスバーや下の余白）の色。
+ * 何も指定しないと白のままで、ダークモードのときに画面の地（紺寄りの黒）と食い違う。
+ * OS の設定に合わせて 2 つ書くと、ブラウザがその場に合う方を選ぶ。
+ * 値は globals.css の `--app` と同じ（src/lib/theme/colors.ts。ずれはテストで止めている）。
+ */
+export const viewport: Viewport = {
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: APP_BACKGROUND.light },
+    { media: "(prefers-color-scheme: dark)", color: APP_BACKGROUND.dark },
+  ],
 };
 
 /**
