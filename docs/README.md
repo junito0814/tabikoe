@@ -85,7 +85,7 @@ docs/tasks/<カテゴリ>/<スラッグ>/01-〇〇.md     ③ タスク 1 件の
 | F-NT | 通知 | 3.9 | 2 | [user-stories/notifications](user-stories/notifications/) / [tasks/notifications](tasks/notifications/) |
 | F-AD | 管理者機能 | 3.10 | 8 | [user-stories/admin](user-stories/admin/) / [tasks/admin](tasks/admin/) |
 | F-IT | しおり | 3.11 | 7 | [user-stories/itinerary](user-stories/itinerary/) / [tasks/itinerary](tasks/itinerary/) |
-| （横断） | 画面共通仕様 | 4.2、4.5 | 12 | [user-stories/shared-ui](user-stories/shared-ui/) / [tasks/shared-ui](tasks/shared-ui/) |
+| （横断） | 画面共通仕様 | 4.2、4.5 | 13 | [user-stories/shared-ui](user-stories/shared-ui/) / [tasks/shared-ui](tasks/shared-ui/) |
 | （横断） | データ設計の確認 | 5.2〜5.4 | 3 | [user-stories/data-model](user-stories/data-model/) / [tasks/data-model](tasks/data-model/) |
 
 ## カテゴリ詳細（全 67 ストーリー）
@@ -210,6 +210,7 @@ docs/tasks/<カテゴリ>/<スラッグ>/01-〇〇.md     ③ タスク 1 件の
 | [brand-logo](user-stories/shared-ui/brand-logo.md) | ロゴとファビコン | 2 |
 | [map-sheet](user-stories/shared-ui/map-sheet.md) | 上部の地図の操作とシートの 3 段階 | 2 |
 | [performance](user-stories/shared-ui/performance.md) | 性能改善（通信回数・ストリーミング） | 3 |
+| [loading-feedback](user-stories/shared-ui/loading-feedback.md) | 読み込み中の見せ方（2026-09-30。管理画面は保留） | 3 |
 | [mentoring-7](user-stories/shared-ui/mentoring-7.md) | メンタリング 7 回目の反映（v3.1） | 11 |
 | [feedback-0919](user-stories/shared-ui/feedback-0919.md) | 画面遷移マップの見直しで出た追加要望（v3.2） | 8 |
 
