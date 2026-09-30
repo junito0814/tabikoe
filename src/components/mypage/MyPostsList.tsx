@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { FadeInImage } from "@/components/media/FadeInImage";
 import Link from "next/link";
 import { ErrorNotice } from "@/components/notices/ErrorNotice";
 import { CardListSkeleton } from "@/components/skeleton/Skeletons";
@@ -112,8 +113,7 @@ export function MyPostsList({
               >
                 <span className="relative block h-16 w-16 shrink-0 overflow-hidden rounded-[8px] bg-line">
                   {post.thumbnailUrl && (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img src={post.thumbnailUrl} alt="" className="h-full w-full object-cover" />
+                    <FadeInImage src={post.thumbnailUrl} alt="" className="h-full w-full object-cover" />
                   )}
                 </span>
                 <span className="flex min-w-0 flex-1 flex-col gap-0.5">
