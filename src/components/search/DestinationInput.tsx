@@ -45,6 +45,26 @@ export function DestinationInput({
    * 「探し終えた言葉」と「いまの入力」を見比べて、一致するときだけ候補を使う。
    */
   const [searchedQuery, setSearchedQuery] = useState<string | null>(null);
+  /*
+   * #665（2026-10-03）: 日本語の変換中か。
+   *
+   * 【初心者向け】日本語入力は「とうきょう」と打ってから変換して「東京」を確定する。
+   * 変換前の文字でも入力は止まるので、そのまま 300ms 数えると**確定前の言葉で候補を取りに行く**。
+   * そのあと確定して文字が変わると、「探し終えた言葉」と一致しなくなって**出ていた候補が消える**
+   * （実機で「候補が出たり消えたりする」と報告された現象）。
+   * 変換が終わるまで待てば、取りに行くのは確定した言葉の 1 回だけになる
+   * （Places の呼び出し回数＝費用も減る）。
+   */
+  const [isComposing, setIsComposing] = useState(false);
+  /*
+   * #665: 問い合わせの世代。
+   *
+   * 【初心者向け】`とうきょう` と `東京` の 2 本が飛んだとき、**遅れて古い方が届くと新しい候補を
+   * 上書きする**。しかも「探し終えた言葉」まで古い方に戻るので、候補が消えたまま戻らず
+   * 「探しています…」が出たままになっていた（次にキーを打つまで直らない）。
+   * 出すたびに番号を 1 つ進め、**最後に出した番号の応答だけ**を使う（地図のピン取得と同じやり方）。
+   */
+  const requestIdRef = useRef(0);
   const suggestRef = useRef(suggest);
   useEffect(() => {
     suggestRef.current = suggest;
@@ -55,6 +75,8 @@ export function DestinationInput({
   }, [focusSignal]);
 
   useEffect(() => {
+    // #665: 変換が終わるまで待つ（確定前の言葉で取りに行かない）
+    if (isComposing) return;
     const trimmed = query.trim();
     // 空になったら候補を消す（同期の setState を避けるため、タイマー経由で行う）
     const timer = setTimeout(async () => {
@@ -63,25 +85,29 @@ export function DestinationInput({
         setSearchedQuery(trimmed);
         return;
       }
+      const requestId = ++requestIdRef.current;
       try {
         const result = await suggestRef.current(trimmed, sessionToken);
+        // #665: 自分より後に出した問い合わせがあるなら、この応答は捨てる
+        if (requestIdRef.current !== requestId) return;
         setSuggestions(result.suggestions);
         setIsOpen(true);
       } catch (error) {
         if (error instanceof UnauthorizedError) return;
+        if (requestIdRef.current !== requestId) return;
         setSuggestions([]);
       }
       // 成功・失敗どちらでも「この言葉は探し終えた」と記録する（待ち表示が出たままにならないように）
       setSearchedQuery(trimmed);
     }, trimmed ? DEBOUNCE_MS : 0);
     return () => clearTimeout(timer);
-  }, [query, sessionToken]);
+  }, [query, sessionToken, isComposing]);
 
   const trimmedQuery = query.trim();
   /** 探し終えた言葉がいまの入力と一致するときだけ候補を使う（前の言葉の候補を残さない） */
   const visibleSuggestions = searchedQuery === trimmedQuery ? suggestions : [];
-  /** 探している最中か。300ms 待っている間も含む */
-  const isSearching = trimmedQuery.length > 0 && searchedQuery !== trimmedQuery;
+  /** 探している最中か。300ms 待っている間も含む（#665: 変換中は探していないので出さない） */
+  const isSearching = !isComposing && trimmedQuery.length > 0 && searchedQuery !== trimmedQuery;
 
   const select = (suggestion: DestinationSuggestion) => {
     setIsOpen(false);
@@ -111,6 +137,13 @@ export function DestinationInput({
           ref={inputRef}
           value={query}
           onChange={(event) => setQuery(event.target.value)}
+          /* #665: 日本語の変換中は候補を取りに行かない（確定してから数え始める） */
+          onCompositionStart={() => setIsComposing(true)}
+          onCompositionEnd={(event) => {
+            // 確定した文字は change より先に届くことがあるので、ここでも取り込む
+            setQuery(event.currentTarget.value);
+            setIsComposing(false);
+          }}
           onFocus={() => visibleSuggestions.length > 0 && setIsOpen(true)}
           onBlur={() => setTimeout(() => setIsOpen(false), 150)}
           placeholder="どこへ行く？"
