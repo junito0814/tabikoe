@@ -28,6 +28,7 @@ import {
 } from "./post-search-query";
 import { useInfiniteScroll } from "./use-infinite-scroll";
 import { useListRestore, useViewerPosition } from "./use-search-list";
+import { PullToRefresh } from "@/components/layout/PullToRefresh";
 
 export type FetchSearchPage = (params: URLSearchParams) => Promise<PostCardPage>;
 
@@ -163,84 +164,86 @@ export function PostSearchScreen({
   const isPhotos = state.view === "photos";
 
   return (
-    <div className="flex min-h-screen flex-col items-center bg-app pb-6">
-      {addMode && <AddModeBanner info={addMode} />}
-      <div className="w-full max-w-[520px] px-4 pt-4">
-        <header className="mb-3 flex flex-col gap-2.5">
-          <div className="flex items-center gap-2">
-            <Link href={backHref} className="inline-flex h-8 shrink-0 items-center gap-1 text-[12px] font-medium text-muted">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden>
-                <path d="M15 5l-7 7 7 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
-              {backLabel}
-            </Link>
-            <h1 className="min-w-0 flex-1 truncate text-center text-[16px] font-bold text-ink">{title}</h1>
+    <PullToRefresh>
+      <div className="flex min-h-screen flex-col items-center bg-app pb-6">
+        {addMode && <AddModeBanner info={addMode} />}
+        <div className="w-full max-w-[520px] px-4 pt-4">
+          <header className="mb-3 flex flex-col gap-2.5">
+            <div className="flex items-center gap-2">
+              <Link href={backHref} className="inline-flex h-8 shrink-0 items-center gap-1 text-[12px] font-medium text-muted">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden>
+                  <path d="M15 5l-7 7 7 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+                {backLabel}
+              </Link>
+              <h1 className="min-w-0 flex-1 truncate text-center text-[16px] font-bold text-ink">{title}</h1>
+              <button
+                type="button"
+                onClick={() => setIsSheetOpen(true)}
+                aria-haspopup="dialog"
+                className="h-8 shrink-0 rounded-full border border-line bg-surface px-3 text-[12px] font-semibold text-ink"
+              >
+                絞り込み{activeCount > 0 && `（${activeCount}）`}
+              </button>
+            </div>
+            {header}
+            <div className="flex items-center justify-between gap-2">
+              <ViewToggle value={state.view} onChange={onViewChange} />
+              <SortDropdown value={state.sort as PostSort} onChange={onSortChange} />
+            </div>
+          </header>
+
+          {isPhotos ? (
+            <PhotoGrid
+              key={mediaParams.toString()}
+              params={mediaParams}
+              initialPage={initialMediaPage && initialMediaPage.key === mediaParams.toString() ? initialMediaPage.page : { items: [], nextOffset: 0 }}
+              fetchPage={fetchMediaPage}
+            />
+          ) : posts.length === 0 && isLoading ? (
+            <CardListSkeleton />
+          ) : posts.length === 0 && !errorMessage ? (
+            <p className="py-16 text-center text-[13px] text-muted">{emptyMessage}</p>
+          ) : (
+            <ul className="flex flex-col gap-3">
+              {posts.map((post) => (
+                <li key={post.id}>
+                  <PostCard post={withWalk(post)} backHref={appendBackHref(pageHref, backParam)} showSpotName={context.destination?.kind !== "spot"} addMode={addMode} />
+                </li>
+              ))}
+            </ul>
+          )}
+
+          {!isPhotos && errorMessage && (
+            <ErrorNotice
+              className="mt-3"
+              message={errorMessage}
+              onRetry={() => void load(state, posts.length === 0 ? 0 : (nextOffset ?? 0), posts.length === 0)}
+            />
+          )}
+
+          <div ref={sentinelRef} aria-hidden className="h-1" />
+          {!isPhotos && nextOffset !== null && (
             <button
               type="button"
-              onClick={() => setIsSheetOpen(true)}
-              aria-haspopup="dialog"
-              className="h-8 shrink-0 rounded-full border border-line bg-surface px-3 text-[12px] font-semibold text-ink"
+              onClick={loadMore}
+              disabled={isLoading}
+              className="mt-3 h-10 w-full rounded-[10px] border border-line bg-surface text-[13px] font-semibold text-ink disabled:opacity-45"
             >
-              絞り込み{activeCount > 0 && `（${activeCount}）`}
+              {isLoading ? "読み込み中…" : "もっと見る"}
             </button>
-          </div>
-          {header}
-          <div className="flex items-center justify-between gap-2">
-            <ViewToggle value={state.view} onChange={onViewChange} />
-            <SortDropdown value={state.sort as PostSort} onChange={onSortChange} />
-          </div>
-        </header>
+          )}
+        </div>
 
-        {isPhotos ? (
-          <PhotoGrid
-            key={mediaParams.toString()}
-            params={mediaParams}
-            initialPage={initialMediaPage && initialMediaPage.key === mediaParams.toString() ? initialMediaPage.page : { items: [], nextOffset: 0 }}
-            fetchPage={fetchMediaPage}
-          />
-        ) : posts.length === 0 && isLoading ? (
-          <CardListSkeleton />
-        ) : posts.length === 0 && !errorMessage ? (
-          <p className="py-16 text-center text-[13px] text-muted">{emptyMessage}</p>
-        ) : (
-          <ul className="flex flex-col gap-3">
-            {posts.map((post) => (
-              <li key={post.id}>
-                <PostCard post={withWalk(post)} backHref={appendBackHref(pageHref, backParam)} showSpotName={context.destination?.kind !== "spot"} addMode={addMode} />
-              </li>
-            ))}
-          </ul>
-        )}
-
-        {!isPhotos && errorMessage && (
-          <ErrorNotice
-            className="mt-3"
-            message={errorMessage}
-            onRetry={() => void load(state, posts.length === 0 ? 0 : (nextOffset ?? 0), posts.length === 0)}
-          />
-        )}
-
-        <div ref={sentinelRef} aria-hidden className="h-1" />
-        {!isPhotos && nextOffset !== null && (
-          <button
-            type="button"
-            onClick={loadMore}
-            disabled={isLoading}
-            className="mt-3 h-10 w-full rounded-[10px] border border-line bg-surface text-[13px] font-semibold text-ink disabled:opacity-45"
-          >
-            {isLoading ? "読み込み中…" : "もっと見る"}
-          </button>
-        )}
+        <FilterSheet
+          open={isSheetOpen}
+          value={state}
+          hasDistanceCenter={distanceCenter(context) !== null}
+          onApply={applyState}
+          onClose={() => setIsSheetOpen(false)}
+        />
       </div>
-
-      <FilterSheet
-        open={isSheetOpen}
-        value={state}
-        hasDistanceCenter={distanceCenter(context) !== null}
-        onApply={applyState}
-        onClose={() => setIsSheetOpen(false)}
-      />
-    </div>
+    </PullToRefresh>
   );
 }
 

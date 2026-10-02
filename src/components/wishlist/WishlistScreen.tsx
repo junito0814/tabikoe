@@ -13,6 +13,7 @@ import type { WishlistItem } from "@/lib/wishlist/constants";
 import type { WishlistView } from "@/lib/wishlist/wishlist-view";
 import { MapScreen } from "@/components/map/MapScreen";
 import { resolveMapOpen } from "@/components/map/map-navigation";
+import { PullToRefresh } from "@/components/layout/PullToRefresh";
 
 /**
  * F-RC-05 Task2 / wishlist-v3 Task2（v3.0）: 「行きたい」（SC-08。一覧／地図の切替）
@@ -115,87 +116,89 @@ export function WishlistScreen({
   }
 
   return (
-    <div className="flex min-h-screen flex-col items-center bg-app px-4 pt-4 pb-8">
-      <div className="w-full max-w-[520px]">
-        {header}
-        {items.length === 0 ? (
-          <p className="py-16 text-center text-[13px] text-muted">まだ「行きたい」スポットはありません</p>
-        ) : (
-          <ul className="mt-3 flex flex-col gap-2.5">
-            {items.map((item) => (
-              <li key={item.spotId} className="flex items-center gap-3 rounded-[12px] border border-line bg-surface p-2.5" data-wishlist-item={item.spotId}>
-                <Link href={appendBackHref(`/spots/${item.spotId}`, selfHref)} prefetch={false} className="flex min-w-0 flex-1 items-center gap-3">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={item.thumbnailUrl}
-                    alt={item.hasPost ? `${item.name}の写真` : "投稿がないスポット"}
-                    data-placeholder={item.hasPost ? undefined : "true"}
-                    className="h-16 w-16 shrink-0 rounded-[8px] object-cover"
-                  />
-                  <span className="min-w-0 flex-1">
-                    <span className="block truncate text-[14px] font-semibold text-ink">{item.name}</span>
-                    <span className="mt-0.5 block text-[11px] text-muted">
-                      {item.prefecture ?? "都道府県未設定"} ・ {item.postCount > 0 ? `投稿 ${item.postCount} 件` : "投稿なし"}
-                      {item.itineraries.map((it) => (
-                        <span key={it.id} className="ml-1 text-accent">
-                          ・ {it.title}
-                          {it.dayIndex !== null && ` Day ${it.dayIndex}`}
-                        </span>
-                      ))}
+    <PullToRefresh>
+      <div className="flex min-h-screen flex-col items-center bg-app px-4 pt-4 pb-8">
+        <div className="w-full max-w-[520px]">
+          {header}
+          {items.length === 0 ? (
+            <p className="py-16 text-center text-[13px] text-muted">まだ「行きたい」スポットはありません</p>
+          ) : (
+            <ul className="mt-3 flex flex-col gap-2.5">
+              {items.map((item) => (
+                <li key={item.spotId} className="flex items-center gap-3 rounded-[12px] border border-line bg-surface p-2.5" data-wishlist-item={item.spotId}>
+                  <Link href={appendBackHref(`/spots/${item.spotId}`, selfHref)} prefetch={false} className="flex min-w-0 flex-1 items-center gap-3">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={item.thumbnailUrl}
+                      alt={item.hasPost ? `${item.name}の写真` : "投稿がないスポット"}
+                      data-placeholder={item.hasPost ? undefined : "true"}
+                      className="h-16 w-16 shrink-0 rounded-[8px] object-cover"
+                    />
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate text-[14px] font-semibold text-ink">{item.name}</span>
+                      <span className="mt-0.5 block text-[11px] text-muted">
+                        {item.prefecture ?? "都道府県未設定"} ・ {item.postCount > 0 ? `投稿 ${item.postCount} 件` : "投稿なし"}
+                        {item.itineraries.map((it) => (
+                          <span key={it.id} className="ml-1 text-accent">
+                            ・ {it.title}
+                            {it.dayIndex !== null && ` Day ${it.dayIndex}`}
+                          </span>
+                        ))}
+                      </span>
                     </span>
-                  </span>
-                </Link>
-                <button
-                  type="button"
-                  onClick={() => setPickerSpot(item)}
-                  aria-label={`${item.name}をしおりへ`}
-                  className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-line bg-surface text-ink"
-                >
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden>
-                    <path d="M12 5v14M5 12h14" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" />
-                  </svg>
-                </button>
-                {/* v3.1（mentoring-7 Task1）: 「解除」の文字ではなくゴミ箱マーク。読み上げ用の名前は aria-label に残す */}
-                <button
-                  type="button"
-                  onClick={() => handleRemove(item.spotId)}
-                  disabled={pendingId !== null}
-                  aria-label={`${item.name}の保存を解除`}
-                  title="行きたいから外す"
-                  className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-muted hover:text-saved disabled:opacity-45"
-                >
-                  {pendingId === item.spotId ? (
-                    <span className="text-[11px]">…</span>
-                  ) : (
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-                      <path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3" />
+                  </Link>
+                  <button
+                    type="button"
+                    onClick={() => setPickerSpot(item)}
+                    aria-label={`${item.name}をしおりへ`}
+                    className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-line bg-surface text-ink"
+                  >
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden>
+                      <path d="M12 5v14M5 12h14" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" />
                     </svg>
-                  )}
-                </button>
-              </li>
-            ))}
-          </ul>
-        )}
-        {errorMessage && <ErrorNotice className="mt-3" message={errorMessage} />}
-      </div>
+                  </button>
+                  {/* v3.1（mentoring-7 Task1）: 「解除」の文字ではなくゴミ箱マーク。読み上げ用の名前は aria-label に残す */}
+                  <button
+                    type="button"
+                    onClick={() => handleRemove(item.spotId)}
+                    disabled={pendingId !== null}
+                    aria-label={`${item.name}の保存を解除`}
+                    title="行きたいから外す"
+                    className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-muted hover:text-saved disabled:opacity-45"
+                  >
+                    {pendingId === item.spotId ? (
+                      <span className="text-[11px]">…</span>
+                    ) : (
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                        <path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3" />
+                      </svg>
+                    )}
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+          {errorMessage && <ErrorNotice className="mt-3" message={errorMessage} />}
+        </div>
 
-      {pickerSpot && (
-        <ItineraryPickerSheet
-          open
-          spotId={pickerSpot.spotId}
-          spotName={pickerSpot.name}
-          api={saveSheetApi}
-          onClose={(result) => {
-            setPickerSpot(null);
-            if (result.savedItinerary) {
-              setToast({ text: `${result.savedItinerary.title} に保存しました`, action: { label: "しおりを見る", href: `/itineraries/${result.savedItinerary.id}` } });
-              router.refresh();
-            }
-          }}
-        />
-      )}
-      <Toast toast={toast} onClose={() => setToast(null)} />
-    </div>
+        {pickerSpot && (
+          <ItineraryPickerSheet
+            open
+            spotId={pickerSpot.spotId}
+            spotName={pickerSpot.name}
+            api={saveSheetApi}
+            onClose={(result) => {
+              setPickerSpot(null);
+              if (result.savedItinerary) {
+                setToast({ text: `${result.savedItinerary.title} に保存しました`, action: { label: "しおりを見る", href: `/itineraries/${result.savedItinerary.id}` } });
+                router.refresh();
+              }
+            }}
+          />
+        )}
+        <Toast toast={toast} onClose={() => setToast(null)} />
+      </div>
+    </PullToRefresh>
   );
 }
 

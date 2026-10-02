@@ -9,6 +9,7 @@ import { fetchWithAuthRedirect, UnauthorizedError } from "@/lib/api/fetch-with-a
 import type { AnnouncementItem, FeedItem, FeedPage } from "@/lib/notifications/feed";
 import { useInfiniteScroll } from "@/components/posts/use-infinite-scroll";
 import { dispatchNotificationsRead } from "./notification-events";
+import { PullToRefresh } from "@/components/layout/PullToRefresh";
 
 export interface NotificationApi {
   fetchPage: (offset: number) => Promise<FeedPage>;
@@ -130,150 +131,152 @@ export function NotificationListScreen({
   const sentinelRef = useInfiniteScroll(nextOffset !== null && !isLoading, () => void loadMore());
 
   return (
-    <div className="flex min-h-screen flex-col items-center bg-app px-4 py-6">
-      <div className="flex w-full max-w-[520px] flex-col gap-3">
-        <h1 className="text-[18px] font-bold text-ink">通知</h1>
+    <PullToRefresh>
+      <div className="flex min-h-screen flex-col items-center bg-app px-4 py-6">
+        <div className="flex w-full max-w-[520px] flex-col gap-3">
+          <h1 className="text-[18px] font-bold text-ink">通知</h1>
 
-        {fallbackNotice && (
-          <p role="status" className="rounded-lg border border-line bg-surface px-3.5 py-2.5 text-[12px] text-ink">
-            {fallbackNotice}
-          </p>
-        )}
+          {fallbackNotice && (
+            <p role="status" className="rounded-lg border border-line bg-surface px-3.5 py-2.5 text-[12px] text-ink">
+              {fallbackNotice}
+            </p>
+          )}
 
-        {items.length === 0 ? (
-          <p className="py-16 text-center text-[13px] text-muted">通知はありません</p>
-        ) : (
-          <ul className="flex flex-col gap-2">
-            {items.map((item) =>
-              item.kind === "announcement" ? (
-                <li key={`a:${item.id}`}>
-                  <button
-                    type="button"
-                    onClick={() => setOpenAnnouncement(item)}
-                    data-announcement={item.id}
-                    data-new={item.isNew ? "true" : undefined}
-                    className={`flex w-full items-start gap-3 rounded-[12px] border bg-surface p-3 text-left ${
-                      item.isNew ? "border-accent" : "border-line"
-                    }`}
-                  >
-                    <span className="mt-0.5 shrink-0" aria-hidden>
-                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-                        <path d="M4 10v4a1 1 0 0 0 1 1h3l6 4V5L8 9H5a1 1 0 0 0-1 1z" stroke="var(--accent)" strokeWidth="1.8" strokeLinejoin="round" />
-                        <path d="M17 9a4 4 0 0 1 0 6" stroke="var(--accent)" strokeWidth="1.8" strokeLinecap="round" />
-                      </svg>
-                    </span>
-                    <span className="min-w-0 flex-1">
-                      <span className="flex items-center gap-1.5 text-[11px]">
-                        <span className="rounded-full bg-accent px-2 py-0.5 font-semibold text-white">お知らせ</span>
-                        {item.isNew && (
-                          <span className="inline-flex items-center gap-0.5 font-bold text-accent" data-new-badge>
-                            <svg width="12" height="12" viewBox="0 0 24 24" aria-hidden>
-                              <path d="M12 2l2.9 6.6 7.1.7-5.4 4.8 1.6 7L12 17.5 5.8 21l1.6-7L2 9.3l7.1-.7z" fill="currentColor" />
-                            </svg>
-                            NEW
-                          </span>
-                        )}
-                        <span className="ml-auto text-muted">{new Date(item.publishedAt).toLocaleDateString("ja-JP")}</span>
-                      </span>
-                      <span className="mt-1 block truncate text-[13px] font-semibold text-ink">{item.title}</span>
-                      <span className="mt-0.5 line-clamp-2 block text-[12px] leading-[1.6] text-muted">{item.body}</span>
-                    </span>
-                  </button>
-                </li>
-              ) : (
-                <li key={`n:${item.id}`}>
-                  {item.invitation && item.invitation.status === "pending" ? (
-                    // v3.2: 未回答の招待はリンクにせず、その場で「参加する」「辞退」
-                    <div data-notification={item.id} className={`flex flex-col gap-2 rounded-[12px] border border-line bg-surface p-3 ${item.isRead ? "" : "shadow-card"}`}>
-                      <div className="flex items-start gap-3">
-                        <NotificationBody item={item} />
-                      </div>
-                      <div className="flex gap-2 pl-6">
-                        <button
-                          type="button"
-                          onClick={() => void respond(item, "accept")}
-                          disabled={respondingId !== null}
-                          className="h-9 rounded-full bg-accent px-4 text-[12px] font-bold text-white disabled:opacity-45"
-                        >
-                          {respondingId === item.id ? "処理中…" : "参加する"}
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => void respond(item, "decline")}
-                          disabled={respondingId !== null}
-                          className="h-9 rounded-full border border-line bg-surface px-4 text-[12px] font-semibold text-ink disabled:opacity-45"
-                        >
-                          辞退
-                        </button>
-                      </div>
-                    </div>
-                  ) : item.href ? (
-                    <Link
-                      href={appendBackHref(item.href, "/notifications")}
-                      prefetch={false}
-                      data-notification={item.id}
-                      className={`flex items-start gap-3 rounded-[12px] border border-line bg-surface p-3 ${
-                        item.isRead ? "" : "shadow-card"
-                      }`}
-                    >
-                      <NotificationBody item={item} />
-                    </Link>
-                  ) : (
+          {items.length === 0 ? (
+            <p className="py-16 text-center text-[13px] text-muted">通知はありません</p>
+          ) : (
+            <ul className="flex flex-col gap-2">
+              {items.map((item) =>
+                item.kind === "announcement" ? (
+                  <li key={`a:${item.id}`}>
                     <button
                       type="button"
-                      data-notification={item.id}
-                      onClick={() => setFallbackNotice(item.fallbackMessage ?? "対象が見つかりません")}
-                      className="flex w-full items-start gap-3 rounded-[12px] border border-line bg-surface p-3 text-left"
+                      onClick={() => setOpenAnnouncement(item)}
+                      data-announcement={item.id}
+                      data-new={item.isNew ? "true" : undefined}
+                      className={`flex w-full items-start gap-3 rounded-[12px] border bg-surface p-3 text-left ${
+                        item.isNew ? "border-accent" : "border-line"
+                      }`}
                     >
-                      <NotificationBody item={item} />
+                      <span className="mt-0.5 shrink-0" aria-hidden>
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                          <path d="M4 10v4a1 1 0 0 0 1 1h3l6 4V5L8 9H5a1 1 0 0 0-1 1z" stroke="var(--accent)" strokeWidth="1.8" strokeLinejoin="round" />
+                          <path d="M17 9a4 4 0 0 1 0 6" stroke="var(--accent)" strokeWidth="1.8" strokeLinecap="round" />
+                        </svg>
+                      </span>
+                      <span className="min-w-0 flex-1">
+                        <span className="flex items-center gap-1.5 text-[11px]">
+                          <span className="rounded-full bg-accent px-2 py-0.5 font-semibold text-white">お知らせ</span>
+                          {item.isNew && (
+                            <span className="inline-flex items-center gap-0.5 font-bold text-accent" data-new-badge>
+                              <svg width="12" height="12" viewBox="0 0 24 24" aria-hidden>
+                                <path d="M12 2l2.9 6.6 7.1.7-5.4 4.8 1.6 7L12 17.5 5.8 21l1.6-7L2 9.3l7.1-.7z" fill="currentColor" />
+                              </svg>
+                              NEW
+                            </span>
+                          )}
+                          <span className="ml-auto text-muted">{new Date(item.publishedAt).toLocaleDateString("ja-JP")}</span>
+                        </span>
+                        <span className="mt-1 block truncate text-[13px] font-semibold text-ink">{item.title}</span>
+                        <span className="mt-0.5 line-clamp-2 block text-[12px] leading-[1.6] text-muted">{item.body}</span>
+                      </span>
                     </button>
-                  )}
-                </li>
-              )
-            )}
-          </ul>
-        )}
+                  </li>
+                ) : (
+                  <li key={`n:${item.id}`}>
+                    {item.invitation && item.invitation.status === "pending" ? (
+                      // v3.2: 未回答の招待はリンクにせず、その場で「参加する」「辞退」
+                      <div data-notification={item.id} className={`flex flex-col gap-2 rounded-[12px] border border-line bg-surface p-3 ${item.isRead ? "" : "shadow-card"}`}>
+                        <div className="flex items-start gap-3">
+                          <NotificationBody item={item} />
+                        </div>
+                        <div className="flex gap-2 pl-6">
+                          <button
+                            type="button"
+                            onClick={() => void respond(item, "accept")}
+                            disabled={respondingId !== null}
+                            className="h-9 rounded-full bg-accent px-4 text-[12px] font-bold text-white disabled:opacity-45"
+                          >
+                            {respondingId === item.id ? "処理中…" : "参加する"}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => void respond(item, "decline")}
+                            disabled={respondingId !== null}
+                            className="h-9 rounded-full border border-line bg-surface px-4 text-[12px] font-semibold text-ink disabled:opacity-45"
+                          >
+                            辞退
+                          </button>
+                        </div>
+                      </div>
+                    ) : item.href ? (
+                      <Link
+                        href={appendBackHref(item.href, "/notifications")}
+                        prefetch={false}
+                        data-notification={item.id}
+                        className={`flex items-start gap-3 rounded-[12px] border border-line bg-surface p-3 ${
+                          item.isRead ? "" : "shadow-card"
+                        }`}
+                      >
+                        <NotificationBody item={item} />
+                      </Link>
+                    ) : (
+                      <button
+                        type="button"
+                        data-notification={item.id}
+                        onClick={() => setFallbackNotice(item.fallbackMessage ?? "対象が見つかりません")}
+                        className="flex w-full items-start gap-3 rounded-[12px] border border-line bg-surface p-3 text-left"
+                      >
+                        <NotificationBody item={item} />
+                      </button>
+                    )}
+                  </li>
+                )
+              )}
+            </ul>
+          )}
 
-        {errorMessage && <ErrorNotice message={errorMessage} onRetry={() => void loadMore()} />}
+          {errorMessage && <ErrorNotice message={errorMessage} onRetry={() => void loadMore()} />}
 
-        <div ref={sentinelRef} aria-hidden className="h-1" />
-        {nextOffset !== null && (
-          <button
-            type="button"
-            onClick={() => void loadMore()}
-            disabled={isLoading}
-            className="h-10 w-full rounded-[10px] border border-line bg-surface text-[13px] font-semibold text-ink disabled:opacity-45"
-          >
-            {isLoading ? "読み込み中…" : "もっと見る"}
-          </button>
-        )}
-      </div>
-
-      {openAnnouncement && (
-        <div
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="announcement-title"
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-6"
-          onClick={() => setOpenAnnouncement(null)}
-        >
-          <div className="max-h-[80vh] w-full max-w-[420px] overflow-y-auto rounded-[14px] bg-surface p-5 shadow-xl" onClick={(event) => event.stopPropagation()}>
-            <p className="mb-1 text-[11px] text-muted">
-              お知らせ ・ {new Date(openAnnouncement.publishedAt).toLocaleString("ja-JP")}
-            </p>
-            <h2 id="announcement-title" className="mb-3 text-[16px] font-bold text-ink">{openAnnouncement.title}</h2>
-            <p className="whitespace-pre-wrap text-[13px] leading-[1.8] text-ink">{openAnnouncement.body}</p>
+          <div ref={sentinelRef} aria-hidden className="h-1" />
+          {nextOffset !== null && (
             <button
               type="button"
-              onClick={() => setOpenAnnouncement(null)}
-              className="mt-4 h-10 w-full rounded-[10px] border border-line text-[13px] font-medium text-ink"
+              onClick={() => void loadMore()}
+              disabled={isLoading}
+              className="h-10 w-full rounded-[10px] border border-line bg-surface text-[13px] font-semibold text-ink disabled:opacity-45"
             >
-              閉じる
+              {isLoading ? "読み込み中…" : "もっと見る"}
             </button>
-          </div>
+          )}
         </div>
-      )}
-    </div>
+
+        {openAnnouncement && (
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="announcement-title"
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-6"
+            onClick={() => setOpenAnnouncement(null)}
+          >
+            <div className="max-h-[80vh] w-full max-w-[420px] overflow-y-auto rounded-[14px] bg-surface p-5 shadow-xl" onClick={(event) => event.stopPropagation()}>
+              <p className="mb-1 text-[11px] text-muted">
+                お知らせ ・ {new Date(openAnnouncement.publishedAt).toLocaleString("ja-JP")}
+              </p>
+              <h2 id="announcement-title" className="mb-3 text-[16px] font-bold text-ink">{openAnnouncement.title}</h2>
+              <p className="whitespace-pre-wrap text-[13px] leading-[1.8] text-ink">{openAnnouncement.body}</p>
+              <button
+                type="button"
+                onClick={() => setOpenAnnouncement(null)}
+                className="mt-4 h-10 w-full rounded-[10px] border border-line text-[13px] font-medium text-ink"
+              >
+                閉じる
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+    </PullToRefresh>
   );
 }
 
