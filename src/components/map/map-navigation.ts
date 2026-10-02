@@ -1,6 +1,7 @@
 import { parseBackHref } from "@/lib/search/list-state";
 import { backLabelFor, classifyBackHref } from "@/lib/map/back-label";
 import { parseTravelMode, type TravelMode } from "@/lib/geo/travel-time";
+import { EMPTY_SPOT_FILTERS, parseSpotFilters, type SpotFilters } from "@/lib/map/spot-aggregate";
 import { CURRENT_LOCATION_ZOOM, TOKYO_STATION, type LatLng } from "./initial-center";
 
 /**
@@ -30,6 +31,8 @@ export interface MapOpenOptions {
   savedOnly?: boolean;
   /** v3.2: 探すモードの移動手段（?travel=walk|bicycle|car。無ければ徒歩） */
   travel?: TravelMode;
+  /** explore-mode Task 4: 探すモードの絞り込み（?categories=&cost=&duration=&rating=&manual=1） */
+  filters?: SpotFilters;
   back: { href: string; label: string };
 }
 
@@ -51,6 +54,12 @@ export function resolveMapOpen(params: {
   itinerary?: string | null;
   day?: string | null;
   travel?: string | null;
+  /** explore-mode Task 4: 絞り込み（投稿一覧と同じ名前。地図だけ rating・manual が増える） */
+  categories?: string | null;
+  cost?: string | null;
+  duration?: string | null;
+  rating?: string | null;
+  manual?: string | null;
   /** v3.1: back がスポット別・投稿詳細のときのスポット名（page.tsx がサーバーで引く） */
   backSpotName?: string | null;
 }): MapOpenOptions {
@@ -86,6 +95,14 @@ export function resolveMapOpen(params: {
   if (params.mode === "explore") {
     return {
       mode: "explore",
+      // explore-mode Task 4: 条件は URL に持つ（リロード・戻るで同じ条件に戻るため。3.4.6）
+      filters: spotFiltersFrom({
+        categories: params.categories,
+        cost: params.cost,
+        duration: params.duration,
+        rating: params.rating,
+        manual: params.manual,
+      }),
       // 位置情報が無い探すモードは東京駅にせず、呼び出し側（page.tsx）が検索トップへ戻す
       center: center ?? TOKYO_STATION,
       zoom: CURRENT_LOCATION_ZOOM + 1,
@@ -96,4 +113,15 @@ export function resolveMapOpen(params: {
     };
   }
   return { mode: "default", center, zoom: CURRENT_LOCATION_ZOOM, focusSpotId: null, itineraryId: null, back: { href: "/", label: "ホーム" } };
+}
+
+/**
+ * explore-mode Task 4: クエリ → 絞り込みの条件。
+ *
+ * 【初心者向け】判定そのものは `parseSpotFilters`（サーバーの API も同じものを使う）。
+ * ここは「文字の組を URLSearchParams に詰め直す」だけ。
+ */
+function spotFiltersFrom(params: { categories?: string | null; cost?: string | null; duration?: string | null; rating?: string | null; manual?: string | null }): SpotFilters {
+  const entries = Object.entries(params).filter((entry): entry is [string, string] => typeof entry[1] === "string");
+  return entries.length > 0 ? parseSpotFilters(new URLSearchParams(entries)) : EMPTY_SPOT_FILTERS;
 }

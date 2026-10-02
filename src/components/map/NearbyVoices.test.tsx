@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { centeredCardIndex, NearbyVoices } from "./NearbyVoices";
 import type { NearbyPost } from "@/lib/posts/nearby-posts";
+import { EMPTY_SPOT_FILTERS } from "@/lib/map/spot-aggregate";
 
 const push = vi.fn();
 vi.mock("next/navigation", () => ({ useRouter: () => ({ push, replace: vi.fn(), refresh: vi.fn() }) }));
@@ -111,5 +112,95 @@ describe("NearbyVoices（近くのスポット）", () => {
     render(<NearbyVoices center={{ lat: 35.68, lng: 139.76 }} fetchPosts={async () => [post("a")]} />);
     await waitFor(() => expect(document.querySelector("[data-nearby-card]")).toBeInTheDocument());
     expect((document.querySelector("[data-nearby-card='a']") as HTMLElement).tagName).toBe("BUTTON");
+  });
+});
+
+/*
+ * explore-mode Task 4（2026-10-02）: 絞り込み
+ * 出典: docs/tasks/map-search/explore-mode/04-filter.md 4-5
+ *       要件定義書 3.4.6・8 章 100
+ */
+describe("NearbyVoices の絞り込み（explore-mode Task 4）", () => {
+  const openSheet = async () => {
+    fireEvent.click(screen.getByRole("button", { name: "絞り込み" }));
+    await waitFor(() => expect(screen.getByRole("dialog", { name: "絞り込み" })).toBeInTheDocument());
+  };
+
+  it("移動手段の横に「移動手段」の文字は出さない（読み上げの名前だけ残す）", async () => {
+    render(<NearbyVoices center={{ lat: 35.68, lng: 139.76 }} fetchPosts={async () => [post("a")]} />);
+    await waitFor(() => expect(screen.getByRole("combobox", { name: "移動手段" })).toBeInTheDocument());
+    // 見出しの行の文字は「近くのスポット」＋プルダウンの選択肢だけ（「移動手段」というラベルは無い）
+    const header = screen.getByRole("heading", { name: "近くのスポット" }).parentElement as HTMLElement;
+    expect(header.textContent).not.toContain("移動手段");
+  });
+
+  it("条件が無いときは数が付かない。入れると効いている数が出る", async () => {
+    const { rerender } = render(<NearbyVoices center={{ lat: 35.68, lng: 139.76 }} fetchPosts={async () => [post("a")]} />);
+    const button = await screen.findByRole("button", { name: "絞り込み" });
+    expect(button.textContent).toBe("");
+    expect(button.className).toContain("border-line");
+
+    rerender(
+      <NearbyVoices
+        center={{ lat: 35.68, lng: 139.76 }}
+        fetchPosts={async () => [post("a")]}
+        filters={{ ...EMPTY_SPOT_FILTERS, categories: ["グルメ", "観光スポット"], minRating: 4 }}
+      />
+    );
+    // カテゴリは何個選んでも 1 つと数えるので 2 つ（カテゴリ＋評価）
+    expect(screen.getByRole("button", { name: "絞り込み" }).textContent).toBe("2");
+    expect(screen.getByRole("button", { name: "絞り込み" }).className).toContain("bg-accent");
+  });
+
+  it("シートには 距離 と 期間 を出さず、評価（平均）とチェックボックスを出す", async () => {
+    render(<NearbyVoices center={{ lat: 35.68, lng: 139.76 }} fetchPosts={async () => [post("a")]} />);
+    await screen.findByRole("button", { name: "絞り込み" });
+    await openSheet();
+    const sheet = screen.getByRole("dialog", { name: "絞り込み" });
+    expect(sheet.textContent).toContain("予算（平均）");
+    expect(sheet.textContent).toContain("評価（平均）");
+    expect(sheet.textContent).toContain("タビコエだけの場所");
+    expect(sheet.textContent).not.toContain("期間（訪問日）");
+    expect(sheet.textContent).not.toContain("距離");
+    // 星は ★1 以上〜★5 の 5 つ
+    expect(screen.getByLabelText("★4 以上")).toBeInTheDocument();
+    expect(screen.getByLabelText("★5")).toBeInTheDocument();
+  });
+
+  it("「この条件で表示」で、選んだ条件が親に渡る", async () => {
+    const onFiltersChange = vi.fn();
+    render(<NearbyVoices center={{ lat: 35.68, lng: 139.76 }} fetchPosts={async () => [post("a")]} onFiltersChange={onFiltersChange} />);
+    await screen.findByRole("button", { name: "絞り込み" });
+    await openSheet();
+    fireEvent.click(screen.getByLabelText("★4 以上"));
+    fireEvent.click(screen.getByLabelText("グルメ"));
+    fireEvent.click(screen.getByText("タビコエだけの場所").closest("label") as HTMLElement);
+    fireEvent.click(screen.getByRole("button", { name: "この条件で表示" }));
+    expect(onFiltersChange).toHaveBeenCalledWith({
+      categories: ["グルメ"],
+      cost: null,
+      duration: null,
+      minRating: 4,
+      manualOnly: true,
+    });
+  });
+
+  it("条件を変えると、その条件で取り直す", async () => {
+    const fetchPosts = vi.fn(async () => [post("a")]);
+    const filters = { ...EMPTY_SPOT_FILTERS, cost: "1000" as const };
+    const { rerender } = render(<NearbyVoices center={{ lat: 35.68, lng: 139.76 }} fetchPosts={fetchPosts} />);
+    await waitFor(() => expect(fetchPosts).toHaveBeenCalledWith({ lat: 35.68, lng: 139.76 }, "walk", EMPTY_SPOT_FILTERS));
+    rerender(<NearbyVoices center={{ lat: 35.68, lng: 139.76 }} fetchPosts={fetchPosts} filters={filters} />);
+    await waitFor(() => expect(fetchPosts).toHaveBeenLastCalledWith({ lat: 35.68, lng: 139.76 }, "walk", filters));
+  });
+
+  it("0 件の文言: 絞り込み中は「条件に合う場所がありません」", async () => {
+    render(<NearbyVoices center={{ lat: 35.68, lng: 139.76 }} fetchPosts={async () => []} filters={{ ...EMPTY_SPOT_FILTERS, minRating: 5 }} />);
+    expect(await screen.findByText("条件に合う場所がありません")).toBeInTheDocument();
+  });
+
+  it("0 件の文言: 絞り込んでいなければ今までどおり範囲の案内", async () => {
+    render(<NearbyVoices center={{ lat: 35.68, lng: 139.76 }} fetchPosts={async () => []} />);
+    expect(await screen.findByText(/この範囲に投稿はありません/)).toBeInTheDocument();
   });
 });

@@ -31,7 +31,7 @@ export function radiusForTravelMode(mode: TravelMode): number {
   return TRAVEL_RADIUS_METERS[mode];
 }
 /** 円判定の前に DB から取る上限（矩形の中には円の外も含まれるため多めに） */
-const NEARBY_FETCH_CAP = 200;
+export const NEARBY_FETCH_CAP = 200;
 
 export function parseNearbyRadius(value: string | null): NearbyRadius {
   const number = Number(value);
@@ -70,12 +70,21 @@ export function selectNearbyPosts(
   center: { lat: number; lng: number },
   radiusMeters: number,
   limit: number = NEARBY_POSTS_LIMIT,
-  mode: TravelMode = "walk"
+  mode: TravelMode = "walk",
+  /*
+   * explore-mode Task 4（2026-10-02）: 絞り込みで残ったスポットの id。null は絞り込みなし。
+   *
+   * 【初心者向け】ここでは代表値の計算をしない。**地図のピン側（`findMatchingSpotIds`）が出した答え**を
+   * そのまま使う。カードの取得には上限（`NEARBY_FETCH_CAP`）があり、投稿の多い場所では
+   * スポットの投稿を途中までしか取れないので、ここで計算すると**ピンとカードで判定が食い違う**。
+   */
+  allowedSpotIds: ReadonlySet<string> | null = null
 ): (Omit<NearbyPost, "thumbnailUrl"> & { thumbnailPath: string | null })[] {
   return rows
     .flatMap((row) => {
       const spot = Array.isArray(row.spots) ? row.spots[0] : row.spots;
       if (!spot) return [];
+      if (allowedSpotIds && !allowedSpotIds.has(spot.id)) return [];
       const distance = haversineMeters(center, spot);
       if (distance > radiusMeters) return [];
       const photo = [...row.post_photos].filter((p) => !p.hidden_at).sort((a, b) => a.display_order - b.display_order)[0];
@@ -107,9 +116,14 @@ export async function getNearbyPosts(
   center: { lat: number; lng: number },
   radiusMeters: number,
   mode: TravelMode = "walk",
-  /** 差し替え口（単体テスト用）。既定は Routes API＋10 分キャッシュ */
-  travelMinutesFetcher: (origin: { lat: number; lng: number }, destinations: { lat: number; lng: number }[], mode: TravelMode) => Promise<(number | null)[]> = getTravelMinutes
+  options: {
+    /** explore-mode Task 4: 絞り込みで残ったスポットの id（`findMatchingSpotIds` の結果）。null は絞り込みなし */
+    allowedSpotIds?: ReadonlySet<string> | null;
+    /** 差し替え口（単体テスト用）。既定は Routes API＋10 分キャッシュ */
+    travelMinutesFetcher?: (origin: { lat: number; lng: number }, destinations: { lat: number; lng: number }[], mode: TravelMode) => Promise<(number | null)[]>;
+  } = {}
 ): Promise<NearbyPost[]> {
+  const { allowedSpotIds = null, travelMinutesFetcher = getTravelMinutes } = options;
   const blockedIds = await getBlockedUserIds(admin, viewerId);
   const box = boundsAround(center, radiusMeters);
   let query = admin
@@ -129,7 +143,7 @@ export async function getNearbyPosts(
   const { data, error } = await query;
   if (error) throw error;
 
-  const selected = selectNearbyPosts((data ?? []) as unknown as NearbyPostRow[], center, radiusMeters, NEARBY_POSTS_LIMIT, mode);
+  const selected = selectNearbyPosts((data ?? []) as unknown as NearbyPostRow[], center, radiusMeters, NEARBY_POSTS_LIMIT, mode, allowedSpotIds);
 
   // travel-time Task2（2026-09-25）: 車・電車・バスは Routes API の実測に差し替える。
   // 取れなかった分（経路なし・API 障害）は selectNearbyPosts が入れた直線距離の計算のまま残す

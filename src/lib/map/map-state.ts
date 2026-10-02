@@ -29,6 +29,15 @@ export interface MapState {
   openedAt?: { lat: number; lng: number };
   /** map-restore Task1: 選んでいたカードのスポット。戻ったとき同じカードを中央に戻す */
   activeSpotId?: string | null;
+  /**
+   * explore-mode Task 4（2026-10-02）: 探すモードの絞り込み。**クエリ文字列のまま**覚える
+   * （例 `categories=カフェ&rating=4`）。
+   *
+   * 【初心者向け】入れ物の形（オブジェクト）で覚えると、読み戻すときに中身を 1 つずつ確かめる
+   * コードがここにも要る。文字列にしておけば、確かめるのは URL のときと同じ `parseSpotFilters`
+   * だけで済む（約束 14）。
+   */
+  filters?: string;
 }
 
 const KEY = "tabikoe:map-state";
@@ -85,6 +94,7 @@ export function loadMapState(storage: Storage | undefined = defaultStorage(), no
         ? { openedAt: { lat: parsed.openedAt.lat, lng: parsed.openedAt.lng } }
         : {}),
       ...(typeof parsed.activeSpotId === "string" ? { activeSpotId: parsed.activeSpotId } : {}),
+      ...(typeof parsed.filters === "string" ? { filters: parsed.filters } : {}),
     };
   } catch {
     return null;

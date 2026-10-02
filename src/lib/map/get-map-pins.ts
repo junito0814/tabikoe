@@ -1,13 +1,12 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { getBlockedUserIds } from "@/lib/blocks/get-blocked-user-ids";
 import {
-  aggregateSpot,
+  aggregateSpots,
   EMPTY_SPOT_FILTERS,
   hasActiveSpotFilters,
-  matchesSpotFilters,
   averageRating,
-  type SpotAggregate,
   type SpotFilters,
+  type SpotWithPosts,
 } from "./spot-aggregate";
 import type { PostCategory } from "@/lib/posts/constants";
 import { findLatestSpotStatuses } from "@/lib/posts/post-cards";
@@ -140,23 +139,8 @@ export function mergeMapPins(
   filters: SpotFilters = EMPTY_SPOT_FILTERS
 ): MapPinData[] {
   const active = hasActiveSpotFilters(filters);
-  const stats = new Map<string, SpotAggregate>();
-  for (const row of postSpots) {
-    const publicPosts = row.posts.filter((post) => post.visibility === "public");
-    if (publicPosts.length === 0) continue;
-    const aggregate = aggregateSpot(
-      publicPosts.map((post) => ({
-        category: post.category ?? null,
-        duration: post.duration ?? null,
-        cost: post.cost ?? null,
-        rating: post.rating,
-        createdAt: post.created_at ?? null,
-      }))
-    );
-    // 条件に合わないスポットは、ピンそのものを出さない
-    if (active && !matchesSpotFilters(aggregate, { manual: row.source === "manual" }, filters)) continue;
-    stats.set(row.id, aggregate);
-  }
+  // 条件に合わないスポットは、ここで落ちる（= ピンそのものを出さない）
+  const stats = aggregateSpots(postSpots.map(toSpotWithPosts), filters);
 
   const pins: MapPinData[] = [];
   const seen = new Set<string>();
@@ -235,24 +219,16 @@ function inBounds<Q>(query: Q, prefix: string, bounds: MapBounds): Q {
  *   3. 自分がメンバーのしおりのスポット（itinerary_spots → spots。しおりの絞り込みは itinerary_members で）
  *   4. 自分の下書き（posts.status = draft、lat/lng あり）
  */
-export async function getMapPins(admin: SupabaseClient, userId: string, bounds: MapBounds): Promise<MapPinData[]> {
+export async function getMapPins(
+  admin: SupabaseClient,
+  userId: string,
+  bounds: MapBounds,
+  /** explore-mode Task 4: 探すモードの絞り込み（既定は条件なし） */
+  filters: SpotFilters = EMPTY_SPOT_FILTERS
+): Promise<MapPinData[]> {
   const blockedIds = await getBlockedUserIds(admin, userId);
 
-  let postQuery = inBounds(
-    admin
-      .from("spots")
-      .select("id, name, lat, lng, prefecture, posts!inner(user_id, visibility, rating, category, created_at)")
-      .eq("posts.visibility", "public")
-      .eq("posts.status", "published")
-      // F-AD-05: 非公開化された投稿・スポットは除く
-      .is("posts.hidden_at", null)
-      .is("hidden_at", null),
-    "",
-    bounds
-  ).limit(MAX_MAP_PINS);
-  if (blockedIds.length > 0) {
-    postQuery = postQuery.not("posts.user_id", "in", `(${blockedIds.join(",")})`);
-  }
+  const postQuery = selectSpotsWithPublicPosts(admin, bounds, blockedIds, MAX_MAP_PINS);
 
   const wishlistQuery = inBounds(
     admin.from("wishlist").select("spot:spots!inner(id, name, lat, lng, prefecture)").eq("user_id", userId).is("spots.hidden_at", null),
@@ -305,7 +281,69 @@ export async function getMapPins(admin: SupabaseClient, userId: string, bounds: 
 
   const spotIds = Array.from(new Set([...postSpots.map((row) => row.id), ...savedSpots.map((spot) => spot.id)]));
   const latestStatusBySpot = await findLatestSpotStatuses(admin, spotIds);
-  return mergeMapPins(postSpots, savedSpots, drafts, latestStatusBySpot);
+  return mergeMapPins(postSpots, savedSpots, drafts, latestStatusBySpot, MAX_MAP_PINS, filters);
+}
+
+/**
+ * DB の行 → 代表値を出すための形。**公開投稿だけ**に絞る。
+ *
+ * 【初心者向け】`spots` に `posts!inner` を埋め込んで取っているので、1 行の中に投稿の配列が入る。
+ * クエリ側でも公開投稿に絞っているが、埋め込みの絞り込みは取りこぼすことがあるのでここでも確かめる。
+ */
+function toSpotWithPosts(row: SpotWithPostsRow): SpotWithPosts {
+  return {
+    id: row.id,
+    manual: row.source === "manual",
+    posts: row.posts
+      .filter((post) => post.visibility === "public")
+      .map((post) => ({
+        category: post.category ?? null,
+        duration: post.duration ?? null,
+        cost: post.cost ?? null,
+        rating: post.rating,
+        createdAt: post.created_at ?? null,
+      })),
+  };
+}
+
+/** 公開投稿があるスポットを範囲内で取る（ピンと「近くの声」で同じ取り方をするための 1 か所） */
+function selectSpotsWithPublicPosts(admin: SupabaseClient, bounds: MapBounds, blockedIds: string[], limit: number) {
+  const query = inBounds(
+    admin
+      .from("spots")
+      // explore-mode Task 4: 代表値（予算の平均・滞在時間）を出すため cost・duration を、
+      // 「タビコエだけの場所」の判定のため source を足した
+      .select("id, name, lat, lng, prefecture, source, posts!inner(user_id, visibility, rating, category, created_at, cost, duration)")
+      .eq("posts.visibility", "public")
+      .eq("posts.status", "published")
+      // F-AD-05: 非公開化された投稿・スポットは除く
+      .is("posts.hidden_at", null)
+      .is("hidden_at", null),
+    "",
+    bounds
+  ).limit(limit);
+  return blockedIds.length > 0 ? query.not("posts.user_id", "in", `(${blockedIds.join(",")})`) : query;
+}
+
+/**
+ * explore-mode Task 4: 範囲内で**条件に合うスポットの id**を返す。
+ *
+ * 【初心者向け】「近くの声」のカード（`getNearbyPosts`）はこの集合を使って、
+ * 条件に合わないスポットの投稿を落とす。判定そのものは `aggregateSpots` にしか無いので、
+ * **地図のピンとカードが必ず同じ答えになる**。
+ */
+export async function findMatchingSpotIds(
+  admin: SupabaseClient,
+  viewerId: string,
+  bounds: MapBounds,
+  filters: SpotFilters,
+  limit: number = MAX_MAP_PINS
+): Promise<Set<string>> {
+  const blockedIds = await getBlockedUserIds(admin, viewerId);
+  const { data, error } = await selectSpotsWithPublicPosts(admin, bounds, blockedIds, limit);
+  if (error) throw error;
+  const rows = (data ?? []) as unknown as SpotWithPostsRow[];
+  return new Set(aggregateSpots(rows.map(toSpotWithPosts), filters).keys());
 }
 
 function one<T>(value: T | T[] | null): T | null {

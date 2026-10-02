@@ -34,6 +34,29 @@ describe("selectNearbyPosts", () => {
     const rows = Array.from({ length: 30 }, (_, i) => row(String(i), 35.6812 + i * 0.00001, 139.7671));
     expect(selectNearbyPosts(rows, center, 1000, 20)).toHaveLength(20);
   });
+
+  /*
+   * explore-mode Task 4（2026-10-02）: 絞り込み。
+   * 出典: docs/tasks/map-search/explore-mode/04-filter.md 4-3
+   *
+   * ここでは代表値の計算をしない。地図のピン側（findMatchingSpotIds）が出した
+   * 「条件に合うスポットの id」をもらって、それ以外のスポットの投稿を落とすだけ。
+   */
+  it("条件に合うスポットの投稿だけ残る（受入条件 100）", () => {
+    const rows = [row("a", 35.6822, 139.7671), row("b", 35.6823, 139.7671)];
+    const result = selectNearbyPosts(rows, center, 1000, 20, "walk", new Set(["s-b"]));
+    expect(result.map((post) => post.id)).toEqual(["b"]);
+  });
+
+  it("条件が無い（null）ときは全部残る", () => {
+    const rows = [row("a", 35.6822, 139.7671), row("b", 35.6823, 139.7671)];
+    expect(selectNearbyPosts(rows, center, 1000, 20, "walk", null)).toHaveLength(2);
+  });
+
+  it("合うスポットが 1 つも無ければ 0 件（画面は「条件に合う場所がありません」を出す）", () => {
+    const rows = [row("a", 35.6822, 139.7671)];
+    expect(selectNearbyPosts(rows, center, 1000, 20, "walk", new Set<string>())).toHaveLength(0);
+  });
 });
 
 describe("parseNearbyRadius", () => {
@@ -104,7 +127,7 @@ describe("getNearbyPosts（2026-09-25: 車・電車・バスは Routes API の�
   it("Routes API が返した分数を使い、返らなかった分は直線距離の計算のまま残す", async () => {
     const { getNearbyPosts } = await import("./nearby-posts");
     const fetcher = vi.fn(async () => [9, null]);
-    const posts = await getNearbyPosts(admin, "me", { lat: 35.68, lng: 139.76 }, 10000, "car", fetcher);
+    const posts = await getNearbyPosts(admin, "me", { lat: 35.68, lng: 139.76 }, 10000, "car", { travelMinutesFetcher: fetcher });
     expect(fetcher).toHaveBeenCalledTimes(1);
     expect(posts[0].minutes).toBe(9);
     expect(posts[1].minutes).toBe(Math.ceil(posts[1].distanceMeters / 300));
@@ -113,7 +136,7 @@ describe("getNearbyPosts（2026-09-25: 車・電車・バスは Routes API の�
   it("徒歩では Routes API を呼ばない（呼び出し口が全部 null を返す）", async () => {
     const { getNearbyPosts } = await import("./nearby-posts");
     const fetcher = vi.fn(async (_o: unknown, d: unknown[]) => d.map(() => null));
-    const posts = await getNearbyPosts(admin, "me", { lat: 35.68, lng: 139.76 }, 1000, "walk", fetcher);
+    const posts = await getNearbyPosts(admin, "me", { lat: 35.68, lng: 139.76 }, 1000, "walk", { travelMinutesFetcher: fetcher });
     expect(posts[0].minutes).toBe(Math.ceil(posts[0].distanceMeters / 60));
   });
 });

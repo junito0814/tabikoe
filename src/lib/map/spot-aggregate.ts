@@ -1,6 +1,6 @@
-import { costRangeBounds, durationsMatching } from "@/lib/posts/search-posts";
+import { costRangeBounds, COST_RANGES, durationsMatching } from "@/lib/posts/search-posts";
 import type { CostRange } from "@/lib/posts/search-posts";
-import { POST_DURATIONS, type PostCategory, type PostDuration } from "@/lib/posts/constants";
+import { POST_CATEGORIES, POST_DURATIONS, type PostCategory, type PostDuration } from "@/lib/posts/constants";
 import { resolveSpotCategory, type SpotCategoryInput } from "./spot-category";
 
 /**
@@ -135,6 +135,35 @@ export function aggregateSpot(posts: readonly SpotPostInput[]): SpotAggregate {
   };
 }
 
+/** 代表値を出す対象のスポット 1 件（公開投稿だけを渡すこと） */
+export interface SpotWithPosts {
+  id: string;
+  /** 「タビコエだけの場所」か（spots.source = manual） */
+  manual: boolean;
+  posts: readonly SpotPostInput[];
+}
+
+/**
+ * スポットをまとめて集計し、**条件に合うものだけ**を返す（ピンとカードで同じ答えを出すための 1 か所）。
+ *
+ * 【初心者向け】地図のピンと下のカードは**別々の問い合わせ**で作っている。
+ * 判定をそれぞれで書くと、地図に出ているピンが下のカードに無い、という壊れ方をする。
+ * そこで「どのスポットが残るか」はこの関数だけで決める（約束 14）。
+ *
+ * 投稿が 0 件のスポットは入らない（公開投稿のあるスポットを見せる画面なので）。
+ */
+export function aggregateSpots(spots: readonly SpotWithPosts[], filters: SpotFilters): Map<string, SpotAggregate> {
+  const active = hasActiveSpotFilters(filters);
+  const result = new Map<string, SpotAggregate>();
+  for (const spot of spots) {
+    if (spot.posts.length === 0) continue;
+    const aggregate = aggregateSpot(spot.posts);
+    if (active && !matchesSpotFilters(aggregate, { manual: spot.manual }, filters)) continue;
+    result.set(spot.id, aggregate);
+  }
+  return result;
+}
+
 /**
  * 代表値が条件に合うか。
  *
@@ -175,4 +204,45 @@ export function matchesSpotFilters(
 
 function isPostDuration(value: string | null): value is PostDuration {
   return value !== null && (POST_DURATIONS as readonly string[]).includes(value);
+}
+
+/**
+ * URL クエリ → 絞り込みの条件。不正な値は無視する。
+ *
+ * 【初心者向け】名前は投稿一覧（`parsePostSearchParams`）と**わざと同じ**にしている
+ * （`categories`・`cost`・`duration`）。地図から投稿一覧へ移ったときに条件を持ち越せるため。
+ * 地図だけの 2 つ（`rating`・`manual`）はここで足した。
+ */
+export function parseSpotFilters(searchParams: URLSearchParams): SpotFilters {
+  const categories = (searchParams.get("categories") ?? "")
+    .split(",")
+    .map((value) => value.trim())
+    .filter((value): value is PostCategory => (POST_CATEGORIES as readonly string[]).includes(value));
+  const cost = searchParams.get("cost") ?? "";
+  const duration = searchParams.get("duration") ?? "";
+  const rating = Number(searchParams.get("rating"));
+  return {
+    categories,
+    cost: (COST_RANGES as readonly string[]).includes(cost) ? (cost as CostRange) : null,
+    duration: isPostDuration(duration) ? duration : null,
+    // 星は 1〜5 の整数だけ受ける（要件 3.4.6: 選択肢は ★1〜★5 の 5 つ）
+    minRating: Number.isInteger(rating) && rating >= 1 && rating <= 5 ? rating : null,
+    manualOnly: searchParams.get("manual") === "1",
+  };
+}
+
+/**
+ * 絞り込みの条件 → URL クエリの組（条件なしの項目は入れない）。
+ *
+ * 【初心者向け】`parseSpotFilters` と**対**になっている。読む側と書く側を同じファイルに置くと、
+ * 片方だけ名前を変えて壊すことがなくなる（約束 14）。
+ */
+export function spotFiltersToParams(filters: SpotFilters): [string, string][] {
+  const params: [string, string][] = [];
+  if (filters.categories.length > 0) params.push(["categories", filters.categories.join(",")]);
+  if (filters.cost) params.push(["cost", filters.cost]);
+  if (filters.duration) params.push(["duration", filters.duration]);
+  if (filters.minRating !== null) params.push(["rating", String(filters.minRating)]);
+  if (filters.manualOnly) params.push(["manual", "1"]);
+  return params;
 }

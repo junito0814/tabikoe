@@ -31,6 +31,11 @@ export default async function MapPage({
     itinerary?: string;
     day?: string;
     travel?: string;
+    categories?: string;
+    cost?: string;
+    duration?: string;
+    rating?: string;
+    manual?: string;
     posted?: string;
     updated?: string;
     deleted?: string;

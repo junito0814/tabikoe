@@ -11,48 +11,109 @@ import {
   PERIOD_LABELS,
   PERIOD_OPTIONS,
 } from "@/lib/posts/search-posts";
-import { EMPTY_SEARCH_STATE, type PostSearchState } from "./post-search-query";
+import type { CostRange, DistanceOption, PeriodOption } from "@/lib/posts/search-posts";
+import type { PostDuration } from "@/lib/posts/constants";
+import type { ListView } from "@/lib/search/list-view";
 
 /**
  * post-timeline Task2: 絞り込みシート（下から出るパネル）
  * 出典: docs/tasks/map-search/post-timeline/02-timeline-ui.md
  *       要件定義書 v3.0 3.4.2（予算・期間・カテゴリ 7・滞在時間・距離）
+ *       explore-mode Task 4（2026-10-02）: 地図の「場所を絞る」用の出し分けを追加（要件 3.4.6）
  *
  * 【初心者向け】シートの中では `draft`（編集中の条件）を持ち、「この条件で表示」で親に渡す。
  * 親の state を直接いじらないのは、途中でやめて「閉じる」を押したときに元に戻せるようにするため。
  * 距離は基準点（駅・スポット検索・現在地）があるときだけ出す（`hasDistanceCenter`）。
  * 費用が未入力の投稿は予算の絞り込みで除外される（サーバー側の判定。ここでは案内文だけ）。
+ *
+ * このシートは 2 か所で使う（同じ見た目を 2 つ書かないため。約束 14）。
+ *   variant="posts" … 投稿一覧（3.4.2）。予算・期間・カテゴリ・滞在時間・距離
+ *   variant="spots" … 地図の探すモード（3.4.6）。カテゴリ・予算（平均）・滞在時間・評価（平均）・タビコエだけの場所
+ *                     期間と距離は出さない（移動手段が範囲を決めているため）
  */
-export function FilterSheet({
+
+/** シートが触る条件。投稿一覧の状態（PostSearchState）も地図の条件も、この形を満たす */
+export interface SheetFilters {
+  categories: readonly string[];
+  cost: CostRange | null;
+  duration: PostDuration | null;
+  period?: PeriodOption | null;
+  from?: string;
+  to?: string;
+  distance?: DistanceOption | null;
+  /** explore-mode Task 4: 平均評価の下限（1〜5）。地図だけ */
+  rating?: number | null;
+  /** explore-mode Task 4: 「タビコエだけの場所」だけを出すか。地図だけ */
+  manualOnly?: boolean;
+  /** 投稿一覧の「条件をクリア」で一緒に消すもの（地図には無い） */
+  keyword?: string;
+  view?: ListView;
+}
+
+/** 「条件をクリア」で戻す値（並び替えは条件ではないので触らない） */
+const CLEARED_FILTERS: SheetFilters = {
+  categories: [],
+  cost: null,
+  duration: null,
+  period: null,
+  from: "",
+  to: "",
+  distance: null,
+  rating: null,
+  manualOnly: false,
+  keyword: "",
+  view: "posts",
+};
+
+/** 評価（平均）の選択肢。★5 だけは「以上」と書かない（上が無いため） */
+const RATING_OPTIONS = [1, 2, 3, 4, 5] as const;
+
+export type FilterSheetVariant = "posts" | "spots";
+
+export function FilterSheet<T extends SheetFilters>({
   open,
   value,
   hasDistanceCenter,
+  variant = "posts",
   onApply,
   onClose,
 }: {
   open: boolean;
-  value: PostSearchState;
+  value: T;
   hasDistanceCenter: boolean;
-  onApply: (next: PostSearchState) => void;
+  variant?: FilterSheetVariant;
+  onApply: (next: T) => void;
   onClose: () => void;
 }) {
   // 閉じているときは中身ごと外す。開くたびに中身が作り直され、draft が適用中の条件から始まる
   if (!open) return null;
-  return <FilterSheetBody value={value} hasDistanceCenter={hasDistanceCenter} onApply={onApply} onClose={onClose} />;
+  return <FilterSheetBody value={value} hasDistanceCenter={hasDistanceCenter} variant={variant} onApply={onApply} onClose={onClose} />;
 }
 
-function FilterSheetBody({
+function FilterSheetBody<T extends SheetFilters>({
   value,
   hasDistanceCenter,
+  variant,
   onApply,
   onClose,
 }: {
-  value: PostSearchState;
+  value: T;
   hasDistanceCenter: boolean;
-  onApply: (next: PostSearchState) => void;
+  variant: FilterSheetVariant;
+  onApply: (next: T) => void;
   onClose: () => void;
 }) {
-  const [draft, setDraft] = useState<PostSearchState>(value);
+  const [draft, setDraft] = useState<T>(value);
+  const isSpots = variant === "spots";
+
+  /*
+   * 条件を 1 つだけ書き換える。
+   *
+   * 【初心者向け】このシートは「投稿一覧の条件」と「地図の条件」の**どちらも**扱うので、
+   * 受け取った形（T）をそのまま返す。渡された形に無い項目は増やさないので、
+   * 書き換えた結果も同じ形のまま ── それを型に伝えるために、ここだけ `as T` を使う。
+   */
+  const patch = (changes: Partial<SheetFilters>) => setDraft((current) => ({ ...current, ...changes }) as T);
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
@@ -63,18 +124,167 @@ function FilterSheetBody({
   }, [onClose]);
 
   const toggleCategory = (category: PostCategory) => {
-    setDraft((current) => ({
-      ...current,
-      categories: current.categories.includes(category)
-        ? current.categories.filter((item) => item !== category)
-        : [...current.categories, category],
-    }));
+    patch({
+      categories: draft.categories.includes(category) ? draft.categories.filter((item) => item !== category) : [...draft.categories, category],
+    });
   };
 
   const chip = (selected: boolean, disabled = false) =>
     `cursor-pointer rounded-full border px-3 py-1.5 text-[12px] font-medium ${
       selected ? "border-accent bg-accent text-white" : "border-line text-ink"
     } ${disabled ? "opacity-45" : ""}`;
+
+  /*
+   * 項目は「出すかどうか」だけでなく「**並び順**」も用途で変える（2026-10-02 に決定）。
+   *
+   * 【初心者向け】そのため 1 つずつ変数にしてから、下で並べている。
+   *   投稿一覧 … 予算・期間・カテゴリ・滞在時間・距離
+   *   地図     … カテゴリ・予算（平均）・滞在時間・評価（平均）・タビコエだけの場所
+   * 地図でカテゴリを先に置くのは、出先で探す人がまず決めるのが「何を探しているか」だから。
+   */
+  const costSection = (
+    <fieldset key="cost">
+      <legend className="mb-1.5 text-[12px] font-medium text-muted">{isSpots ? "予算（平均）" : "予算（1人あたり）"}</legend>
+      <div className="flex flex-wrap gap-1.5">
+        <label className={chip(draft.cost === null)}>
+          <input type="radio" name="cost" checked={draft.cost === null} onChange={() => patch({ cost: null })} className="sr-only" />
+          指定なし
+        </label>
+        {COST_RANGES.map((range) => (
+          <label key={range} className={chip(draft.cost === range)}>
+            <input type="radio" name="cost" checked={draft.cost === range} onChange={() => patch({ cost: range })} className="sr-only" />
+            {COST_RANGE_LABELS[range]}
+          </label>
+        ))}
+      </div>
+      {/* 地図は文字を増やさない（見出しの「（平均）」で意味が通る）。2026-10-02 の決定 */}
+      {!isSpots && <p className="mt-1 text-[11px] text-muted">費用が未入力の投稿は、予算で絞り込むと表示されません</p>}
+    </fieldset>
+  );
+
+  const periodSection = (
+    <fieldset key="period">
+      <legend className="mb-1.5 text-[12px] font-medium text-muted">期間（訪問日）</legend>
+      <div className="flex flex-wrap gap-1.5">
+        <label className={chip(draft.period === null)}>
+          <input type="radio" name="period" checked={draft.period === null} onChange={() => patch({ period: null })} className="sr-only" />
+          指定なし
+        </label>
+        {PERIOD_OPTIONS.map((option) => (
+          <label key={option} className={chip(draft.period === option)}>
+            <input type="radio" name="period" checked={draft.period === option} onChange={() => patch({ period: option })} className="sr-only" />
+            {PERIOD_LABELS[option]}
+          </label>
+        ))}
+      </div>
+      {draft.period === "custom" && (
+        <div className="mt-2 flex items-center gap-2 text-[12px] text-ink">
+          <input
+            type="date"
+            aria-label="開始日"
+            value={draft.from ?? ""}
+            onChange={(event) => patch({ from: event.target.value })}
+            className="h-9 min-w-0 flex-1 rounded-[8px] border border-line bg-surface px-2 text-[12px] text-ink"
+          />
+          <span aria-hidden>〜</span>
+          <input
+            type="date"
+            aria-label="終了日"
+            value={draft.to ?? ""}
+            onChange={(event) => patch({ to: event.target.value })}
+            className="h-9 min-w-0 flex-1 rounded-[8px] border border-line bg-surface px-2 text-[12px] text-ink"
+          />
+        </div>
+      )}
+    </fieldset>
+  );
+
+  const categorySection = (
+    <fieldset key="categories">
+      <legend className="mb-1.5 text-[12px] font-medium text-muted">カテゴリ（複数選択可）</legend>
+      <div className="flex flex-wrap gap-1.5">
+        {POST_CATEGORIES.map((category) => {
+          const checked = draft.categories.includes(category);
+          return (
+            <label key={category} className={chip(checked)}>
+              <input type="checkbox" checked={checked} onChange={() => toggleCategory(category)} className="sr-only" />
+              {category}
+            </label>
+          );
+        })}
+      </div>
+    </fieldset>
+  );
+
+  const durationSection = (
+    <fieldset key="duration">
+      <legend className="mb-1.5 text-[12px] font-medium text-muted">滞在時間</legend>
+      <div className="flex flex-wrap gap-1.5">
+        <label className={chip(draft.duration === null)}>
+          <input type="radio" name="duration" checked={draft.duration === null} onChange={() => patch({ duration: null })} className="sr-only" />
+          指定なし
+        </label>
+        {POST_DURATIONS.map((option) => (
+          <label key={option} className={chip(draft.duration === option)}>
+            <input type="radio" name="duration" checked={draft.duration === option} onChange={() => patch({ duration: option })} className="sr-only" />
+            {option}
+          </label>
+        ))}
+      </div>
+    </fieldset>
+  );
+
+  const distanceSection = hasDistanceCenter ? (
+    <fieldset key="distance">
+      <legend className="mb-1.5 text-[12px] font-medium text-muted">距離（検索した場所から）</legend>
+      <div className="flex flex-wrap gap-1.5">
+        <label className={chip(draft.distance === null)}>
+          <input type="radio" name="distance" checked={draft.distance === null} onChange={() => patch({ distance: null })} className="sr-only" />
+          指定なし
+        </label>
+        {DISTANCE_OPTIONS.map((option) => (
+          <label key={option} className={chip(draft.distance === option)}>
+            <input type="radio" name="distance" checked={draft.distance === option} onChange={() => patch({ distance: option })} className="sr-only" />
+            {DISTANCE_LABELS[option]}
+          </label>
+        ))}
+      </div>
+    </fieldset>
+  ) : null;
+
+  /* explore-mode Task 4: 評価（平均）。「★4 以上」は平均 4.0 ちょうどを含む（要件 3.4.6） */
+  const ratingSection = (
+    <fieldset key="rating">
+      <legend className="mb-1.5 text-[12px] font-medium text-muted">評価（平均）</legend>
+      <div className="flex flex-wrap gap-1.5">
+        <label className={chip((draft.rating ?? null) === null)}>
+          <input type="radio" name="rating" checked={(draft.rating ?? null) === null} onChange={() => patch({ rating: null })} className="sr-only" />
+          指定なし
+        </label>
+        {RATING_OPTIONS.map((option) => (
+          <label key={option} className={chip(draft.rating === option)}>
+            <input type="radio" name="rating" checked={draft.rating === option} onChange={() => patch({ rating: option })} className="sr-only" />
+            {option === 5 ? "★5" : `★${option} 以上`}
+          </label>
+        ))}
+      </div>
+    </fieldset>
+  );
+
+  /* explore-mode Task 4: タビコエだけの場所（spots.source = manual）。チェックボックス 1 行 */
+  const manualSection = (
+    <label key="manual" className="flex items-center gap-2 text-[12px] text-ink">
+      <input
+        type="checkbox"
+        checked={draft.manualOnly === true}
+        onChange={(event) => patch({ manualOnly: event.target.checked })}
+        className="h-4 w-4 accent-accent"
+      />
+      <span>
+        <b className="font-bold">タビコエだけの場所</b>だけを出す
+      </span>
+    </label>
+  );
 
   // Bug #473: スポット別一覧は上 1/3 地図＋下 2/3 シート（MapSheetLayout）の中にあり、そのシートが `relative z-10` で
   // 重なり順の入れ物（stacking context）を作る。その中で fixed にしても z-10 の枠から出られず、メニューバー（z-40）の下に
@@ -104,111 +314,14 @@ function FilterSheetBody({
           </button>
         </div>
 
-        <fieldset>
-          <legend className="mb-1.5 text-[12px] font-medium text-muted">予算（1人あたり）</legend>
-          <div className="flex flex-wrap gap-1.5">
-            <label className={chip(draft.cost === null)}>
-              <input type="radio" name="cost" checked={draft.cost === null} onChange={() => setDraft((c) => ({ ...c, cost: null }))} className="sr-only" />
-              指定なし
-            </label>
-            {COST_RANGES.map((range) => (
-              <label key={range} className={chip(draft.cost === range)}>
-                <input type="radio" name="cost" checked={draft.cost === range} onChange={() => setDraft((c) => ({ ...c, cost: range }))} className="sr-only" />
-                {COST_RANGE_LABELS[range]}
-              </label>
-            ))}
-          </div>
-          <p className="mt-1 text-[11px] text-muted">費用が未入力の投稿は、予算で絞り込むと表示されません</p>
-        </fieldset>
-
-        <fieldset>
-          <legend className="mb-1.5 text-[12px] font-medium text-muted">期間（訪問日）</legend>
-          <div className="flex flex-wrap gap-1.5">
-            <label className={chip(draft.period === null)}>
-              <input type="radio" name="period" checked={draft.period === null} onChange={() => setDraft((c) => ({ ...c, period: null }))} className="sr-only" />
-              指定なし
-            </label>
-            {PERIOD_OPTIONS.map((option) => (
-              <label key={option} className={chip(draft.period === option)}>
-                <input type="radio" name="period" checked={draft.period === option} onChange={() => setDraft((c) => ({ ...c, period: option }))} className="sr-only" />
-                {PERIOD_LABELS[option]}
-              </label>
-            ))}
-          </div>
-          {draft.period === "custom" && (
-            <div className="mt-2 flex items-center gap-2 text-[12px] text-ink">
-              <input
-                type="date"
-                aria-label="開始日"
-                value={draft.from}
-                onChange={(event) => setDraft((c) => ({ ...c, from: event.target.value }))}
-                className="h-9 min-w-0 flex-1 rounded-[8px] border border-line bg-surface px-2 text-[12px] text-ink"
-              />
-              <span aria-hidden>〜</span>
-              <input
-                type="date"
-                aria-label="終了日"
-                value={draft.to}
-                onChange={(event) => setDraft((c) => ({ ...c, to: event.target.value }))}
-                className="h-9 min-w-0 flex-1 rounded-[8px] border border-line bg-surface px-2 text-[12px] text-ink"
-              />
-            </div>
-          )}
-        </fieldset>
-
-        <fieldset>
-          <legend className="mb-1.5 text-[12px] font-medium text-muted">カテゴリ（複数選択可）</legend>
-          <div className="flex flex-wrap gap-1.5">
-            {POST_CATEGORIES.map((category) => {
-              const checked = draft.categories.includes(category);
-              return (
-                <label key={category} className={chip(checked)}>
-                  <input type="checkbox" checked={checked} onChange={() => toggleCategory(category)} className="sr-only" />
-                  {category}
-                </label>
-              );
-            })}
-          </div>
-        </fieldset>
-
-        <fieldset>
-          <legend className="mb-1.5 text-[12px] font-medium text-muted">滞在時間</legend>
-          <div className="flex flex-wrap gap-1.5">
-            <label className={chip(draft.duration === null)}>
-              <input type="radio" name="duration" checked={draft.duration === null} onChange={() => setDraft((c) => ({ ...c, duration: null }))} className="sr-only" />
-              指定なし
-            </label>
-            {POST_DURATIONS.map((option) => (
-              <label key={option} className={chip(draft.duration === option)}>
-                <input type="radio" name="duration" checked={draft.duration === option} onChange={() => setDraft((c) => ({ ...c, duration: option }))} className="sr-only" />
-                {option}
-              </label>
-            ))}
-          </div>
-        </fieldset>
-
-        {hasDistanceCenter && (
-          <fieldset>
-            <legend className="mb-1.5 text-[12px] font-medium text-muted">距離（検索した場所から）</legend>
-            <div className="flex flex-wrap gap-1.5">
-              <label className={chip(draft.distance === null)}>
-                <input type="radio" name="distance" checked={draft.distance === null} onChange={() => setDraft((c) => ({ ...c, distance: null }))} className="sr-only" />
-                指定なし
-              </label>
-              {DISTANCE_OPTIONS.map((option) => (
-                <label key={option} className={chip(draft.distance === option)}>
-                  <input type="radio" name="distance" checked={draft.distance === option} onChange={() => setDraft((c) => ({ ...c, distance: option }))} className="sr-only" />
-                  {DISTANCE_LABELS[option]}
-                </label>
-              ))}
-            </div>
-          </fieldset>
-        )}
+        {isSpots
+          ? [categorySection, costSection, durationSection, ratingSection, manualSection]
+          : [costSection, periodSection, categorySection, durationSection, distanceSection]}
 
         <div className="flex justify-between">
           <button
             type="button"
-            onClick={() => setDraft({ ...EMPTY_SEARCH_STATE, sort: draft.sort })}
+            onClick={() => patch(CLEARED_FILTERS)}
             className="text-[12px] font-medium text-muted underline underline-offset-2"
           >
             条件をクリア

@@ -2,6 +2,9 @@ import { describe, expect, it } from "vitest";
 import {
   activeSpotFilterCount,
   aggregateSpot,
+  aggregateSpots,
+  parseSpotFilters,
+  spotFiltersToParams,
   averageCost,
   averageRating,
   EMPTY_SPOT_FILTERS,
@@ -198,5 +201,76 @@ describe("効いている条件の数（ボタンに付ける数字）", () => {
   it("カテゴリは何個選んでも 1 つと数える", () => {
     const f = { ...EMPTY_SPOT_FILTERS, categories: ["グルメ", "観光スポット"] as const };
     expect(activeSpotFilterCount(f)).toBe(1);
+  });
+});
+
+describe("aggregateSpots（ピンとカードで同じ答えを出す 1 か所）", () => {
+  const spot = (id: string, posts: SpotPostInput[], manual = false) => ({ id, manual, posts });
+  const p = (over: Partial<SpotPostInput> = {}): SpotPostInput => ({
+    category: "グルメ",
+    duration: "1時間以内",
+    cost: 1000,
+    rating: 5,
+    createdAt: "2026-09-01T00:00:00Z",
+    ...over,
+  });
+
+  it("投稿が 0 件のスポットは入らない", () => {
+    expect(aggregateSpots([spot("a", [])], EMPTY_SPOT_FILTERS).has("a")).toBe(false);
+  });
+
+  it("条件に合うスポットだけが残る", () => {
+    const result = aggregateSpots(
+      [spot("a", [p({ category: "グルメ" })]), spot("b", [p({ category: "宿泊施設" })])],
+      { ...EMPTY_SPOT_FILTERS, categories: ["グルメ"] }
+    );
+    expect([...result.keys()]).toEqual(["a"]);
+  });
+
+  it("残ったスポットの件数・評価は、そのスポットの**全公開投稿**から出る（受入条件 100）", () => {
+    // 条件は「グルメ」。このスポットの 3 件のうち 1 件は星 2 だが、件数も平均も 3 件ぶんで出す
+    // （投稿を間引くのではなく、スポットごと残すか落とすかを決めているため）
+    const result = aggregateSpots(
+      [spot("a", [p({ rating: 5 }), p({ rating: 5 }), p({ rating: 2 })])],
+      { ...EMPTY_SPOT_FILTERS, categories: ["グルメ"] }
+    );
+    expect(result.get("a")?.postCount).toBe(3);
+    expect(result.get("a")?.ratingAverage).toBe(4);
+  });
+
+  it("タビコエだけの場所: 手で登録したスポットだけが残る", () => {
+    const result = aggregateSpots([spot("a", [p()], true), spot("b", [p()], false)], { ...EMPTY_SPOT_FILTERS, manualOnly: true });
+    expect([...result.keys()]).toEqual(["a"]);
+  });
+});
+
+describe("URL クエリの読み書き", () => {
+  it("5 つの条件を読む", () => {
+    const filters = parseSpotFilters(new URLSearchParams("categories=グルメ,観光スポット&cost=3000&duration=1時間以内&rating=4&manual=1"));
+    expect(filters).toEqual({
+      categories: ["グルメ", "観光スポット"],
+      cost: "3000",
+      duration: "1時間以内",
+      minRating: 4,
+      manualOnly: true,
+    });
+  });
+
+  it("おかしな値は無視する（地図が出ないより、条件なしで出す）", () => {
+    const filters = parseSpotFilters(new URLSearchParams("categories=そんなカテゴリ&cost=abc&duration=3年&rating=0&manual=yes"));
+    expect(filters).toEqual(EMPTY_SPOT_FILTERS);
+    // 星は 1〜5 の整数だけ（6 や 3.5 は受けない）
+    expect(parseSpotFilters(new URLSearchParams("rating=6")).minRating).toBeNull();
+    expect(parseSpotFilters(new URLSearchParams("rating=3.5")).minRating).toBeNull();
+  });
+
+  it("書いて読み直すと同じ条件に戻る（URL と地図の状態の保存はこれに頼っている）", () => {
+    const filters = { categories: ["観光スポット"] as const, cost: "1000" as const, duration: "30分以内" as const, minRating: 5, manualOnly: true };
+    const restored = parseSpotFilters(new URLSearchParams(spotFiltersToParams(filters)));
+    expect(restored).toEqual(filters);
+  });
+
+  it("条件なしの項目は URL に載せない（余計なクエリを増やさない）", () => {
+    expect(spotFiltersToParams(EMPTY_SPOT_FILTERS)).toEqual([]);
   });
 });
