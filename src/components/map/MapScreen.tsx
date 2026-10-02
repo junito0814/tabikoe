@@ -16,6 +16,13 @@ import { MapLegend } from "./MapLegend";
 import type { MapOpenOptions } from "./map-navigation";
 import { NearbyVoices, type FetchNearbyPosts } from "./NearbyVoices";
 import { loadMapState, mapEntryFor, saveMapState, shouldRestoreMapState, type MapState } from "@/lib/map/map-state";
+import {
+  EMPTY_SPOT_FILTERS,
+  hasActiveSpotFilters,
+  parseSpotFilters,
+  spotFiltersToParams,
+  type SpotFilters,
+} from "@/lib/map/spot-aggregate";
 import type { TravelMode } from "@/lib/geo/travel-time";
 import { PinCallout, type CalloutTarget } from "./PinCallout";
 import { ALL_DAYS, buildItineraryPins, ItineraryMapOverlay, useItineraryForMap, type ItineraryMapDay } from "./ItineraryMapOverlay";
@@ -26,7 +33,7 @@ const FETCH_DEBOUNCE_MS = 300;
 /** 長押しの一時ピンの ID */
 const TEMP_PIN_ID = "temp";
 
-export type FetchMapPins = (bounds: MapBounds) => Promise<MapPinData[]>;
+export type FetchMapPins = (bounds: MapBounds, filters: SpotFilters) => Promise<MapPinData[]>;
 
 /**
  * map-display-v3 Task2 / pin-interaction-v3 Task1〜3 / explore-mode Task2（v3.0）: 地図（SC-02）
@@ -131,6 +138,21 @@ export function MapScreen({
   // 開いたときの現在地は復元の判定に使う（今の中心はカードのスライドで動くので判定には使えない）。
   // 復元して開いたときは、その値を引き継いで上書きしない
   const activeSpotRef = useRef<string | null>(restored?.activeSpotId ?? null);
+  /*
+   * explore-mode Task 4（2026-10-02）: 探すモードの絞り込み。
+   *
+   * 【初心者向け】初期値は **URL が先、保存した条件は後**。
+   * 条件を変えたら URL も書き換える（`applyFilters`）ので、ふだんは両方同じ中身になる。
+   * 違うのは、条件の付いたリンクを開いたとき ── 保存を先に見ると、**同じタブで前に地図を
+   * 開いていただけで URL の条件が無視される**（実際にそうなっていた）。
+   * 素の /map（条件なし）で開いたときだけ、保存した条件で開き直す。
+   */
+  const [filters, setFilters] = useState<SpotFilters>(() => {
+    const fromUrl = openProp.filters ?? EMPTY_SPOT_FILTERS;
+    if (hasActiveSpotFilters(fromUrl)) return fromUrl;
+    return restored?.filters ? parseSpotFilters(new URLSearchParams(restored.filters)) : EMPTY_SPOT_FILTERS;
+  });
+  const filtersRef = useRef<SpotFilters>(filters);
   const openedAtRef = useRef<{ lat: number; lng: number } | undefined>(restored?.openedAt ?? (openProp.mode === "explore" ? (openProp.center ?? undefined) : undefined));
 
   /** 今の地図の状態を保存する（中心は省略すると地図から読む） */
@@ -147,6 +169,8 @@ export function MapScreen({
         ...(travelRef.current !== undefined ? { travel: travelRef.current } : {}),
         ...(openedAtRef.current ? { openedAt: openedAtRef.current } : {}),
         ...(activeSpotRef.current ? { activeSpotId: activeSpotRef.current } : {}),
+        // explore-mode Task 4: 条件はクエリ文字列のまま覚える（読み戻しは parseSpotFilters）
+        filters: new URLSearchParams(filtersRef.current ? spotFiltersToParams(filtersRef.current) : []).toString(),
       });
     },
     [entry, open.mode]
@@ -278,7 +302,7 @@ export function MapScreen({
     if (!bounds || isItinerary) return;
     const requestId = ++requestIdRef.current;
     const timer = setTimeout(() => {
-      fetchPins(bounds)
+      fetchPins(bounds, filters)
         .then((result) => {
           if (requestIdRef.current !== requestId) return;
           setPins(result);
@@ -302,7 +326,7 @@ export function MapScreen({
         });
     }, FETCH_DEBOUNCE_MS);
     return () => clearTimeout(timer);
-  }, [bounds, fetchPins, open.focusSpotId, isItinerary]);
+  }, [bounds, fetchPins, open.focusSpotId, isItinerary, filters]);
 
   /*
    * Task 4-4: ピンを取っている最中か。
@@ -383,6 +407,26 @@ export function MapScreen({
     // saveCurrentMapState は ref だけを読むので依存に入れない
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  /*
+   * explore-mode Task 4: 絞り込みを変えたとき。
+   *   1. state を変える → ピンと「近くのスポット」の両方が取り直される
+   *   2. URL を書き換える（リロード・投稿一覧から戻ったときに同じ条件で開く。3.4.3／3.4.6）
+   *   3. 地図の状態にも覚える（戻ってきたときの復元用）
+   */
+  const applyFilters = useCallback(
+    (next: SpotFilters) => {
+      setFilters(next);
+      filtersRef.current = next;
+      const params = new URLSearchParams(window.location.search);
+      for (const key of ["categories", "cost", "duration", "rating", "manual"]) params.delete(key);
+      for (const [key, value] of spotFiltersToParams(next)) params.set(key, value);
+      const query = params.toString();
+      router.replace(`${window.location.pathname}${query ? `?${query}` : ""}`, { scroll: false });
+      saveCurrentMapState();
+    },
+    [router, saveCurrentMapState]
+  );
 
   const mapPins = useMemo<GoogleMapPin[]>(() => {
     if (isItinerary) return itineraryPins;
@@ -489,7 +533,7 @@ export function MapScreen({
           */}
         {bounds && !fetchFailed && !isItinerary && (isFetchingPins || mapPins.length === 0) && (
           <p className="pointer-events-none absolute inset-x-0 bottom-20 z-10 text-center text-[12px] text-ink">
-            {isFetchingPins ? "読み込んでいます…" : "この範囲に投稿はありません"}
+            {isFetchingPins ? "読み込んでいます…" : hasActiveSpotFilters(filters) ? "条件に合う場所がありません" : "この範囲に投稿はありません"}
           </p>
         )}
 
@@ -539,6 +583,8 @@ export function MapScreen({
             onPostsLoaded={setNearbyPosts}
             initialMode={restored?.travel ?? openProp.travel}
             initialActiveSpotId={restored?.activeSpotId ?? null}
+            filters={filters}
+            onFiltersChange={applyFilters}
             onModeChange={(travel) => {
               // 移動手段は idle を待たずにその場で保存する（地図を動かさずに切り替えて離れることがある）
               travelRef.current = travel;
@@ -551,13 +597,15 @@ export function MapScreen({
   );
 }
 
-async function defaultFetchPins(bounds: MapBounds): Promise<MapPinData[]> {
+async function defaultFetchPins(bounds: MapBounds, filters: SpotFilters = EMPTY_SPOT_FILTERS): Promise<MapPinData[]> {
   const params = new URLSearchParams({
     north: String(bounds.north),
     south: String(bounds.south),
     east: String(bounds.east),
     west: String(bounds.west),
   });
+  // explore-mode Task 4: 条件は API にも渡す（ピンもカードと同じ判定で絞られる）
+  for (const [key, value] of spotFiltersToParams(filters)) params.set(key, value);
   const response = await fetchWithAuthRedirect(`/api/spots?${params.toString()}`);
   if (!response.ok) {
     throw new Error(`Failed to fetch pins: ${response.status}`);

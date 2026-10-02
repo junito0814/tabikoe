@@ -6,6 +6,7 @@ import { graphemeLength } from "@/lib/text/grapheme-length";
 import { DUPLICATE_SPOT_RADIUS_METERS, findNearbySpots } from "@/lib/spots/nearby";
 import { reverseGeocodePrefecture } from "@/lib/google/geocoding";
 import { getMapPins, parseMapBounds } from "@/lib/map/get-map-pins";
+import { parseSpotFilters } from "@/lib/map/spot-aggregate";
 
 /** スポット名の最大文字数（要件定義書3.3.1） */
 const MAX_SPOT_NAME_LENGTH = 200;
@@ -27,14 +28,18 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
 
-  const bounds = parseMapBounds(new URL(request.url).searchParams);
+  const searchParams = new URL(request.url).searchParams;
+  const bounds = parseMapBounds(searchParams);
   if (!bounds) {
     return NextResponse.json({ error: "invalid_bounds" }, { status: 400 });
   }
+  // explore-mode Task 4: 探すモードの絞り込み（categories／cost／duration／rating／manual）。
+  // 不正な値は parseSpotFilters が無視するので、400 にはしない（地図が出ないより条件なしで出す方がよい）
+  const filters = parseSpotFilters(searchParams);
 
   // 他ユーザーの投稿・ブロック関係の判定を含むため service_role で読み、可視性はライブラリ側で絞る
   try {
-    const pins = await getMapPins(createAdminClient(), user.id, bounds);
+    const pins = await getMapPins(createAdminClient(), user.id, bounds, filters);
     return NextResponse.json({ pins });
   } catch {
     return NextResponse.json({ error: "fetch_failed" }, { status: 500 });

@@ -18,7 +18,8 @@ import { resolveMapOpen } from "./map-navigation";
  * Google Maps 本体は描画できないため、GoogleMap を「マウント時に一度だけ範囲を通知し、
  * panTo を記録するだけの」スタブに差し替える。
  */
-vi.mock("next/navigation", () => ({ useRouter: () => ({ push: vi.fn(), replace: vi.fn() }) }));
+const replace = vi.fn();
+vi.mock("next/navigation", () => ({ useRouter: () => ({ push: vi.fn(), replace }) }));
 
 const panTo = vi.fn();
 const fitBounds = vi.fn();
@@ -75,6 +76,7 @@ vi.mock("./GoogleMap", () => ({
 }));
 
 import { MapScreen } from "./MapScreen";
+import { EMPTY_SPOT_FILTERS } from "@/lib/map/spot-aggregate";
 
 const pin = (id: string, extra: Partial<MapPinData> = {}): MapPinData => ({
   id,
@@ -102,6 +104,7 @@ async function settle() {
 
 beforeEach(() => {
   vi.useFakeTimers({ shouldAdvanceTime: true });
+  replace.mockClear();
   panTo.mockClear();
   latestPins = [];
   latestCurrentLocation = null;
@@ -115,7 +118,7 @@ describe("MapScreen（SC-02 v3.0）", () => {
     await settle();
     expect(screen.queryByRole("tab")).toBeNull();
     expect(screen.queryByRole("searchbox")).toBeNull();
-    await waitFor(() => expect(fetchPins).toHaveBeenCalledWith(BOUNDS));
+    await waitFor(() => expect(fetchPins).toHaveBeenCalledWith(BOUNDS, EMPTY_SPOT_FILTERS));
     await waitFor(() =>
       expect(latestPins).toEqual([
         expect.objectContaining({ id: "a", type: "post" }),
@@ -190,13 +193,13 @@ describe("MapScreen（SC-02 v3.0）", () => {
     render(<MapScreen open={open} fetchPins={async () => [pin("s1"), pin("s2")]} fetchNearby={fetchNearby} resolveCenter={resolveCenter} />);
     await settle();
     expect(screen.getByRole("heading", { name: "近くのスポット" })).toBeInTheDocument();
-    await waitFor(() => expect(fetchNearby).toHaveBeenCalledWith({ lat: 35.65, lng: 139.75 }, "walk"));
+    await waitFor(() => expect(fetchNearby).toHaveBeenCalledWith({ lat: 35.65, lng: 139.75 }, "walk", EMPTY_SPOT_FILTERS));
     expect(screen.getAllByText("徒歩 約 6分")[0]).toBeInTheDocument();
     await waitFor(() => expect(latestPins).toEqual([expect.objectContaining({ id: "s1", type: "focus" }), expect.objectContaining({ id: "s2", type: "post" })]));
 
     // v3.2: 「移動手段」を車にすると mode=car で取り直す
     fireEvent.change(screen.getByRole("combobox", { name: "移動手段" }), { target: { value: "car" } });
-    await waitFor(() => expect(fetchNearby).toHaveBeenLastCalledWith({ lat: 35.65, lng: 139.75 }, "car"));
+    await waitFor(() => expect(fetchNearby).toHaveBeenLastCalledWith({ lat: 35.65, lng: 139.75 }, "car", EMPTY_SPOT_FILTERS));
 
     // 2 枚目までスクロールしたことにする（カード幅 176 + 間隔 10）
     // Bug #503: 中央のカードは各カードの実際の位置で決まるので、jsdom では矩形を差し替えて 2 枚目を中央に置く
@@ -233,7 +236,7 @@ describe("v3.1（mentoring-7 Task7）: 地図の状態の復元", () => {
     render(<MapScreen open={resolveMapOpen({})} fetchPins={async () => []} resolveCenter={resolveCenter} fetchNearby={fetchNearby} />);
     await settle();
     expect(document.querySelector("[data-map-mode='explore']")).toBeInTheDocument();
-    await waitFor(() => expect(fetchNearby).toHaveBeenCalledWith({ lat: 34.7, lng: 135.5 }, "bicycle"));
+    await waitFor(() => expect(fetchNearby).toHaveBeenCalledWith({ lat: 34.7, lng: 135.5 }, "bicycle", EMPTY_SPOT_FILTERS));
   });
 
   it("別の入口（他のスポットの地図）から開いたときは復元しない", async () => {
@@ -292,7 +295,7 @@ describe("v3.1（mentoring-7 Task7）: 地図の状態の復元", () => {
     );
     await settle();
     // 近くのスポットは「取り直した現在地」で取り直す（スポットの位置ではない）
-    await waitFor(() => expect(fetchNearby).toHaveBeenLastCalledWith(relocated, "walk"));
+    await waitFor(() => expect(fetchNearby).toHaveBeenLastCalledWith(relocated, "walk", EMPTY_SPOT_FILTERS));
     expect(fetchNearby.mock.calls.every((call) => call[0].lat !== 35.652)).toBe(true);
     // 選んでいたカードはそのまま
     await waitFor(() => expect(document.querySelector("[data-nearby-card=\"p2\"]")).toHaveAttribute("aria-current", "true"));
@@ -387,6 +390,113 @@ describe("v3.1（mentoring-7 Task7）: 地図の状態の復元", () => {
     await screen.findByTestId("map-stub");
     await settle();
     await waitFor(() => expect(screen.queryByText("読み込んでいます…")).toBeNull());
+    expect(screen.queryByText("この範囲に投稿はありません")).toBeNull();
+  });
+});
+
+/*
+ * explore-mode Task 4（2026-10-02）: 探すモードの絞り込み
+ * 出典: docs/tasks/map-search/explore-mode/04-filter.md 4-5・4-6
+ *       要件定義書 3.4.6・8 章 100
+ */
+describe("探すモードの絞り込み（explore-mode Task 4）", () => {
+  const nearby = [
+    { id: "p1", spotId: "s1", spotName: "カフェ", commentExcerpt: null, thumbnailUrl: null, lat: 35.651, lng: 139.751, distanceMeters: 100, walkMinutes: 2, minutes: 2, mode: "walk" as const },
+  ];
+
+  it("URL の条件でピンとカードの両方を取る", async () => {
+    const fetchPins = vi.fn(async () => [pin("s1")]);
+    const fetchNearby = vi.fn(async () => nearby);
+    render(
+      <MapScreen
+        open={resolveMapOpen({ mode: "explore", lat: "35.65", lng: "139.75", categories: "グルメ", rating: "4", manual: "1" })}
+        fetchPins={fetchPins}
+        fetchNearby={fetchNearby}
+        resolveCenter={resolveCenter}
+      />
+    );
+    await settle();
+    const expected = { categories: ["グルメ"], cost: null, duration: null, minRating: 4, manualOnly: true };
+    await waitFor(() => expect(fetchPins).toHaveBeenCalledWith(BOUNDS, expected));
+    await waitFor(() => expect(fetchNearby).toHaveBeenLastCalledWith({ lat: 35.65, lng: 139.75 }, "walk", expected));
+  });
+
+  it("条件を変えると URL に入り、地図の状態にも保存される（戻ってきたとき同じ条件で開くため）", async () => {
+    window.sessionStorage.clear();
+    const fetchPins = vi.fn(async () => [pin("s1")]);
+    render(
+      <MapScreen
+        open={resolveMapOpen({ mode: "explore", lat: "35.65", lng: "139.75" })}
+        fetchPins={fetchPins}
+        fetchNearby={async () => nearby}
+        resolveCenter={resolveCenter}
+      />
+    );
+    await settle();
+    fireEvent.click(await screen.findByRole("button", { name: "絞り込み" }));
+    fireEvent.click(await screen.findByLabelText("★4 以上"));
+    fireEvent.click(screen.getByRole("button", { name: "この条件で表示" }));
+    await settle();
+
+    // URL（リロードしても同じ条件）
+    expect(replace).toHaveBeenCalledWith(expect.stringContaining("rating=4"), { scroll: false });
+    // 地図の状態（投稿一覧へ行って戻ってきたとき用）
+    expect(JSON.parse(window.sessionStorage.getItem("tabikoe:map-state") ?? "{}").filters).toBe("rating=4");
+    // ピンも新しい条件で取り直す
+    await waitFor(() => expect(fetchPins).toHaveBeenLastCalledWith(BOUNDS, { categories: [], cost: null, duration: null, minRating: 4, manualOnly: false }));
+    window.sessionStorage.clear();
+  });
+
+  it("保存された条件で戻ってきたら、その条件で開く", async () => {
+    window.sessionStorage.setItem(
+      "tabikoe:map-state",
+      JSON.stringify({
+        entry: "explore",
+        mode: "explore",
+        center: { lat: 35.65, lng: 139.75 },
+        zoom: 16,
+        travel: "walk",
+        openedAt: { lat: 35.65, lng: 139.75 },
+        filters: "categories=%E3%82%B0%E3%83%AB%E3%83%A1&cost=3000",
+        savedAt: Date.now(),
+      })
+    );
+    const fetchPins = vi.fn(async () => [pin("s1")]);
+    render(
+      <MapScreen open={resolveMapOpen({ mode: "explore", lat: "35.65", lng: "139.75" })} fetchPins={fetchPins} fetchNearby={async () => nearby} resolveCenter={resolveCenter} />
+    );
+    await settle();
+    await waitFor(() => expect(fetchPins).toHaveBeenCalledWith(BOUNDS, { categories: ["グルメ"], cost: "3000", duration: null, minRating: null, manualOnly: false }));
+    // 効いている条件の数が絞り込みボタンに出る
+    expect((await screen.findByRole("button", { name: "絞り込み" })).textContent).toBe("2");
+    window.sessionStorage.clear();
+  });
+
+  it("URL に条件があれば、保存された条件より URL を優先する（条件つきのリンクを開いたとき）", async () => {
+    window.sessionStorage.setItem(
+      "tabikoe:map-state",
+      JSON.stringify({ entry: "explore", mode: "explore", center: { lat: 35.65, lng: 139.75 }, zoom: 16, openedAt: { lat: 35.65, lng: 139.75 }, filters: "cost=1000", savedAt: Date.now() })
+    );
+    const fetchPins = vi.fn(async () => [pin("s1")]);
+    render(
+      <MapScreen open={resolveMapOpen({ mode: "explore", lat: "35.65", lng: "139.75", rating: "5" })} fetchPins={fetchPins} fetchNearby={async () => nearby} resolveCenter={resolveCenter} />
+    );
+    await settle();
+    await waitFor(() => expect(fetchPins).toHaveBeenCalledWith(BOUNDS, { categories: [], cost: null, duration: null, minRating: 5, manualOnly: false }));
+    window.sessionStorage.clear();
+  });
+
+  it("0 件の文言: 絞り込み中は「条件に合う場所がありません」", async () => {
+    render(
+      <MapScreen
+        open={resolveMapOpen({ mode: "explore", lat: "35.65", lng: "139.75", rating: "5" })}
+        fetchPins={async () => []}
+        fetchNearby={async () => []}
+        resolveCenter={resolveCenter}
+      />
+    );
+    await settle();
+    await waitFor(() => expect(screen.getAllByText("条件に合う場所がありません").length).toBeGreaterThan(0));
     expect(screen.queryByText("この範囲に投稿はありません")).toBeNull();
   });
 });

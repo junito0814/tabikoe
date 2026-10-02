@@ -6,8 +6,41 @@ import { appendBackHref } from "@/lib/search/list-state";
 import { fetchWithAuthRedirect, UnauthorizedError } from "@/lib/api/fetch-with-auth-redirect";
 import type { NearbyPost } from "@/lib/posts/nearby-posts";
 import { DEFAULT_TRAVEL_MODE, formatTravelMinutes, TRAVEL_MODE_LABELS, TRAVEL_MODES, type TravelMode } from "@/lib/geo/travel-time";
+import {
+  activeSpotFilterCount,
+  EMPTY_SPOT_FILTERS,
+  hasActiveSpotFilters,
+  spotFiltersToParams,
+  type SpotFilters,
+} from "@/lib/map/spot-aggregate";
+import type { PostCategory, PostDuration } from "@/lib/posts/constants";
+import type { CostRange } from "@/lib/posts/search-posts";
+import { FilterSheet } from "@/components/posts/FilterSheet";
 
-export type FetchNearbyPosts = (center: { lat: number; lng: number }, mode: TravelMode) => Promise<NearbyPost[]>;
+export type FetchNearbyPosts = (center: { lat: number; lng: number }, mode: TravelMode, filters: SpotFilters) => Promise<NearbyPost[]>;
+
+/**
+ * explore-mode Task 4: 絞り込みシートに渡す形。
+ *
+ * 【初心者向け】シート（`FilterSheet`）は投稿一覧でも使うので、こちらの言葉（`minRating`）ではなく
+ * シートの言葉（`rating`）で渡す。入れたものと同じ形が返ってくるので、変換はこのファイルの
+ * `toSheet`／`fromSheet` の 2 か所だけに閉じる。
+ */
+interface SpotSheetValue {
+  categories: readonly PostCategory[];
+  cost: CostRange | null;
+  duration: PostDuration | null;
+  rating: number | null;
+  manualOnly: boolean;
+}
+
+function toSheet(filters: SpotFilters): SpotSheetValue {
+  return { categories: filters.categories, cost: filters.cost, duration: filters.duration, rating: filters.minRating, manualOnly: filters.manualOnly };
+}
+
+function fromSheet(value: SpotSheetValue): SpotFilters {
+  return { categories: value.categories, cost: value.cost, duration: value.duration, minRating: value.rating, manualOnly: value.manualOnly };
+}
 
 /**
  * explore-mode Task2: 「近くのスポット」（探すモードの下 1/3。v3.1 で「近くの声」から改称）
@@ -59,6 +92,8 @@ export function NearbyVoices({
   onModeChange,
   initialActiveSpotId = null,
   backHref = null,
+  filters = EMPTY_SPOT_FILTERS,
+  onFiltersChange,
 }: {
   center: { lat: number; lng: number };
   /** Bug #471: 投稿詳細から「← 地図」で探すモードに戻れるように渡す、この地図の URL */
@@ -72,8 +107,13 @@ export function NearbyVoices({
   onModeChange?: (mode: TravelMode) => void;
   /** map-restore Task1（2026-09-25）: 詳細から戻ったとき、最初に中央に置くカードのスポット */
   initialActiveSpotId?: string | null;
+  /** explore-mode Task 4: いま効いている絞り込み（親＝MapScreen が URL と地図の状態に持つ） */
+  filters?: SpotFilters;
+  /** explore-mode Task 4: 絞り込みを変えたとき（ピンも取り直すので親が受ける） */
+  onFiltersChange?: (next: SpotFilters) => void;
 }) {
   const [mode, setMode] = useState<TravelMode>(initialMode);
+  const [isSheetOpen, setIsSheetOpen] = useState(false);
   const [posts, setPosts] = useState<NearbyPost[] | null>(null);
   const [activeIndex, setActiveIndex] = useState(0);
   /*
@@ -90,8 +130,16 @@ export function NearbyVoices({
   const [loadedFor, setLoadedFor] = useState<string | null>(null);
   const [failedFor, setFailedFor] = useState<string | null>(null);
 
-  /** いまの条件。中身が同じなら同じ文字になる（`center` は親が作り直すことがあるので値で見る） */
-  const currentKey = `${center.lat},${center.lng},${mode}`;
+  /*
+   * いまの条件。中身が同じなら同じ文字になる（`center` は親が作り直すことがあるので値で見る）。
+   * explore-mode Task 4: 絞り込みも鍵に混ぜる。変えた直後に古いカードが残らない
+   */
+  const filterKey = spotFiltersToParams(filters)
+    .map(([key, value]) => `${key}=${value}`)
+    .join("&");
+  const currentKey = `${center.lat},${center.lng},${mode},${filterKey}`;
+  /** 絞り込みが効いているか（ボタンの色・0 件の文言の出し分け） */
+  const isActive = hasActiveSpotFilters(filters);
   /** 取り終えてもいない・失敗してもいない＝まだ取っている */
   const isFetching = loadedFor !== currentKey && failedFor !== currentKey;
   const failed = failedFor === currentKey;
@@ -114,8 +162,8 @@ export function NearbyVoices({
   useEffect(() => {
     let cancelled = false;
     // 取り終えたときに「どの条件のぶんか」を記録するため、効果の中でも同じ文字を作る
-    const key = `${center.lat},${center.lng},${mode}`;
-    fetchPosts(center, mode)
+    const key = `${center.lat},${center.lng},${mode},${filterKey}`;
+    fetchPosts(center, mode, filters)
       .then((result) => {
         if (cancelled) return;
         setPosts(result);
@@ -136,7 +184,9 @@ export function NearbyVoices({
     return () => {
       cancelled = true;
     };
-  }, [center, mode, fetchPosts]);
+    // filters は filterKey（中身を並べた文字）で見る。同じ中身の作り直しで取り直さないため
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [center, mode, fetchPosts, filterKey]);
 
   /**
    * Task3（2026-09-25）: カードのタップは 2 段階。
@@ -172,10 +222,15 @@ export function NearbyVoices({
 
   return (
     <section aria-label="近くのスポット" data-nearby-voices className="flex h-full flex-col gap-2 bg-surface px-4 pt-3 pb-[max(12px,env(safe-area-inset-bottom))]">
-      <div className="flex items-center justify-between">
+      {/*
+        * explore-mode Task 4（2026-10-02）: 見出しの行は「近くのスポット ─ 移動手段 ▾ ─ 絞り込み」。
+        * 移動手段の横の「移動手段」の文字は外した（選んでいる手段が見えるので要らない）。
+        * 読み上げには <select> の aria-label が残るので意味は失わない。
+        * 絞り込みは**絵だけ**のボタンにし、効いているときだけ色と数を変える（文字を増やさない）。
+        */}
+      <div className="flex items-center justify-between gap-2">
         <h2 className="text-[14px] font-bold text-ink">近くのスポット</h2>
-        <label className="inline-flex items-center gap-1 text-[12px] text-muted">
-          移動手段
+        <div className="flex items-center gap-1.5">
           <select
             aria-label="移動手段"
             value={mode}
@@ -193,8 +248,40 @@ export function NearbyVoices({
               </option>
             ))}
           </select>
-        </label>
+          <button
+            type="button"
+            aria-label="絞り込み"
+            aria-expanded={isSheetOpen}
+            onClick={() => setIsSheetOpen(true)}
+            data-nearby-filter
+            className={`relative flex h-8 w-8 items-center justify-center rounded-full border ${
+              isActive ? "border-accent bg-accent text-white" : "border-line bg-surface text-ink"
+            }`}
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden>
+              <path d="M4 6h16M7 12h10M10 18h4" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" />
+            </svg>
+            {isActive && (
+              <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-ink px-1 text-[10px] font-bold text-on-ink">
+                {activeSpotFilterCount(filters)}
+              </span>
+            )}
+          </button>
+        </div>
       </div>
+
+      <FilterSheet
+        open={isSheetOpen}
+        value={toSheet(filters)}
+        hasDistanceCenter={false}
+        variant="spots"
+        onApply={(next) => {
+          restoreSpotRef.current = null; // 条件を変えたら、復元の指定は忘れる
+          setIsSheetOpen(false);
+          onFiltersChange?.(fromSheet(next));
+        }}
+        onClose={() => setIsSheetOpen(false)}
+      />
 
       {/* Task 4-2: 取得中を先に見る。移動手段を変えた直後もここに入り、古いカードは出ない */}
       {isFetching ? (
@@ -204,7 +291,10 @@ export function NearbyVoices({
       ) : visiblePosts === null ? (
         <p role="status" className="py-6 text-center text-[12px] text-muted">読み込んでいます…</p>
       ) : visiblePosts.length === 0 ? (
-        <p className="py-6 text-center text-[12px] text-muted">この範囲に投稿はありません。移動手段を変えて範囲を広げてみてください</p>
+        /* explore-mode Task 4: 絞り込みが効いているときは、範囲ではなく条件のせいだと分かる文言にする */
+        <p className="py-6 text-center text-[12px] text-muted">
+          {isActive ? "条件に合う場所がありません" : "この範囲に投稿はありません。移動手段を変えて範囲を広げてみてください"}
+        </p>
       ) : (
         <div
           ref={scrollerRef}
@@ -242,8 +332,10 @@ export function NearbyVoices({
   );
 }
 
-async function defaultFetchNearbyPosts(center: { lat: number; lng: number }, mode: TravelMode): Promise<NearbyPost[]> {
+async function defaultFetchNearbyPosts(center: { lat: number; lng: number }, mode: TravelMode, filters: SpotFilters = EMPTY_SPOT_FILTERS): Promise<NearbyPost[]> {
   const params = new URLSearchParams({ lat: String(center.lat), lng: String(center.lng), mode });
+  // explore-mode Task 4: 条件は API にも渡す（サーバーが同じ判定で絞る）
+  for (const [key, value] of spotFiltersToParams(filters)) params.set(key, value);
   const response = await fetchWithAuthRedirect(`/api/posts/nearby?${params.toString()}`);
   if (!response.ok) throw new Error(`Failed to fetch nearby posts: ${response.status}`);
   const data = (await response.json()) as { posts: NearbyPost[] };

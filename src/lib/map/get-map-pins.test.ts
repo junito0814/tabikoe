@@ -128,3 +128,112 @@ describe("ピンのカテゴリ（pin-categories Task2）", () => {
     expect(pins[0]).toMatchObject({ kind: "draft", category: null });
   });
 });
+
+/**
+ * 出典: docs/tasks/map-search/explore-mode/04-filter.md 単体テスト
+ *       #656（探すモードの絞り込み）
+ * 要件定義書 3.4.6「絞り込み」・8 章 100
+ *
+ * 【初心者向け】絞り込みは**投稿を間引くのではなく、スポットごと落とす**。
+ * そうすると、残ったスポットの件数・評価・色は**そのスポットの全公開投稿**から出た値のままになる。
+ * 「3 件」と出ているのに開いたら 1 件、ということが起きない。
+ */
+describe("mergeMapPins の絞り込み（#656）", () => {
+  const withPosts = (id: string, posts: { rating: number | null; category?: string; cost?: number | null; duration?: string }[], source = "places") => ({
+    id,
+    name: `スポット${id}`,
+    lat: 35,
+    lng: 139,
+    prefecture: null,
+    source,
+    posts: posts.map((p) => ({
+      user_id: "u1",
+      visibility: "public",
+      rating: p.rating,
+      category: p.category ?? "グルメ",
+      cost: p.cost ?? 1000,
+      duration: p.duration ?? "1時間以内",
+      created_at: "2026-09-01T00:00:00Z",
+    })),
+  });
+  const filters = (over: Partial<Parameters<typeof mergeMapPins>[5] & object> = {}) => ({
+    categories: [],
+    cost: null,
+    duration: null,
+    minRating: null,
+    manualOnly: false,
+    ...over,
+  });
+
+  it("条件に合わないスポットはピンごと消える", () => {
+    const pins = mergeMapPins(
+      [withPosts("a", [{ rating: 5 }]), withPosts("b", [{ rating: 2 }])],
+      [], [], new Map(), MAX_MAP_PINS,
+      filters({ minRating: 4 })
+    );
+    expect(pins.map((pin) => pin.id)).toEqual(["a"]);
+  });
+
+  it("残ったピンの件数・評価は、そのスポットの全公開投稿から出る", () => {
+    // ★5 が 2 件・★4 が 1 件 → 件数 3・平均 4.7。間引いた数にならないこと
+    const pins = mergeMapPins(
+      [withPosts("a", [{ rating: 5 }, { rating: 5 }, { rating: 4 }])],
+      [], [], new Map(), MAX_MAP_PINS,
+      filters({ minRating: 4 })
+    );
+    expect(pins[0].postCount).toBe(3);
+    expect(pins[0].ratingAverage).toBe(4.7);
+  });
+
+  it("平均で切る（1 件だけ ★5 でも、平均が届かなければ落ちる）", () => {
+    const pins = mergeMapPins(
+      [withPosts("a", [{ rating: 5 }, { rating: 2 }])],
+      [], [], new Map(), MAX_MAP_PINS,
+      filters({ minRating: 4 })
+    );
+    expect(pins).toHaveLength(0);
+  });
+
+  it("「タビコエだけの場所」だけを出す", () => {
+    const pins = mergeMapPins(
+      [withPosts("a", [{ rating: 4 }], "manual"), withPosts("b", [{ rating: 4 }], "places")],
+      [], [], new Map(), MAX_MAP_PINS,
+      filters({ manualOnly: true })
+    );
+    expect(pins.map((pin) => pin.id)).toEqual(["a"]);
+  });
+
+  it("カテゴリは代表（いちばん多いもの）で見る。ピンの色と食い違わない", () => {
+    const pins = mergeMapPins(
+      [withPosts("a", [{ rating: 4, category: "グルメ" }, { rating: 4, category: "観光スポット" }, { rating: 4, category: "観光スポット" }])],
+      [], [], new Map(), MAX_MAP_PINS,
+      filters({ categories: ["観光スポット"] })
+    );
+    expect(pins).toHaveLength(1);
+    // 絞り込みで残ったのだから、ピンの色も同じカテゴリでなければおかしい
+    expect(pins[0].category).toBe("観光スポット");
+  });
+
+  it("絞り込み中は、保存済みと下書きのピンを出さない", () => {
+    // 条件に合わないピンが残ると「絞り込んだのに出ている」と壊れて見えるため
+    const pins = mergeMapPins(
+      [withPosts("a", [{ rating: 5 }])],
+      [plain("saved-1")],
+      [{ id: "d1", lat: 35, lng: 139, spot: null }],
+      new Map(), MAX_MAP_PINS,
+      filters({ minRating: 4 })
+    );
+    expect(pins.map((pin) => pin.id)).toEqual(["a"]);
+  });
+
+  it("条件が無ければ、今までどおり全部出る", () => {
+    const pins = mergeMapPins(
+      [withPosts("a", [{ rating: 2 }])],
+      [plain("saved-1")],
+      [{ id: "d1", lat: 35, lng: 139, spot: null }],
+      new Map(), MAX_MAP_PINS,
+      filters()
+    );
+    expect(pins.map((pin) => pin.id).sort()).toEqual(["a", "draft:d1", "saved-1"]);
+  });
+});

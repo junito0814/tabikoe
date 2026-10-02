@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { resolveMapOpen, SPOT_FOCUS_ZOOM } from "./map-navigation";
+import { EMPTY_SPOT_FILTERS } from "@/lib/map/spot-aggregate";
 
 /**
  * 出典: docs/tasks/map-search/map-display-v3/02-map-screen-rebuild.md 単体テスト
@@ -37,5 +38,15 @@ describe("resolveMapOpen", () => {
     expect(result.mode).toBe("default");
     expect(result.center).toBeNull();
     expect(result.back.label).toBe("ホーム");
+  });
+
+  /* explore-mode Task 4（2026-10-02）: 絞り込みは URL に持つ（要件 3.4.6） */
+  it("探すモードは絞り込みの条件も URL から読む", () => {
+    const result = resolveMapOpen({ mode: "explore", lat: "35.1", lng: "139.2", categories: "グルメ", cost: "3000", rating: "4", manual: "1" });
+    expect(result.filters).toEqual({ categories: ["グルメ"], cost: "3000", duration: null, minRating: 4, manualOnly: true });
+  });
+
+  it("条件が付いていなければ条件なし", () => {
+    expect(resolveMapOpen({ mode: "explore", lat: "35.1", lng: "139.2" }).filters).toEqual(EMPTY_SPOT_FILTERS);
   });
 });
