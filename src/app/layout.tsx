@@ -21,14 +21,27 @@ const geistMono = Geist_Mono({
  * 画像は scratchpad の gen-splash.mjs で作った（空の青 + 4.5.9 のロゴ）。作り直すときも同じ手順で。
  */
 const APPLE_STARTUP_IMAGES = [
+  { url: "/splash/splash-1320x2868.png", media: "(device-width: 440px) and (device-height: 956px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" },
   { url: "/splash/splash-1290x2796.png", media: "(device-width: 430px) and (device-height: 932px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" },
   { url: "/splash/splash-1284x2778.png", media: "(device-width: 428px) and (device-height: 926px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" },
   { url: "/splash/splash-1242x2688.png", media: "(device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" },
+  { url: "/splash/splash-1206x2622.png", media: "(device-width: 402px) and (device-height: 874px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" },
   { url: "/splash/splash-1179x2556.png", media: "(device-width: 393px) and (device-height: 852px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" },
   { url: "/splash/splash-1170x2532.png", media: "(device-width: 390px) and (device-height: 844px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" },
   { url: "/splash/splash-1125x2436.png", media: "(device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" },
   { url: "/splash/splash-828x1792.png", media: "(device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)" },
   { url: "/splash/splash-750x1334.png", media: "(device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)" },
+  /*
+   * 受け皿（#623 の 2 度目の修正・2026-10-02）: `media` を書かない 1 枚。
+   *
+   * 【初心者向け】上の 10 枚は「この大きさの端末ならこの画像」という指定で、**ぴったり
+   * 一致しないと使われない**。新しい iPhone が出ると、また一致しないものが増える
+   * （実際に 16 Pro と 16 Pro Max が抜けていた）。
+   * `media` を書かない 1 枚は**どの端末でも一致する**ので、一覧に無い端末でも白にならない。
+   * iOS が縮めて使うが、中身は空の青に中央ロゴなので縮んでも崩れない。
+   * このため、受け皿が選ばれても上の 10 枚が選ばれても、見える結果はほぼ同じになる。
+   */
+  "/splash/splash-1320x2868.png",
 ];
 
 export const metadata: Metadata = {
@@ -49,6 +62,20 @@ export const metadata: Metadata = {
      * このアプリは縦向きが前提なので、縦のぶんだけ用意する。
      */
     startupImage: APPLE_STARTUP_IMAGES,
+  },
+  /*
+   * #623 の 2 度目の修正（2026-10-02）: `apple-mobile-web-app-capable` を自分で足す。
+   *
+   * 【初心者向け】上の `appleWebApp.capable: true` は指定してあるのに、**Next 16 が出す
+   * meta の名前は接頭辞の無い `mobile-web-app-capable` だけ**になっていた
+   * （node_modules/next/dist/lib/metadata/metadata.js の「--- Apple Web App ---」の節）。
+   * 接頭辞なしは新しい決まりの方の名前で、Android などはこれを見る。
+   * いっぽう `apple-touch-startup-image`（起動画面）は **Apple の接頭辞付きの方**と
+   * 組で使う決まりなので、無いと上の 11 枚ごと見てもらえない恐れがある。
+   * Next が出さないぶんを `other` で足して、どちらの名前も揃えておく。
+   */
+  other: {
+    "apple-mobile-web-app-capable": "yes",
   },
 };
 
