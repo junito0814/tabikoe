@@ -3,6 +3,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { requireUserOrRedirect } from "@/lib/auth/require-user-or-redirect";
 import { ItineraryInvitationAcceptScreen } from "@/components/itineraries/ItineraryInvitationAcceptScreen";
 import { evaluateInvitation } from "@/lib/itineraries/invitations";
+import { ContentEnter } from "@/components/transitions/Reveal";
 
 /**
  * しおりの招待リンクの着地ページ
@@ -34,9 +35,11 @@ export default async function ItineraryInvitationPage({ params }: { params: Prom
   const trip = one(one((invitation as { itineraries: unknown }).itineraries as { trips: unknown } | null)?.trips as { title: string } | { title: string }[] | null);
 
   return (
-    <ItineraryInvitationAcceptScreen
-      token={token}
-      invitation={{ status: "valid", title: trip?.title ?? "しおり", itineraryId: invitation.itinerary_id, alreadyMember: membership !== null }}
-    />
+    <ContentEnter>
+      <ItineraryInvitationAcceptScreen
+        token={token}
+        invitation={{ status: "valid", title: trip?.title ?? "しおり", itineraryId: invitation.itinerary_id, alreadyMember: membership !== null }}
+      />
+    </ContentEnter>
   );
 }

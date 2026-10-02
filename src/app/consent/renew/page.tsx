@@ -6,6 +6,7 @@ import { missingConsents } from "@/lib/auth/reconsent";
 import { getLegalDocument, getPublishedVersions } from "@/lib/legal/legal-documents";
 import { ReconsentScreen, type ReconsentItem } from "@/components/legal/ReconsentScreen";
 import { safeRedirectPath } from "@/lib/safe-redirect";
+import { ContentEnter } from "@/components/transitions/Reveal";
 
 export const dynamic = "force-dynamic";
 
@@ -32,5 +33,9 @@ export default async function ReconsentPage({ searchParams }: PageProps<"/consen
     if (document) items.push({ kind, version: document.version, summary: document.summary });
   }
   if (items.length === 0) redirect(redirectTo);
-  return <ReconsentScreen items={items} redirectTo={redirectTo} />;
+  return (
+    <ContentEnter>
+      <ReconsentScreen items={items} redirectTo={redirectTo} />
+    </ContentEnter>
+  );
 }

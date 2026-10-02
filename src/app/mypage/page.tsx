@@ -8,6 +8,7 @@ import { DEFAULT_AVATAR_URL } from "@/lib/users/constants";
 import { getMyPageSummary, getMyPosts, getMyTripOptions } from "@/lib/users/my-page";
 import { getMyDrafts } from "@/lib/posts/drafts";
 import { getPostingRestrictionUntil } from "@/lib/moderation/posting-restriction";
+import { ContentEnter } from "@/components/transitions/Reveal";
 
 /**
  * SC-06 マイページ
@@ -32,15 +33,17 @@ export default async function MyPage() {
   }
 
   return (
-    <MyPageScreen
-      profile={data.profile}
-      summary={data.summary}
-      initialPosts={data.initialPosts}
-      tripOptions={data.tripOptions}
-      drafts={data.drafts}
-      wishlistCount={data.wishlistCount}
-      restrictedUntil={data.restrictedUntil}
-    />
+    <ContentEnter>
+      <MyPageScreen
+        profile={data.profile}
+        summary={data.summary}
+        initialPosts={data.initialPosts}
+        tripOptions={data.tripOptions}
+        drafts={data.drafts}
+        wishlistCount={data.wishlistCount}
+        restrictedUntil={data.restrictedUntil}
+      />
+    </ContentEnter>
   );
 }
 

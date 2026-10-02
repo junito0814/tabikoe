@@ -5,6 +5,7 @@ import { ErrorNotice } from "@/components/notices/ErrorNotice";
 import { ERROR_MESSAGES } from "@/components/notices/error-messages";
 import { AccountStatusScreen } from "@/components/account/AccountStatusScreen";
 import { getAccountStatus, type AccountStatus } from "@/lib/moderation/account-status";
+import { ContentEnter } from "@/components/transitions/Reveal";
 
 export const dynamic = "force-dynamic";
 
@@ -30,5 +31,9 @@ export default async function AccountStatusPage() {
       </div>
     );
   }
-  return <AccountStatusScreen status={status} />;
+  return (
+    <ContentEnter>
+      <AccountStatusScreen status={status} />
+    </ContentEnter>
+  );
 }

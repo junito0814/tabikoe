@@ -9,6 +9,7 @@ import { StreamingSpotPostListScreen } from "@/components/posts/StreamingSearchS
 import { MapSheetSkeleton } from "@/components/skeleton/Skeletons";
 import { loadSearchFirstPage, loadSearchShell, retryableEmptyFirstPage, type SearchPageQuery } from "@/lib/search/load-search-page";
 import { resolveListBack } from "@/lib/search/list-state";
+import { ContentEnter } from "@/components/transitions/Reveal";
 
 /**
  * SC-04 投稿一覧（スポット別）
@@ -46,8 +47,10 @@ export default async function SpotPostsPage({
   const firstPage = loadSearchFirstPage(admin, user.id, shell).catch(() => retryableEmptyFirstPage(shell));
   const back = resolveListBack(typeof query.back === "string" ? query.back : null);
   return (
-    <Suspense fallback={<MapSheetSkeleton backLabel={back?.label ?? "地図"} title={data.spot.name} />}>
-      <StreamingSpotPostListScreen spot={data.spot} initialState={data.initialState} addMode={data.addMode} back={back} firstPage={firstPage} />
-    </Suspense>
+    <ContentEnter>
+      <Suspense fallback={<MapSheetSkeleton backLabel={back?.label ?? "地図"} title={data.spot.name} />}>
+        <StreamingSpotPostListScreen spot={data.spot} initialState={data.initialState} addMode={data.addMode} back={back} firstPage={firstPage} />
+      </Suspense>
+    </ContentEnter>
   );
 }

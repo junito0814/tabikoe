@@ -11,6 +11,7 @@ import { parseBadgeToastParam } from "@/components/badges/badge-toast-params";
 import { FlashNotice, resolveFlashKey } from "@/components/notices/FlashNotice";
 import { getPostDetail, type PostDetailData } from "@/lib/posts/post-detail";
 import { listComments, type CommentPage } from "@/lib/comments/list-comments";
+import { ContentEnter } from "@/components/transitions/Reveal";
 
 /**
  * SC-05 投稿詳細画面
@@ -62,9 +63,11 @@ export default async function PostDetailPage({
   }
 
   return (
-    <>
-      {newBadgeTypes.length > 0 && <BadgeToast badgeTypes={newBadgeTypes} />}
-      <PostDetailScreen post={post} initialComments={comments} notice={flashKey ? <FlashNotice flashKey={flashKey} /> : undefined} back={resolveListBack(query.back)} />
-    </>
+    <ContentEnter>
+      <>
+        {newBadgeTypes.length > 0 && <BadgeToast badgeTypes={newBadgeTypes} />}
+        <PostDetailScreen post={post} initialComments={comments} notice={flashKey ? <FlashNotice flashKey={flashKey} /> : undefined} back={resolveListBack(query.back)} />
+      </>
+    </ContentEnter>
   );
 }

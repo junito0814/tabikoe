@@ -6,6 +6,7 @@ import { ERROR_MESSAGES } from "@/components/notices/error-messages";
 import { ItineraryListScreen } from "@/components/itineraries/ItineraryListScreen";
 import { listItineraries } from "@/lib/itineraries/get-itinerary";
 import { todayInJst } from "@/lib/posts/constants";
+import { ContentEnter } from "@/components/transitions/Reveal";
 
 /**
  * SC-22 しおり一覧
@@ -37,5 +38,9 @@ export default async function ItinerariesPage() {
       </div>
     );
   }
-  return <ItineraryListScreen items={items} today={todayInJst()} wishlistCount={wishlistCount} />;
+  return (
+    <ContentEnter>
+      <ItineraryListScreen items={items} today={todayInJst()} wishlistCount={wishlistCount} />
+    </ContentEnter>
+  );
 }

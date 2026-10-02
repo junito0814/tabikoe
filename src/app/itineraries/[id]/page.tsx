@@ -8,6 +8,7 @@ import { ItineraryDetailScreen } from "@/components/itineraries/ItineraryDetailS
 import { resolveListBack } from "@/lib/search/list-state";
 import { parseDayTab } from "@/lib/itineraries/day-tabs";
 import { getItinerary, type ItineraryDetail } from "@/lib/itineraries/get-itinerary";
+import { ContentEnter } from "@/components/transitions/Reveal";
 
 /**
  * SC-23 しおり詳細
@@ -43,5 +44,9 @@ export default async function ItineraryPage({
   // v3.1: ?day= は "all"／数字（旧 "undecided" は ALL に倒す）。指定が無ければ ALL
   const initialDay = parseDayTab(query.day, itinerary.dayCount);
 
-  return <ItineraryDetailScreen initial={itinerary} viewerId={user.id} initialDay={initialDay} highlightSpotId={query.spot ?? null} back={resolveListBack(query.back)} />;
+  return (
+    <ContentEnter>
+      <ItineraryDetailScreen initial={itinerary} viewerId={user.id} initialDay={initialDay} highlightSpotId={query.spot ?? null} back={resolveListBack(query.back)} />
+    </ContentEnter>
+  );
 }

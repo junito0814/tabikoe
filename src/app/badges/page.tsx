@@ -4,6 +4,7 @@ import { ErrorNotice } from "@/components/notices/ErrorNotice";
 import { ERROR_MESSAGES } from "@/components/notices/error-messages";
 import { BadgeScreen } from "@/components/badges/BadgeScreen";
 import { getBadgeStatuses, type BadgeStatus } from "@/lib/badges/badge-status";
+import { ContentEnter } from "@/components/transitions/Reveal";
 
 /**
  * SC-10 ステータスバッジ画面
@@ -30,5 +31,9 @@ export default async function BadgesPage() {
     );
   }
 
-  return <BadgeScreen badges={badges} />;
+  return (
+    <ContentEnter>
+      <BadgeScreen badges={badges} />
+    </ContentEnter>
+  );
 }
