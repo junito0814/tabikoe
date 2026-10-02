@@ -167,7 +167,7 @@ async function getMenuBarUser() {
  *
  * 動きは「**静止して待ち、去るときだけ動く**」（Instagram と同じ考え方）。
  * 描画が始まる前は何も出せないので、**入場の動きを見せる余地が無い**ため。
- * 保持 600ms →（軽く拡大しながら）フェード 250ms（#663 で 300ms から変更。一瞬すぎて見えなかった）。
+ * 保持 1000ms →（軽く拡大しながら）フェード 250ms（#663 で 300→600ms、#669 で 600→1000ms。実機でまだ短かった）。
  *
  * `pointer-events: none` を最初から付けているのは、消える前に触っても
  * **下の本物に届くようにする**ため（覆いは飾りで、中身はもう描けている）。
@@ -180,11 +180,11 @@ function LaunchCover() {
   return (
     <>
       <style>{`
-#launch-cover{position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center;pointer-events:none;background:${LAUNCH_GROUND.light};animation:launch-leave 250ms ease-in 600ms forwards}
+#launch-cover{position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center;pointer-events:none;background:${LAUNCH_GROUND.light};animation:launch-leave 250ms ease-in 1000ms forwards}
 #launch-cover svg{width:min(28vw,128px);height:auto}
 @keyframes launch-leave{to{opacity:0;transform:scale(1.08);visibility:hidden}}
 @media (prefers-color-scheme:dark){#launch-cover{background:${LAUNCH_GROUND.dark}}}
-@media (prefers-reduced-motion:reduce){#launch-cover{animation:launch-fade 250ms linear 600ms forwards}}
+@media (prefers-reduced-motion:reduce){#launch-cover{animation:launch-fade 250ms linear 1000ms forwards}}
 @keyframes launch-fade{to{opacity:0;visibility:hidden}}
 `}</style>
       <div id="launch-cover" aria-hidden="true">
