@@ -124,3 +124,26 @@ describe("絞り込みの選び方（explore-mode Task 5）", () => {
     expect(onApply).toHaveBeenCalledWith(expect.objectContaining({ cost: null, categories: [], distance: null, sort: "rating" }));
   });
 });
+
+/*
+ * post-timeline Task 6（2026-10-03）: 投稿一覧の「タビコエだけの場所」
+ * 出典: docs/tasks/map-search/post-timeline/06-manual-only-filter.md
+ */
+describe("Task 6: 投稿一覧の「タビコエだけの場所」", () => {
+  it("検索結果（showManualOnly）のときだけ出る", () => {
+    const { unmount } = render(<FilterSheet open value={EMPTY_SEARCH_STATE} hasDistanceCenter={false} onApply={vi.fn()} onClose={vi.fn()} />);
+    expect(screen.queryByText("タビコエだけの場所"), "スポット別の一覧では出さない").toBeNull();
+    unmount();
+
+    render(<FilterSheet open value={EMPTY_SEARCH_STATE} hasDistanceCenter={false} showManualOnly onApply={vi.fn()} onClose={vi.fn()} />);
+    expect(screen.getByText("タビコエだけの場所")).toBeInTheDocument();
+  });
+
+  it("入れて「この条件で表示」を押すと親に渡る", () => {
+    const onApply = vi.fn();
+    render(<FilterSheet open value={EMPTY_SEARCH_STATE} hasDistanceCenter={false} showManualOnly onApply={onApply} onClose={vi.fn()} />);
+    fireEvent.click(screen.getByText("タビコエだけの場所").closest("label") as HTMLElement);
+    fireEvent.click(screen.getByRole("button", { name: "この条件で表示" }));
+    expect(onApply).toHaveBeenCalledWith(expect.objectContaining({ manualOnly: true }));
+  });
+});
