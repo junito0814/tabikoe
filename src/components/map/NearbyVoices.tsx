@@ -75,8 +75,28 @@ export function NearbyVoices({
 }) {
   const [mode, setMode] = useState<TravelMode>(initialMode);
   const [posts, setPosts] = useState<NearbyPost[] | null>(null);
-  const [failed, setFailed] = useState(false);
   const [activeIndex, setActiveIndex] = useState(0);
+  /*
+   * loading-feedback Task 4-2（2026-10-02）: 移動手段を変えた直後に古い結果を残さない。
+   *
+   * 【初心者向け】以前は「取得中」の旗を持たず `posts` だけを見ていたので、徒歩から車に変えても
+   * **新しい結果が届くまで古いカードと古い分数が残っていた**。見ている人には「変わっていない」
+   * ように映る（分数だけが後から入れ替わるので、誤読もする）。
+   *
+   * 旗を立てる代わりに「**どの条件で取り終えたか**」を覚えて、いまの条件と見比べる。
+   * 効果（useEffect）の中で旗を立てると eslint（react-hooks/set-state-in-effect）に
+   * 止められるため、あしあとの地図（Task 2）と同じこのやり方に揃えている。
+   */
+  const [loadedFor, setLoadedFor] = useState<string | null>(null);
+  const [failedFor, setFailedFor] = useState<string | null>(null);
+
+  /** いまの条件。中身が同じなら同じ文字になる（`center` は親が作り直すことがあるので値で見る） */
+  const currentKey = `${center.lat},${center.lng},${mode}`;
+  /** 取り終えてもいない・失敗してもいない＝まだ取っている */
+  const isFetching = loadedFor !== currentKey && failedFor !== currentKey;
+  const failed = failedFor === currentKey;
+  /** 条件が変わった直後は古い結果を使わない（これが「前の結果を捨てる」の実体） */
+  const visiblePosts = loadedFor === currentKey ? posts : null;
   const router = useRouter();
   const scrollerRef = useRef<HTMLDivElement>(null);
   const onActiveChangeRef = useRef(onActiveChange);
@@ -93,11 +113,13 @@ export function NearbyVoices({
 
   useEffect(() => {
     let cancelled = false;
+    // 取り終えたときに「どの条件のぶんか」を記録するため、効果の中でも同じ文字を作る
+    const key = `${center.lat},${center.lng},${mode}`;
     fetchPosts(center, mode)
       .then((result) => {
         if (cancelled) return;
         setPosts(result);
-        setFailed(false);
+        setLoadedFor(key);
         const restoreIndex = restoreSpotRef.current ? result.findIndex((post) => post.spotId === restoreSpotRef.current) : -1;
 
         const index = restoreIndex >= 0 ? restoreIndex : 0;
@@ -109,7 +131,7 @@ export function NearbyVoices({
       })
       .catch((error) => {
         if (cancelled || error instanceof UnauthorizedError) return;
-        setFailed(true);
+        setFailedFor(key);
       });
     return () => {
       cancelled = true;
@@ -174,11 +196,14 @@ export function NearbyVoices({
         </label>
       </div>
 
-      {failed ? (
+      {/* Task 4-2: 取得中を先に見る。移動手段を変えた直後もここに入り、古いカードは出ない */}
+      {isFetching ? (
+        <p role="status" className="py-6 text-center text-[12px] text-muted">読み込んでいます…</p>
+      ) : failed ? (
         <p className="py-6 text-center text-[12px] text-muted">近くの投稿を読み込めませんでした</p>
-      ) : posts === null ? (
-        <p className="py-6 text-center text-[12px] text-muted">読み込んでいます…</p>
-      ) : posts.length === 0 ? (
+      ) : visiblePosts === null ? (
+        <p role="status" className="py-6 text-center text-[12px] text-muted">読み込んでいます…</p>
+      ) : visiblePosts.length === 0 ? (
         <p className="py-6 text-center text-[12px] text-muted">この範囲に投稿はありません。移動手段を変えて範囲を広げてみてください</p>
       ) : (
         <div
@@ -187,7 +212,7 @@ export function NearbyVoices({
           className="-mx-4 flex snap-x snap-mandatory gap-[10px] overflow-x-auto px-4 pb-1"
           style={{ scrollbarWidth: "none" }}
         >
-          {posts.map((post, index) => (
+          {visiblePosts.map((post, index) => (
             <button
               key={post.id}
               type="button"

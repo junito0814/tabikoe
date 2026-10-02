@@ -35,6 +35,16 @@ export function DestinationInput({
   const [suggestions, setSuggestions] = useState<DestinationSuggestion[]>([]);
   const [isOpen, setIsOpen] = useState(false);
   const [sessionToken, setSessionToken] = useState(() => newSessionToken());
+  /*
+   * loading-feedback Task 4-9（2026-10-02）: 直近で探し終えた言葉。
+   *
+   * 【初心者向け】これが無いと 2 つ困ることがあった。
+   *   1. 候補が無言で遅れて出る（何も起きていないように見える）
+   *   2. **入力を変えても前の言葉の候補が残る。** その状態で Enter を押すと
+   *      `suggestions[0]` が使われるので、**打ち替えた先とは違う場所へ飛ぶ**
+   * 「探し終えた言葉」と「いまの入力」を見比べて、一致するときだけ候補を使う。
+   */
+  const [searchedQuery, setSearchedQuery] = useState<string | null>(null);
   const suggestRef = useRef(suggest);
   useEffect(() => {
     suggestRef.current = suggest;
@@ -50,6 +60,7 @@ export function DestinationInput({
     const timer = setTimeout(async () => {
       if (!trimmed) {
         setSuggestions([]);
+        setSearchedQuery(trimmed);
         return;
       }
       try {
@@ -60,9 +71,17 @@ export function DestinationInput({
         if (error instanceof UnauthorizedError) return;
         setSuggestions([]);
       }
+      // 成功・失敗どちらでも「この言葉は探し終えた」と記録する（待ち表示が出たままにならないように）
+      setSearchedQuery(trimmed);
     }, trimmed ? DEBOUNCE_MS : 0);
     return () => clearTimeout(timer);
   }, [query, sessionToken]);
+
+  const trimmedQuery = query.trim();
+  /** 探し終えた言葉がいまの入力と一致するときだけ候補を使う（前の言葉の候補を残さない） */
+  const visibleSuggestions = searchedQuery === trimmedQuery ? suggestions : [];
+  /** 探している最中か。300ms 待っている間も含む */
+  const isSearching = trimmedQuery.length > 0 && searchedQuery !== trimmedQuery;
 
   const select = (suggestion: DestinationSuggestion) => {
     setIsOpen(false);
@@ -75,11 +94,11 @@ export function DestinationInput({
       <form
         onSubmit={(event) => {
           event.preventDefault();
-          const trimmed = query.trim();
-          if (!trimmed || disabled) return;
-          // 候補があればその先頭を、無ければ自由入力として扱う
-          if (suggestions[0]) select(suggestions[0]);
-          else onSubmitFreeText(trimmed);
+          if (!trimmedQuery || disabled) return;
+          // 候補があればその先頭を、無ければ自由入力として扱う。
+          // Task 4-9: 前の言葉の候補は使わない（打ち替えた先と違う場所へ飛ばないように）
+          if (visibleSuggestions[0]) select(visibleSuggestions[0]);
+          else onSubmitFreeText(trimmedQuery);
         }}
         className="flex h-[52px] w-full items-center gap-2 rounded-full border border-line bg-surface px-4 shadow-card"
       >
@@ -92,26 +111,38 @@ export function DestinationInput({
           ref={inputRef}
           value={query}
           onChange={(event) => setQuery(event.target.value)}
-          onFocus={() => suggestions.length > 0 && setIsOpen(true)}
+          onFocus={() => visibleSuggestions.length > 0 && setIsOpen(true)}
           onBlur={() => setTimeout(() => setIsOpen(false), 150)}
           placeholder="どこへ行く？"
           aria-label="行き先"
           autoComplete="off"
           role="combobox"
-          aria-expanded={isOpen && suggestions.length > 0}
+          aria-expanded={isOpen && visibleSuggestions.length > 0}
           aria-controls={`${inputId}-suggestions`}
           disabled={disabled}
           className="h-full min-w-0 flex-1 bg-transparent text-[15px] text-ink placeholder:text-muted focus:outline-none"
         />
       </form>
 
-      {isOpen && suggestions.length > 0 && (
+      {/*
+        * Task 4-9: 探している間はそう言う。
+        * 「見つかりませんでした」はここには出さない。この欄は候補が無くても
+        * Enter で地名そのものを座標に変えて進めるので（SearchTopScreen の自由入力）、
+        * 「見つからない」と言い切ると**進める道があるのに行き止まりに見える**。
+        */}
+      {isSearching && (
+        <p role="status" className="mt-1 px-4 text-[12px] text-muted">
+          探しています…
+        </p>
+      )}
+
+      {isOpen && visibleSuggestions.length > 0 && (
         <ul
           id={`${inputId}-suggestions`}
           role="listbox"
           className="absolute z-20 mt-1 w-full overflow-hidden rounded-[12px] border border-line bg-surface shadow-card"
         >
-          {suggestions.map((suggestion) => (
+          {visibleSuggestions.map((suggestion) => (
             <li key={`${suggestion.kind}:${suggestion.name}`} role="option" aria-selected={false}>
               <button
                 type="button"

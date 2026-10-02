@@ -63,7 +63,16 @@ export function useItineraryForMap(itineraryId: string | null, api: ItineraryApi
       cancelled = true;
     };
   }, [itineraryId, api]);
-  return { itinerary, failed };
+  /*
+   * loading-feedback Task 4-4（2026-10-02）: まだ取っている最中かどうか。
+   *
+   * 【初心者向け】しおりの地図は取得が終わるまで**ピンも Day タブも出ない**ので、
+   * 無言のまま空の地図が出ていた。「しおりのスポットが消えた」と読めてしまう。
+   * ここは新しい state を足さずに**持っている値から導ける**。
+   * 「しおりの id が指定されていて、まだ中身が無く、失敗もしていない」＝取得中。
+   */
+  const isLoading = itineraryId !== null && itinerary === null && !failed;
+  return { itinerary, failed, isLoading };
 }
 
 export function ItineraryMapOverlay({ itinerary, day, onChange }: { itinerary: ItineraryDetail; day: ItineraryMapDay; onChange: (day: ItineraryMapDay) => void }) {

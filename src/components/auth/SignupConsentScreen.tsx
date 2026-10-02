@@ -92,8 +92,13 @@ export function SignupConsentScreen({ email, redirectTo = null, api = defaultApi
 
         {error && <ErrorNotice className="mt-3 w-full" message={error} />}
 
+        {/*
+          * loading-feedback Task 4-6（2026-10-02）: 「やめる」も文言を変える。
+          * 同じ画面の「登録しています…」と扱いが揃っていなかった（押せなくなるだけで、
+          * 何も起きていないように見えた）。
+          */}
         <button type="button" onClick={() => void cancel()} disabled={busy !== null} className="mt-6 text-[13px] font-medium text-muted underline underline-offset-2 disabled:opacity-45">
-          やめる
+          {busy === "cancel" ? "やめています…" : "やめる"}
         </button>
       </div>
     </div>
