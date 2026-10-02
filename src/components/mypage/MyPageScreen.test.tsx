@@ -4,6 +4,16 @@ import { MyPageScreen } from "./MyPageScreen";
 import { MY_PAGE_MENU } from "./MyPageMenu";
 import type { MyPost } from "@/lib/users/my-page";
 
+/*
+ * loading-feedback Task 9（2026-10-02）: この画面は `PullToRefresh` で包まれ、
+ * 引っ張って更新のために `useRouter().refresh()` を使うようになった。
+ * 単体テストには Next.js のルーターが無いので、ここで差し替える。
+ */
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({ refresh: vi.fn(), push: vi.fn(), replace: vi.fn() }),
+}));
+
+
 /**
  * 出典: docs/tasks/records/my-page/01-my-page-layout.md 単体テスト
  * - プロフィールブロックが、ログインユーザーのアイコン・ユーザー名を正しく表示することを検証する

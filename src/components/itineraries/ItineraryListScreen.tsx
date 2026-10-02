@@ -8,6 +8,7 @@ import type { ItineraryListItem } from "@/lib/itineraries/get-itinerary";
 import { itineraryGroup, sortItineraries } from "@/lib/itineraries/sort-itineraries";
 import { CreateItineraryDialog } from "./CreateItineraryDialog";
 import { defaultItineraryApi, type ItineraryApi } from "./itinerary-api";
+import { PullToRefresh } from "@/components/layout/PullToRefresh";
 
 /**
  * itinerary-basics Task2: しおり一覧（SC-22）
@@ -36,82 +37,84 @@ export function ItineraryListScreen({
   const sorted = sortItineraries(items, today);
 
   return (
-    <div className="flex min-h-screen flex-col items-center bg-app px-4 py-6">
-      <div className="w-full max-w-[520px]">
-        <header className="mb-4 flex items-center justify-between">
-          <h1 className="text-[18px] font-bold text-ink">しおり</h1>
-          <button type="button" onClick={() => setIsCreating(true)} className="h-9 rounded-full bg-accent px-4 text-[12px] font-bold text-white">
-            ＋ 新規
-          </button>
-        </header>
+    <PullToRefresh>
+      <div className="flex min-h-screen flex-col items-center bg-app px-4 py-6">
+        <div className="w-full max-w-[520px]">
+          <header className="mb-4 flex items-center justify-between">
+            <h1 className="text-[18px] font-bold text-ink">しおり</h1>
+            <button type="button" onClick={() => setIsCreating(true)} className="h-9 rounded-full bg-accent px-4 text-[12px] font-bold text-white">
+              ＋ 新規
+            </button>
+          </header>
 
-        {/* v3.1: 先頭に「行きたいスポット」への入口 */}
-        <Link href="/wishlist?back=%2Fitineraries" className="mb-3 flex items-center justify-between rounded-[12px] border border-line bg-surface p-3 shadow-card" data-wishlist-entry>
-          <span className="flex items-center gap-2 text-[14px] font-bold text-ink">
-            <span aria-hidden className="text-saved">♥</span>
-            行きたいスポット
-            {wishlistCount !== null && <span className="rounded-full bg-tint px-2 py-0.5 text-[11px] font-semibold text-muted">{wishlistCount}</span>}
-          </span>
-          <span aria-hidden className="text-muted">›</span>
-        </Link>
+          {/* v3.1: 先頭に「行きたいスポット」への入口 */}
+          <Link href="/wishlist?back=%2Fitineraries" className="mb-3 flex items-center justify-between rounded-[12px] border border-line bg-surface p-3 shadow-card" data-wishlist-entry>
+            <span className="flex items-center gap-2 text-[14px] font-bold text-ink">
+              <span aria-hidden className="text-saved">♥</span>
+              行きたいスポット
+              {wishlistCount !== null && <span className="rounded-full bg-tint px-2 py-0.5 text-[11px] font-semibold text-muted">{wishlistCount}</span>}
+            </span>
+            <span aria-hidden className="text-muted">›</span>
+          </Link>
 
-        {sorted.length === 0 ? (
-          <div className="py-16 text-center text-[13px] leading-[1.8] text-muted">
-            しおりがありません
-            <br />
-            「＋ 新規」か、投稿一覧の「＋」から作れます
-          </div>
-        ) : (
-          <ul className="flex flex-col gap-2.5">
-            {sorted.map((item) => {
-              const group = itineraryGroup(item, today);
-              const period = formatPeriodLabel(item.startDate, item.endDate);
-              return (
-                <li key={item.id} data-itinerary-group={group}>
-                  <article className="rounded-[12px] border border-line bg-surface p-3 shadow-card">
-                    <Link href={`/itineraries/${item.id}`} prefetch={false} className="flex flex-col gap-1">
-                      <span className="flex items-center justify-between gap-2">
-                        <span className="min-w-0 truncate text-[15px] font-bold text-ink">{item.title}</span>
-                        <span className="flex shrink-0 items-center gap-1 text-[11px] text-muted">
-                          {period}
-                          {group === "past" && (
-                            <span className="rounded-full bg-done/10 px-1.5 py-0.5 text-[10px] font-bold text-done" data-past-mark>
-                              済
-                            </span>
-                          )}
+          {sorted.length === 0 ? (
+            <div className="py-16 text-center text-[13px] leading-[1.8] text-muted">
+              しおりがありません
+              <br />
+              「＋ 新規」か、投稿一覧の「＋」から作れます
+            </div>
+          ) : (
+            <ul className="flex flex-col gap-2.5">
+              {sorted.map((item) => {
+                const group = itineraryGroup(item, today);
+                const period = formatPeriodLabel(item.startDate, item.endDate);
+                return (
+                  <li key={item.id} data-itinerary-group={group}>
+                    <article className="rounded-[12px] border border-line bg-surface p-3 shadow-card">
+                      <Link href={`/itineraries/${item.id}`} prefetch={false} className="flex flex-col gap-1">
+                        <span className="flex items-center justify-between gap-2">
+                          <span className="min-w-0 truncate text-[15px] font-bold text-ink">{item.title}</span>
+                          <span className="flex shrink-0 items-center gap-1 text-[11px] text-muted">
+                            {period}
+                            {group === "past" && (
+                              <span className="rounded-full bg-done/10 px-1.5 py-0.5 text-[10px] font-bold text-done" data-past-mark>
+                                済
+                              </span>
+                            )}
+                          </span>
                         </span>
-                      </span>
-                      <span className="text-[12px] text-muted">
-                        {item.spotCount} スポット
-                        {item.dayCount > 0 && ` ・ ${item.dayCount} 日間`}
-                        {item.spotCount > 0 && ` ・ ${item.checkedCount}/${item.spotCount} 済`}
-                      </span>
-                    </Link>
-                    {group === "past" && item.hasAlbumPosts && (
-                      <Link href={`/albums/${item.tripId}`} className="mt-2 inline-flex h-8 items-center gap-1 rounded-full border border-line bg-surface px-3 text-[12px] font-semibold text-ink">
-                        📷 アルバムを見る
+                        <span className="text-[12px] text-muted">
+                          {item.spotCount} スポット
+                          {item.dayCount > 0 && ` ・ ${item.dayCount} 日間`}
+                          {item.spotCount > 0 && ` ・ ${item.checkedCount}/${item.spotCount} 済`}
+                        </span>
                       </Link>
-                    )}
-                  </article>
-                </li>
-              );
-            })}
-          </ul>
-        )}
-      </div>
+                      {group === "past" && item.hasAlbumPosts && (
+                        <Link href={`/albums/${item.tripId}`} className="mt-2 inline-flex h-8 items-center gap-1 rounded-full border border-line bg-surface px-3 text-[12px] font-semibold text-ink">
+                          📷 アルバムを見る
+                        </Link>
+                      )}
+                    </article>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </div>
 
-      <CreateItineraryDialog
-        open={isCreating}
-        onClose={() => setIsCreating(false)}
-        onSubmit={async (input) => {
-          const response = await api.create(input);
-          if (response.ok) {
-            const data = (await response.json()) as { itineraryId: string };
-            router.push(`/itineraries/${data.itineraryId}`);
-          }
-          return response;
-        }}
-      />
-    </div>
+        <CreateItineraryDialog
+          open={isCreating}
+          onClose={() => setIsCreating(false)}
+          onSubmit={async (input) => {
+            const response = await api.create(input);
+            if (response.ok) {
+              const data = (await response.json()) as { itineraryId: string };
+              router.push(`/itineraries/${data.itineraryId}`);
+            }
+            return response;
+          }}
+        />
+      </div>
+    </PullToRefresh>
   );
 }

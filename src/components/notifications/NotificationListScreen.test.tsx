@@ -4,6 +4,16 @@ import { NotificationListScreen, type NotificationApi } from "./NotificationList
 import { NOTIFICATIONS_READ_EVENT } from "./notification-events";
 import type { FeedItem } from "@/lib/notifications/feed";
 
+/*
+ * loading-feedback Task 9（2026-10-02）: この画面は `PullToRefresh` で包まれ、
+ * 引っ張って更新のために `useRouter().refresh()` を使うようになった。
+ * 単体テストには Next.js のルーターが無いので、ここで差し替える。
+ */
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({ refresh: vi.fn(), push: vi.fn(), replace: vi.fn() }),
+}));
+
+
 /**
  * 出典: docs/tasks/notifications/notification-list/02-notification-list-ui.md 単体テスト
  * - お知らせ種別のアイテムにラベルが表示されることを検証する
