@@ -111,3 +111,58 @@ describe("AlbumScreen（SC-09）", () => {
     await waitFor(() => expect(changeRole).toHaveBeenCalledWith("trip-1", "me", "viewer"));
   });
 });
+
+/**
+ * 出典: docs/tasks/shared-ui/loading-feedback/04-remaining-pending.md 単体テスト（4-8）
+ * 要件定義書 4.5.11 の場面 3・8 章 89
+ *
+ * 【初心者向け】以前は招待リンクの発行だけに「発行中…」があり、名前変更・権限変更・
+ * メンバー削除・退出は押せなくなるだけだった。`run(key, …)` が「どの操作か」を
+ * もう持っているので、その key で押した 1 つだけ文言を変える。
+ */
+describe("4-8: アルバムの各操作の待ち表示", () => {
+  /** 応答を返さない（＝押したあとの状態で止める） */
+  const never = () => new Promise<Response>(() => {});
+
+  it("名前の保存を押すと「保存しています…」になる", () => {
+    render(<AlbumScreen album={album("owner")} initialInvitations={[]} viewerId="me" api={api({ rename: never })} />);
+    // v3.1: 「名前を変更」ボタンは無く、タイトルをタップして変更する
+    fireEvent.click(screen.getByRole("button", { name: "夏の東北旅行（名前を変更）" }));
+    fireEvent.change(screen.getByLabelText("アルバム名"), { target: { value: "別の名前" } });
+    fireEvent.click(screen.getByRole("button", { name: "保存" }));
+    expect(screen.getByRole("button", { name: "保存しています…" })).toBeInTheDocument();
+  });
+
+  it("メンバー削除を押すと、その行だけ「削除中…」になる", () => {
+    vi.spyOn(window, "confirm").mockReturnValue(true);
+    render(<AlbumScreen album={album("owner")} initialInvitations={[]} viewerId="me" api={api({ removeMember: never })} />);
+    fireEvent.click(screen.getByRole("button", { name: "わたしを削除" }));
+    expect(screen.getByRole("button", { name: "わたしを削除" })).toHaveTextContent("削除中…");
+  });
+
+  it("権限を変えると「変更しています…」が隣に出る（select は文言を持てないため）", () => {
+    render(<AlbumScreen album={album("owner")} initialInvitations={[]} viewerId="me" api={api({ changeRole: never })} />);
+    fireEvent.change(screen.getByLabelText("わたしの権限"), { target: { value: "viewer" } });
+    expect(screen.getByText("変更しています…")).toBeInTheDocument();
+  });
+
+  it("退出を押すと「退出しています…」になる", () => {
+    vi.spyOn(window, "confirm").mockReturnValue(true);
+    render(<AlbumScreen album={album("editor")} initialInvitations={[]} viewerId="me" api={api({ leave: never })} />);
+    fireEvent.click(screen.getByRole("button", { name: "このアルバムから退出" }));
+    expect(screen.getByRole("button", { name: "退出しています…" })).toBeInTheDocument();
+  });
+
+  it("招待リンクの無効化を押すと「無効化しています…」になる", () => {
+    render(
+      <AlbumScreen
+        album={album("owner")}
+        initialInvitations={[{ id: "inv-1", role: "viewer", status: "valid", expiresAt: "2026-10-09T00:00:00Z", createdAt: "2026-10-02T00:00:00Z", path: "/invitations/abc" }]}
+        viewerId="me"
+        api={api({ revokeInvitation: never })}
+      />
+    );
+    fireEvent.click(screen.getByRole("button", { name: "無効化" }));
+    expect(screen.getByRole("button", { name: "無効化しています…" })).toBeInTheDocument();
+  });
+});

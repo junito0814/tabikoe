@@ -28,7 +28,15 @@ export function InviteDialog({ open, itineraryId, onClose, api }: { open: boolea
   const [latestUrl, setLatestUrl] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [busy, setBusy] = useState(false);
+  /*
+   * loading-feedback Task 4-7（2026-10-02）: いま押しているボタンの目印。
+   *
+   * 【初心者向け】真偽値 1 つだと「何かやっている」までで、**どのボタンか**が分からない。
+   * 招待の一覧には「取り消し」「無効化」が行ごとに並ぶので、押した 1 つだけ文言を変える。
+   * 発行だけは以前から「発行中…」が出ていたので、それに他も揃える。
+   */
+  const [busyKey, setBusyKey] = useState<string | null>(null);
+  const busy = busyKey !== null;
   const inAppApi = useMemo<InAppInviteApi>(
     () => ({ fetchCandidates: () => api.fetchInviteCandidates(itineraryId), searchUsers: api.searchUsers, send: (userId) => api.sendInvitation(itineraryId, userId) }),
     [api, itineraryId]
@@ -57,7 +65,7 @@ export function InviteDialog({ open, itineraryId, onClose, api }: { open: boolea
 
   const issue = async () => {
     if (busy) return;
-    setBusy(true);
+    setBusyKey("issue");
     setError(null);
     setCopied(false);
     try {
@@ -77,7 +85,7 @@ export function InviteDialog({ open, itineraryId, onClose, api }: { open: boolea
       if (caught instanceof UnauthorizedError) return;
       setError("招待リンクを発行できませんでした");
     } finally {
-      setBusy(false);
+      setBusyKey(null);
     }
   };
 
@@ -93,7 +101,7 @@ export function InviteDialog({ open, itineraryId, onClose, api }: { open: boolea
 
   const revoke = async (invitationId: string) => {
     if (busy) return;
-    setBusy(true);
+    setBusyKey(`revoke:${invitationId}`);
     setError(null);
     try {
       const response = await api.revokeInvitation(itineraryId, invitationId);
@@ -108,7 +116,7 @@ export function InviteDialog({ open, itineraryId, onClose, api }: { open: boolea
       if (caught instanceof UnauthorizedError) return;
       setError("無効化できませんでした");
     } finally {
-      setBusy(false);
+      setBusyKey(null);
     }
   };
 
@@ -127,7 +135,7 @@ export function InviteDialog({ open, itineraryId, onClose, api }: { open: boolea
                     {item.inviteeName} <span className="text-muted">（{new Date(item.expiresAt).toLocaleDateString("ja-JP")} まで）</span>
                   </span>
                   <button type="button" onClick={() => void revoke(item.id)} disabled={busy} className="text-[12px] font-medium text-saved underline underline-offset-2 disabled:opacity-45">
-                    取り消し
+                    {busyKey === `revoke:${item.id}` ? "取り消し中…" : "取り消し"}
                   </button>
                 </li>
               ))}
@@ -140,7 +148,7 @@ export function InviteDialog({ open, itineraryId, onClose, api }: { open: boolea
         </h3>
         <p className="text-[12px] leading-[1.7] text-muted">リンクを開いた人がメンバーになります。メンバーはスポットの追加・Day・時刻・メモ・チェックができます。</p>
         <button type="button" onClick={() => void issue()} disabled={busy} className="h-11 rounded-[10px] bg-accent text-[14px] font-semibold text-white disabled:opacity-45">
-          招待リンクを発行
+          {busyKey === "issue" ? "発行しています…" : "招待リンクを発行"}
         </button>
         {latestUrl && (
           <div className="flex flex-col gap-2 rounded-[10px] border border-line bg-app p-3">
@@ -163,7 +171,7 @@ export function InviteDialog({ open, itineraryId, onClose, api }: { open: boolea
                 <li key={item.id} className="flex items-center justify-between gap-2 rounded-[8px] border border-line px-3 py-2 text-[12px] text-ink">
                   <span>{new Date(item.expiresAt).toLocaleDateString("ja-JP")} まで有効</span>
                   <button type="button" onClick={() => void revoke(item.id)} disabled={busy} className="text-[12px] font-medium text-saved underline underline-offset-2 disabled:opacity-45">
-                    無効化
+                    {busyKey === `revoke:${item.id}` ? "無効化しています…" : "無効化"}
                   </button>
                 </li>
               ))}

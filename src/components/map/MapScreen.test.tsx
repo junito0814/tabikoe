@@ -359,4 +359,34 @@ describe("v3.1（mentoring-7 Task7）: 地図の状態の復元", () => {
     fireEvent.click(await screen.findByRole("button", { name: "spot-2:post" }));
     expect((await screen.findByRole("dialog", { name: "スポットspot-2" })).querySelector("[data-callout-category]")).toBeNull();
   });
+  /**
+   * 出典: docs/tasks/shared-ui/loading-feedback/04-remaining-pending.md 単体テスト（4-4）
+   * 要件定義書 4.5.11 の場面 4・8 章 90
+   *
+   * 【初心者向け】ピンの取得は無言で、届くまで空の地図が出ていた。見ている人には
+   * 「この辺りには投稿が無い」と読めてしまう。あしあとの地図（Task 2）と同じ形にする。
+   */
+  it("4-4: ピンを取っている間は「読み込んでいます…」を出し、「投稿はありません」は出さない", async () => {
+    render(<MapScreen open={resolveMapOpen({})} fetchPins={() => new Promise(() => {})} resolveCenter={resolveCenter} />);
+    await screen.findByTestId("map-stub");
+    await settle();
+    expect(screen.getByText("読み込んでいます…")).toBeInTheDocument();
+    expect(screen.queryByText("この範囲に投稿はありません")).toBeNull();
+  });
+
+  it("4-4: 取り終えて 0 件のときだけ「この範囲に投稿はありません」を出す", async () => {
+    render(<MapScreen open={resolveMapOpen({})} fetchPins={async () => []} resolveCenter={resolveCenter} />);
+    await screen.findByTestId("map-stub");
+    await settle();
+    await waitFor(() => expect(screen.getByText("この範囲に投稿はありません")).toBeInTheDocument());
+    expect(screen.queryByText("読み込んでいます…")).toBeNull();
+  });
+
+  it("4-4: ピンが取れたら、どちらの案内も出さない", async () => {
+    render(<MapScreen open={resolveMapOpen({})} fetchPins={async () => [pin("spot-1")]} resolveCenter={resolveCenter} />);
+    await screen.findByTestId("map-stub");
+    await settle();
+    await waitFor(() => expect(screen.queryByText("読み込んでいます…")).toBeNull());
+    expect(screen.queryByText("この範囲に投稿はありません")).toBeNull();
+  });
 });

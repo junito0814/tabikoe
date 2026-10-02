@@ -213,8 +213,13 @@ export function AlbumScreen({
                 aria-label="アルバム名"
                 className="h-10 min-w-0 flex-1 rounded-[8px] border border-line bg-surface px-3 text-[14px] text-ink"
               />
+              {/*
+                * loading-feedback Task 4-8（2026-10-02）: `run(key, …)` が「どの操作か」を
+                * もう持っているので、その key を見て押したボタンだけ文言を変える。
+                * 以前は招待リンクの発行だけに「発行中…」があり、他は押せなくなるだけだった。
+                */}
               <button type="submit" disabled={busy !== null} className="h-10 rounded-[8px] bg-accent px-3 text-[12px] font-semibold text-white disabled:opacity-45">
-                保存
+                {busy === "rename" ? "保存しています…" : "保存"}
               </button>
               <button type="button" onClick={() => setIsRenaming(false)} className="h-10 rounded-[8px] border border-line bg-surface px-3 text-[12px] text-ink">
                 取消
@@ -285,6 +290,16 @@ export function AlbumScreen({
                         </option>
                       ))}
                     </select>
+                    {/*
+                      * Task 4-8: 権限は `<select>` なので中の文字を「変更中…」にはできない
+                      * （選択肢の名前を書き換えると、何を選んでいるのか分からなくなる）。
+                      * 代わりに隣に小さく出す。
+                      */}
+                    {busy === `role:${member.userId}` && (
+                      <span role="status" className="text-[11px] text-muted">
+                        変更しています…
+                      </span>
+                    )}
                     <button
                       type="button"
                       onClick={() => handleRemove(member)}
@@ -292,7 +307,7 @@ export function AlbumScreen({
                       aria-label={`${member.displayName}を削除`}
                       className="text-[11px] font-medium text-accent underline underline-offset-2 disabled:opacity-45"
                     >
-                      削除
+                      {busy === `remove:${member.userId}` ? "削除中…" : "削除"}
                     </button>
                   </>
                 ) : (
@@ -308,7 +323,7 @@ export function AlbumScreen({
               disabled={busy !== null}
               className="mt-3 text-[12px] font-medium text-muted underline underline-offset-2 disabled:opacity-45"
             >
-              このアルバムから退出
+              {busy === "leave" ? "退出しています…" : "このアルバムから退出"}
             </button>
           )}
         </section>
@@ -366,7 +381,7 @@ export function AlbumScreen({
                           disabled={busy !== null}
                           className="font-medium text-accent underline underline-offset-2 disabled:opacity-45"
                         >
-                          無効化
+                          {busy === `revoke:${invitation.id}` ? "無効化しています…" : "無効化"}
                         </button>
                       ) : invitation.status === "revoked" ? (
                         "無効化済み"

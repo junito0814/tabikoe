@@ -162,6 +162,15 @@ export function MapScreen({
     pinsRef.current = pins;
   }, [pins]);
   const [bounds, setBounds] = useState<MapBounds | null>(null);
+  /*
+   * loading-feedback Task 4-4（2026-10-02）: どの範囲のピンを取り終えたか。
+   *
+   * 【初心者向け】ピンの取得は無言で、届くまで**空の地図**が出ていた。見ている人には
+   * 「この辺りには投稿が無い」と読めてしまう（実際はまだ取得中）。
+   * 旗を立てるのではなく「取り終えた範囲」を覚えて、いまの範囲と見比べて導く
+   * （あしあとの地図＝Task 2 と同じやり方。効果の中で旗を立てると eslint に止められる）。
+   */
+  const [loadedBounds, setLoadedBounds] = useState<MapBounds | null>(null);
   const [center, setCenter] = useState<LatLng | null>(open.center);
   const [fetchFailed, setFetchFailed] = useState(false);
   const [callout, setCallout] = useState<CalloutTarget | null>(null);
@@ -191,7 +200,7 @@ export function MapScreen({
     },
     []
   );
-  const { itinerary, failed: itineraryFailed } = useItineraryForMap(isItinerary ? open.itineraryId : null, itineraryApi, onItineraryLoaded);
+  const { itinerary, failed: itineraryFailed, isLoading: itineraryLoading } = useItineraryForMap(isItinerary ? open.itineraryId : null, itineraryApi, onItineraryLoaded);
   const itineraryPins = useMemo(() => (itinerary ? buildItineraryPins(itinerary, itineraryDay) : []), [itinerary, itineraryDay]);
   // Day を切り替えるたび、そのピンが全部収まる範囲にする。地図がまだ無ければ最初の idle で行う（pendingFitRef）
   const fitKey = itineraryPins.map((pin) => pin.id).join(",");
@@ -273,6 +282,7 @@ export function MapScreen({
         .then((result) => {
           if (requestIdRef.current !== requestId) return;
           setPins(result);
+          setLoadedBounds(bounds);
           setFetchFailed(false);
           // ?spot= で開いたとき、そのスポットのピンが取れたら吹き出しを出す（1 回だけ）
           if (!focusedOnceRef.current && open.focusSpotId) {
@@ -286,11 +296,20 @@ export function MapScreen({
         .catch((error) => {
           if (error instanceof UnauthorizedError) return;
           if (requestIdRef.current !== requestId) return;
+          // 失敗したときも「この範囲は終わった」と記録する（読み込み表示が出たままにならないように）
+          setLoadedBounds(bounds);
           setFetchFailed(true);
         });
     }, FETCH_DEBOUNCE_MS);
     return () => clearTimeout(timer);
   }, [bounds, fetchPins, open.focusSpotId, isItinerary]);
+
+  /*
+   * Task 4-4: ピンを取っている最中か。
+   * しおり表示（isItinerary）はピンを別の道で取るのでここでは見ない。
+   * `bounds` がまだ無いとき（地図が開く前）も「取得中」とは言わない。
+   */
+  const isFetchingPins = !isItinerary && bounds !== null && (loadedBounds === null || !isSameBounds(loadedBounds, bounds));
 
   const handleBoundsChange = useCallback((next: MapBounds, nextCenter: LatLng) => {
     if (pendingFitRef.current && mapRef.current) {
@@ -427,6 +446,12 @@ export function MapScreen({
               {itineraryDay === ALL_DAYS && <MapLegend mode="itinerary" dayCount={itinerary.dayCount} className="pointer-events-auto w-fit" />}
             </div>
           )}
+          {/* Task 4-4: しおりの中身を取っている間は無言にしない（Day タブもピンもまだ出ないため） */}
+          {isItinerary && itineraryLoading && (
+            <p role="status" className="pointer-events-none mx-auto w-fit rounded-full bg-surface px-3 py-1 text-[12px] text-ink shadow-card">
+              読み込んでいます…
+            </p>
+          )}
           {isItinerary && itineraryFailed && <ErrorNotice message={ERROR_MESSAGES.dbLoadFailure} className="pointer-events-auto mx-auto w-full max-w-[420px]" />}
           {notice && <div className="pointer-events-auto mx-auto w-full max-w-[420px]">{notice}</div>}
           {fetchFailed && (
@@ -456,6 +481,16 @@ export function MapScreen({
           <div role="region" aria-label="地図" className="flex h-full items-center justify-center bg-line">
             <span className="text-[12px] text-muted">現在地を確認しています…</span>
           </div>
+        )}
+
+        {/*
+          * Task 4-4: 取得が終わるまでは「ありません」と言わない（要件 4.5.11 の共通の決まり）。
+          * あしあとの地図（MyMapScreen）と同じ形・同じ位置に出す。
+          */}
+        {bounds && !fetchFailed && !isItinerary && (isFetchingPins || mapPins.length === 0) && (
+          <p className="pointer-events-none absolute inset-x-0 bottom-20 z-10 text-center text-[12px] text-ink">
+            {isFetchingPins ? "読み込んでいます…" : "この範囲に投稿はありません"}
+          </p>
         )}
 
         {/* 吹き出し: 地図をピンへ寄せてあるので、中央の少し上に出す */}

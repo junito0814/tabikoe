@@ -72,10 +72,30 @@ export function SpotAutocompleteInput({
   /** 直近で検索を完了したクエリ。現在の入力と一致する時だけ結果を表示に使う */
   const [searchedQuery, setSearchedQuery] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  /*
+   * loading-feedback Task 4-1（2026-10-02）: いま登録している候補の目印。
+   *
+   * 【初心者向け】ここだけは**実害があった**。未登録の候補を押すと `POST /api/spots` を
+   * 呼ぶが、押せないようにしていなかったので、**続けて押すと同じスポットが 2 つ登録されうる**。
+   * サーバーは 50m 以内に既存があれば 409 で返すが、2 本が**同時に**走ると
+   * どちらも「既存なし」と判定しうる。だから画面側で止める。
+   * null なら登録していない。文字が入っていれば、その候補を登録している。
+   */
+  const [registeringKey, setRegisteringKey] = useState<string | null>(null);
 
   const trimmedQuery = query.trim();
   const hasSearched = searchedQuery !== null && searchedQuery === trimmedQuery;
   const visibleCandidates = hasSearched ? candidates : [];
+  /*
+   * loading-feedback Task 4-9（2026-10-02）: 探している最中かどうか。
+   *
+   * 【初心者向け】`useState` で「探し中」の旗を持つと、効果（useEffect）の中で
+   * 旗を立てることになり eslint（react-hooks/set-state-in-effect）に止められる。
+   * 代わりに「探し終えた語」と「いまの入力」を見比べて**その場で導く**。
+   * 入力が止まるのを 300ms 待っている間も `searchedQuery` は前の語のままなので、
+   * 待ち時間もふくめて「探している」と出せる（招待のユーザー名検索と同じやり方）。
+   */
+  const isSearching = trimmedQuery.length > 0 && !hasSearched;
 
   // インライン関数を渡されても効果が再実行されないようrefで受ける
   const searchSpotsRef = useRef(searchSpots);
@@ -106,7 +126,12 @@ export function SpotAutocompleteInput({
     return () => clearTimeout(timer);
   }, [trimmedQuery]);
 
+  /** 候補を見分ける文字。React の key と「いま登録している候補」の両方で使う */
+  const candidateKey = (candidate: SpotCandidate) => `${candidate.source}-${candidate.id ?? candidate.name}`;
+
   const handleSelectCandidate = async (candidate: SpotCandidate) => {
+    // 登録中は何も受け付けない（二重登録を止める最後の砦。見た目の disabled だけに頼らない）
+    if (registeringKey !== null) return;
     setErrorMessage(null);
 
     // 既に登録済みのスポットはそのまま採用する
@@ -124,6 +149,7 @@ export function SpotAutocompleteInput({
     }
 
     // Google Places由来の未登録候補は、登録してIDを採番してから投稿に紐づける
+    setRegisteringKey(candidateKey(candidate));
     try {
       const response = await fetchWithAuthRedirect("/api/spots", {
         method: "POST",
@@ -162,6 +188,9 @@ export function SpotAutocompleteInput({
     } catch (error) {
       if (error instanceof UnauthorizedError) return;
       setErrorMessage("スポットを選択できませんでした。もう一度お試しください");
+    } finally {
+      // 成功・失敗・途中で抜けたとき、どの道を通っても必ず降ろす（押せないままにしない）
+      setRegisteringKey(null);
     }
   };
 
@@ -205,23 +234,38 @@ export function SpotAutocompleteInput({
         className="h-11 w-full rounded-[10px] border border-line bg-surface px-3 text-[14px] text-ink focus:outline-none focus:ring-1 focus:ring-accent"
       />
 
+      {/* Task 4-9: 探している間は「探しています…」。探し終わるまで「見つかりません」と言わない */}
+      {isSearching && (
+        <p role="status" className="mt-2 text-[12px] text-muted">
+          探しています…
+        </p>
+      )}
+
       {visibleCandidates.length > 0 && (
         <ul
           id={`${inputId}-candidates`}
           role="listbox"
+          /* Task 4-1: 登録中は一覧ごと「処理中」と伝える（読み上げにも効く） */
+          aria-busy={registeringKey !== null}
           className="mt-1 overflow-hidden rounded-[10px] border border-line bg-surface"
         >
-          {visibleCandidates.map((candidate) => (
-            <li key={`${candidate.source}-${candidate.id ?? candidate.name}`} role="option" aria-selected={false}>
-              <button
-                type="button"
-                onClick={() => handleSelectCandidate(candidate)}
-                className="block w-full px-3 py-2.5 text-left text-[14px] text-ink hover:bg-tint"
-              >
-                {candidate.name}
-              </button>
-            </li>
-          ))}
+          {visibleCandidates.map((candidate) => {
+            const key = candidateKey(candidate);
+            const isRegistering = registeringKey === key;
+            return (
+              <li key={key} role="option" aria-selected={false}>
+                <button
+                  type="button"
+                  onClick={() => handleSelectCandidate(candidate)}
+                  /* Task 4-1: どれか 1 つを登録している間は、一覧の**どの候補も**押せない */
+                  disabled={registeringKey !== null}
+                  className="block w-full px-3 py-2.5 text-left text-[14px] text-ink hover:bg-tint disabled:cursor-not-allowed disabled:opacity-45"
+                >
+                  {isRegistering ? "登録しています…" : candidate.name}
+                </button>
+              </li>
+            );
+          })}
         </ul>
       )}
 

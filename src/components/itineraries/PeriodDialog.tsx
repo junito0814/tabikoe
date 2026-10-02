@@ -82,8 +82,9 @@ export function PeriodDialog({
           >
             期間を解除
           </button>
+          {/* loading-feedback Task 4-7（2026-10-02）: 押せなくなるだけでなく、何をしているか言う */}
           <button type="submit" disabled={isSubmitting} className="h-10 rounded-[10px] bg-ink px-4 text-[13px] font-semibold text-on-ink disabled:opacity-45">
-            保存
+            {isSubmitting ? "保存しています…" : "保存"}
           </button>
         </div>
       </form>

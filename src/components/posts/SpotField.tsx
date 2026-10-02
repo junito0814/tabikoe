@@ -8,6 +8,9 @@ import type { RegisteredSpot } from "@/lib/spots/types";
 /** 「新しい場所」の表示名（要件定義書 v3.0 3.3.5） */
 export const NEW_PLACE_LABEL = "この場所（新しい場所）";
 
+/** 近くのスポットを照合している間の表示（loading-feedback Task 4-5） */
+export const RESOLVING_LABEL = "近くのスポットを探しています…";
+
 /**
  * spot-selection-v3 Task4: スポット名欄（自動解決・「変更」からの候補検索・「この付近の新しい場所」）
  * 出典: docs/tasks/posts/spot-selection-v3/04-change-spot-by-name.md
@@ -28,6 +31,7 @@ export function SpotField({
   onUnlock,
   onNewPlaceNameChange,
   searchSpots,
+  isResolving = false,
 }: {
   lockedSpot: RegisteredSpot | null;
   resolvedSpot: NearbySpot | null;
@@ -38,7 +42,17 @@ export function SpotField({
   onUnlock: (keepPosition: LatLngLike | null) => void;
   onNewPlaceNameChange: (name: string) => void;
   searchSpots?: React.ComponentProps<typeof SpotAutocompleteInput>["searchSpots"];
+  /**
+   * loading-feedback Task 4-5（2026-10-02）: 近くのスポットを照合している最中か。
+   *
+   * 【初心者向け】地図を動かすと 300ms 後に「50m 以内の登録済みスポット」を調べ、
+   * **スポット名が無言で入れ替わっていた**。待っている間は前の名前のままなので、
+   * 動かしたのに何も起きていないように見え、名前が変わった瞬間に驚かされる。
+   * 親（PostComposeScreen）が照合中かどうかを知っているので、そこから受け取る。
+   */
+  isResolving?: boolean;
 }) {
+  // 「変更」を押して名前検索に切り替えている状態（上の isResolving とは別物）
   const [isSearching, setIsSearching] = useState(false);
 
   if (isSearching) {
@@ -71,8 +85,10 @@ export function SpotField({
     );
   }
 
-  const name = lockedSpot?.name ?? resolvedSpot?.name ?? NEW_PLACE_LABEL;
-  const isNewPlace = !lockedSpot && !resolvedSpot;
+  // Task 4-5: 固定していないときだけ照合が走る。照合中は前の名前を出さず、待っていると伝える
+  const name = lockedSpot?.name ?? (isResolving ? RESOLVING_LABEL : (resolvedSpot?.name ?? NEW_PLACE_LABEL));
+  // 照合中は「場所の名前」の入力欄を出さない（直後にスポットが見つかると引っこむため）
+  const isNewPlace = !lockedSpot && !resolvedSpot && !isResolving;
 
   return (
     <div className="flex w-full flex-col gap-1.5">
@@ -91,7 +107,9 @@ export function SpotField({
             <path d="M12 21s-6-5.3-6-11a6 6 0 0 1 12 0c0 5.7-6 11-6 11z" stroke="currentColor" strokeWidth="1.8" />
             <circle cx="12" cy="10" r="2.2" stroke="currentColor" strokeWidth="1.8" />
           </svg>
-          <span className="min-w-0 flex-1 truncate">{name}</span>
+          <span className="min-w-0 flex-1 truncate" role={isResolving ? "status" : undefined}>
+            {name}
+          </span>
           <button type="button" onClick={() => setIsSearching(true)} className="shrink-0 text-[12px] font-medium text-accent underline underline-offset-2">
             変更
           </button>

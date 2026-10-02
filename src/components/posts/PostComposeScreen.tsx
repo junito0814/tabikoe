@@ -93,6 +93,14 @@ export function PostComposeScreen({
   const [lockedSpot, setLockedSpot] = useState<RegisteredSpot | null>(existing?.spot ?? initial.spot);
   const [resolvedSpot, setResolvedSpot] = useState<NearbySpot | null>(null);
   const [newPlaceName, setNewPlaceName] = useState("");
+  /*
+   * loading-feedback Task 4-5（2026-10-02）: 近くのスポットを照合している最中か。
+   *
+   * 【初心者向け】ここは効果（useEffect）の中ではなく**地図が動いたときの関数の中**で
+   * 旗を立てるので、素直に真偽値で持てる（eslint の set-state-in-effect の対象外）。
+   * 300ms 待つ前に立てるのは、動かした瞬間から「調べはじめた」と伝えたいため。
+   */
+  const [isResolvingSpot, setIsResolvingSpot] = useState(false);
   const [moved, setMoved] = useState(false);
   const [centerFromCurrent, setCenterFromCurrent] = useState(initial.centerFromCurrentLocation);
   const mapInitialCenter = useMemo<LatLng | null>(() => existing?.position ?? initial.center, [existing?.position, initial.center]);
@@ -104,8 +112,14 @@ export function PostComposeScreen({
       setPosition(center);
       if (lockedSpot) return;
       if (resolveTimer.current) clearTimeout(resolveTimer.current);
+      setIsResolvingSpot(true);
       resolveTimer.current = setTimeout(() => {
-        api.resolveSpot(center).then(setResolvedSpot).catch(() => setResolvedSpot(null));
+        api
+          .resolveSpot(center)
+          .then(setResolvedSpot)
+          .catch(() => setResolvedSpot(null))
+          // 成功・失敗どちらでも降ろす（待ち表示が残らないように）
+          .finally(() => setIsResolvingSpot(false));
       }, 300);
     },
     [api, lockedSpot]
@@ -351,10 +365,12 @@ export function PostComposeScreen({
                 <SpotField
                   lockedSpot={lockedSpot}
                   resolvedSpot={resolvedSpot}
+                  isResolving={isResolvingSpot}
                   newPlaceName={newPlaceName}
                   onLock={(spot) => {
                     setLockedSpot(spot);
                     setResolvedSpot(null);
+                    setIsResolvingSpot(false);
                     setPosition({ lat: spot.lat, lng: spot.lng });
                   }}
                   onUnlock={(keepPosition) => {

@@ -66,3 +66,34 @@ describe("SignupConsentScreen（SC-20 同意画面）", () => {
     expect(a.cancel).toHaveBeenCalledTimes(1);
   });
 });
+
+/**
+ * 出典: docs/tasks/shared-ui/loading-feedback/04-remaining-pending.md 単体テスト（4-6）
+ * 要件定義書 4.5.11 の場面 3・8 章 89
+ *
+ * 【初心者向け】「やめる」は押せなくなるだけで文言が変わらず、同じ画面の
+ * 「登録しています…」と扱いが揃っていなかった。
+ */
+describe("4-6: 「やめる」の待ち表示", () => {
+  it("やめるを押すと「やめています…」になる", () => {
+    render(
+      <SignupConsentScreen
+        email="me@example.com"
+        api={{ signup: async () => Response.json({}), cancel: () => new Promise<Response>(() => {}) }}
+      />
+    );
+    fireEvent.click(screen.getByRole("button", { name: "やめる" }));
+    expect(screen.getByRole("button", { name: "やめています…" })).toBeInTheDocument();
+  });
+
+  it("やめている間は「同意してはじめる」も押せない", () => {
+    render(
+      <SignupConsentScreen
+        email="me@example.com"
+        api={{ signup: async () => Response.json({}), cancel: () => new Promise<Response>(() => {}) }}
+      />
+    );
+    fireEvent.click(screen.getByRole("button", { name: "やめる" }));
+    expect(screen.getByRole("button", { name: "同意してはじめる" })).toBeDisabled();
+  });
+});

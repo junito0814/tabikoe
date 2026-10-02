@@ -123,6 +123,18 @@ export function SearchTopScreen({
           focusSignal={focusInput}
           disabled={isSubmitting}
         />
+        {/*
+          * loading-feedback Task 4-3（2026-10-02）: 候補に無い言葉で決定したときの待ち表示。
+          *
+          * 【初心者向け】ここは**地名を座標に変える外部の API をサーバー経由で待つ**ので、
+          * 体感がいちばん長い。入力欄が `disabled` になるだけでは「固まった」と読まれるため、
+          * 何を待っているのかを言葉で出す。
+          */}
+        {isSubmitting && (
+          <p role="status" className="text-center text-[12px] text-muted">
+            探しています…
+          </p>
+        )}
         {notice && (
           <p role="status" className="text-center text-[12px] text-accent">
             {notice}

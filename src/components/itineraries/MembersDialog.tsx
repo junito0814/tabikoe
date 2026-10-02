@@ -36,11 +36,19 @@ export function MembersDialog({
   const router = useRouter();
   const [members, setMembers] = useState(initialMembers);
   const [error, setError] = useState<string | null>(null);
-  const [busy, setBusy] = useState(false);
+  /*
+   * loading-feedback Task 4-7（2026-10-02）: いま押しているボタンの目印。
+   *
+   * 【初心者向け】以前は真偽値 1 つだったので「何かやっている」までは分かっても
+   * **どのボタンを押したのか**が分からず、文言を変えられなかった（メンバーが複数いると
+   * どの「削除」が動いているのか見えない）。目印を持たせて、押した 1 つだけ文言を変える。
+   */
+  const [busyKey, setBusyKey] = useState<string | null>(null);
+  const busy = busyKey !== null;
 
   const remove = async (userId: string) => {
     if (busy || !window.confirm("このメンバーをしおりから外しますか？")) return;
-    setBusy(true);
+    setBusyKey(`remove:${userId}`);
     setError(null);
     try {
       const response = await api.removeMember(itineraryId, userId);
@@ -53,13 +61,13 @@ export function MembersDialog({
       if (caught instanceof UnauthorizedError) return;
       setError("メンバーを外せませんでした");
     } finally {
-      setBusy(false);
+      setBusyKey(null);
     }
   };
 
   const leave = async () => {
     if (busy || !window.confirm("このしおりから退出しますか？")) return;
-    setBusy(true);
+    setBusyKey("leave");
     setError(null);
     try {
       const response = await api.leave(itineraryId);
@@ -73,7 +81,7 @@ export function MembersDialog({
       if (caught instanceof UnauthorizedError) return;
       setError("退出できませんでした");
     } finally {
-      setBusy(false);
+      setBusyKey(null);
     }
   };
 
@@ -92,7 +100,7 @@ export function MembersDialog({
               <span className="text-[11px] text-muted">{ITINERARY_ROLE_LABELS[member.role]}</span>
               {role === "owner" && member.role !== "owner" && (
                 <button type="button" onClick={() => void remove(member.userId)} disabled={busy} className="text-[12px] font-medium text-saved underline underline-offset-2 disabled:opacity-45">
-                  削除
+                  {busyKey === `remove:${member.userId}` ? "削除中…" : "削除"}
                 </button>
               )}
             </li>
@@ -101,7 +109,7 @@ export function MembersDialog({
         {error && <ErrorNotice message={error} />}
         {role === "member" && (
           <button type="button" onClick={() => void leave()} disabled={busy} className="h-10 rounded-[10px] border border-line bg-surface text-[13px] font-semibold text-saved disabled:opacity-45">
-            このしおりから退出
+            {busyKey === "leave" ? "退出しています…" : "このしおりから退出"}
           </button>
         )}
       </div>
