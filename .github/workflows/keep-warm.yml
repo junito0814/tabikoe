@@ -1,0 +1,50 @@
+# 本番を温めておく（performance Task 4）
+# 出典: docs/tasks/shared-ui/performance/04-keep-warm.md
+#       要件定義書 7.1「起動の遅さ」、8 章 98
+#
+# 【初心者向け】なぜこれが要るのか。
+#   Vercel の無料プランでは、しばらく誰も開かないとサーバー側の処理が「冷えた」状態になる。
+#   冷えていると、次に開いた人は起動のための時間を余計に待たされる（実測で +620ms）。
+#   タビコエは利用者が少ないので、ほぼ毎回この状態で開かれていた。
+#   そこで定期的に自分で 1 回叩いて、温かいまま保っておく。
+#
+#   おまけに、Supabase の無料プロジェクトは使われないと一時停止するが、これも同時に防げる。
+#
+# 叩くのは公開されているホーム（/）だけ。ログインが要る画面は叩かない
+# （認証情報を GitHub に置かないため）。関所（src/proxy.ts）を通るので、
+# ホームを 1 回叩けば Supabase への接続まで温まる。
+name: Keep warm
+
+on:
+  schedule:
+    # 5 分おき。ただし GitHub Actions の定期実行は混雑時に遅れ、実際は 10〜15 分空くことがある。
+    # それでも「何時間も冷えたまま」よりはるかに良いので、これで十分とする。
+    - cron: "*/5 * * * *"
+  # 展示・審査の直前に手で走らせるため
+  workflow_dispatch:
+
+concurrency:
+  # 前の実行が残っていたら重ねない
+  group: keep-warm
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    # 温めは「できれば」の処理。落ちても困らないので、短く切り上げる
+    timeout-minutes: 2
+    steps:
+      - name: 本番のホームを 1 回叩く
+        # `|| true` を付けているのは、失敗しても赤くしないため。
+        # ここが赤いと「本当に直すべき失敗」を見逃すようになる（約束 23）。
+        run: |
+          code=$(curl -s -o /dev/null -w '%{http_code}' --max-time 30 https://tabikoe.vercel.app/ || echo "000")
+          echo "HTTP $code"
+          if [ "$code" = "200" ]; then
+            echo "温まりました"
+          else
+            echo "::notice::温められませんでした（HTTP $code）。本番が落ちているわけではないか、あとで確かめてください"
+          fi

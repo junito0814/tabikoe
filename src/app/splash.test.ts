@@ -12,6 +12,17 @@ import { existsSync, readFileSync } from "node:fs";
  * 2026-10-02 に 2 件足した。1 度目の修正では実機が白のままで、原因が 2 つあったため。
  *   - 端末の大きさの取りこぼし（16 Pro・16 Pro Max）→ `media` の無い受け皿を見る
  *   - `apple-mobile-web-app-capable` が出ていなかった → その meta を見る
+ *
+ * **2026-10-02（2 度目の修正のあと）: この仕組みは実機で働かないことが確定した。**
+ * iPhone 17（402 × 874 @3）で `matchMedia()` に直接問い合わせて照合したところ、
+ * **一致する宣言があり、HTML にも出ており、画像も HTTP 200 で配信されているのに出なかった**
+ * （`apple-mobile-web-app-capable: yes` もあり、ホーム画面のアイコンも入れ直した）。
+ * Apple が仕様をほとんど文書化していない古い仕組みで、iOS の版によって挙動が変わる。
+ *
+ * **それでも宣言と画像は消していない。** 実行時に読み込まれない（iOS が要求したときだけ）ので
+ * 速度に影響せず、iPad や別の iOS 版では効く可能性があるため。
+ * 白を出さないための本体は `LaunchCover`（layout.tsx）と `theme-color` に移した
+ * （要件 4.5.11「場面 1 の決着」・Task 10）。このテストは**残骸が壊れていないこと**を見るだけになった。
  */
 const layout = readFileSync("src/app/layout.tsx", "utf8");
 
