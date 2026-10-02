@@ -16,33 +16,22 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-/**
- * #623: iOS の起動画面の画像。`public/splash/` に置いた 8 枚を、端末の大きさごとに指す。
- * 画像は scratchpad の gen-splash.mjs で作った（空の青 + 4.5.9 のロゴ）。作り直すときも同じ手順で。
+/*
+ * #662（2026-10-03）: iOS の起動画面の画像の**宣言を外した**。
+ *
+ * 【初心者向け】ここには `apple-touch-startup-image` の宣言が 11 枚あった。
+ * 「この大きさの端末ならこの画像を起動画面に出す」という Apple 独自の指定で、
+ * 2026-09-30 から 3 回直して **3 回とも効かなかった**（実機で、一致する宣言があり・
+ * HTML にも出ており・画像も配信されているのに出ないことまで確かめた）。
+ *
+ * **外した理由**: iOS 16.4 以降は、**宣言が 1 つも無いとき**にマニフェスト
+ * （`background_color`・アイコン・名前）から起動画面を自分で作る、という挙動が報告されている。
+ * 効かない宣言が残っていることで、その道が塞がれている可能性があるため。
+ * 確証は無い（Apple はこの仕組みを文書化していない）。**これが 5 回目で最後の試み**。
+ *
+ * **画像（`public/splash/*.png`）は消していない。** 戻せるようにするため。
+ * 実行時には読み込まれない（iOS が要求したときだけ）ので、速度には影響しない。
  */
-const APPLE_STARTUP_IMAGES = [
-  { url: "/splash/splash-1320x2868.png", media: "(device-width: 440px) and (device-height: 956px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" },
-  { url: "/splash/splash-1290x2796.png", media: "(device-width: 430px) and (device-height: 932px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" },
-  { url: "/splash/splash-1284x2778.png", media: "(device-width: 428px) and (device-height: 926px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" },
-  { url: "/splash/splash-1242x2688.png", media: "(device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" },
-  { url: "/splash/splash-1206x2622.png", media: "(device-width: 402px) and (device-height: 874px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" },
-  { url: "/splash/splash-1179x2556.png", media: "(device-width: 393px) and (device-height: 852px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" },
-  { url: "/splash/splash-1170x2532.png", media: "(device-width: 390px) and (device-height: 844px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" },
-  { url: "/splash/splash-1125x2436.png", media: "(device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" },
-  { url: "/splash/splash-828x1792.png", media: "(device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)" },
-  { url: "/splash/splash-750x1334.png", media: "(device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)" },
-  /*
-   * 受け皿（#623 の 2 度目の修正・2026-10-02）: `media` を書かない 1 枚。
-   *
-   * 【初心者向け】上の 10 枚は「この大きさの端末ならこの画像」という指定で、**ぴったり
-   * 一致しないと使われない**。新しい iPhone が出ると、また一致しないものが増える
-   * （実際に 16 Pro と 16 Pro Max が抜けていた）。
-   * `media` を書かない 1 枚は**どの端末でも一致する**ので、一覧に無い端末でも白にならない。
-   * iOS が縮めて使うが、中身は空の青に中央ロゴなので縮んでも崩れない。
-   * このため、受け皿が選ばれても上の 10 枚が選ばれても、見える結果はほぼ同じになる。
-   */
-  "/splash/splash-1320x2868.png",
-];
 
 export const metadata: Metadata = {
   title: "タビコエ",
@@ -52,16 +41,8 @@ export const metadata: Metadata = {
     capable: true,
     title: "タビコエ",
     statusBarStyle: "default",
-    /*
-     * #623: 起動直後の白い一瞬を消す。
-     *
-     * 【初心者向け】**iOS はマニフェストの `background_color` を起動画面に使わない**（Android は使う）。
-     * 画面の幅・高さ・解像度が**ぴったり一致する画像**を渡したときだけ、それを起動画面に出す。
-     * 一致するものが無ければ白のまま。だから端末の大きさごとに 1 枚ずつ用意する。
-     * 中身は空の青（マニフェストの `background_color` と同じ）にロゴを中央へ置いたもの。
-     * このアプリは縦向きが前提なので、縦のぶんだけ用意する。
-     */
-    startupImage: APPLE_STARTUP_IMAGES,
+    // #662: `startupImage` は外した（上のコメント参照）。iOS にマニフェストから
+    // 起動画面を作らせる道が、効かない宣言で塞がれている可能性があるため
   },
   /*
    * #623 の 2 度目の修正（2026-10-02）: `apple-mobile-web-app-capable` を自分で足す。
@@ -186,7 +167,7 @@ async function getMenuBarUser() {
  *
  * 動きは「**静止して待ち、去るときだけ動く**」（Instagram と同じ考え方）。
  * 描画が始まる前は何も出せないので、**入場の動きを見せる余地が無い**ため。
- * 保持 300ms →（軽く拡大しながら）フェード 250ms。
+ * 保持 600ms →（軽く拡大しながら）フェード 250ms（#663 で 300ms から変更。一瞬すぎて見えなかった）。
  *
  * `pointer-events: none` を最初から付けているのは、消える前に触っても
  * **下の本物に届くようにする**ため（覆いは飾りで、中身はもう描けている）。
@@ -199,11 +180,11 @@ function LaunchCover() {
   return (
     <>
       <style>{`
-#launch-cover{position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center;pointer-events:none;background:${LAUNCH_GROUND.light};animation:launch-leave 250ms ease-in 300ms forwards}
+#launch-cover{position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center;pointer-events:none;background:${LAUNCH_GROUND.light};animation:launch-leave 250ms ease-in 600ms forwards}
 #launch-cover svg{width:min(28vw,128px);height:auto}
 @keyframes launch-leave{to{opacity:0;transform:scale(1.08);visibility:hidden}}
 @media (prefers-color-scheme:dark){#launch-cover{background:${LAUNCH_GROUND.dark}}}
-@media (prefers-reduced-motion:reduce){#launch-cover{animation:launch-fade 250ms linear 300ms forwards}}
+@media (prefers-reduced-motion:reduce){#launch-cover{animation:launch-fade 250ms linear 600ms forwards}}
 @keyframes launch-fade{to{opacity:0;visibility:hidden}}
 `}</style>
       <div id="launch-cover" aria-hidden="true">

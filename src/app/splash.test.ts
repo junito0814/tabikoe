@@ -19,106 +19,43 @@ import { existsSync, readFileSync } from "node:fs";
  * （`apple-mobile-web-app-capable: yes` もあり、ホーム画面のアイコンも入れ直した）。
  * Apple が仕様をほとんど文書化していない古い仕組みで、iOS の版によって挙動が変わる。
  *
- * **それでも宣言と画像は消していない。** 実行時に読み込まれない（iOS が要求したときだけ）ので
- * 速度に影響せず、iPad や別の iOS 版では効く可能性があるため。
- * 白を出さないための本体は `LaunchCover`（layout.tsx）と `theme-color` に移した
- * （要件 4.5.11「場面 1 の決着」・Task 10）。このテストは**残骸が壊れていないこと**を見るだけになった。
+ * ~~**それでも宣言と画像は消していない。**~~ → **2026-10-03（#662）に宣言だけ外した。**
+ * `theme-color` も効かず（4 つ目の空振り）、押した瞬間はやはり白だった。
+ * iOS 16.4 以降は**宣言が 1 つも無いとき**にマニフェスト（`background_color`・アイコン・名前）から
+ * 起動画面を自分で作るという挙動が報告されており、**効かない宣言がその道を塞いでいる可能性**がある。
+ * 確証は無いので、これを最後の試みとする。
+ *
+ * **画像ファイルは消していない**（戻せるように）。このテストは
+ * 「宣言が戻っていないか」と「戻すときの材料が揃っているか」を見る。
  */
 const layout = readFileSync("src/app/layout.tsx", "utf8");
 
-/** layout.tsx の一覧から「大きさを指定した」宣言を取り出す */
-function sizedImages(): { url: string; media: string }[] {
-  return [...layout.matchAll(/\{ url: "(\/splash\/[^"]+)", media: "([^"]+)" \}/g)].map((m) => ({ url: m[1], media: m[2] }));
-}
-
-/** 一覧から「`media` の無い受け皿」を取り出す（裸の文字列で書いてあるもの） */
-function fallbackImages(): string[] {
-  const list = layout.match(/const APPLE_STARTUP_IMAGES = \[([\s\S]*?)\n\];/);
-  if (!list) return [];
-  return [...list[1].matchAll(/^\s*"(\/splash\/[^"]+)",\s*$/gm)].map((m) => m[1]);
-}
-
-describe("iOS の起動画面", () => {
-  const images = sizedImages();
-  const fallbacks = fallbackImages();
-
-  it("大きさを指定した宣言が 10 枚ある（いまの iPhone をほぼ網羅する）", () => {
-    expect(images).toHaveLength(10);
+describe("iOS の起動画面（#662: 宣言を外した）", () => {
+  it("起動画像の宣言を出していない", () => {
+    // 効かないうえに、マニフェストからの自動生成を塞いでいる可能性があるため外した。
+    // 「念のため戻しておく」で静かに復活すると、また同じ所で詰まる
+    // コメントで経緯には触れているので、**指定そのもの**（`startupImage:` と画像の場所）で見る
+    expect(layout).not.toMatch(/startupImage\s*:/);
+    expect(layout).not.toContain("/splash/splash-");
   });
 
-  it("宣言した画像がすべて実在する", () => {
-    for (const url of [...images.map((i) => i.url), ...fallbacks]) {
-      expect(existsSync(`public${url}`), `${url} が無い`).toBe(true);
+  it("画像ファイルは残してある（戻せるように）", () => {
+    // 2026-10-02 までに作った 10 枚。実行時には読み込まれないので速度に影響しない
+    for (const size of ["1320x2868", "1290x2796", "1284x2778", "1242x2688", "1206x2622", "1179x2556", "1170x2532", "1125x2436", "828x1792", "750x1334"]) {
+      expect(existsSync(`public/splash/splash-${size}.png`), `splash-${size}.png が無い`).toBe(true);
     }
   });
 
-  it("画像の名前の大きさと、指定した画面の大きさ × 解像度が一致する", () => {
-    for (const { url, media } of images) {
-      const file = url.match(/splash-(\d+)x(\d+)\.png$/);
-      expect(file, `${url} の名前が想定と違う`).toBeTruthy();
-      const w = Number(file![1]);
-      const h = Number(file![2]);
-      const dw = Number(media.match(/device-width:\s*(\d+)px/)![1]);
-      const dh = Number(media.match(/device-height:\s*(\d+)px/)![1]);
-      const ratio = Number(media.match(/-webkit-device-pixel-ratio:\s*(\d+)/)![1]);
-      expect(dw * ratio, `${url} の幅が合わない`).toBe(w);
-      expect(dh * ratio, `${url} の高さが合わない`).toBe(h);
-    }
-  });
-
-  it("縦向きだけを指している（このアプリは縦が前提）", () => {
-    for (const { media } of images) {
-      expect(media).toContain("orientation: portrait");
-    }
-  });
-
-  it("同じ条件の画像を 2 つ宣言していない（どちらが使われるか決まらなくなる）", () => {
-    const keys = images.map((i) => i.media);
-    expect(new Set(keys).size).toBe(keys.length);
-  });
-
-  it("いまの iPhone の大きさを取りこぼしていない", () => {
-    // 一覧に無いと、その端末では必ず白になる（16 Pro・16 Pro Max がこれで漏れていた）
-    const covered = new Set(
-      images.map((i) => {
-        const dw = i.media.match(/device-width:\s*(\d+)px/)![1];
-        const dh = i.media.match(/device-height:\s*(\d+)px/)![1];
-        const ratio = i.media.match(/-webkit-device-pixel-ratio:\s*(\d+)/)![1];
-        return `${dw}x${dh}@${ratio}`;
-      }),
-    );
-    const mustCover: [string, string][] = [
-      ["440x956@3", "16 Pro Max"],
-      ["430x932@3", "14 Pro Max・15 Pro Max・15 Plus"],
-      ["402x874@3", "16 Pro"],
-      ["393x852@3", "14 Pro・15・15 Pro・16"],
-      ["390x844@3", "12・13・14"],
-      ["375x812@3", "X・XS・11 Pro・12 mini・13 mini"],
-      ["375x667@2", "SE（第 2・第 3 世代）・8"],
-    ];
-    for (const [key, label] of mustCover) {
-      expect(covered.has(key), `${label}（${key}）の宣言が無い`).toBe(true);
-    }
-  });
-
-  it("`media` の無い受け皿が 1 枚だけあり、一覧の最後に置いてある", () => {
-    // どの `media` にも一致しない端末（これから出る iPhone など）で白にならないための 1 枚。
-    // 2 枚あるとどちらが使われるか決まらないので 1 枚に限る
-    expect(fallbacks).toHaveLength(1);
-    const list = layout.match(/const APPLE_STARTUP_IMAGES = \[([\s\S]*?)\n\];/)![1];
-    const lastSized = list.lastIndexOf('{ url: "/splash/');
-    const fallbackAt = list.lastIndexOf(`"${fallbacks[0]}",`);
-    expect(fallbackAt).toBeGreaterThan(lastSized);
-  });
-
-  it("Apple の接頭辞付きの `apple-mobile-web-app-capable` を出している", () => {
-    // Next 16 は接頭辞なしの `mobile-web-app-capable` しか出さない。
-    // 起動画面はこの接頭辞付きと組で使う決まりなので、自分で足す必要がある
+  it("Apple の接頭辞付きの `apple-mobile-web-app-capable` は残している", () => {
+    // 単独のアプリとして開くための指定。起動画像とは別の話なので外さない
     expect(layout).toContain('"apple-mobile-web-app-capable": "yes"');
   });
 
-  it("マニフェストの background_color は残してある（Android の起動画面に効く）", () => {
+  it("マニフェストに起動画面の材料が揃っている（これが今回の頼み）", () => {
+    // iOS に起動画面を作らせるには、地の色・アイコン・名前が要る
     const manifest = readFileSync("src/app/manifest.ts", "utf8");
     expect(manifest).toContain("background_color");
+    expect(manifest).toContain("apple-icon.png");
+    expect(manifest).toContain('name: "タビコエ"');
   });
 });
