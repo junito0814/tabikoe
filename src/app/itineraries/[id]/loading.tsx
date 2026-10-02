@@ -1,12 +1,13 @@
-import { ListScreenSkeleton } from "@/components/skeleton/Skeletons";
+import { ItineraryDetailSkeleton } from "@/components/skeleton/Skeletons";
 
 /**
- * performance Task2（2026-09-22）: SC-23 しおり詳細 の読み込み中の骨組み
- * 【初心者向け】Next.js は画面遷移の直後、ページの HTML が届くまでこの `loading.tsx` を即座に出す。
- * データが揃った瞬間に本物の画面に置き換わる。
+ * loading-feedback Task 11 の続き（2026-10-02・#653）: 読み込み中の骨組み
+ * 出典: docs/tasks/shared-ui/loading-feedback/11-skeleton-fidelity.md
+ *       要件定義書 4.5.11 共通の決まり「骨組みは本物と同じ形にする」
+ *
+ * 【初心者向け】共通の `ListScreenSkeleton` は本物と形がずれていて、読み込みが終わった瞬間に
+ * 画面が動いていた。本物と同じ形の部品に差し替えた。
  */
 export default function Loading() {
-  return (
-    <ListScreenSkeleton backLabel="しおり一覧" />
-  );
+  return <ItineraryDetailSkeleton />;
 }

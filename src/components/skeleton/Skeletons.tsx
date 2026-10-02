@@ -414,3 +414,190 @@ export function MyPageSkeleton() {
     </ScreenFrame>
   );
 }
+
+/*
+ * loading-feedback Task 11 の続き（2026-10-02・#653）: 残り 5 画面の骨組み
+ *
+ * 【初心者向け】#650 で 3 画面を直し、実機で効果を確かめたので残りに広げた。
+ * 考え方は同じで、**本物と同じ値**にする（余白・幅・見出しの位置と大きさ・ボタンの有無・中身の形）。
+ * ずれていると、読み込みが終わった瞬間に画面が動く。
+ *
+ * 外枠の余白と幅が画面ごとに違うことに注意（本物がそうなっているため）。
+ *   アルバム一覧・アルバム詳細 … px-4 py-6 / 560px
+ *   行きたい                   … px-4 pt-4 pb-8 / 520px
+ *   検索結果                   … pb-6 ＋ 内側 px-4 pt-4 / 520px
+ *   しおり詳細                 … px-4 pt-4 pb-24 / 520px
+ */
+
+/** 戻る（‹ ラベル）。本物と同じ 12px・高さ 32px */
+function BackSkeleton() {
+  return (
+    <span className="inline-flex h-8 shrink-0 items-center gap-1 text-[12px] font-medium text-muted">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden>
+        <path d="M15 5l-7 7 7 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+      <SkeletonBlock className="h-3 w-14" />
+    </span>
+  );
+}
+
+/**
+ * アルバム一覧（SC-09）。
+ * 本物は 560px・`py-6`、左寄せ 18px「アルバム」＋ 右に「マイページへ」の下線リンク、
+ * カードは 2〜3 列の格子（正方形の画像 ＋ 題名 ＋ 補足）。
+ */
+export function AlbumListSkeleton() {
+  return (
+    <div className="flex min-h-screen flex-col items-center bg-app px-4 py-6">
+      <div className="w-full max-w-[560px]">
+        <header className="mb-4 flex items-center justify-between">
+          <h1 className="text-[18px] font-bold text-ink">アルバム</h1>
+          <SkeletonBlock className="h-3 w-20" />
+        </header>
+        <ul role="status" aria-busy aria-label="読み込んでいます" className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+          {Array.from({ length: 6 }, (_, i) => (
+            <li key={i} className="overflow-hidden rounded-[12px] border border-line bg-surface">
+              <SkeletonBlock className="aspect-square w-full rounded-none" />
+              <span className="block p-2.5">
+                <SkeletonBlock className="h-3.5 w-3/4" />
+                <SkeletonBlock className="mt-1.5 h-2.5 w-1/2" />
+              </span>
+            </li>
+          ))}
+        </ul>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * 行きたい（SC-12）。
+ * 本物は 520px・`pt-4 pb-8`、戻る ＋ **中央 16px**「行きたい」＋ 右に「N 件」、
+ * その下に一覧・地図の切替（h-7）、行は 64px の画像 ＋ 2 行。
+ */
+export function WishlistSkeleton() {
+  return (
+    <div className="flex min-h-screen flex-col items-center bg-app px-4 pt-4 pb-8">
+      <div className="w-full max-w-[520px]">
+        <header className="flex flex-col gap-2.5">
+          <div className="flex items-center gap-2">
+            <BackSkeleton />
+            <h1 className="min-w-0 flex-1 truncate text-center text-[16px] font-bold text-ink">行きたい</h1>
+            <SkeletonBlock className="h-3 w-8 shrink-0" />
+          </div>
+          {/* 一覧・地図の切替（本物と同じ丸い入れ物） */}
+          <div className="inline-flex w-fit gap-1 rounded-full border border-line bg-surface p-0.5">
+            <SkeletonBlock className="h-7 w-14 rounded-full" />
+            <SkeletonBlock className="h-7 w-14 rounded-full" />
+          </div>
+        </header>
+        <ul role="status" aria-busy aria-label="読み込んでいます" className="mt-3 flex flex-col gap-2.5">
+          {Array.from({ length: 4 }, (_, i) => (
+            <li key={i} className="flex items-center gap-3 rounded-[12px] border border-line bg-surface p-2.5">
+              <SkeletonBlock className="h-16 w-16 shrink-0 rounded-[8px]" />
+              <span className="flex min-w-0 flex-1 flex-col gap-1.5">
+                <SkeletonBlock className="h-3.5 w-2/3" />
+                <SkeletonBlock className="h-2.5 w-2/5" />
+              </span>
+            </li>
+          ))}
+        </ul>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * 検索結果（SC-05）。
+ * 本物は外枠 `pb-6` ＋ 内側 `px-4 pt-4`・520px、戻る ＋ 中央 16px のタイトル ＋
+ * 「絞り込み」（h-8 の丸ボタン）、その下に表示切替（h-7）と並び替え（h-8）。
+ */
+export function PostSearchSkeleton() {
+  return (
+    <div className="flex min-h-screen flex-col items-center bg-app pb-6">
+      <div className="w-full max-w-[520px] px-4 pt-4">
+        <header className="mb-3 flex flex-col gap-2.5">
+          <div className="flex items-center gap-2">
+            <BackSkeleton />
+            <SkeletonBlock className="mx-auto h-4 w-32" />
+            <SkeletonBlock className="h-8 w-20 shrink-0 rounded-full" />
+          </div>
+          <div className="flex items-center justify-between gap-2">
+            <SkeletonBlock className="h-7 w-28 rounded-full" />
+            <SkeletonBlock className="h-8 w-24 rounded-full" />
+          </div>
+        </header>
+        <CardListSkeleton />
+      </div>
+    </div>
+  );
+}
+
+/**
+ * アルバム詳細（SC-09 の中）。
+ *
+ * **ここがいちばんずれていた。** 本物は戻るが**独立した 1 行**で、その下に **20px の大きなタイトル**が来る。
+ * 骨組みは 1 行に押し込んでいたので、読み込みが終わると行が増えて下が全部ずれていた。
+ */
+export function AlbumDetailSkeleton() {
+  return (
+    <div className="flex min-h-screen flex-col items-center bg-app px-4 py-6">
+      <div className="flex w-full max-w-[560px] flex-col gap-5">
+        <header className="flex flex-col gap-2">
+          {/* 戻るは上に 1 行（本物と同じ下線リンクの形） */}
+          <SkeletonBlock className="h-3 w-24" />
+          <SkeletonBlock className="h-6 w-1/2" />
+        </header>
+        <div role="status" aria-busy aria-label="読み込んでいます" className="flex flex-col gap-5">
+          <SkeletonBlock className="h-11 w-full rounded-[10px]" />
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+            {Array.from({ length: 6 }, (_, i) => (
+              <SkeletonBlock key={i} className="aspect-square w-full rounded-[12px]" />
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * しおり詳細（SC-22）。
+ * 本物は 520px・`pt-4 pb-24`、戻る ＋ 中央 16px のタイトル ＋ 「🗺 地図で見る」（h-8）＋「⋯」（h-8 w-8）。
+ */
+export function ItineraryDetailSkeleton() {
+  return (
+    <div className="min-h-screen bg-app">
+      <div className="flex flex-col items-center px-4 pt-4 pb-24">
+        <div className="w-full max-w-[520px]">
+          <header className="flex flex-col gap-2.5">
+            <div className="flex items-center gap-2">
+              <BackSkeleton />
+              <SkeletonBlock className="mx-auto h-4 w-28" />
+              <SkeletonBlock className="h-8 w-24 shrink-0 rounded-full" />
+              <SkeletonBlock className="h-8 w-8 shrink-0 rounded-full" />
+            </div>
+            {/* Day タブ */}
+            <div className="flex gap-1.5">
+              {Array.from({ length: 3 }, (_, i) => (
+                <SkeletonBlock key={i} className="h-8 w-16 shrink-0 rounded-full" />
+              ))}
+            </div>
+          </header>
+          <ul role="status" aria-busy aria-label="読み込んでいます" className="mt-3 flex flex-col gap-2">
+            {Array.from({ length: 4 }, (_, i) => (
+              <li key={i} className="flex items-center gap-3 rounded-[12px] border border-line bg-surface p-3">
+                <SkeletonBlock className="h-7 w-7 shrink-0 rounded-full" />
+                <span className="flex min-w-0 flex-1 flex-col gap-1.5">
+                  <SkeletonBlock className="h-3.5 w-3/5" />
+                  <SkeletonBlock className="h-2.5 w-1/3" />
+                </span>
+                <SkeletonBlock className="h-8 w-14 shrink-0 rounded-[8px]" />
+              </li>
+            ))}
+          </ul>
+        </div>
+      </div>
+    </div>
+  );
+}

@@ -6,7 +6,7 @@ import { ErrorNotice } from "@/components/notices/ErrorNotice";
 import { ERROR_MESSAGES } from "@/components/notices/error-messages";
 import { Suspense } from "react";
 import { StreamingSpotPostListScreen, StreamingSpotSearchScreen } from "@/components/posts/StreamingSearchScreens";
-import { ListScreenSkeleton, MapSheetSkeleton } from "@/components/skeleton/Skeletons";
+import { MapSheetSkeleton, PostSearchSkeleton } from "@/components/skeleton/Skeletons";
 import { loadSearchFirstPage, loadSearchShell, retryableEmptyFirstPage, type SearchPageQuery } from "@/lib/search/load-search-page";
 import { resolveListBack } from "@/lib/search/list-state";
 import { ContentEnter } from "@/components/transitions/Reveal";
@@ -56,7 +56,12 @@ export default async function SearchPage({ searchParams }: { searchParams: Promi
   // v3.1（mentoring-7 Task3）: 検索結果（都道府県・駅・市区町村）はスポット単位のカード
   return (
     <ContentEnter>
-      <Suspense fallback={<ListScreenSkeleton backLabel="ホーム" title={data.resolved.title} />}>
+      {/*
+        * #653（2026-10-02）: ここも `loading.tsx` と同じ骨組みにする。
+        * 以前は共通の `ListScreenSkeleton` を使っていたが、本物（PostSearchScreen）と
+        * 幅も中身もずれていて、届いた瞬間に画面が動いていた。
+        */}
+      <Suspense fallback={<PostSearchSkeleton />}>
         <StreamingSpotSearchScreen
           context={data.context}
           initialState={data.initialState}
