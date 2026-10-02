@@ -3,7 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import { AppMenuBar } from "@/components/layout/AppMenuBar";
 import { createClient } from "@/lib/supabase/server";
 import { getAuthUserFromClaims } from "@/lib/auth/auth-user";
-import { APP_BACKGROUND } from "@/lib/theme/colors";
+import { LAUNCH_GROUND } from "@/lib/theme/colors";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -102,9 +102,25 @@ export const viewport: Viewport = {
    */
   maximumScale: 1,
   userScalable: false,
+  /*
+   * loading-feedback Task 10（2026-10-02）: 帯の色を**起動の地の色**に揃える。
+   *
+   * 【初心者向け】ここは 2026-09-30 まで画面の地の色（白・紺黒）を指定していた。
+   * ところがマニフェスト（`manifest.ts`）は `theme_color` に**青**を宣言しており、
+   * **この meta がそれを上書きしていた**。つまり同じ PR #615 の中で、
+   * 起動を青くするために入れた指定を、もう 1 つの指定が白に塗り戻していた。
+   *
+   * iOS で単独のアプリとして開くと、**描画が始まる前に見えている地**がこの色になる
+   * （と見込んでいる。確証はないが、心当たりがここしかない）。白いままにする理由は
+   * どこにも無いので、マニフェストの宣言に合わせる。
+   *
+   * **副作用を承知のうえでの変更。** `theme-color` は上の帯の色にもなるので、
+   * ライトでは普段も青い帯が見える。ダークの `#0e1e3d` は地の `#0b1220` と
+   * ほとんど差が無いので気づかない。
+   */
   themeColor: [
-    { media: "(prefers-color-scheme: light)", color: APP_BACKGROUND.light },
-    { media: "(prefers-color-scheme: dark)", color: APP_BACKGROUND.dark },
+    { media: "(prefers-color-scheme: light)", color: LAUNCH_GROUND.light },
+    { media: "(prefers-color-scheme: dark)", color: LAUNCH_GROUND.dark },
   ],
 };
 
@@ -132,6 +148,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col has-[[data-menu-bar]]:pb-[60px] md:has-[[data-menu-bar]]:pb-0 md:has-[[data-menu-bar]]:pl-[200px]">
+        <LaunchCover />
         <AppMenuBar isAuthenticated={user !== null} />
         {children}
       </body>
@@ -147,4 +164,57 @@ async function getMenuBarUser() {
     console.error("[layout] ログイン状態を確認できませんでした:", error);
     return null;
   }
+}
+
+
+/**
+ * loading-feedback Task 10（2026-10-02）: 起動のときの覆い
+ * 出典: docs/tasks/shared-ui/loading-feedback/10-launch-screen.md
+ *       要件定義書 4.5.11「場面 1 の決着」・8 章 97
+ *
+ * 【初心者向け】ホーム画面のアイコンから開いたとき、**白い画面を出さない**ための覆い。
+ *
+ * ここでいちばん大事なのは「**外部ファイルを 1 つも待たずに描けること**」。
+ * ふつうの作り方（別の CSS ファイル・画像ファイル・React の部品）だと、
+ * それらが届くまで描けず、**白を消したい時間帯にちょうど間に合わない**。
+ * そこで次をすべて守っている。
+ *
+ *   - `<style>` をこの場に書く（外部 CSS の往復を待たない）
+ *   - `<body>` のいちばん上に置く（他の要素の構築を待たない）
+ *   - ロゴは**この場に書いた SVG**（画像ファイルの往復を待たない）
+ *   - **JavaScript を使わない**（344KB の読み込みと実行を待たない。`"use client"` にしない）
+ *
+ * 動きは「**静止して待ち、去るときだけ動く**」（Instagram と同じ考え方）。
+ * 描画が始まる前は何も出せないので、**入場の動きを見せる余地が無い**ため。
+ * 保持 300ms →（軽く拡大しながら）フェード 250ms。
+ *
+ * `pointer-events: none` を最初から付けているのは、消える前に触っても
+ * **下の本物に届くようにする**ため（覆いは飾りで、中身はもう描けている）。
+ *
+ * ブラウザのタブで開いたときにも出る。**単独アプリのときだけに絞ることもできる**が
+ * （`@media (display-mode: standalone)`）、その指定が端末に無視されると
+ * **覆いごと出なくなる**。起動画像でまさにそれが起きたので、ここでは絞らない。
+ */
+function LaunchCover() {
+  return (
+    <>
+      <style>{`
+#launch-cover{position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center;pointer-events:none;background:${LAUNCH_GROUND.light};animation:launch-leave 250ms ease-in 300ms forwards}
+#launch-cover svg{width:min(28vw,128px);height:auto}
+@keyframes launch-leave{to{opacity:0;transform:scale(1.08);visibility:hidden}}
+@media (prefers-color-scheme:dark){#launch-cover{background:${LAUNCH_GROUND.dark}}}
+@media (prefers-reduced-motion:reduce){#launch-cover{animation:launch-fade 250ms linear 300ms forwards}}
+@keyframes launch-fade{to{opacity:0;visibility:hidden}}
+`}</style>
+      <div id="launch-cover" aria-hidden="true">
+        {/* src/app/icon.svg と同じ形（要件 4.5.9）。地が青なので白で描く */}
+        <svg viewBox="0 0 72 72" xmlns="http://www.w3.org/2000/svg">
+          <circle cx="36" cy="32.8" r="11.5" fill="#fff" />
+          <path d="M32 42L36 51L40 42Z" fill="#fff" />
+          <circle cx="36" cy="36" r="22" fill="none" stroke="#fff" strokeOpacity=".6" strokeWidth="4.2" />
+          <circle cx="36" cy="36" r="30" fill="none" stroke="#fff" strokeOpacity=".28" strokeWidth="3.6" />
+        </svg>
+      </div>
+    </>
+  );
 }
