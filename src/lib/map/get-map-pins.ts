@@ -1,6 +1,14 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { getBlockedUserIds } from "@/lib/blocks/get-blocked-user-ids";
-import { resolveSpotCategory } from "./spot-category";
+import {
+  aggregateSpot,
+  EMPTY_SPOT_FILTERS,
+  hasActiveSpotFilters,
+  matchesSpotFilters,
+  averageRating,
+  type SpotAggregate,
+  type SpotFilters,
+} from "./spot-aggregate";
 import type { PostCategory } from "@/lib/posts/constants";
 import { findLatestSpotStatuses } from "@/lib/posts/post-cards";
 import { UNNAMED_SPOT_NAME } from "@/lib/spots/finalize-spot";
@@ -54,10 +62,23 @@ interface SpotRow {
   lat: number;
   lng: number;
   prefecture: string | null;
+  /** explore-mode Task 4: 「タビコエだけの場所」か（spots.source = manual） */
+  source?: string | null;
 }
 
 export interface SpotWithPostsRow extends SpotRow {
-  posts: { user_id: string; visibility: string; rating: number | null; category?: string | null; created_at?: string | null }[];
+  posts: {
+    user_id: string;
+    visibility: string;
+    rating: number | null;
+    category?: string | null;
+    created_at?: string | null;
+    /* explore-mode Task 4（2026-10-02）: 代表値（予算の平均・滞在時間）を出すために足した */
+    cost?: number | null;
+    duration?: string | null;
+  }[];
+  /** explore-mode Task 4: 「タビコエだけの場所」か（spots.source = manual） */
+  source?: string | null;
 }
 
 export interface DraftRow {
@@ -90,11 +111,9 @@ export function isSameBounds(a: MapBounds, b: MapBounds): boolean {
 }
 
 /** 星平均（小数 1 桁）。評価が 1 件も無ければ null */
-export function averageRating(ratings: (number | null)[]): number | null {
-  const values = ratings.filter((value): value is number => typeof value === "number");
-  if (values.length === 0) return null;
-  return Math.round((values.reduce((sum, value) => sum + value, 0) / values.length) * 10) / 10;
-}
+// 2026-10-02: 平均の計算は spot-aggregate.ts に移した（代表値の計算を 1 か所に集めるため。約束 14）。
+// 既にここから読んでいる所があるので、名前はそのまま通す
+export { averageRating };
 
 /**
  * map-display-v3 Task1: 3 系統（投稿・保存済み・下書き）を 1 つの配列にまとめる（単体テストの対象）
@@ -110,18 +129,33 @@ export function mergeMapPins(
   savedSpots: SpotRow[],
   drafts: DraftRow[],
   latestStatusBySpot: ReadonlyMap<string, LatestSpotStatus> = new Map(),
-  limit: number = MAX_MAP_PINS
+  limit: number = MAX_MAP_PINS,
+  /*
+   * explore-mode Task 4（2026-10-02）: 探すモードの絞り込み。
+   *
+   * 【初心者向け】**投稿を 1 件ずつ落とすのではなく、スポットごと落とす**。
+   * 地図が探しているのは場所なので、代表値（spot-aggregate.ts）が条件に合うかで決める。
+   * こうすると、残ったスポットの件数・評価・色は**そのスポットの全公開投稿**から出た値のままになる。
+   */
+  filters: SpotFilters = EMPTY_SPOT_FILTERS
 ): MapPinData[] {
-  const stats = new Map<string, { postCount: number; ratingAverage: number | null; category: PostCategory | null }>();
+  const active = hasActiveSpotFilters(filters);
+  const stats = new Map<string, SpotAggregate>();
   for (const row of postSpots) {
     const publicPosts = row.posts.filter((post) => post.visibility === "public");
     if (publicPosts.length === 0) continue;
-    stats.set(row.id, {
-      postCount: publicPosts.length,
-      ratingAverage: averageRating(publicPosts.map((post) => post.rating)),
-      // pin-categories Task2: ピンの色と記号を決める（いちばん多いカテゴリ、同数なら新しい方）
-      category: resolveSpotCategory(publicPosts.map((post) => ({ category: post.category ?? null, createdAt: post.created_at ?? null }))),
-    });
+    const aggregate = aggregateSpot(
+      publicPosts.map((post) => ({
+        category: post.category ?? null,
+        duration: post.duration ?? null,
+        cost: post.cost ?? null,
+        rating: post.rating,
+        createdAt: post.created_at ?? null,
+      }))
+    );
+    // 条件に合わないスポットは、ピンそのものを出さない
+    if (active && !matchesSpotFilters(aggregate, { manual: row.source === "manual" }, filters)) continue;
+    stats.set(row.id, aggregate);
   }
 
   const pins: MapPinData[] = [];
@@ -146,9 +180,21 @@ export function mergeMapPins(
     });
   };
 
-  for (const spot of savedSpots) pushSpot(spot, "saved");
+  /*
+   * explore-mode Task 4（2026-10-02）: 絞り込みが効いているときは、
+   * **条件に合うスポットだけ**を出す。
+   *
+   * 【初心者向け】保存済み（行きたい）と下書きは、投稿とは別の理由で出しているピン。
+   * ただし絞り込み中にそれらが残ると、**条件に合わないピンが地図に出たまま**になり、
+   * 「絞り込んだのに出ている」と壊れて見える。探している最中は、探しているものだけ出す。
+   */
+  for (const spot of savedSpots) {
+    if (active && !stats.has(spot.id)) continue;
+    pushSpot(spot, "saved");
+  }
   for (const spot of postSpots) if (stats.has(spot.id)) pushSpot(spot, "post");
   for (const draft of drafts) {
+    if (active) break;
     if (pins.length >= limit) break;
     const id = `draft:${draft.id}`;
     if (seen.has(id)) continue;
