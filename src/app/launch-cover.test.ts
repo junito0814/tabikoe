@@ -81,8 +81,10 @@ describe("覆いが外部ファイルを待たない", () => {
 describe("覆いの振る舞い", () => {
   const cover = launchCover();
 
-  it("静止して待ち、去るときだけ動く（保持 300ms → フェード 250ms）", () => {
-    expect(cover).toContain("animation:launch-leave 250ms ease-in 300ms forwards");
+  it("静止して待ち、去るときだけ動く（保持 600ms → フェード 250ms）", () => {
+    // #663: 300ms では実機で一瞬すぎて見えなかった。覆いが出るのは白を 1 秒見せられたあとで、
+    // 目が向いた時にはもう消えていた。フェードの 250ms は形を認識する時間にならない
+    expect(cover).toContain("animation:launch-leave 250ms ease-in 600ms forwards");
   });
 
   it("去るときに軽く拡大する", () => {
@@ -111,10 +113,14 @@ describe("覆いの振る舞い", () => {
   });
 });
 
-describe("効かなかった起動画像の扱い（2026-10-02）", () => {
-  it("宣言は残してある（別の端末では効く可能性があるため）", () => {
-    // iPhone 17 では働かないことを確認済み。ただし実行時に読み込まれないので速度に影響しない
-    expect(layout).toContain("APPLE_STARTUP_IMAGES");
-    expect(layout).toContain("startupImage");
+describe("効かなかった起動画像の扱い（#662 で 2026-10-03 に変更）", () => {
+  it("宣言は外した（マニフェストからの自動生成を塞いでいる可能性があるため）", () => {
+    // ~~残す~~ → 外す。詳しくは splash.test.ts と要件 4.5.11「場面 1 の決着」
+    expect(layout).not.toMatch(/startupImage\s*:/);
+  });
+
+  it("動きを減らす設定でも、同じだけ待ってから消える", () => {
+    // 見せる時間は演出ではなく「読む時間」なので、動きを減らす設定でも短くしない
+    expect(launchCover()).toContain("animation:launch-fade 250ms linear 600ms forwards");
   });
 });
