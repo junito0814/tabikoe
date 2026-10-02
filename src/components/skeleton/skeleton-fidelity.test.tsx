@@ -1,7 +1,16 @@
 import { describe, expect, it } from "vitest";
 import { render, screen } from "@testing-library/react";
 import { readFileSync } from "node:fs";
-import { ItineraryListSkeleton, MyPageSkeleton, NotificationListSkeleton } from "./Skeletons";
+import {
+  AlbumDetailSkeleton,
+  AlbumListSkeleton,
+  ItineraryDetailSkeleton,
+  ItineraryListSkeleton,
+  MyPageSkeleton,
+  NotificationListSkeleton,
+  PostSearchSkeleton,
+  WishlistSkeleton,
+} from "./Skeletons";
 
 /**
  * 出典: docs/tasks/shared-ui/loading-feedback/11-skeleton-fidelity.md 単体テスト
@@ -118,5 +127,116 @@ describe("Task 11: シマー（光が流れる動き）", () => {
 
   it("動きを減らす設定のときは止まる", () => {
     expect(css).toMatch(/@media \(prefers-reduced-motion: reduce\)\s*\{\s*\.skeleton-block::after\s*\{\s*animation: none/);
+  });
+});
+
+/**
+ * 出典: #653（残り 5 画面の骨組みも本物とずれている）
+ * 要件定義書 4.5.11 共通の決まり「骨組みは本物と同じ形にする」
+ *
+ * 【初心者向け】3 画面と同じ考え方で、残り 5 画面も本物と突き合わせる。
+ * **外枠の余白と幅が画面ごとに違う**のがこの 5 つの難しいところで、
+ * そこがずれると読み込みが終わった瞬間に画面全体が動く。
+ */
+const real5 = {
+  アルバム一覧: readFileSync("src/app/albums/page.tsx", "utf8"),
+  行きたい: readFileSync("src/components/wishlist/WishlistScreen.tsx", "utf8"),
+  検索結果: readFileSync("src/components/posts/PostSearchScreen.tsx", "utf8"),
+  アルバム詳細: readFileSync("src/components/albums/AlbumScreen.tsx", "utf8"),
+  しおり詳細: readFileSync("src/components/itineraries/ItineraryDetailScreen.tsx", "utf8"),
+};
+
+describe("#653: 残り 5 画面の外枠が本物と同じ", () => {
+  it.each([
+    ["アルバム一覧", "AlbumListSkeleton", "px-4 py-6", "max-w-[560px]"],
+    ["行きたい", "WishlistSkeleton", "px-4 pt-4 pb-8", "max-w-[520px]"],
+    ["検索結果", "PostSearchSkeleton", "bg-app pb-6", "max-w-[520px] px-4 pt-4"],
+    ["アルバム詳細", "AlbumDetailSkeleton", "px-4 py-6", "max-w-[560px]"],
+    ["しおり詳細", "ItineraryDetailSkeleton", "px-4 pt-4 pb-24", "max-w-[520px]"],
+  ])("%s: 骨組みと本物が同じ余白・同じ幅", (name, fn, padding, width) => {
+    const skeleton = part(fn);
+    expect(skeleton, `${name} の余白`).toContain(padding);
+    expect(skeleton, `${name} の幅`).toContain(width.split(" ")[0]);
+    // 本物にも同じ値があること（片方だけ直したらここで止まる）
+    const source = real5[name as keyof typeof real5];
+    expect(source, `${name} の本物の幅`).toContain(width.split(" ")[0]);
+    expect(source, `${name} の本物の余白`).toContain(padding);
+  });
+});
+
+describe("#653: アルバム詳細の形（いちばんずれていた）", () => {
+  it("本物は戻るが独立した 1 行で、その下に 20px のタイトル", () => {
+    expect(real5.アルバム詳細).toContain('className="text-[12px] text-muted underline underline-offset-2"');
+    expect(real5.アルバム詳細).toContain("text-[20px] font-bold text-ink");
+  });
+
+  it("骨組みも 2 段（戻る → タイトル）になっている", () => {
+    const { container } = render(<AlbumDetailSkeleton />);
+    const header = container.querySelector("header")!;
+    expect(header.className).toContain("flex-col");
+    expect(header.children).toHaveLength(2);
+  });
+});
+
+describe("#653: 切替の行がある（行きたい・検索結果）", () => {
+  it("行きたいに一覧・地図の切替がある", () => {
+    expect(real5.行きたい).toContain('role="radiogroup"');
+    expect(part("WishlistSkeleton")).toContain("rounded-full border border-line bg-surface p-0.5");
+  });
+
+  it("検索結果に表示切替と並び替えの行がある", () => {
+    expect(real5.検索結果).toContain("<ViewToggle");
+    expect(real5.検索結果).toContain("<SortDropdown");
+    expect(part("PostSearchSkeleton")).toContain("flex items-center justify-between gap-2");
+  });
+});
+
+describe("#653: しおり詳細の右のボタンは 2 つ", () => {
+  it("本物に「地図で見る」と「⋯」がある", () => {
+    expect(real5.しおり詳細).toContain("地図で見る");
+    expect(real5.しおり詳細).toContain('aria-label="その他"');
+  });
+
+  it("骨組みの見出しの行も 4 つ（戻る・題名・地図・その他）", () => {
+    const { container } = render(<ItineraryDetailSkeleton />);
+    const row = container.querySelector("header > div")!;
+    expect(row.children).toHaveLength(4);
+  });
+});
+
+describe("#653: 読み込んでいると伝わる形は 5 枚とも残っている", () => {
+  it.each([
+    ["アルバム一覧", AlbumListSkeleton],
+    ["行きたい", WishlistSkeleton],
+    ["検索結果", PostSearchSkeleton],
+    ["アルバム詳細", AlbumDetailSkeleton],
+    ["しおり詳細", ItineraryDetailSkeleton],
+  ])("%s", (_name, Skeleton) => {
+    render(<Skeleton />);
+    expect(screen.getByRole("status")).toHaveAttribute("aria-label", "読み込んでいます");
+  });
+});
+
+describe("#653: 共通の ListScreenSkeleton はもう画面に使っていない", () => {
+  it("8 つの loading.tsx はすべて専用の骨組みを使っている", () => {
+    const routes = [
+      ["notifications", "NotificationListSkeleton"],
+      ["itineraries", "ItineraryListSkeleton"],
+      ["mypage", "MyPageSkeleton"],
+      ["albums", "AlbumListSkeleton"],
+      ["wishlist", "WishlistSkeleton"],
+      ["search", "PostSearchSkeleton"],
+      ["albums/[id]", "AlbumDetailSkeleton"],
+      ["itineraries/[id]", "ItineraryDetailSkeleton"],
+    ];
+    for (const [route, fn] of routes) {
+      const source = readFileSync(`src/app/${route}/loading.tsx`, "utf8");
+      expect(source, `${route} が ${fn} を使っていない`).toContain(`<${fn} />`);
+    }
+  });
+
+  it("検索のページ内の待ちも専用の骨組みを使っている", () => {
+    // ここも本物とずれていた（幅も中身も）。loading.tsx と同じものに揃える
+    expect(readFileSync("src/app/search/page.tsx", "utf8")).toContain("<PostSearchSkeleton />");
   });
 });
