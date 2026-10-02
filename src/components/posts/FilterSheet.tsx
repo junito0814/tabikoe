@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { POST_CATEGORIES, POST_DURATIONS, type PostCategory } from "@/lib/posts/constants";
 import {
@@ -142,61 +142,92 @@ function FilterSheetBody<T extends SheetFilters>({
    *   地図     … カテゴリ・予算（平均）・滞在時間・評価（平均）・タビコエだけの場所
    * 地図でカテゴリを先に置くのは、出先で探す人がまず決めるのが「何を探しているか」だから。
    */
-  const costSection = (
-    <fieldset key="cost">
-      <legend className="mb-1.5 text-[12px] font-medium text-muted">{isSpots ? "予算（平均）" : "予算（1人あたり）"}</legend>
+  /*
+   * explore-mode Task 5（2026-10-03）: 1 つだけ選ぶ列。
+   *
+   * 【初心者向け】**「指定なし」は置かず、選んだものをもう一度押すと解除**する
+   * （カテゴリと同じ操作。要件 3.4.2「絞り込みの選び方」）。以前はシートの中で
+   * 「カテゴリはもう一度押して外す／ほかは『指定なし』に戻す」と**選び方が 2 通り**に
+   * 分かれていた。見た目が同じ丸いボタンなのに動きが違うので揃えた。
+   *
+   * 作りは**チェックボックス**。ラジオボタン（`type="radio"`）は一度選ぶと外せない
+   * 決まりなので、「もう一度押して解除」が作れない。1 つ選んだら他が外れるのは、
+   * `checked` を 1 つだけにして自分で書いている。
+   *
+   * 5 つの列（予算・期間・滞在時間・距離・評価）が同じ形なので、1 つにまとめた（約束 14）。
+   */
+  const singleChoice = <V extends string | number,>(
+    key: string,
+    legend: string,
+    options: readonly V[],
+    selected: V | null,
+    onSelect: (next: V | null) => void,
+    label: (option: V) => string = String,
+    extra?: ReactNode
+  ) => (
+    <fieldset key={key}>
+      <legend className="mb-1.5 text-[12px] font-medium text-muted">{legend}</legend>
       <div className="flex flex-wrap gap-1.5">
-        <label className={chip(draft.cost === null)}>
-          <input type="radio" name="cost" checked={draft.cost === null} onChange={() => patch({ cost: null })} className="sr-only" />
-          指定なし
-        </label>
-        {COST_RANGES.map((range) => (
-          <label key={range} className={chip(draft.cost === range)}>
-            <input type="radio" name="cost" checked={draft.cost === range} onChange={() => patch({ cost: range })} className="sr-only" />
-            {COST_RANGE_LABELS[range]}
-          </label>
-        ))}
+        {options.map((option) => {
+          const checked = selected === option;
+          return (
+            <label key={String(option)} className={chip(checked)}>
+              {/* もう一度押したら null（条件なし）に戻す */}
+              <input type="checkbox" checked={checked} onChange={() => onSelect(checked ? null : option)} className="sr-only" />
+              {label(option)}
+            </label>
+          );
+        })}
       </div>
-      {/* 地図は文字を増やさない（見出しの「（平均）」で意味が通る）。2026-10-02 の決定 */}
-      {!isSpots && <p className="mt-1 text-[11px] text-muted">費用が未入力の投稿は、予算で絞り込むと表示されません</p>}
+      {extra}
     </fieldset>
   );
 
-  const periodSection = (
-    <fieldset key="period">
-      <legend className="mb-1.5 text-[12px] font-medium text-muted">期間（訪問日）</legend>
-      <div className="flex flex-wrap gap-1.5">
-        <label className={chip(draft.period === null)}>
-          <input type="radio" name="period" checked={draft.period === null} onChange={() => patch({ period: null })} className="sr-only" />
-          指定なし
-        </label>
-        {PERIOD_OPTIONS.map((option) => (
-          <label key={option} className={chip(draft.period === option)}>
-            <input type="radio" name="period" checked={draft.period === option} onChange={() => patch({ period: option })} className="sr-only" />
-            {PERIOD_LABELS[option]}
-          </label>
-        ))}
+  /*
+   * 項目は「出すかどうか」だけでなく「**並び順**」も用途で変える（2026-10-02 に決定）。
+   *
+   * 【初心者向け】そのため 1 つずつ変数にしてから、下で並べている。
+   *   投稿一覧 … 予算・期間・カテゴリ・滞在時間・距離
+   *   地図     … カテゴリ・予算（平均）・滞在時間・評価（平均）・タビコエだけの場所
+   * 地図でカテゴリを先に置くのは、出先で探す人がまず決めるのが「何を探しているか」だから。
+   */
+  const costSection = singleChoice(
+    "cost",
+    isSpots ? "予算（平均）" : "予算（1人あたり）",
+    COST_RANGES,
+    draft.cost,
+    (next) => patch({ cost: next }),
+    (range) => COST_RANGE_LABELS[range],
+    // 地図は文字を増やさない（見出しの「（平均）」で意味が通る）。2026-10-02 の決定
+    isSpots ? undefined : <p className="mt-1 text-[11px] text-muted">費用が未入力の投稿は、予算で絞り込むと表示されません</p>
+  );
+
+  const periodSection = singleChoice(
+    "period",
+    "期間（訪問日）",
+    PERIOD_OPTIONS,
+    draft.period ?? null,
+    (next) => patch({ period: next }),
+    (option) => PERIOD_LABELS[option],
+    draft.period === "custom" ? (
+      <div className="mt-2 flex items-center gap-2 text-[12px] text-ink">
+        <input
+          type="date"
+          aria-label="開始日"
+          value={draft.from ?? ""}
+          onChange={(event) => patch({ from: event.target.value })}
+          className="h-9 min-w-0 flex-1 rounded-[8px] border border-line bg-surface px-2 text-[12px] text-ink"
+        />
+        <span aria-hidden>〜</span>
+        <input
+          type="date"
+          aria-label="終了日"
+          value={draft.to ?? ""}
+          onChange={(event) => patch({ to: event.target.value })}
+          className="h-9 min-w-0 flex-1 rounded-[8px] border border-line bg-surface px-2 text-[12px] text-ink"
+        />
       </div>
-      {draft.period === "custom" && (
-        <div className="mt-2 flex items-center gap-2 text-[12px] text-ink">
-          <input
-            type="date"
-            aria-label="開始日"
-            value={draft.from ?? ""}
-            onChange={(event) => patch({ from: event.target.value })}
-            className="h-9 min-w-0 flex-1 rounded-[8px] border border-line bg-surface px-2 text-[12px] text-ink"
-          />
-          <span aria-hidden>〜</span>
-          <input
-            type="date"
-            aria-label="終了日"
-            value={draft.to ?? ""}
-            onChange={(event) => patch({ to: event.target.value })}
-            className="h-9 min-w-0 flex-1 rounded-[8px] border border-line bg-surface px-2 text-[12px] text-ink"
-          />
-        </div>
-      )}
-    </fieldset>
+    ) : undefined
   );
 
   const categorySection = (
@@ -216,59 +247,28 @@ function FilterSheetBody<T extends SheetFilters>({
     </fieldset>
   );
 
-  const durationSection = (
-    <fieldset key="duration">
-      <legend className="mb-1.5 text-[12px] font-medium text-muted">滞在時間</legend>
-      <div className="flex flex-wrap gap-1.5">
-        <label className={chip(draft.duration === null)}>
-          <input type="radio" name="duration" checked={draft.duration === null} onChange={() => patch({ duration: null })} className="sr-only" />
-          指定なし
-        </label>
-        {POST_DURATIONS.map((option) => (
-          <label key={option} className={chip(draft.duration === option)}>
-            <input type="radio" name="duration" checked={draft.duration === option} onChange={() => patch({ duration: option })} className="sr-only" />
-            {option}
-          </label>
-        ))}
-      </div>
-    </fieldset>
-  );
+  const durationSection = singleChoice("duration", "滞在時間", POST_DURATIONS, draft.duration, (next) => patch({ duration: next }));
 
-  const distanceSection = hasDistanceCenter ? (
-    <fieldset key="distance">
-      <legend className="mb-1.5 text-[12px] font-medium text-muted">距離（検索した場所から）</legend>
-      <div className="flex flex-wrap gap-1.5">
-        <label className={chip(draft.distance === null)}>
-          <input type="radio" name="distance" checked={draft.distance === null} onChange={() => patch({ distance: null })} className="sr-only" />
-          指定なし
-        </label>
-        {DISTANCE_OPTIONS.map((option) => (
-          <label key={option} className={chip(draft.distance === option)}>
-            <input type="radio" name="distance" checked={draft.distance === option} onChange={() => patch({ distance: option })} className="sr-only" />
-            {DISTANCE_LABELS[option]}
-          </label>
-        ))}
-      </div>
-    </fieldset>
-  ) : null;
+  const distanceSection = hasDistanceCenter
+    ? singleChoice(
+        "distance",
+        "距離（検索した場所から）",
+        DISTANCE_OPTIONS,
+        draft.distance ?? null,
+        (next) => patch({ distance: next }),
+        (option) => DISTANCE_LABELS[option]
+      )
+    : null;
 
   /* explore-mode Task 4: 評価（平均）。「★4 以上」は平均 4.0 ちょうどを含む（要件 3.4.6） */
-  const ratingSection = (
-    <fieldset key="rating">
-      <legend className="mb-1.5 text-[12px] font-medium text-muted">評価（平均）</legend>
-      <div className="flex flex-wrap gap-1.5">
-        <label className={chip((draft.rating ?? null) === null)}>
-          <input type="radio" name="rating" checked={(draft.rating ?? null) === null} onChange={() => patch({ rating: null })} className="sr-only" />
-          指定なし
-        </label>
-        {RATING_OPTIONS.map((option) => (
-          <label key={option} className={chip(draft.rating === option)}>
-            <input type="radio" name="rating" checked={draft.rating === option} onChange={() => patch({ rating: option })} className="sr-only" />
-            {option === 5 ? "★5" : `★${option} 以上`}
-          </label>
-        ))}
-      </div>
-    </fieldset>
+  const ratingSection = singleChoice(
+    "rating",
+    "評価（平均）",
+    RATING_OPTIONS,
+    draft.rating ?? null,
+    (next) => patch({ rating: next }),
+    // ★5 だけは「以上」と書かない（上が無いため）
+    (option) => (option === 5 ? "★5" : `★${option} 以上`)
   );
 
   /* explore-mode Task 4: タビコエだけの場所（spots.source = manual）。チェックボックス 1 行 */
