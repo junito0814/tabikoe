@@ -52,14 +52,15 @@ export interface PostSearchFilters    条件の型
 | `getMapPins` | 埋め込む投稿の列に `cost`・`duration` を足し、埋め込み側に条件を足す。**集計（件数・評価・カテゴリ）は絞り込み後の配列から行う**（いまの実装のままで自動的にそうなる） |
 | `getNearbyPosts` | `applyFilters` を通す |
 
-**評価（平均）と写真の有無は、投稿 1 件では判断できない。**
+**条件の種類が 2 つある。**
 
-| 条件 | 判断の仕方 |
-|---|---|
-| 評価（平均） | 投稿を絞り込んだあと、**スポットごとに平均を出してから**しきい値で切る |
-| 写真があるものだけ | 絞り込んだ投稿のうち、`post_photos` が 1 枚以上あるものだけ残す |
+| 条件 | 何に効くか | 判断の仕方 |
+|---|---|---|
+| カテゴリ・予算・滞在時間 | **投稿** | クエリに足すだけ（`applyFilters`） |
+| **「タビコエだけの場所」だけ** | **スポット** | `spots.source = 'manual'` を足すだけ。**集計が要らない**ので最も安い |
+| **評価（平均）** | **スポット（集計後）** | 投稿を絞り込んだあと、**スポットごとに平均を出してから**しきい値で切る |
 
-この 2 つは**集計のあとの判断**なので、純粋関数に切り出して単体テストする。
+**評価だけが集計のあとの判断**なので、そこを純粋関数に切り出して単体テストする。
 
 ### 4-3. API（`src/app/api/map/pins/route.ts`・`src/app/api/posts/nearby/route.ts`）
 
@@ -74,7 +75,7 @@ export interface PostSearchFilters    条件の型
 - **移動手段の横の「移動手段」の文字を外す。** 選択中の手段が見えているので要らない。`<select>` の `aria-label="移動手段"` は残す（読み上げのため）
 - その右に**絵だけの絞り込みボタン**。効いているときは色を変え、**効いている条件の数**を付ける
 - 押すと `FilterSheet`（投稿一覧と同じ部品）。`hasDistanceCenter={false}` で距離を出さない
-- **評価・写真の 2 つは地図だけ**なので、`FilterSheet` に出し分けの引数を足す
+- **評価と「タビコエだけの場所」の 2 つは地図だけ**なので、`FilterSheet` に出し分けの引数を足す
 
 ### 4-5. 状態の保存（`src/lib/map/map-state.ts`）
 
@@ -83,7 +84,7 @@ export interface PostSearchFilters    条件の型
 ## 成果物
 
 - `src/lib/posts/search-posts.ts`（`applyFilters` の前置き対応）
-- `src/lib/map/explore-filter.ts`（新規。評価の平均・写真の有無の判断。純粋関数）
+- `src/lib/map/explore-filter.ts`（新規。評価の平均の判断。純粋関数）
 - `src/lib/map/get-map-pins.ts`・`src/lib/posts/nearby-posts.ts`
 - `src/app/api/map/pins/route.ts`・`src/app/api/posts/nearby/route.ts`
 - `src/components/map/NearbyVoices.tsx`・`MapScreen.tsx`・`src/components/posts/FilterSheet.tsx`
@@ -94,7 +95,7 @@ export interface PostSearchFilters    条件の型
 
 ### 単体テスト
 - 評価の平均の判断: スポットごとに平均を出してから切ること。1 件だけ ★5 の場所が「★4.5 以上」に残らないこと
-- 写真の有無の判断: 写真の無い投稿だけのスポットが落ちること
+- 「タビコエだけの場所」: `source = 'places'`（Google 由来）のスポットが落ちること
 - `applyFilters` の前置き: `posts.` を付けたときに同じ条件が組み立てられること
 - ピンの集計: **絞り込み後の投稿から**件数・評価・カテゴリが計算されること
 - 画面: 絞り込みが効いているときボタンの色と数が変わること。距離が出ないこと
