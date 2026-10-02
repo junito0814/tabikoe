@@ -8,6 +8,7 @@ import { resolveListBack } from "@/lib/search/list-state";
 import { parseWishlistView } from "@/lib/wishlist/wishlist-view";
 import { getWishlistItems } from "@/lib/wishlist/get-wishlist-items";
 import type { WishlistItem } from "@/lib/wishlist/constants";
+import { ContentEnter } from "@/components/transitions/Reveal";
 
 /**
  * SC-08 「行きたい」スポット一覧画面
@@ -35,5 +36,9 @@ export default async function WishlistPage({ searchParams }: { searchParams: Pro
     );
   }
 
-  return <WishlistScreen initialItems={items} initialView={parseWishlistView(view)} back={resolveListBack(back)} />;
+  return (
+    <ContentEnter>
+      <WishlistScreen initialItems={items} initialView={parseWishlistView(view)} back={resolveListBack(back)} />
+    </ContentEnter>
+  );
 }

@@ -9,6 +9,7 @@ import { StreamingSpotPostListScreen, StreamingSpotSearchScreen } from "@/compon
 import { ListScreenSkeleton, MapSheetSkeleton } from "@/components/skeleton/Skeletons";
 import { loadSearchFirstPage, loadSearchShell, retryableEmptyFirstPage, type SearchPageQuery } from "@/lib/search/load-search-page";
 import { resolveListBack } from "@/lib/search/list-state";
+import { ContentEnter } from "@/components/transitions/Reveal";
 
 /**
  * SC-04 投稿一覧（タイムライン形式・検索結果）
@@ -54,17 +55,19 @@ export default async function SearchPage({ searchParams }: { searchParams: Promi
 
   // v3.1（mentoring-7 Task3）: 検索結果（都道府県・駅・市区町村）はスポット単位のカード
   return (
-    <Suspense fallback={<ListScreenSkeleton backLabel="ホーム" title={data.resolved.title} />}>
-      <StreamingSpotSearchScreen
-        context={data.context}
-        initialState={data.initialState}
-        title={data.resolved.title}
-        backHref="/"
-        backLabel="ホーム"
-        addMode={data.addMode}
-        emptyMessage={data.resolved.kind === "not_found" ? "見つかりませんでした。都道府県名・駅名・スポット名で入力してください" : "条件に合う投稿がありません"}
-        firstPage={firstPage}
-      />
-    </Suspense>
+    <ContentEnter>
+      <Suspense fallback={<ListScreenSkeleton backLabel="ホーム" title={data.resolved.title} />}>
+        <StreamingSpotSearchScreen
+          context={data.context}
+          initialState={data.initialState}
+          title={data.resolved.title}
+          backHref="/"
+          backLabel="ホーム"
+          addMode={data.addMode}
+          emptyMessage={data.resolved.kind === "not_found" ? "見つかりませんでした。都道府県名・駅名・スポット名で入力してください" : "条件に合う投稿がありません"}
+          firstPage={firstPage}
+        />
+      </Suspense>
+    </ContentEnter>
   );
 }

@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { SkeletonExit } from "@/components/transitions/Reveal";
 
 /**
  * performance Task2（2026-09-22）: 読み込み中の骨組み（スケルトン）
@@ -64,27 +65,31 @@ export function CardListSkeleton({ count = 3 }: { count?: number }) {
 /** 一覧画面（戻る・タイトル・カードの列）の骨組み。loading.tsx 用 */
 export function ListScreenSkeleton({ backLabel, title, children }: { backLabel?: string | null; title?: string | null; children?: ReactNode }) {
   return (
-    <div className="flex min-h-screen flex-col items-center bg-app px-4 py-6">
-      <div className="flex w-full max-w-[560px] flex-col gap-4">
-        <TopBarSkeleton backLabel={backLabel} title={title} />
-        {children ?? <CardListSkeleton />}
+    <SkeletonExit>
+      <div className="flex min-h-screen flex-col items-center bg-app px-4 py-6">
+        <div className="flex w-full max-w-[560px] flex-col gap-4">
+          <TopBarSkeleton backLabel={backLabel} title={title} />
+          {children ?? <CardListSkeleton />}
+        </div>
       </div>
-    </div>
+    </SkeletonExit>
   );
 }
 
 /** 上 1/3 地図＋下 2/3 シート（スポット別一覧・投稿詳細・しおり）の骨組み。loading.tsx 用 */
 export function MapSheetSkeleton({ backLabel, title, children }: { backLabel?: string | null; title?: string | null; children?: ReactNode }) {
   return (
-    <div className="flex min-h-screen flex-col bg-app md:flex-row">
-      <div aria-hidden className="h-[34dvh] w-full animate-pulse bg-map-placeholder md:h-dvh md:w-1/3" />
-      <div className="relative z-10 -mt-4 flex flex-1 flex-col rounded-t-[16px] border-t border-line bg-app px-4 pt-3 pb-8 md:mt-0 md:rounded-none md:border-l md:border-t-0">
-        <div className="mx-auto flex w-full max-w-[560px] flex-col gap-4">
-          <TopBarSkeleton backLabel={backLabel} title={title} />
-          {children ?? <CardListSkeleton />}
+    <SkeletonExit>
+      <div className="flex min-h-screen flex-col bg-app md:flex-row">
+        <div aria-hidden className="h-[34dvh] w-full animate-pulse bg-map-placeholder md:h-dvh md:w-1/3" />
+        <div className="relative z-10 -mt-4 flex flex-1 flex-col rounded-t-[16px] border-t border-line bg-app px-4 pt-3 pb-8 md:mt-0 md:rounded-none md:border-l md:border-t-0">
+          <div className="mx-auto flex w-full max-w-[560px] flex-col gap-4">
+            <TopBarSkeleton backLabel={backLabel} title={title} />
+            {children ?? <CardListSkeleton />}
+          </div>
         </div>
       </div>
-    </div>
+    </SkeletonExit>
   );
 }
 
@@ -141,14 +146,16 @@ export function HeadingScreenSkeleton({
   children?: ReactNode;
 }) {
   return (
-    <div className="flex min-h-screen flex-col items-center bg-app px-6 py-10">
-      <div className={`flex w-full flex-col gap-5 ${maxWidth}`}>
-        <h1 className="text-[18px] font-bold text-ink">{title}</h1>
-        <div role="status" aria-busy aria-label="読み込んでいます" className="flex flex-col gap-4">
-          {children}
+    <SkeletonExit>
+      <div className="flex min-h-screen flex-col items-center bg-app px-6 py-10">
+        <div className={`flex w-full flex-col gap-5 ${maxWidth}`}>
+          <h1 className="text-[18px] font-bold text-ink">{title}</h1>
+          <div role="status" aria-busy aria-label="読み込んでいます" className="flex flex-col gap-4">
+            {children}
+          </div>
         </div>
       </div>
-    </div>
+    </SkeletonExit>
   );
 }
 
@@ -198,33 +205,37 @@ export function GridSkeleton({ rows = 3, cols = 3 }: { rows?: number; cols?: num
 /** 画面の真ん中に箱 1 つ（招待リンクを開いたとき） */
 export function CenteredCardSkeleton({ lines = 4 }: { lines?: number }) {
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-app px-6">
-      <div role="status" aria-busy aria-label="読み込んでいます" className="flex w-full max-w-[380px] flex-col gap-3 rounded-[14px] border border-line bg-surface p-5">
-        <SkeletonBlock className="h-4 w-1/2" />
-        {Array.from({ length: lines }, (_, i) => (
-          <SkeletonBlock key={i} className={`h-3 ${i === lines - 1 ? "w-1/3" : "w-full"}`} />
-        ))}
-        <SkeletonBlock className="mt-1 h-11 w-full rounded-[10px]" />
+    <SkeletonExit>
+      <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-app px-6">
+        <div role="status" aria-busy aria-label="読み込んでいます" className="flex w-full max-w-[380px] flex-col gap-3 rounded-[14px] border border-line bg-surface p-5">
+          <SkeletonBlock className="h-4 w-1/2" />
+          {Array.from({ length: lines }, (_, i) => (
+            <SkeletonBlock key={i} className={`h-3 ${i === lines - 1 ? "w-1/3" : "w-full"}`} />
+          ))}
+          <SkeletonBlock className="mt-1 h-11 w-full rounded-[10px]" />
+        </div>
       </div>
-    </div>
+    </SkeletonExit>
   );
 }
 
 /** ロゴを中央に置いた画面（同意画面） */
 export function LogoScreenSkeleton() {
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center bg-app px-6">
-      <div role="status" aria-busy aria-label="読み込んでいます" className="flex w-full max-w-[360px] flex-col items-center">
-        <SkeletonBlock className="mb-6 h-[120px] w-[120px] rounded-full" />
-        <SkeletonBlock className="mb-2.5 h-6 w-32" />
-        <SkeletonBlock className="mb-8 h-3 w-48" />
-        <div className="mb-6 flex w-full flex-col gap-3">
-          <SkeletonBlock className="h-5 w-full" />
-          <SkeletonBlock className="h-5 w-full" />
+    <SkeletonExit>
+      <div className="flex min-h-screen flex-col items-center justify-center bg-app px-6">
+        <div role="status" aria-busy aria-label="読み込んでいます" className="flex w-full max-w-[360px] flex-col items-center">
+          <SkeletonBlock className="mb-6 h-[120px] w-[120px] rounded-full" />
+          <SkeletonBlock className="mb-2.5 h-6 w-32" />
+          <SkeletonBlock className="mb-8 h-3 w-48" />
+          <div className="mb-6 flex w-full flex-col gap-3">
+            <SkeletonBlock className="h-5 w-full" />
+            <SkeletonBlock className="h-5 w-full" />
+          </div>
+          <SkeletonBlock className="h-[52px] w-full rounded-[10px]" />
         </div>
-        <SkeletonBlock className="h-[52px] w-full rounded-[10px]" />
       </div>
-    </div>
+    </SkeletonExit>
   );
 }
 
@@ -236,20 +247,22 @@ export function LogoScreenSkeleton() {
  */
 export function ComposeScreenSkeleton() {
   return (
-    <div className="flex h-[calc(100dvh-60px)] flex-col bg-app md:h-dvh md:flex-row">
-      <div aria-hidden className="h-[34%] w-full shrink-0 animate-pulse bg-map-placeholder md:h-full md:w-1/3" />
-      <div className="flex min-h-0 flex-1 flex-col rounded-t-[16px] border-t border-line bg-app px-4 pt-4 shadow-card md:rounded-none md:border-l md:border-t-0">
-        <div role="status" aria-busy aria-label="読み込んでいます" className="mx-auto flex w-full max-w-[520px] flex-col gap-3">
-          <SkeletonBlock className="h-4 w-28" />
-          <SkeletonBlock className="h-11 w-full rounded-[10px]" />
-          <SkeletonBlock className="h-11 w-full rounded-[10px]" />
-          <div className="flex gap-2">
-            <SkeletonBlock className="h-[72px] w-[72px] rounded-[8px]" />
-            <SkeletonBlock className="h-[72px] w-[72px] rounded-[8px]" />
+    <SkeletonExit>
+      <div className="flex h-[calc(100dvh-60px)] flex-col bg-app md:h-dvh md:flex-row">
+        <div aria-hidden className="h-[34%] w-full shrink-0 animate-pulse bg-map-placeholder md:h-full md:w-1/3" />
+        <div className="flex min-h-0 flex-1 flex-col rounded-t-[16px] border-t border-line bg-app px-4 pt-4 shadow-card md:rounded-none md:border-l md:border-t-0">
+          <div role="status" aria-busy aria-label="読み込んでいます" className="mx-auto flex w-full max-w-[520px] flex-col gap-3">
+            <SkeletonBlock className="h-4 w-28" />
+            <SkeletonBlock className="h-11 w-full rounded-[10px]" />
+            <SkeletonBlock className="h-11 w-full rounded-[10px]" />
+            <div className="flex gap-2">
+              <SkeletonBlock className="h-[72px] w-[72px] rounded-[8px]" />
+              <SkeletonBlock className="h-[72px] w-[72px] rounded-[8px]" />
+            </div>
+            <SkeletonBlock className="h-20 w-full rounded-[10px]" />
           </div>
-          <SkeletonBlock className="h-20 w-full rounded-[10px]" />
         </div>
       </div>
-    </div>
+    </SkeletonExit>
   );
 }

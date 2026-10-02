@@ -6,6 +6,7 @@ import { buildComposeInitialState, type ComposeQuery } from "@/lib/posts/compose
 import { loadExistingPostForCompose, loadSpotForCompose, loadItineraryForCompose } from "@/lib/posts/load-compose-data";
 import { PostComposeScreen } from "@/components/posts/PostComposeScreen";
 import { getPostingRestrictionUntil } from "@/lib/moderation/posting-restriction";
+import { ContentEnter } from "@/components/transitions/Reveal";
 
 /**
  * SC-03 投稿画面（新規作成・下書きの続き）
@@ -45,5 +46,9 @@ export default async function NewPostPage({
     restrictedUntilPromise,
   ]);
   const initial = buildComposeInitialState(query, { spot, itinerary });
-  return <PostComposeScreen initial={initial} postingRestrictedUntil={postingRestrictedUntil} />;
+  return (
+    <ContentEnter>
+      <PostComposeScreen initial={initial} postingRestrictedUntil={postingRestrictedUntil} />
+    </ContentEnter>
+  );
 }

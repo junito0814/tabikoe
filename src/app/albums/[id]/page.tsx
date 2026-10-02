@@ -8,6 +8,7 @@ import { AlbumScreen, type AlbumInvitation } from "@/components/albums/AlbumScre
 import { getAlbumDetail, type AlbumDetail } from "@/lib/albums/get-album";
 import { evaluateInvitation } from "@/lib/albums/invitations";
 import { resolveListBack } from "@/lib/search/list-state";
+import { ContentEnter } from "@/components/transitions/Reveal";
 
 /**
  * SC-09 アルバム画面
@@ -58,5 +59,9 @@ export default async function AlbumPage({ params, searchParams }: { params: Prom
     notFound();
   }
 
-  return <AlbumScreen album={album} initialInvitations={invitations} viewerId={user.id} back={resolveListBack(back)} />;
+  return (
+    <ContentEnter>
+      <AlbumScreen album={album} initialInvitations={invitations} viewerId={user.id} back={resolveListBack(back)} />
+    </ContentEnter>
+  );
 }

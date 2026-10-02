@@ -5,6 +5,7 @@ import { ErrorNotice } from "@/components/notices/ErrorNotice";
 import { ERROR_MESSAGES } from "@/components/notices/error-messages";
 import { NotificationListScreen } from "@/components/notifications/NotificationListScreen";
 import { getNotificationFeed, type FeedPage } from "@/lib/notifications/feed";
+import { ContentEnter } from "@/components/transitions/Reveal";
 
 /**
  * SC-14 通知一覧画面
@@ -31,5 +32,9 @@ export default async function NotificationsPage() {
     );
   }
 
-  return <NotificationListScreen initialPage={initialPage} />;
+  return (
+    <ContentEnter>
+      <NotificationListScreen initialPage={initialPage} />
+    </ContentEnter>
+  );
 }

@@ -180,3 +180,99 @@ select:not([data-keep-size]) {
 body {
   touch-action: manipulation;
 }
+
+/*
+ * loading-feedback Task 8（2026-10-02）: 切り替わる瞬間の動き（ViewTransition）
+ * 出典: docs/tasks/shared-ui/loading-feedback/08-view-transitions.md
+ *       要件定義書 4.5.11 の場面 5・8 章 95
+ *       Next.js 同梱ドキュメント 01-app/02-guides/view-transitions.md の Step 1・2
+ *
+ * 【初心者向け】`::view-transition-old(...)` / `::view-transition-new(...)` は
+ * ブラウザが切り替わりの最中だけ作る**仮の要素**で、普段は存在しない。
+ * 「退く側の写し」と「現れる側の写し」に、それぞれ動きを付けられる。
+ * 名前（skeleton-out・content-in・morph）は src/components/transitions/Reveal.tsx と合わせる。
+ *
+ * 時間の付け方はわざと**非対称**にしている。
+ *   退く: 150ms で速く消す（古いものが注意を引かないように）
+ *   現れる: 210ms で、しかも**退き終わってから**始める（150ms 遅らせる）
+ *   移動: 400ms（位置の変化だけはゆっくり。目で追える速さ）
+ */
+:root {
+  --vt-exit: 150ms;
+  --vt-enter: 210ms;
+  --vt-move: 400ms;
+}
+
+/* 骨組みが下にずれながら薄くなって消える */
+::view-transition-old(.skeleton-out) {
+  animation:
+    var(--vt-exit) ease-out both vt-fade reverse,
+    var(--vt-exit) ease-out both vt-slide-y reverse;
+}
+
+/* 本物が下から上がりながら現れる。退き終わるのを待ってから見えはじめる */
+::view-transition-new(.content-in) {
+  animation:
+    var(--vt-enter) ease-in var(--vt-exit) both vt-fade,
+    var(--vt-move) ease-in both vt-slide-y;
+}
+
+@keyframes vt-fade {
+  from {
+    filter: blur(3px);
+    opacity: 0;
+  }
+  to {
+    filter: blur(0);
+    opacity: 1;
+  }
+}
+
+@keyframes vt-slide-y {
+  from {
+    transform: translateY(10px);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+/*
+ * 写真が繋がって育つ（Task 8-2）。
+ * 途中を少しぼかすのは、拡大のときに出る粗さを隠すため（同梱ドキュメントの Step 1）。
+ */
+::view-transition-group(.morph) {
+  animation-duration: var(--vt-move);
+}
+::view-transition-image-pair(.morph) {
+  animation-name: vt-morph-blur;
+}
+@keyframes vt-morph-blur {
+  30% {
+    filter: blur(3px);
+  }
+}
+
+/*
+ * 動いている間も押せるようにする。
+ *
+ * 【初心者向け】切り替わりの最中、ブラウザは画面全体に写しの膜をかぶせる。
+ * 膜が指のタップを受け取ってしまうので、そのまま下の本物に通す
+ * （同梱ドキュメント「Keeping the page interactive」）。
+ */
+::view-transition {
+  pointer-events: none;
+}
+
+/*
+ * 動きを減らす設定の人には動かさない（要件 4.5.11）。
+ * 時間を 0 にすると、ブラウザの既定（瞬時に入れ替わる）と同じになる。
+ */
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-old(*),
+  ::view-transition-new(*),
+  ::view-transition-group(*) {
+    animation-duration: 0s !important;
+    animation-delay: 0s !important;
+  }
+}

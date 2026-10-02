@@ -4,6 +4,7 @@ import { useState } from "react";
 import { FadeInImage } from "./FadeInImage";
 import Link from "next/link";
 import { MediaModal } from "./MediaModal";
+import { PhotoMorph } from "@/components/transitions/Reveal";
 
 /**
  * 写真・動画の表示レイアウト Task1〜3: MediaGrid共通コンポーネント
@@ -107,11 +108,24 @@ export function MediaGrid({
   items,
   postHref,
   linkToPost = false,
+  morphPostId,
 }: {
   items: MediaItem[];
   postHref?: string;
   /** v3.1（mentoring-7 Task5）: true なら写真のタップで postHref へ直接移る（モーダルは開かない）。投稿カードで使う。投稿詳細は false（モーダル） */
   linkToPost?: boolean;
+  /**
+   * loading-feedback Task 8-2（2026-10-02）: 代表写真（1 枚目）を投稿詳細の写真と繋げる。
+   *
+   * 【初心者向け】投稿の id を渡すと、一覧の写真と詳細の写真に**同じ名前**が付く。
+   * ブラウザはその 1 枚が動いて育ったように見せるので、押した写真がそのまま大きくなる。
+   *
+   * **渡す場所を選べるようにしてある**のがこの引数の肝。
+   * 1 つの画面に同じ名前が 2 つあると、どちらを繋ぐか決まらない。
+   * 渡すのは投稿カード（PostCard）と投稿詳細（PostDetailScreen）だけで、
+   * アルバムの格子など**同じ投稿が重なりうる場所には渡さない**。
+   */
+  morphPostId?: string;
 }) {
   // 開いているモーダルの起点。null なら閉じている
   const [openIndex, setOpenIndex] = useState<number | null>(null);
@@ -125,9 +139,20 @@ export function MediaGrid({
     openIndex !== null && !cellHref ? (
       <MediaModal items={items} startIndex={openIndex} onClose={() => setOpenIndex(null)} postHref={postHref} />
     ) : null;
-  const cell = (index: number, className?: string, overflowCount?: number) => (
-    <MediaCell key={items[index].id} item={items[index]} className={className} overflowCount={overflowCount} onOpen={() => setOpenIndex(index)} href={cellHref} />
-  );
+  const cell = (index: number, className?: string, overflowCount?: number) => {
+    const node = (
+      <MediaCell key={items[index].id} item={items[index]} className={className} overflowCount={overflowCount} onOpen={() => setOpenIndex(index)} href={cellHref} />
+    );
+    // Task 8-2: 繋げるのは代表写真（1 枚目）だけ。2 枚目以降は詳細側に対応するものが無い
+    if (index === 0 && morphPostId) {
+      return (
+        <PhotoMorph key={items[0].id} postId={morphPostId}>
+          {node}
+        </PhotoMorph>
+      );
+    }
+    return node;
+  };
 
   if (items.length === 1) {
     return (

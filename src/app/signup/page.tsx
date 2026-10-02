@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { SignupConsentScreen } from "@/components/auth/SignupConsentScreen";
 import { safeRedirectPath } from "@/lib/safe-redirect";
+import { ContentEnter } from "@/components/transitions/Reveal";
 
 /**
  * SC-20 同意画面（signup-login Task11、2026-09-22）
@@ -25,5 +26,9 @@ export default async function SignupPage({ searchParams }: { searchParams: Promi
 
   const { redirect_to } = await searchParams;
   const redirectTo = redirect_to ? safeRedirectPath(redirect_to) : null;
-  return <SignupConsentScreen email={user.email ?? ""} redirectTo={redirectTo} />;
+  return (
+    <ContentEnter>
+      <SignupConsentScreen email={user.email ?? ""} redirectTo={redirectTo} />
+    </ContentEnter>
+  );
 }

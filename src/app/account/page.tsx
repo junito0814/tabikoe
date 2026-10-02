@@ -9,6 +9,7 @@ import LogoutButton from "./logout-button";
 import DeleteAccountDialog from "./delete-account-dialog";
 import { BlockedUsersList, type BlockedUser } from "@/components/blocks/BlockedUsersList";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { ContentEnter } from "@/components/transitions/Reveal";
 
 /**
  * プロフィール編集画面（SC-07）
@@ -61,30 +62,32 @@ export default async function AccountPage() {
   }
 
   return (
-    <div className="flex min-h-screen flex-col items-center gap-8 bg-app px-6 py-16">
-      <h1 className="text-[16px] font-bold text-ink">アカウント</h1>
+    <ContentEnter>
+      <div className="flex min-h-screen flex-col items-center gap-8 bg-app px-6 py-16">
+        <h1 className="text-[16px] font-bold text-ink">アカウント</h1>
 
-      <AvatarUploadForm initialAvatarUrl={profile?.avatar_url ?? null} />
-      <DisplayNameForm initialDisplayName={profile?.display_name ?? ""} />
+        <AvatarUploadForm initialAvatarUrl={profile?.avatar_url ?? null} />
+        <DisplayNameForm initialDisplayName={profile?.display_name ?? ""} />
 
-      {/* menu-bar Task3: 管理画面への導線はメニューバーには置かず、is_adminユーザーにだけここで出す（4.2、3.10.1） */}
-      {profile?.is_admin && (
-        <Link
-          href="/admin"
-          className="flex h-11 w-full max-w-[360px] items-center justify-center rounded-[10px] border border-line bg-surface text-[14px] font-semibold text-ink"
-        >
-          管理者ダッシュボード
-        </Link>
-      )}
+        {/* menu-bar Task3: 管理画面への導線はメニューバーには置かず、is_adminユーザーにだけここで出す（4.2、3.10.1） */}
+        {profile?.is_admin && (
+          <Link
+            href="/admin"
+            className="flex h-11 w-full max-w-[360px] items-center justify-center rounded-[10px] border border-line bg-surface text-[14px] font-semibold text-ink"
+          >
+            管理者ダッシュボード
+          </Link>
+        )}
 
-      <div className="w-full max-w-[360px] border-t border-line pt-6">
-        <BlockedUsersList initialBlockedUsers={blockedUsers} />
+        <div className="w-full max-w-[360px] border-t border-line pt-6">
+          <BlockedUsersList initialBlockedUsers={blockedUsers} />
+        </div>
+
+        <div className="flex w-full max-w-[360px] flex-col items-center gap-4 border-t border-line pt-6">
+          <LogoutButton />
+          <DeleteAccountDialog isAdmin={profile?.is_admin ?? false} />
+        </div>
       </div>
-
-      <div className="flex w-full max-w-[360px] flex-col items-center gap-4 border-t border-line pt-6">
-        <LogoutButton />
-        <DeleteAccountDialog isAdmin={profile?.is_admin ?? false} />
-      </div>
-    </div>
+    </ContentEnter>
   );
 }

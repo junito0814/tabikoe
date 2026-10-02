@@ -4,6 +4,7 @@ import { requireUserOrRedirect } from "@/lib/auth/require-user-or-redirect";
 import { InvitationAcceptScreen } from "@/components/albums/InvitationAcceptScreen";
 import { evaluateInvitation } from "@/lib/albums/invitations";
 import type { InvitableRole } from "@/lib/albums/membership";
+import { ContentEnter } from "@/components/transitions/Reveal";
 
 /**
  * 招待リンクの着地ページ
@@ -42,14 +43,16 @@ export default async function InvitationPage({ params }: { params: Promise<{ tok
   const trip = Array.isArray(invitation.trips) ? invitation.trips[0] : invitation.trips;
 
   return (
-    <InvitationAcceptScreen
-      token={token}
-      invitation={{
-        status: "valid",
-        tripTitle: (trip as { title: string } | null)?.title ?? "アルバム",
-        role: invitation.role as InvitableRole,
-        alreadyMember: membership !== null,
-      }}
-    />
+    <ContentEnter>
+      <InvitationAcceptScreen
+        token={token}
+        invitation={{
+          status: "valid",
+          tripTitle: (trip as { title: string } | null)?.title ?? "アルバム",
+          role: invitation.role as InvitableRole,
+          alreadyMember: membership !== null,
+        }}
+      />
+    </ContentEnter>
   );
 }
