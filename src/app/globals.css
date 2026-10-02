@@ -276,3 +276,46 @@ body {
     animation-delay: 0s !important;
   }
 }
+
+/*
+ * loading-feedback Task 11（2026-10-02）: 骨組みの「働いている」動き（シマー）
+ * 出典: docs/tasks/shared-ui/loading-feedback/11-skeleton-fidelity.md
+ *       要件定義書 4.5.11「2 の骨組みの動きについて」・8 章 99
+ *
+ * 【初心者向け】これまでは Tailwind の `animate-pulse`（透明度を薄くして戻す）を使っていたが、
+ * **2 秒かけて 1 周**する動きだった。ところが実際の待ちは 0.5〜1.5 秒で、
+ * **1 周期の半分も進まないうちに終わる**。0.6 秒の待ちでは透明度が 1 から 0.9 程度までしか
+ * 動かず、ほぼ止まって見えていた（「読み込んでいる感じがしない」の正体）。
+ *
+ * 代わりに**光が左から右へ流れる**形にする。**方向がある**ので「働いている」と読める。
+ * 透明度の明滅には方向が無く、途中で終わると何も起きなかったように見える。
+ *
+ * `::after` に重ねているので、骨組みの中身（文字や画像）には影響しない。
+ */
+.skeleton-block {
+  position: relative;
+  overflow: hidden;
+}
+
+.skeleton-block::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  /* 面の色をそのまま薄く通すので、ライトでもダークでも「明るい帯」になる */
+  background: linear-gradient(90deg, transparent 0%, color-mix(in srgb, var(--surface) 85%, transparent) 50%, transparent 100%);
+  transform: translateX(-100%);
+  animation: skeleton-shimmer 1.2s ease-in-out infinite;
+}
+
+@keyframes skeleton-shimmer {
+  to {
+    transform: translateX(100%);
+  }
+}
+
+/* 動きを減らす設定の人には動かさない（要件 4.5.11） */
+@media (prefers-reduced-motion: reduce) {
+  .skeleton-block::after {
+    animation: none;
+  }
+}
