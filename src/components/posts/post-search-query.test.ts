@@ -80,3 +80,32 @@ describe("countActiveFilters", () => {
     expect(countActiveFilters(state, pref)).toBe(1);
   });
 });
+
+/*
+ * post-timeline Task 6（2026-10-03）: タビコエだけの場所
+ * 出典: docs/tasks/map-search/post-timeline/06-manual-only-filter.md
+ *       要件定義書 3.4.2「タビコエだけの場所」
+ */
+describe("Task 6: タビコエだけの場所", () => {
+  const pref: SearchContext = { destination: { kind: "prefecture", name: "東京都" } };
+  const spot: SearchContext = { destination: { kind: "spot", spotId: "s1" } };
+
+  it("入れたときだけ URL に manual=1 が付く（地図と同じ名前）", () => {
+    expect(buildSearchPageHref({ ...EMPTY_SEARCH_STATE, manualOnly: true }, pref)).toContain("manual=1");
+    expect(buildSearchPageHref(EMPTY_SEARCH_STATE, pref)).not.toContain("manual");
+  });
+
+  it("URL から読み戻せる", () => {
+    expect(parseSearchState(new URLSearchParams("pref=東京都&manual=1"), pref).manualOnly).toBe(true);
+    expect(parseSearchState(new URLSearchParams("pref=東京都"), pref).manualOnly).toBe(false);
+  });
+
+  it("スポット別の一覧では読まない（そのスポットはもう決まっているため）", () => {
+    expect(parseSearchState(new URLSearchParams("spot=s1&manual=1"), spot).manualOnly).toBe(false);
+  });
+
+  it("絞り込みの数に 1 つ数える", () => {
+    expect(countActiveFilters({ ...EMPTY_SEARCH_STATE, manualOnly: true }, pref)).toBe(1);
+    expect(countActiveFilters(EMPTY_SEARCH_STATE, pref)).toBe(0);
+  });
+});

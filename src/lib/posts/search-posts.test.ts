@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  applyFilters,
   haversineMeters,
   matchesCostRange,
   matchesFilters,
@@ -139,7 +140,17 @@ describe("parsePostSearchParams", () => {
       visitTo: null,
       sort: "newest",
       viewer: null,
+      // post-timeline Task 6: 指定が無ければ「タビコエだけの場所」は切
+      manualOnly: false,
     });
+  });
+
+  /* post-timeline Task 6（2026-10-03）: タビコエだけの場所（要件 3.4.2） */
+  it("manual=1 で「タビコエだけの場所」だけに絞る", () => {
+    expect(parsePostSearchParams(new URLSearchParams({ manual: "1" })).manualOnly).toBe(true);
+    // 地図（3.4.6）と同じ名前・同じ値の形にしてある。それ以外は切
+    expect(parsePostSearchParams(new URLSearchParams({ manual: "true" })).manualOnly).toBe(false);
+    expect(parsePostSearchParams(new URLSearchParams()).manualOnly).toBe(false);
   });
 
   it("不正な値は無視し、基準座標が無ければ距離も無効", () => {
@@ -156,6 +167,7 @@ describe("parsePostSearchParams", () => {
       visitTo: null,
       sort: "newest",
       viewer: null,
+      manualOnly: false,
     });
   });
 
@@ -212,5 +224,41 @@ describe("matchesFilters（v3.0 の行き先・期間）", () => {
     expect(matchesFilters({ ...base, spot }, { ...emptyFilters, visitFrom: "2026-09-01", visitTo: "2026-09-30" })).toBe(true);
     expect(matchesFilters({ ...base, spot }, { ...emptyFilters, visitFrom: "2026-10-01", visitTo: null })).toBe(false);
     expect(matchesFilters({ ...base, spot, visit_date: null }, { ...emptyFilters, visitFrom: "2026-09-01", visitTo: null })).toBe(false);
+  });
+});
+
+/*
+ * post-timeline Task 6（2026-10-03）: 判定はクエリ側で行う
+ * 出典: docs/tasks/map-search/post-timeline/06-manual-only-filter.md 6-2
+ *
+ * 【初心者向け】取ってから捨てると「1 回に 20 件」のページングの数が合わなくなる
+ * （捨てたぶん足りない一覧になる）。so クエリに条件として載せる。
+ */
+describe("applyFilters: タビコエだけの場所", () => {
+  /** 呼ばれた内容だけ覚える、鎖のようにつながる偽のクエリ */
+  function fakeQuery() {
+    const calls: string[] = [];
+    const self: Record<string, unknown> = {};
+    for (const name of ["eq", "in", "ilike", "gte", "lte", "not", "or", "order", "range", "limit"]) {
+      self[name] = (...args: unknown[]) => {
+        calls.push(`${name}(${args.map((a) => JSON.stringify(a)).join(",")})`);
+        return self;
+      };
+    }
+    return { query: self as unknown as Parameters<typeof applyFilters>[0], calls };
+  }
+
+  const base = { keyword: null, categories: [], distanceMeters: null, center: null, costRange: null, duration: null };
+
+  it("入れると spots.source = manual がクエリに載る", () => {
+    const { query, calls } = fakeQuery();
+    applyFilters(query, { ...base, manualOnly: true }, []);
+    expect(calls).toContain('eq("spots.source","manual")');
+  });
+
+  it("入れなければ載らない", () => {
+    const { query, calls } = fakeQuery();
+    applyFilters(query, { ...base, manualOnly: false }, []);
+    expect(calls.some((call) => call.includes("spots.source"))).toBe(false);
   });
 });

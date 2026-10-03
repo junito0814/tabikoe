@@ -75,6 +75,7 @@ export function FilterSheet<T extends SheetFilters>({
   value,
   hasDistanceCenter,
   variant = "posts",
+  showManualOnly = false,
   onApply,
   onClose,
 }: {
@@ -82,24 +83,33 @@ export function FilterSheet<T extends SheetFilters>({
   value: T;
   hasDistanceCenter: boolean;
   variant?: FilterSheetVariant;
+  /**
+   * post-timeline Task 6（2026-10-03）: 「タビコエだけの場所」を出すか（投稿一覧のとき）。
+   *
+   * 【初心者向け】地図（variant="spots"）では必ず出す。投稿一覧では**検索結果のときだけ**出す
+   * （スポット別の一覧では、そのスポットがもう決まっているので絞る意味が無い。要件 3.4.2）。
+   */
+  showManualOnly?: boolean;
   onApply: (next: T) => void;
   onClose: () => void;
 }) {
   // 閉じているときは中身ごと外す。開くたびに中身が作り直され、draft が適用中の条件から始まる
   if (!open) return null;
-  return <FilterSheetBody value={value} hasDistanceCenter={hasDistanceCenter} variant={variant} onApply={onApply} onClose={onClose} />;
+  return <FilterSheetBody value={value} hasDistanceCenter={hasDistanceCenter} variant={variant} showManualOnly={showManualOnly} onApply={onApply} onClose={onClose} />;
 }
 
 function FilterSheetBody<T extends SheetFilters>({
   value,
   hasDistanceCenter,
   variant,
+  showManualOnly,
   onApply,
   onClose,
 }: {
   value: T;
   hasDistanceCenter: boolean;
   variant: FilterSheetVariant;
+  showManualOnly: boolean;
   onApply: (next: T) => void;
   onClose: () => void;
 }) {
@@ -316,7 +326,7 @@ function FilterSheetBody<T extends SheetFilters>({
 
         {isSpots
           ? [categorySection, costSection, durationSection, ratingSection, manualSection]
-          : [costSection, periodSection, categorySection, durationSection, distanceSection]}
+          : [costSection, periodSection, categorySection, durationSection, distanceSection, showManualOnly ? manualSection : null]}
 
         <div className="flex justify-between">
           <button

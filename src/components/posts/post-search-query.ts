@@ -41,6 +41,8 @@ export interface PostSearchState {
   sort: ListSort;
   /** v3.0（photo-view）: 投稿一覧か写真グリッドか */
   view: ListView;
+  /** post-timeline Task 6（2026-10-03）: 「タビコエだけの場所」だけを出すか（検索結果のときだけ使う） */
+  manualOnly: boolean;
 }
 
 export type ListSort = PostSort | SpotSort;
@@ -61,6 +63,7 @@ export const EMPTY_SEARCH_STATE: PostSearchState = {
   to: "",
   sort: "newest",
   view: "posts",
+  manualOnly: false,
 };
 
 /** 画面を開いたときに決まる条件（行き先・追加モード） */
@@ -86,7 +89,9 @@ export function countActiveFilters(state: PostSearchState, context: SearchContex
     (state.distance !== null && distanceCenter(context) ? 1 : 0) +
     (state.cost !== null ? 1 : 0) +
     (state.duration !== null ? 1 : 0) +
-    (state.period !== null ? 1 : 0)
+    (state.period !== null ? 1 : 0) +
+    // Task 6: 入／切の 1 つとして数える（地図の activeSpotFilterCount と同じ扱い）
+    (state.manualOnly ? 1 : 0)
   );
 }
 
@@ -98,6 +103,8 @@ function appendStateParams(params: URLSearchParams, state: PostSearchState, cont
   // 距離は基準点が分かっている時だけ意味を持つ
   if (state.distance !== null && distanceCenter(context)) params.set("distance", String(state.distance));
   if (state.cost !== null) params.set("cost", state.cost);
+  // Task 6: 地図（3.4.6）と同じ名前。地図 → 投稿一覧へ条件を持ち越せる
+  if (state.manualOnly) params.set("manual", "1");
   if (state.duration !== null) params.set("duration", state.duration);
   if (state.period !== null) {
     params.set("period", state.period);
@@ -184,5 +191,7 @@ export function parseSearchState(params: URLSearchParams, context: SearchContext
     to: date(params.get("to")),
     sort: isSpotResultContext(context) ? parseSpotSort(params.get("sort")) : parsePostSort(params.get("sort")),
     view: parseListView(params.get("view")),
+    // Task 6: スポット別の一覧では使わない条件なので、そこでは読まない
+    manualOnly: isSpotResultContext(context) && params.get("manual") === "1",
   };
 }

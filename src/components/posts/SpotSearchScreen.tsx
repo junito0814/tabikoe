@@ -196,7 +196,15 @@ export function SpotSearchScreen({
         )}
       </div>
 
-      <FilterSheet open={isSheetOpen} value={state} hasDistanceCenter={distanceCenter(context) !== null} onApply={applyState} onClose={() => setIsSheetOpen(false)} />
+      {/* Task 6: この画面は検索結果（スポットカード）なので「タビコエだけの場所」を出す（要件 3.4.2） */}
+      <FilterSheet
+        open={isSheetOpen}
+        value={state}
+        hasDistanceCenter={distanceCenter(context) !== null}
+        showManualOnly
+        onApply={applyState}
+        onClose={() => setIsSheetOpen(false)}
+      />
     </div>
   );
 }
