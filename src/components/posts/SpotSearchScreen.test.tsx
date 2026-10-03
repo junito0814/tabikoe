@@ -78,3 +78,22 @@ describe("SpotSearchScreen（SC-04 検索結果・スポット単位）", () => 
     expect(screen.getByText("条件に合う投稿がありません")).toBeInTheDocument();
   });
 });
+
+/*
+ * #673（2026-10-03）: 検索結果に「引っ張って更新」が無かった
+ * 出典: 要件定義書 4.5.11 の場面 6・受入条件 96
+ *
+ * 【初心者向け】2026-10-02 に 6 画面へ付けたとき、**包む画面を間違えて**
+ * スポット別の一覧（PostSearchScreen）の方に付けていた。実機で「検索結果で引いても
+ * 何も起きない」と分かって見つかった。指で引く動きそのものは PullToRefresh.test.tsx で
+ * 確かめているので、ここでは**この画面が包まれていること**だけを見る。
+ */
+describe("#673: 引っ張って更新", () => {
+  it("検索結果は PullToRefresh で包まれている", () => {
+    render(<SpotSearchScreen context={pref} initialState={EMPTY_SEARCH_STATE} initialPage={{ spots: [spot("s1")], nextOffset: null }} title="東京都" backHref="/" backLabel="ホーム" />);
+    const container = document.querySelector("[data-pull-to-refresh]");
+    expect(container, "検索結果は「付ける」6 画面の 1 つ（受入条件 96）").not.toBeNull();
+    // 中身ごと包んでいること（一部だけ包むと、引ける場所が画面の一部に限られる）
+    expect(container?.querySelector("[data-spot-card='s1']")).not.toBeNull();
+  });
+});

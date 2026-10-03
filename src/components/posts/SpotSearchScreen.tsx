@@ -14,6 +14,7 @@ import type { SpotMediaPage } from "@/lib/posts/search-photos";
 import type { ListView } from "@/lib/search/list-view";
 import { AddModeBanner, type AddModeInfo } from "./AddModeBanner";
 import { FilterSheet } from "./FilterSheet";
+import { PullToRefresh } from "@/components/layout/PullToRefresh";
 import { SortDropdown } from "./SortDropdown";
 import { SpotCard } from "./SpotCard";
 import { ViewToggle } from "./ViewToggle";
@@ -130,82 +131,92 @@ export function SpotSearchScreen({
   const mediaParams = buildPostSearchParams({ ...state, view: "posts" }, context, 0);
   const isPhotos = state.view === "photos";
 
+  /*
+   * #673（2026-10-03）: 引っ張って更新。
+   *
+   * 【初心者向け】ホーム画面から単独のアプリとして開くと**ブラウザの再読み込みが無くなる**ので、
+   * 自分で最新にする手段を一覧の画面に用意している（要件 4.5.11 の場面 6・受入条件 96）。
+   * この画面（検索結果）は要件で「付ける」としている 6 画面の 1 つだが、2026-10-02 に
+   * **包む画面を間違えて**スポット別の一覧（`PostSearchScreen`）の方に付けていた。
+   */
   return (
-    <div className="flex min-h-screen flex-col items-center bg-app pb-6">
-      {addMode && <AddModeBanner info={addMode} />}
-      <div className="w-full max-w-[520px] px-4 pt-4">
-        <header className="mb-3 flex flex-col gap-2.5">
-          <div className="flex items-center gap-2">
-            <Link href={backHref} className="inline-flex h-8 shrink-0 items-center gap-1 text-[12px] font-medium text-muted">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden>
-                <path d="M15 5l-7 7 7 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
-              {backLabel}
-            </Link>
-            <h1 className="min-w-0 flex-1 truncate text-center text-[16px] font-bold text-ink">{title}</h1>
+    <PullToRefresh>
+      <div className="flex min-h-screen flex-col items-center bg-app pb-6">
+        {addMode && <AddModeBanner info={addMode} />}
+        <div className="w-full max-w-[520px] px-4 pt-4">
+          <header className="mb-3 flex flex-col gap-2.5">
+            <div className="flex items-center gap-2">
+              <Link href={backHref} className="inline-flex h-8 shrink-0 items-center gap-1 text-[12px] font-medium text-muted">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden>
+                  <path d="M15 5l-7 7 7 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+                {backLabel}
+              </Link>
+              <h1 className="min-w-0 flex-1 truncate text-center text-[16px] font-bold text-ink">{title}</h1>
+              <button
+                type="button"
+                onClick={() => setIsSheetOpen(true)}
+                aria-haspopup="dialog"
+                className="h-8 shrink-0 rounded-full border border-line bg-surface px-3 text-[12px] font-semibold text-ink"
+              >
+                絞り込み{activeCount > 0 && `（${activeCount}）`}
+              </button>
+            </div>
+            <div className="flex items-center justify-between gap-2">
+              <ViewToggle value={state.view} onChange={onViewChange} />
+              <SortDropdown<SpotSort> value={state.sort as SpotSort} onChange={onSortChange} options={SPOT_SORTS} labels={SPOT_SORT_LABELS} />
+            </div>
+          </header>
+
+          {isPhotos ? (
+            <PhotoGrid
+              key={mediaParams.toString()}
+              params={mediaParams}
+              initialPage={initialMediaPage && initialMediaPage.key === mediaParams.toString() ? initialMediaPage.page : { items: [], nextOffset: 0 }}
+              fetchPage={fetchMediaPage}
+            />
+          ) : spots.length === 0 && isLoading ? (
+            <CardListSkeleton />
+          ) : spots.length === 0 && !errorMessage ? (
+            <p className="py-16 text-center text-[13px] text-muted">{emptyMessage}</p>
+          ) : (
+            <ul className="flex flex-col gap-3" data-spot-list>
+              {spots.map((spot) => (
+                <li key={spot.id}>
+                  <SpotCard spot={withWalk(spot)} addMode={addMode} backHref={pageHref} />
+                </li>
+              ))}
+            </ul>
+          )}
+
+          {!isPhotos && errorMessage && (
+            <ErrorNotice className="mt-3" message={errorMessage} onRetry={() => void load(state, spots.length === 0 ? 0 : (nextOffset ?? 0), spots.length === 0)} />
+          )}
+
+          <div ref={sentinelRef} aria-hidden className="h-1" />
+          {!isPhotos && nextOffset !== null && (
             <button
               type="button"
-              onClick={() => setIsSheetOpen(true)}
-              aria-haspopup="dialog"
-              className="h-8 shrink-0 rounded-full border border-line bg-surface px-3 text-[12px] font-semibold text-ink"
+              onClick={loadMore}
+              disabled={isLoading}
+              className="mt-3 h-10 w-full rounded-[10px] border border-line bg-surface text-[13px] font-semibold text-ink disabled:opacity-45"
             >
-              絞り込み{activeCount > 0 && `（${activeCount}）`}
+              {isLoading ? "読み込み中…" : "もっと見る"}
             </button>
-          </div>
-          <div className="flex items-center justify-between gap-2">
-            <ViewToggle value={state.view} onChange={onViewChange} />
-            <SortDropdown<SpotSort> value={state.sort as SpotSort} onChange={onSortChange} options={SPOT_SORTS} labels={SPOT_SORT_LABELS} />
-          </div>
-        </header>
+          )}
+        </div>
 
-        {isPhotos ? (
-          <PhotoGrid
-            key={mediaParams.toString()}
-            params={mediaParams}
-            initialPage={initialMediaPage && initialMediaPage.key === mediaParams.toString() ? initialMediaPage.page : { items: [], nextOffset: 0 }}
-            fetchPage={fetchMediaPage}
+        {/* Task 6: この画面は検索結果（スポットカード）なので「タビコエだけの場所」を出す（要件 3.4.2） */}
+        <FilterSheet
+          open={isSheetOpen}
+          value={state}
+          hasDistanceCenter={distanceCenter(context) !== null}
+          showManualOnly
+            onApply={applyState}
+            onClose={() => setIsSheetOpen(false)}
           />
-        ) : spots.length === 0 && isLoading ? (
-          <CardListSkeleton />
-        ) : spots.length === 0 && !errorMessage ? (
-          <p className="py-16 text-center text-[13px] text-muted">{emptyMessage}</p>
-        ) : (
-          <ul className="flex flex-col gap-3" data-spot-list>
-            {spots.map((spot) => (
-              <li key={spot.id}>
-                <SpotCard spot={withWalk(spot)} addMode={addMode} backHref={pageHref} />
-              </li>
-            ))}
-          </ul>
-        )}
-
-        {!isPhotos && errorMessage && (
-          <ErrorNotice className="mt-3" message={errorMessage} onRetry={() => void load(state, spots.length === 0 ? 0 : (nextOffset ?? 0), spots.length === 0)} />
-        )}
-
-        <div ref={sentinelRef} aria-hidden className="h-1" />
-        {!isPhotos && nextOffset !== null && (
-          <button
-            type="button"
-            onClick={loadMore}
-            disabled={isLoading}
-            className="mt-3 h-10 w-full rounded-[10px] border border-line bg-surface text-[13px] font-semibold text-ink disabled:opacity-45"
-          >
-            {isLoading ? "読み込み中…" : "もっと見る"}
-          </button>
-        )}
       </div>
-
-      {/* Task 6: この画面は検索結果（スポットカード）なので「タビコエだけの場所」を出す（要件 3.4.2） */}
-      <FilterSheet
-        open={isSheetOpen}
-        value={state}
-        hasDistanceCenter={distanceCenter(context) !== null}
-        showManualOnly
-        onApply={applyState}
-        onClose={() => setIsSheetOpen(false)}
-      />
-    </div>
+    </PullToRefresh>
   );
 }
 
