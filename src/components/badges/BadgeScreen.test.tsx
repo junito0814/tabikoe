@@ -27,6 +27,15 @@ describe("BadgeScreen", () => {
     expect(screen.getAllByRole("listitem")).toHaveLength(63);
   });
 
+  /**
+   * #686（2026-10-05）: ホーム画面から単独のアプリとして開くとブラウザの戻るが無く、
+   * メニューバー以外に戻る手段が無くなっていた。要件 4.5.13 のとおり左上に置く。
+   */
+  it("左上に「マイページ」へ戻る導線がある", () => {
+    render(<BadgeScreen badges={mergeBadgeStatus([])} />);
+    expect(screen.getByRole("link", { name: "マイページ" })).toHaveAttribute("href", "/mypage");
+  });
+
   it("都道府県セクションには未投稿の県も含めて47件並ぶ", () => {
     render(<BadgeScreen badges={mergeBadgeStatus([])} />);
     expect(screen.getByText("都道府県バッジ")).toBeInTheDocument();

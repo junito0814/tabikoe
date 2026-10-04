@@ -9,6 +9,7 @@ import { ALBUM_ROLE_LABELS } from "@/lib/albums/membership";
 import { SPOT_PLACEHOLDER_IMAGE_URL } from "@/lib/wishlist/constants";
 import { ContentEnter } from "@/components/transitions/Reveal";
 import { PullToRefresh } from "@/components/layout/PullToRefresh";
+import { BackLink } from "@/components/layout/BackLink";
 
 /**
  * アルバム一覧（SC-09 の入口。マイページの遷移メニューから開く）
@@ -39,11 +40,13 @@ export default async function AlbumsPage() {
       <PullToRefresh>
         <div className="flex min-h-screen flex-col items-center bg-app px-4 py-6">
           <div className="w-full max-w-[560px]">
-            <header className="mb-4 flex items-center justify-between">
+            {/*
+              * #686: 右端の「マイページへ」を、左上の戻る（決定事項 80）に置き換えた。
+              * 戻るは左上、重ねて出したものを閉じる × は右上、という決まりに合わせる。
+              */}
+            <header className="mb-4 flex flex-col gap-1">
+              <BackLink />
               <h1 className="text-[18px] font-bold text-ink">アルバム</h1>
-              <Link href="/mypage" className="text-[12px] text-muted underline underline-offset-2">
-                マイページへ
-              </Link>
             </header>
 
             {albums.length === 0 ? (
