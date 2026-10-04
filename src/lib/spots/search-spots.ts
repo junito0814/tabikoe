@@ -2,6 +2,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { walkMinutesBetween } from "@/lib/geo/walk-minutes";
 import { getBlockedUserIds } from "@/lib/blocks/get-blocked-user-ids";
 import { createPostPhotoUrls } from "@/lib/posts/signed-url";
+import { findSavedSpotIds } from "./saved-spots";
 import { findLatestSpotStatuses, representativeMedia } from "@/lib/posts/post-cards";
 import { applyFilters, baseQuery, matchesFilters, SEARCH_PAGE_SIZE, type PostSearchFilters, type SearchRow } from "@/lib/posts/search-posts";
 
@@ -178,10 +179,4 @@ export async function searchSpotCards(
   return { spots, nextOffset: offset + limit < sorted.length ? offset + limit : null };
 }
 
-async function findSavedSpotIds(admin: SupabaseClient, viewerId: string, spotIds: string[]): Promise<Set<string>> {
-  if (spotIds.length === 0) return new Set();
-  const { data, error } = await admin.from("wishlist").select("spot_id").eq("user_id", viewerId).in("spot_id", spotIds);
-  if (error) throw error;
-  return new Set((data ?? []).map((row) => row.spot_id as string));
-}
 

@@ -22,7 +22,7 @@ const spot: SpotSummary = {
   isManualSpot: false,
   postCount: 7,
   ratingAverage: 4.5,
-  isWishlisted: false,
+  isSaved: false,
   latestStatus: { status: "still_there", reportedAt: "2026-09-10T00:00:00Z" },
 };
 

@@ -4,6 +4,7 @@ import type { SpotSummary } from "@/components/posts/SpotPostListScreen";
 import type { AddModeInfo } from "@/components/posts/AddModeBanner";
 import { loadAddMode } from "@/lib/itineraries/add-mode";
 import { findLatestSpotStatuses, type PostCardPage } from "@/lib/posts/post-cards";
+import { findSavedSpotIds } from "@/lib/spots/saved-spots";
 import { averageRating } from "@/lib/map/get-map-pins";
 import { parsePostSearchParams, searchPostCards } from "@/lib/posts/search-posts";
 import { parseSpotSort, searchSpotCards, type SpotCardPage } from "@/lib/spots/search-spots";
@@ -52,10 +53,11 @@ function str(value: string | string[] | undefined): string | undefined {
 async function loadSpotSummary(admin: SupabaseClient, userId: string, spot: { id: string; name: string; prefecture: string | null; lat: number | null; lng: number | null; source: string }): Promise<SpotSummary> {
   // map-sheet Task2: 星の平均も出すので rating も取る。件数は正確さのため今までどおり count で数える
   // （rating の取得は最大 1000 行までなので、投稿が多いスポットでは件数がずれてしまう）。4 本とも並列なので往復は増えない
-  const [countResult, ratingResult, wishlist, statuses] = await Promise.all([
+  const [countResult, ratingResult, saved, statuses] = await Promise.all([
     admin.from("posts").select("id", { count: "exact", head: true }).eq("spot_id", spot.id).eq("visibility", "public").eq("status", "published").is("hidden_at", null),
     admin.from("posts").select("rating").eq("spot_id", spot.id).eq("visibility", "public").eq("status", "published").is("hidden_at", null),
-    admin.from("wishlist").select("id").eq("user_id", userId).eq("spot_id", spot.id).maybeSingle(),
+    // #696: 「行きたい」だけでなく「しおり」に入っていても保存済みとして ✓ を出す
+    findSavedSpotIds(admin, userId, [spot.id]),
     findLatestSpotStatuses(admin, [spot.id]),
   ]);
   return {
@@ -67,7 +69,7 @@ async function loadSpotSummary(admin: SupabaseClient, userId: string, spot: { id
     isManualSpot: spot.source === "manual",
     postCount: countResult.count ?? 0,
     ratingAverage: averageRating(((ratingResult.data ?? []) as { rating: number | null }[]).map((row) => row.rating)),
-    isWishlisted: wishlist.data !== null,
+    isSaved: saved.has(spot.id),
     latestStatus: statuses.get(spot.id) ?? null,
   };
 }

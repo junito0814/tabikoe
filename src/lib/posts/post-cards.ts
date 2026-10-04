@@ -1,6 +1,8 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { getBlockedUserIds } from "@/lib/blocks/get-blocked-user-ids";
 import { createPostPhotoUrls } from "@/lib/posts/signed-url";
+// #696: 「保存済み」は「行きたい」と「しおり」の両方を見る（判断は 1 か所にまとめた）
+import { findSavedSpotIds } from "@/lib/spots/saved-spots";
 import { DEACTIVATED_DISPLAY_NAME, DEFAULT_AVATAR_URL } from "@/lib/users/constants";
 import { unescapeHtml } from "@/lib/comments/validate-comment";
 import { walkMinutesBetween } from "@/lib/geo/walk-minutes";
@@ -291,14 +293,6 @@ function commentAuthorName(user: { display_name: string | null; is_deleted: bool
 /** コメント本文の冒頭 1 行（保存時の HTML エスケープを戻す） */
 export function commentExcerpt(body: string): string {
   return unescapeHtml(body).split(/\r?\n/)[0]?.trim() ?? "";
-}
-
-/** v3.0: 閲覧者が「行きたい」に保存済みのスポット ID（カードの「＋」の初期状態） */
-async function findSavedSpotIds(admin: SupabaseClient, viewerId: string, spotIds: string[]): Promise<Set<string>> {
-  if (spotIds.length === 0) return new Set();
-  const { data, error } = await admin.from("wishlist").select("spot_id").eq("user_id", viewerId).in("spot_id", spotIds);
-  if (error) throw error;
-  return new Set((data ?? []).map((row) => row.spot_id as string));
 }
 
 /** v3.0（spot-status-report Task3）: スポットごとの最新の「まだあった」報告。取れなくても一覧は出す */
