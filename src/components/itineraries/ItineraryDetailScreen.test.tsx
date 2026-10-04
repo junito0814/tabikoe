@@ -116,7 +116,7 @@ describe("ItineraryDetailScreen（SC-23）", () => {
     expect(screen.getByRole("link", { name: /アルバム「.*」を見る/ })).toHaveAttribute("href", "/albums/trip-1?back=%2Fitineraries%2Fit-1");
     unmount();
     render(<ItineraryDetailScreen initial={data} viewerId="me" api={makeApi(data)} />);
-    expect(screen.getByRole("link", { name: "しおり一覧" })).toHaveAttribute("href", "/itineraries");
+    expect(screen.getByRole("link", { name: "計画" })).toHaveAttribute("href", "/itineraries");
   });
 
   it("v3.1: 期間は年つきでタップで変更、タイトルは ✎ で名前変更、値段は出ない", () => {

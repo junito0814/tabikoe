@@ -10,7 +10,7 @@ describe("MENU_ITEMS", () => {
   it("4.2の4項目を、この順で持つ", () => {
     expect(MENU_ITEMS.map((item) => item.label)).toEqual([
       "ホーム",
-      "しおり",
+      "計画",
       "通知",
       "マイページ",
     ]);

@@ -25,7 +25,7 @@ describe("AppMenuBar 表示制御（Task1）", () => {
     const nav = screen.getByRole("navigation", { name: "メインメニュー" });
     expect(nav).toBeInTheDocument();
     expect(screen.getByRole("link", { name: /ホーム/ })).toHaveAttribute("href", "/");
-    expect(screen.getByRole("link", { name: /しおり/ })).toHaveAttribute("href", "/itineraries");
+    expect(screen.getByRole("link", { name: /計画/ })).toHaveAttribute("href", "/itineraries");
     expect(screen.getByRole("link", { name: /通知/ })).toHaveAttribute("href", "/notifications");
     expect(screen.getByRole("link", { name: /マイページ/ })).toHaveAttribute("href", "/mypage");
   });
@@ -51,7 +51,7 @@ describe("AppMenuBar 表示制御（Task1）", () => {
   it("現在地の項目に aria-current=page が付く", () => {
     pathname = "/itineraries/abc";
     render(<AppMenuBar fetchUnreadCount={async () => 0} />);
-    expect(screen.getByRole("link", { name: /しおり/ })).toHaveAttribute("aria-current", "page");
+    expect(screen.getByRole("link", { name: /計画/ })).toHaveAttribute("aria-current", "page");
     expect(screen.getByRole("link", { name: /マイページ/ })).not.toHaveAttribute("aria-current");
   });
 });

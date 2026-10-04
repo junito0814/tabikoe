@@ -17,7 +17,8 @@ export interface MenuItem {
 
 export const MENU_ITEMS: readonly MenuItem[] = [
   { key: "home", label: "ホーム", href: "/" },
-  { key: "itineraries", label: "しおり", href: "/itineraries" },
+  // #693: 画面名は「計画」。中の 1 つ 1 つは今までどおり「しおり」（決定事項 75）
+  { key: "itineraries", label: "計画", href: "/itineraries" },
   { key: "notifications", label: "通知", href: "/notifications" },
   { key: "mypage", label: "マイページ", href: "/mypage" },
 ] as const;

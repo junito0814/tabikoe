@@ -28,7 +28,8 @@ const NAMED_PATHS: [RegExp, string][] = [
   [/^\/albums\/[^/]+\/photos\/?$/, "写真"],
   [/^\/albums\/[^/]+\/?$/, "アルバム"],
   [/^\/albums\/?$/, "アルバム一覧"],
-  [/^\/itineraries\/?$/, "しおり一覧"],
+  // #693: 画面名を「計画」に改めた（決定事項 75）
+  [/^\/itineraries\/?$/, "計画"],
   [/^\/mypage\/drafts\/?$/, "下書き"],
   [/^\/mypage\/?$/, "マイページ"],
   [/^\/wishlist\/?$/, "行きたい"],
