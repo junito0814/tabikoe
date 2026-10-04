@@ -30,6 +30,9 @@ const key = env.SUPABASE_SECRET_KEY;
 if (!url || !key) throw new Error(".env.local に NEXT_PUBLIC_SUPABASE_URL / SUPABASE_SECRET_KEY が要ります");
 const admin = createClient(url, key, { auth: { autoRefreshToken: false, persistSession: false } });
 
+// #703: スポットの Place ID（node scripts/seed/resolve-place-ids.mjs で作る）
+const PLACE_IDS = JSON.parse(readFileSync(new URL("./place-ids.json", import.meta.url), "utf8"));
+
 const meEmail = process.argv.includes("--me") ? process.argv[process.argv.indexOf("--me") + 1] : "junitodaze0814@gmail.com";
 
 // ---- 目印 ----
@@ -117,7 +120,32 @@ const COMMENTS = [
   "夜のライトアップが良い。20 時までなので早めに。",
   "店員さんが親切でいろいろ教えてくれた。",
 ];
-const PHOTO = (seed, w = 800, h = 800) => `https://picsum.photos/seed/${seed}/${w}/${h}`;
+// #703: 写真は Pixabay から取り、Supabase Storage に入れてからそのパスを保存する。
+// 外部の URL を貼りっぱなしにしない（向こうが変われば本番の見た目も変わるため）。
+// 取得元・取得日・人が写っていないことの確認は photos.json に書いてある。
+const PHOTOS = JSON.parse(readFileSync(new URL("./photos.json", import.meta.url), "utf8"));
+const SEED_PHOTO_PREFIX = "seed/";
+/** 何枚目かを渡すと、使う写真のバケット内パスを返す（16 枚を順ぐりに使う） */
+const PHOTO = (n, kind) => {
+  const pool = PHOTOS.photos.filter((photo) => photo.kind === kind);
+  const chosen = pool[Math.abs(n) % pool.length];
+  return `${SEED_PHOTO_PREFIX}${chosen.file}`;
+};
+
+/** 写真を取ってきて Storage に入れる（既に同じ名前があれば上書き） */
+async function uploadSeedPhotos() {
+  console.log(`写真: Pixabay から ${PHOTOS.photos.length} 枚を取って Storage に入れます`);
+  for (const photo of PHOTOS.photos) {
+    const response = await fetch(photo.url);
+    if (!response.ok) throw new Error(`写真を取れませんでした: ${photo.url}（HTTP ${response.status}）`);
+    const body = new Uint8Array(await response.arrayBuffer());
+    const { error } = await admin.storage
+      .from("post-media")
+      .upload(`${SEED_PHOTO_PREFIX}${photo.file}`, body, { contentType: "image/jpeg", upsert: true });
+    if (error) throw new Error(`Storage に入れられませんでした: ${photo.file}（${error.message}）`);
+  }
+  console.log(`写真: ${PHOTOS.photos.length} 枚を入れました（${SEED_PHOTO_PREFIX}）`);
+}
 
 // 「自分」のしおり（東京 2 泊 3 日）に入れるスポット（SPOTS の index）
 const MY_ITINERARY = {
@@ -169,6 +197,9 @@ async function main() {
   if (!me) throw new Error(`users に ${meEmail} が居ません。一度ログインしてから実行してください`);
   console.log(`自分: ${me.display_name ?? "(名前なし)"} ${me.id}`);
 
+  // 0.5 写真を Storage に入れる（#703）。投稿より先にやる
+  await uploadSeedPhotos();
+
   // 1. ダミーユーザー（Auth → users）。既にあれば使い回す
   const users = [];
   for (const u of DUMMY_USERS) {
@@ -194,7 +225,8 @@ async function main() {
           idp_subject: `seed:${u.key}`,
           email,
           display_name: `${SEED_TAG}${u.name}`,
-          avatar_url: `https://i.pravatar.cc/120?u=seed-${u.key}`,
+          // #703: 外部の顔写真をやめ、アプリの既定のアイコンにする
+          avatar_url: "/default-avatar.svg",
           consented_at: new Date().toISOString(),
         },
         { onConflict: "id", ignoreDuplicates: true }
@@ -206,6 +238,8 @@ async function main() {
   console.log(`ダミーユーザー: ${users.length} 人`);
 
   // 2. スポット
+  // #703・#700: Place ID を付ける（place-ids.json。Google から保存してよい唯一の値）
+  const placeIdOf = new Map(PLACE_IDS.spots.map((row) => [row.name, row.placeId]));
   const spotRows = SPOTS.map((s) => ({
     id: randomUUID(),
     name: `${s.name}${SEED_SPOT_SUFFIX}`,
@@ -213,6 +247,7 @@ async function main() {
     lng: s.lng,
     prefecture: s.pref ?? "東京都",
     source: s.source,
+    place_id: placeIdOf.get(s.name) ?? null,
   }));
   await must(admin.from("spots").insert(spotRows), "spots");
   console.log(`スポット: ${spotRows.length} 件`);
@@ -281,7 +316,9 @@ async function main() {
       });
       const photoCount = 1 + ((i + k) % 3); // 1〜3 枚
       for (let p = 0; p < photoCount; p += 1) {
-        photoRows.push({ post_id: id, media_type: "photo", storage_url: PHOTO(`tabikoe-${i}-${k}-${p}`), display_order: p });
+        // 食べ物のカテゴリなら食べ物の写真、それ以外は風景（#703）
+        const kind = SPOTS[i].cat === "グルメ" ? "food" : "landscape";
+        photoRows.push({ post_id: id, media_type: "photo", storage_url: PHOTO(i + k + p, kind), display_order: p });
       }
       n += 1;
     }
@@ -308,7 +345,12 @@ async function main() {
       created_at: created.toISOString(),
       published_at: created.toISOString(),
     });
-    photoRows.push({ post_id: id, media_type: "photo", storage_url: PHOTO(`tabikoe-me-${s.i}`), display_order: 0 });
+    photoRows.push({
+      post_id: id,
+      media_type: "photo",
+      storage_url: PHOTO(s.i, SPOTS[s.i].cat === "グルメ" ? "food" : "landscape"),
+      display_order: 0,
+    });
   }
   // 自分の下書き 4 件
   for (const [k, d] of MY_DRAFTS.entries()) {

@@ -1,0 +1,261 @@
+{
+  "resolvedAt": "2026-10-04",
+  "note": "Places Text Search（New）で引いた。Place ID は Google から保存してよい唯一の値（要件定義書 6.2）",
+  "spots": [
+    {
+      "name": "浅草寺",
+      "placeId": "ChIJ8T1GpMGOGGARDYGSgpooDWw",
+      "matchedName": "浅草寺"
+    },
+    {
+      "name": "隅田公園の桜並木",
+      "placeId": "ChIJc1Mh2sSOGGARn0rUqjwM8kY",
+      "matchedName": "隅田公園 墨堤"
+    },
+    {
+      "name": "かっぱ橋の小さな金物屋",
+      "placeId": null,
+      "reason": "手動登録のスポット（Google に無い想定）"
+    },
+    {
+      "name": "東京スカイツリー",
+      "placeId": "ChIJ35ov0dCOGGARKvdDH7NPHX0",
+      "matchedName": "東京スカイツリー"
+    },
+    {
+      "name": "押上の路地裏 喫茶",
+      "placeId": null,
+      "reason": "手動登録のスポット（Google に無い想定）"
+    },
+    {
+      "name": "谷中銀座",
+      "placeId": "ChIJPYwFnNGNGGARYEeXwiYQPe8",
+      "matchedName": "谷中銀座"
+    },
+    {
+      "name": "谷中の猫がいる坂",
+      "placeId": null,
+      "reason": "手動登録のスポット（Google に無い想定）"
+    },
+    {
+      "name": "上野恩賜公園",
+      "placeId": "ChIJw2qQRZuOGGARWmROEiM2y7E",
+      "matchedName": "上野恩賜公園"
+    },
+    {
+      "name": "アメ横の立ち飲み",
+      "placeId": null,
+      "reason": "手動登録のスポット（Google に無い想定）"
+    },
+    {
+      "name": "秋葉原 ラジオ会館",
+      "placeId": "ChIJ__-AdayOGGAR6EGPwvcpzTA",
+      "matchedName": "秋葉原ラジオ会館"
+    },
+    {
+      "name": "神保町の古本カフェ",
+      "placeId": null,
+      "reason": "手動登録のスポット（Google に無い想定）"
+    },
+    {
+      "name": "皇居 東御苑",
+      "placeId": "ChIJPfFaQhOMGGAR-QPbNQoAG6M",
+      "matchedName": "皇居東御苑"
+    },
+    {
+      "name": "東京駅 丸の内駅舎",
+      "placeId": "ChIJE9qjZ0-LGGARQiAs8hULJsg",
+      "matchedName": "東京駅丸の内駅舎"
+    },
+    {
+      "name": "日本橋の屋上テラス",
+      "placeId": null,
+      "reason": "手動登録のスポット（Google に無い想定）"
+    },
+    {
+      "name": "築地場外市場",
+      "placeId": "ChIJW2cLzSGLGGARXAKXv6EkbqI",
+      "matchedName": "築地場外市場"
+    },
+    {
+      "name": "築地の卵焼き屋（行列なし）",
+      "placeId": null,
+      "reason": "手動登録のスポット（Google に無い想定）"
+    },
+    {
+      "name": "浜離宮恩賜庭園",
+      "placeId": "ChIJwfegutyLGGARGjiY-L2eSps",
+      "matchedName": "浜離宮恩賜庭園"
+    },
+    {
+      "name": "チームラボプラネッツ",
+      "placeId": "ChIJSeco5wiJGGARItbTS8lQ5G0",
+      "matchedName": "チームラボプラネッツ TOKYO DMM"
+    },
+    {
+      "name": "豊洲ぐるり公園の夕日",
+      "placeId": null,
+      "reason": "手動登録のスポット（Google に無い想定）"
+    },
+    {
+      "name": "お台場海浜公園",
+      "placeId": "ChIJ18IK6x2KGGARKTc2yLS-030",
+      "matchedName": "お台場海浜公園"
+    },
+    {
+      "name": "月島もんじゃストリート",
+      "placeId": "ChIJZ8PuP3CJGGARAXwWdc4PGQw",
+      "matchedName": "月島もんじゃストリート"
+    },
+    {
+      "name": "清澄白河のロースター",
+      "placeId": null,
+      "reason": "手動登録のスポット（Google に無い想定）"
+    },
+    {
+      "name": "清澄庭園",
+      "placeId": "ChIJ_SvuyD-JGGARUQZhJInwMIc",
+      "matchedName": "清澄庭園"
+    },
+    {
+      "name": "渋谷スクランブル交差点",
+      "placeId": "ChIJK9EM68qLGGARacmu4KJj5SA",
+      "matchedName": "渋谷スクランブル交差点"
+    },
+    {
+      "name": "渋谷 奥の立ち食い蕎麦",
+      "placeId": null,
+      "reason": "手動登録のスポット（Google に無い想定）"
+    },
+    {
+      "name": "明治神宮",
+      "placeId": "ChIJ5SZMmreMGGARcz8QSTiJyo8",
+      "matchedName": "明治神宮"
+    },
+    {
+      "name": "代々木公園の日曜マーケット",
+      "placeId": null,
+      "reason": "手動登録のスポット（Google に無い想定）"
+    },
+    {
+      "name": "下北沢の古着屋通り",
+      "placeId": "ChIJ3dW4JQDzGGARRqcRBSeCqv0",
+      "matchedName": "古着屋NOTIME 下北沢店"
+    },
+    {
+      "name": "下北沢 カレーの路地",
+      "placeId": null,
+      "reason": "手動登録のスポット（Google に無い想定）"
+    },
+    {
+      "name": "吉祥寺 井の頭公園",
+      "placeId": "ChIJLWaVdDXuGGART_Pg1R3CZ4A",
+      "matchedName": "井の頭恩賜公園"
+    },
+    {
+      "name": "吉祥寺ハモニカ横丁",
+      "placeId": "ChIJY_5S3kfuGGARbRR-LLpU4kY",
+      "matchedName": "ハーモニカ横丁"
+    },
+    {
+      "name": "三鷹の森ジブリ美術館",
+      "placeId": "ChIJLYwD5TTuGGARBZKEP5BV4U0",
+      "matchedName": "三鷹の森ジブリ美術館"
+    },
+    {
+      "name": "新宿御苑",
+      "placeId": "ChIJPyOTG8KMGGARh_IXobWxHmo",
+      "matchedName": "新宿御苑"
+    },
+    {
+      "name": "新宿 思い出横丁",
+      "placeId": "ChIJP9eKBdeMGGAR0zzBXJNVj5A",
+      "matchedName": "新宿西口 思い出横丁"
+    },
+    {
+      "name": "都庁展望室",
+      "placeId": "ChIJ_UlItvCNGGARP1NMx2sFsYg",
+      "matchedName": "東京都庁第一本庁舎 南展望室"
+    },
+    {
+      "name": "神楽坂の石畳の路地",
+      "placeId": null,
+      "reason": "手動登録のスポット（Google に無い想定）"
+    },
+    {
+      "name": "赤城神社カフェ",
+      "placeId": null,
+      "reason": "手動登録のスポット（Google に無い想定）"
+    },
+    {
+      "name": "六本木ヒルズ展望台",
+      "placeId": "ChIJK0TdDneLGGARVxJ3MHC0emY",
+      "matchedName": "六本木ヒルズ展望台 東京シティビュー"
+    },
+    {
+      "name": "麻布十番の温泉銭湯",
+      "placeId": null,
+      "reason": "手動登録のスポット（Google に無い想定）"
+    },
+    {
+      "name": "東京タワー",
+      "placeId": "ChIJCewJkL2LGGAR3Qmk0vCTGkg",
+      "matchedName": "東京タワー"
+    },
+    {
+      "name": "芝公園から見る東京タワー",
+      "placeId": null,
+      "reason": "手動登録のスポット（Google に無い想定）"
+    },
+    {
+      "name": "品川 水族館",
+      "placeId": "ChIJswiYns5hGGARwIL8waCJLe0",
+      "matchedName": "しながわ水族館"
+    },
+    {
+      "name": "蔵前のノート屋",
+      "placeId": null,
+      "reason": "手動登録のスポット（Google に無い想定）"
+    },
+    {
+      "name": "蔵前 川沿いのホステル",
+      "placeId": null,
+      "reason": "手動登録のスポット（Google に無い想定）"
+    },
+    {
+      "name": "浅草のゲストハウス",
+      "placeId": null,
+      "reason": "手動登録のスポット（Google に無い想定）"
+    },
+    {
+      "name": "羽田空港 展望デッキ",
+      "placeId": "ChIJHVAoqQ1hGGARIHydAXKnmiY",
+      "matchedName": "第3ターミナル 展望デッキ"
+    },
+    {
+      "name": "高尾山 山頂",
+      "placeId": "ChIJb4ejXn8ZGWAR3y_2HoQLB8c",
+      "matchedName": "高尾山"
+    },
+    {
+      "name": "高尾山口の団子屋",
+      "placeId": null,
+      "reason": "手動登録のスポット（Google に無い想定）"
+    },
+    {
+      "name": "奥多摩 川遊びスポット",
+      "placeId": null,
+      "reason": "手動登録のスポット（Google に無い想定）"
+    },
+    {
+      "name": "横浜 赤レンガ倉庫",
+      "placeId": "ChIJSXGAhfhcGGARcz3MKth9lJQ",
+      "matchedName": "横浜赤レンガ倉庫"
+    },
+    {
+      "name": "鎌倉 海が見える坂",
+      "placeId": null,
+      "reason": "手動登録のスポット（Google に無い想定）"
+    }
+  ]
+}
