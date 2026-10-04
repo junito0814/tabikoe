@@ -161,7 +161,6 @@ describe("mergeMapPins の絞り込み（#656）", () => {
     cost: null,
     duration: null,
     minRating: null,
-    manualOnly: false,
     ...over,
   });
 
@@ -194,14 +193,6 @@ describe("mergeMapPins の絞り込み（#656）", () => {
     expect(pins).toHaveLength(0);
   });
 
-  it("「タビコエだけの場所」だけを出す", () => {
-    const pins = mergeMapPins(
-      [withPosts("a", [{ rating: 4 }], "manual"), withPosts("b", [{ rating: 4 }], "places")],
-      [], [], new Map(), MAX_MAP_PINS,
-      filters({ manualOnly: true })
-    );
-    expect(pins.map((pin) => pin.id)).toEqual(["a"]);
-  });
 
   it("カテゴリは代表（いちばん多いもの）で見る。ピンの色と食い違わない", () => {
     const pins = mergeMapPins(

@@ -44,7 +44,6 @@ export interface SheetFilters {
   /** explore-mode Task 4: 平均評価の下限（1〜5）。地図だけ */
   rating?: number | null;
   /** explore-mode Task 4: 「タビコエだけの場所」だけを出すか。地図だけ */
-  manualOnly?: boolean;
   /** 投稿一覧の「条件をクリア」で一緒に消すもの（地図には無い） */
   keyword?: string;
   view?: ListView;
@@ -60,7 +59,6 @@ const CLEARED_FILTERS: SheetFilters = {
   to: "",
   distance: null,
   rating: null,
-  manualOnly: false,
   keyword: "",
   view: "posts",
 };
@@ -75,7 +73,6 @@ export function FilterSheet<T extends SheetFilters>({
   value,
   hasDistanceCenter,
   variant = "posts",
-  showManualOnly = false,
   onApply,
   onClose,
 }: {
@@ -89,27 +86,24 @@ export function FilterSheet<T extends SheetFilters>({
    * 【初心者向け】地図（variant="spots"）では必ず出す。投稿一覧では**検索結果のときだけ**出す
    * （スポット別の一覧では、そのスポットがもう決まっているので絞る意味が無い。要件 3.4.2）。
    */
-  showManualOnly?: boolean;
   onApply: (next: T) => void;
   onClose: () => void;
 }) {
   // 閉じているときは中身ごと外す。開くたびに中身が作り直され、draft が適用中の条件から始まる
   if (!open) return null;
-  return <FilterSheetBody value={value} hasDistanceCenter={hasDistanceCenter} variant={variant} showManualOnly={showManualOnly} onApply={onApply} onClose={onClose} />;
+  return <FilterSheetBody value={value} hasDistanceCenter={hasDistanceCenter} variant={variant} onApply={onApply} onClose={onClose} />;
 }
 
 function FilterSheetBody<T extends SheetFilters>({
   value,
   hasDistanceCenter,
   variant,
-  showManualOnly,
   onApply,
   onClose,
 }: {
   value: T;
   hasDistanceCenter: boolean;
   variant: FilterSheetVariant;
-  showManualOnly: boolean;
   onApply: (next: T) => void;
   onClose: () => void;
 }) {
@@ -281,20 +275,6 @@ function FilterSheetBody<T extends SheetFilters>({
     (option) => (option === 5 ? "★5" : `★${option} 以上`)
   );
 
-  /* explore-mode Task 4: タビコエだけの場所（spots.source = manual）。チェックボックス 1 行 */
-  const manualSection = (
-    <label key="manual" className="flex items-center gap-2 text-[12px] text-ink">
-      <input
-        type="checkbox"
-        checked={draft.manualOnly === true}
-        onChange={(event) => patch({ manualOnly: event.target.checked })}
-        className="h-4 w-4 accent-accent"
-      />
-      <span>
-        <b className="font-bold">タビコエだけの場所</b>だけを出す
-      </span>
-    </label>
-  );
 
   // Bug #473: スポット別一覧は上 1/3 地図＋下 2/3 シート（MapSheetLayout）の中にあり、そのシートが `relative z-10` で
   // 重なり順の入れ物（stacking context）を作る。その中で fixed にしても z-10 の枠から出られず、メニューバー（z-40）の下に
@@ -325,8 +305,9 @@ function FilterSheetBody<T extends SheetFilters>({
         </div>
 
         {isSpots
-          ? [categorySection, costSection, durationSection, ratingSection, manualSection]
-          : [costSection, periodSection, categorySection, durationSection, distanceSection, showManualOnly ? manualSection : null]}
+          /* #680: 「タビコエだけの場所」の行は廃止（決定事項 70）。地図は 4 つ、投稿一覧は 5 つ */
+          ? [categorySection, costSection, durationSection, ratingSection]
+          : [costSection, periodSection, categorySection, durationSection, distanceSection]}
 
         <div className="flex justify-between">
           <button

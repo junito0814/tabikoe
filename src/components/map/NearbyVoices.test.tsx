@@ -152,14 +152,15 @@ describe("NearbyVoices の絞り込み（explore-mode Task 4）", () => {
     expect(screen.getByRole("button", { name: "絞り込み" }).className).toContain("bg-accent");
   });
 
-  it("シートには 距離 と 期間 を出さず、評価（平均）とチェックボックスを出す", async () => {
+  it("シートには 距離 と 期間 を出さず、評価（平均）を出す（#680 でチェックボックスは廃止）", async () => {
     render(<NearbyVoices center={{ lat: 35.68, lng: 139.76 }} fetchPosts={async () => [post("a")]} />);
     await screen.findByRole("button", { name: "絞り込み" });
     await openSheet();
     const sheet = screen.getByRole("dialog", { name: "絞り込み" });
     expect(sheet.textContent).toContain("予算（平均）");
     expect(sheet.textContent).toContain("評価（平均）");
-    expect(sheet.textContent).toContain("タビコエだけの場所");
+    // #680（2026-10-05）: 「タビコエだけの場所」は概念ごと廃止（決定事項 70）
+    expect(sheet.textContent).not.toContain("タビコエだけの場所");
     expect(sheet.textContent).not.toContain("期間（訪問日）");
     expect(sheet.textContent).not.toContain("距離");
     // 星は ★1 以上〜★5 の 5 つ
@@ -174,14 +175,12 @@ describe("NearbyVoices の絞り込み（explore-mode Task 4）", () => {
     await openSheet();
     fireEvent.click(screen.getByLabelText("★4 以上"));
     fireEvent.click(screen.getByLabelText("グルメ"));
-    fireEvent.click(screen.getByText("タビコエだけの場所").closest("label") as HTMLElement);
     fireEvent.click(screen.getByRole("button", { name: "この条件で表示" }));
     expect(onFiltersChange).toHaveBeenCalledWith({
       categories: ["グルメ"],
       cost: null,
       duration: null,
       minRating: 4,
-      manualOnly: true,
     });
   });
 

@@ -90,7 +90,8 @@ export const BADGE_CATALOG: readonly BadgeDefinition[] = [
     type: `spot_registration:${threshold}`,
     category: "spot_registration",
     label: `スポット登録${threshold}件`,
-    description: `タビコエだけの場所を${threshold}件登録`,
+    // #680: 「タビコエだけの場所」は廃止したので言い換える（バッジの説明にだけ出る）
+    description: `新しい場所を${threshold}件登録`,
   })),
   ...PREFECTURES.map<BadgeDefinition>((prefecture) => ({
     type: `prefecture:${prefecture}`,

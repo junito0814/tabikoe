@@ -14,7 +14,7 @@ import type { AddModeInfo } from "./AddModeBanner";
  *       wireframes.md「検索結果（行き先：大阪府）— スポットカードの縦一列」
  *
  * 【初心者向け】検索結果はスポットごとに 1 枚。同じスポットの投稿が何件あっても 1 枚にまとまる。
- *   - 上段: スポット名（＋タビコエだけの場所）、都道府県・徒歩 N 分
+ *   - 上段: スポット名、都道府県（#680 でラベル、#692 で徒歩を外した）
  *   - 中段: 代表写真（最新の投稿の 1 枚目）、★の平均・投稿件数・最新の感想 1 行
  *   - 下段: まだあった、「＋」（保存先シート。追加モードなら直接追加）
  * カード本体のタップでスポット別の投稿一覧（/search?spot=）へ。SaveButton だけはリンクの外に置く（押しても遷移しない）。
@@ -30,7 +30,6 @@ export function SpotCard({ spot, addMode = null, backHref = null }: { spot: Spot
       <Link href={href} prefetch={false} className="flex flex-col gap-2">
         <h3 className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-0.5 pr-10 text-[15px] font-bold leading-tight text-ink">
           <span className="min-w-0 truncate">{spot.name}</span>
-          {spot.isManualSpot && <span className="rounded-full bg-tint px-2 py-0.5 text-[10px] font-semibold text-accent">タビコエだけの場所</span>}
         </h3>
         {/* #692: 「徒歩 N 分」は外した（位置情報の許可と取得を待つぶん、一覧が遅れていた） */}
         <p className="flex flex-wrap items-center gap-x-2 text-[11px] text-muted">

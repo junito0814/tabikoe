@@ -140,18 +140,9 @@ describe("parsePostSearchParams", () => {
       visitTo: null,
       sort: "newest",
       viewer: null,
-      // post-timeline Task 6: 指定が無ければ「タビコエだけの場所」は切
-      manualOnly: false,
     });
   });
 
-  /* post-timeline Task 6（2026-10-03）: タビコエだけの場所（要件 3.4.2） */
-  it("manual=1 で「タビコエだけの場所」だけに絞る", () => {
-    expect(parsePostSearchParams(new URLSearchParams({ manual: "1" })).manualOnly).toBe(true);
-    // 地図（3.4.6）と同じ名前・同じ値の形にしてある。それ以外は切
-    expect(parsePostSearchParams(new URLSearchParams({ manual: "true" })).manualOnly).toBe(false);
-    expect(parsePostSearchParams(new URLSearchParams()).manualOnly).toBe(false);
-  });
 
   it("不正な値は無視し、基準座標が無ければ距離も無効", () => {
     const params = new URLSearchParams({ distance: "1000", cost: "abc", duration: "x" });
@@ -167,7 +158,6 @@ describe("parsePostSearchParams", () => {
       visitTo: null,
       sort: "newest",
       viewer: null,
-      manualOnly: false,
     });
   });
 
@@ -250,15 +240,13 @@ describe("applyFilters: タビコエだけの場所", () => {
 
   const base = { keyword: null, categories: [], distanceMeters: null, center: null, costRange: null, duration: null };
 
-  it("入れると spots.source = manual がクエリに載る", () => {
+  /**
+   * #680（2026-10-05）: 「タビコエだけの場所」は概念ごと廃止（決定事項 70）。
+   * `spots.source` はデータとして残すが、**絞り込みの条件には使わない**。
+   */
+  it("spots.source はクエリに載らない", () => {
     const { query, calls } = fakeQuery();
-    applyFilters(query, { ...base, manualOnly: true }, []);
-    expect(calls).toContain('eq("spots.source","manual")');
-  });
-
-  it("入れなければ載らない", () => {
-    const { query, calls } = fakeQuery();
-    applyFilters(query, { ...base, manualOnly: false }, []);
+    applyFilters(query, base, []);
     expect(calls.some((call) => call.includes("spots.source"))).toBe(false);
   });
 });

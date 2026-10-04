@@ -31,15 +31,14 @@ interface SpotSheetValue {
   cost: CostRange | null;
   duration: PostDuration | null;
   rating: number | null;
-  manualOnly: boolean;
 }
 
 function toSheet(filters: SpotFilters): SpotSheetValue {
-  return { categories: filters.categories, cost: filters.cost, duration: filters.duration, rating: filters.minRating, manualOnly: filters.manualOnly };
+  return { categories: filters.categories, cost: filters.cost, duration: filters.duration, rating: filters.minRating };
 }
 
 function fromSheet(value: SpotSheetValue): SpotFilters {
-  return { categories: value.categories, cost: value.cost, duration: value.duration, minRating: value.rating, manualOnly: value.manualOnly };
+  return { categories: value.categories, cost: value.cost, duration: value.duration, minRating: value.rating };
 }
 
 /**

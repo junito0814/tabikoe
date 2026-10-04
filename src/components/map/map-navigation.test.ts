@@ -42,8 +42,8 @@ describe("resolveMapOpen", () => {
 
   /* explore-mode Task 4（2026-10-02）: 絞り込みは URL に持つ（要件 3.4.6） */
   it("探すモードは絞り込みの条件も URL から読む", () => {
-    const result = resolveMapOpen({ mode: "explore", lat: "35.1", lng: "139.2", categories: "グルメ", cost: "3000", rating: "4", manual: "1" });
-    expect(result.filters).toEqual({ categories: ["グルメ"], cost: "3000", duration: null, minRating: 4, manualOnly: true });
+    const result = resolveMapOpen({ mode: "explore", lat: "35.1", lng: "139.2", categories: "グルメ", cost: "3000", rating: "4" });
+    expect(result.filters).toEqual({ categories: ["グルメ"], cost: "3000", duration: null, minRating: 4 });
   });
 
   it("条件が付いていなければ条件なし", () => {

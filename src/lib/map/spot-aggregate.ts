@@ -54,7 +54,6 @@ export interface SpotFilters {
   /** 平均の下限（1〜5）。null は条件なし */
   minRating: number | null;
   /** 「タビコエだけの場所」だけを出すか */
-  manualOnly: boolean;
 }
 
 export const EMPTY_SPOT_FILTERS: SpotFilters = {
@@ -62,7 +61,6 @@ export const EMPTY_SPOT_FILTERS: SpotFilters = {
   cost: null,
   duration: null,
   minRating: null,
-  manualOnly: false,
 };
 
 /** 条件が 1 つでも入っているか（ボタンの色と、0 件のときの文言の出し分けに使う） */
@@ -77,7 +75,6 @@ export function activeSpotFilterCount(filters: SpotFilters): number {
   if (filters.cost) count += 1;
   if (filters.duration) count += 1;
   if (filters.minRating !== null) count += 1;
-  if (filters.manualOnly) count += 1;
   return count;
 }
 
@@ -174,7 +171,6 @@ export function matchesSpotFilters(
   spot: { manual: boolean },
   filters: SpotFilters
 ): boolean {
-  if (filters.manualOnly && !spot.manual) return false;
 
   if (filters.categories.length > 0) {
     // 代表カテゴリが無い（全部未入力）スポットは落ちる
@@ -227,7 +223,6 @@ export function parseSpotFilters(searchParams: URLSearchParams): SpotFilters {
     duration: isPostDuration(duration) ? duration : null,
     // 星は 1〜5 の整数だけ受ける（要件 3.4.6: 選択肢は ★1〜★5 の 5 つ）
     minRating: Number.isInteger(rating) && rating >= 1 && rating <= 5 ? rating : null,
-    manualOnly: searchParams.get("manual") === "1",
   };
 }
 
@@ -243,6 +238,5 @@ export function spotFiltersToParams(filters: SpotFilters): [string, string][] {
   if (filters.cost) params.push(["cost", filters.cost]);
   if (filters.duration) params.push(["duration", filters.duration]);
   if (filters.minRating !== null) params.push(["rating", String(filters.minRating)]);
-  if (filters.manualOnly) params.push(["manual", "1"]);
   return params;
 }

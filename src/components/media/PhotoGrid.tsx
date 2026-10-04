@@ -156,7 +156,6 @@ function PhotoInfoBar({ info }: { info: SpotMediaItem["info"] }) {
     <div className="flex flex-col gap-1" data-photo-info>
       <p className="flex flex-wrap items-center gap-x-2 text-[14px] font-bold text-ink">
         <span className="min-w-0 truncate">{info.spotName}</span>
-        {info.isManualSpot && <span className="rounded-full bg-tint px-2 py-0.5 text-[10px] font-semibold text-accent">タビコエだけの場所</span>}
       </p>
       <p className="flex flex-wrap items-center gap-x-2 text-[12px] text-muted">
         {info.rating !== null && (

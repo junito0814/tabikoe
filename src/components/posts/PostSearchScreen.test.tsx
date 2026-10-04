@@ -85,7 +85,8 @@ describe("PostSearchScreen（SC-04 タイムライン）", () => {
     // #692（2026-10-05）: 「徒歩 N 分」は外した（位置情報の取得を待つぶん一覧が遅れていた）
     expect(article).not.toHaveTextContent("徒歩");
     expect(article).toHaveTextContent("たこ焼き〇〇");
-    expect(article).toHaveTextContent("タビコエだけの場所");
+    // #680（2026-10-05）: ラベルは廃止（決定事項 70）
+    expect(article).not.toHaveTextContent("タビコエだけの場所");
     expect(article).toHaveTextContent("外はカリッと中はとろとろ");
     // #692: 「星4」の文字は外し、★ の数だけにした（読み上げ用の名前は残る）
     expect(article).not.toHaveTextContent("星4");

@@ -179,11 +179,6 @@ export function PostDetailScreen({
               >
                 {post.spot.name}
               </Link>
-              {post.spot.isManualSpot && (
-                <span className="rounded-full bg-tint px-2 py-0.5 text-[10px] font-semibold text-accent">
-                  タビコエだけの場所
-                </span>
-              )}
               {post.visibility === "private" && (
                 <span className="rounded-full bg-line px-2 py-0.5 text-[10px] font-semibold text-ink">
                   非公開

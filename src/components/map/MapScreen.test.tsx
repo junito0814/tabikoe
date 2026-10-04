@@ -409,14 +409,14 @@ describe("探すモードの絞り込み（explore-mode Task 4）", () => {
     const fetchNearby = vi.fn(async () => nearby);
     render(
       <MapScreen
-        open={resolveMapOpen({ mode: "explore", lat: "35.65", lng: "139.75", categories: "グルメ", rating: "4", manual: "1" })}
+        open={resolveMapOpen({ mode: "explore", lat: "35.65", lng: "139.75", categories: "グルメ", rating: "4" })}
         fetchPins={fetchPins}
         fetchNearby={fetchNearby}
         resolveCenter={resolveCenter}
       />
     );
     await settle();
-    const expected = { categories: ["グルメ"], cost: null, duration: null, minRating: 4, manualOnly: true };
+    const expected = { categories: ["グルメ"], cost: null, duration: null, minRating: 4 };
     await waitFor(() => expect(fetchPins).toHaveBeenCalledWith(BOUNDS, expected));
     await waitFor(() => expect(fetchNearby).toHaveBeenLastCalledWith({ lat: 35.65, lng: 139.75 }, "walk", expected));
   });
@@ -443,7 +443,7 @@ describe("探すモードの絞り込み（explore-mode Task 4）", () => {
     // 地図の状態（投稿一覧へ行って戻ってきたとき用）
     expect(JSON.parse(window.sessionStorage.getItem("tabikoe:map-state") ?? "{}").filters).toBe("rating=4");
     // ピンも新しい条件で取り直す
-    await waitFor(() => expect(fetchPins).toHaveBeenLastCalledWith(BOUNDS, { categories: [], cost: null, duration: null, minRating: 4, manualOnly: false }));
+    await waitFor(() => expect(fetchPins).toHaveBeenLastCalledWith(BOUNDS, { categories: [], cost: null, duration: null, minRating: 4 }));
     window.sessionStorage.clear();
   });
 
@@ -466,7 +466,7 @@ describe("探すモードの絞り込み（explore-mode Task 4）", () => {
       <MapScreen open={resolveMapOpen({ mode: "explore", lat: "35.65", lng: "139.75" })} fetchPins={fetchPins} fetchNearby={async () => nearby} resolveCenter={resolveCenter} />
     );
     await settle();
-    await waitFor(() => expect(fetchPins).toHaveBeenCalledWith(BOUNDS, { categories: ["グルメ"], cost: "3000", duration: null, minRating: null, manualOnly: false }));
+    await waitFor(() => expect(fetchPins).toHaveBeenCalledWith(BOUNDS, { categories: ["グルメ"], cost: "3000", duration: null, minRating: null }));
     // 効いている条件の数が絞り込みボタンに出る
     expect((await screen.findByRole("button", { name: "絞り込み" })).textContent).toBe("2");
     window.sessionStorage.clear();
@@ -482,7 +482,7 @@ describe("探すモードの絞り込み（explore-mode Task 4）", () => {
       <MapScreen open={resolveMapOpen({ mode: "explore", lat: "35.65", lng: "139.75", rating: "5" })} fetchPins={fetchPins} fetchNearby={async () => nearby} resolveCenter={resolveCenter} />
     );
     await settle();
-    await waitFor(() => expect(fetchPins).toHaveBeenCalledWith(BOUNDS, { categories: [], cost: null, duration: null, minRating: 5, manualOnly: false }));
+    await waitFor(() => expect(fetchPins).toHaveBeenCalledWith(BOUNDS, { categories: [], cost: null, duration: null, minRating: 5 }));
     window.sessionStorage.clear();
   });
 
