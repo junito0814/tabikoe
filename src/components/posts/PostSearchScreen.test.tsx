@@ -259,3 +259,28 @@ describe("loading-feedback Task 3: 条件を変えたら古い一覧を残さな
     await waitFor(() => expect(screen.getByText("条件に合う投稿がありません")).toBeInTheDocument());
   });
 });
+
+/*
+ * #675（2026-10-04）: スポット別の投稿一覧に「引っ張って更新」を付けない
+ * 出典: 要件定義書 4.5.11 の場面 6・受入条件 96
+ *
+ * 【初心者向け】この画面は上 1/3 が地図＋下 2/3 がシートで、ページ全体が
+ * 「地図とシートのどちらかに吸い付く」作り。いちばん上で下に引く動きは
+ * **すでに「地図を出す」の意味**を持っているので、引っ張って更新は付けない。
+ * 実際、一覧を読む姿勢（少しでもスクロールした状態）では歯車は出なかった。
+ */
+describe("#675: 引っ張って更新は付けない", () => {
+  it("PullToRefresh で包まない", async () => {
+    render(
+      <PostSearchScreen
+        context={{ destination: { kind: "spot", spotId: "s1" } }}
+        initialState={EMPTY_SEARCH_STATE}
+        initialPage={{ posts: [], nextOffset: null }}
+        title="たこ焼き〇〇"
+        backHref="/"
+        backLabel="ホーム"
+      />
+    );
+    expect(document.querySelector("[data-pull-to-refresh]")).toBeNull();
+  });
+});

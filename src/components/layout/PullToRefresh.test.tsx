@@ -186,7 +186,9 @@ describe("付ける 6 画面・付けない 3 枚", () => {
       "src/components/itineraries/ItineraryListScreen.tsx",
       "src/app/albums/page.tsx",
       "src/components/wishlist/WishlistScreen.tsx",
-      "src/components/posts/PostSearchScreen.tsx",
+      // #673・#675（2026-10-04）: 検索結果は SpotSearchScreen。
+      // 2026-10-02 に PostSearchScreen（スポット別の投稿一覧）と取り違えて包んでいた
+      "src/components/posts/SpotSearchScreen.tsx",
     ];
     for (const p of placed) {
       expect(read(p), `${p} に付いていない`).toContain("<PullToRefresh>");
@@ -199,6 +201,13 @@ describe("付ける 6 画面・付けない 3 枚", () => {
     // 同じ操作に 2 つの意味を重ねない
     for (const p of [
       "src/components/posts/SpotPostListScreen.tsx",
+      /*
+       * #675（2026-10-04）: 中身の方も見る。
+       *
+       * 【初心者向け】スポット別の投稿一覧は「枠（SpotPostListScreen）＋中身（PostSearchScreen）」の
+       * 2 ファイルでできている。枠だけ見ていたので、**中身に付いていたのを 2 日間見逃した**。
+       */
+      "src/components/posts/PostSearchScreen.tsx",
       "src/components/posts/PostDetailScreen.tsx",
       "src/components/itineraries/ItineraryDetailScreen.tsx",
     ]) {
