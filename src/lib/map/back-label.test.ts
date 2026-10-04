@@ -22,7 +22,7 @@ describe("classifyBackHref / backLabelFor", () => {
     expect(label("/spots/s1")).toBe("一覧");
   });
 
-  it("Bug #471: マイページ・行きたい・アルバム・写真・通知・あしあと・地図・しおり一覧・下書き・バッジも画面名になる", () => {
+  it("Bug #471: マイページ・行きたい・アルバム・写真・通知・投稿履歴・地図・計画・下書き・バッジも画面名になる", () => {
     expect(label("/mypage")).toBe("マイページ");
     expect(label("/mypage/drafts")).toBe("下書き");
     expect(label("/wishlist")).toBe("行きたい");
@@ -31,7 +31,7 @@ describe("classifyBackHref / backLabelFor", () => {
     expect(label("/albums/t1/photos")).toBe("写真");
     expect(label("/itineraries")).toBe("計画");
     expect(label("/notifications")).toBe("通知");
-    expect(label("/mymap?mode=saved")).toBe("あしあと");
+    expect(label("/mymap?mode=saved")).toBe("投稿履歴");
     expect(label("/badges")).toBe("バッジ");
     expect(label("/map?mode=explore&lat=35&lng=139")).toBe("地図");
   });
