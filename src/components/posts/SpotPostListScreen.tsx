@@ -48,6 +48,7 @@ export function SpotPostListScreen({
   addMode = null,
   fetchPage,
   back = null,
+  official = null,
 }: {
   spot: SpotSummary;
   initialState: PostSearchState;
@@ -58,6 +59,14 @@ export function SpotPostListScreen({
   fetchPage?: FetchSearchPage;
   /** Bug #469: 戻り先（検索結果など）。href は `?back=` の生の値、label は画面名。無ければ「地図」 */
   back?: { href: string; label: string } | null;
+  /**
+   * #701: Google の公式情報（営業時間・公式サイト）。
+   *
+   * 【初心者向け】中身は Server Component（`OfficialInfo`）で、**この画面では作れない**
+   * （API の鍵をブラウザに渡さないため。要件 6.2）。page.tsx が描いたものを
+   * そのまま置く「差し込み口」として受け取る。出すものが無ければ null が来る。
+   */
+  official?: React.ReactNode;
 }) {
   const context: SearchContext = {
     destination: { kind: "spot", spotId: spot.id },
@@ -81,6 +90,7 @@ export function SpotPostListScreen({
           </>
         )}
       </p>
+      {official}
       <div className="flex flex-wrap items-center gap-2">
         <SaveButton
           spotId={spot.id}
