@@ -32,9 +32,9 @@ export function SpotCard({ spot, addMode = null, backHref = null }: { spot: Spot
           <span className="min-w-0 truncate">{spot.name}</span>
           {spot.isManualSpot && <span className="rounded-full bg-tint px-2 py-0.5 text-[10px] font-semibold text-accent">タビコエだけの場所</span>}
         </h3>
+        {/* #692: 「徒歩 N 分」は外した（位置情報の許可と取得を待つぶん、一覧が遅れていた） */}
         <p className="flex flex-wrap items-center gap-x-2 text-[11px] text-muted">
           {spot.prefecture && <span>{spot.prefecture}</span>}
-          {spot.walkMinutes !== null && <span data-walk-minutes>徒歩 {spot.walkMinutes}分</span>}
         </p>
 
         <div className="flex gap-3">

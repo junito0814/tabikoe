@@ -82,11 +82,14 @@ describe("PostSearchScreen（SC-04 タイムライン）", () => {
     const article = document.querySelector("[data-post-card='p1']") as HTMLElement;
     expect(article).toHaveTextContent("たろう");
     expect(article).toHaveTextContent("訪問 9/3");
-    expect(article).toHaveTextContent("徒歩 8分");
+    // #692（2026-10-05）: 「徒歩 N 分」は外した（位置情報の取得を待つぶん一覧が遅れていた）
+    expect(article).not.toHaveTextContent("徒歩");
     expect(article).toHaveTextContent("たこ焼き〇〇");
     expect(article).toHaveTextContent("タビコエだけの場所");
     expect(article).toHaveTextContent("外はカリッと中はとろとろ");
-    expect(article).toHaveTextContent("星4");
+    // #692: 「星4」の文字は外し、★ の数だけにした（読み上げ用の名前は残る）
+    expect(article).not.toHaveTextContent("星4");
+    expect(article.querySelector('[aria-label="星4"]')).toBeInTheDocument();
     expect(article).toHaveTextContent("¥1,200/人");
     expect(article).toHaveTextContent("グルメ");
     expect(article).toHaveTextContent("9月にまだあった");
@@ -282,5 +285,31 @@ describe("#675: 引っ張って更新は付けない", () => {
       />
     );
     expect(document.querySelector("[data-pull-to-refresh]")).toBeNull();
+  });
+});
+
+/**
+ * #692（2026-10-05）: スポット別の一覧（1 つの場所の中）では、絞り込みと「＋」を出さない。
+ * 絞り込みは「1 つの場所の中で予算や評価で絞る」場面が無く、「＋」は保存先がスポット単位なので
+ * 見出しの 1 つで足りる。並び替えは残す。
+ */
+describe("スポット別の一覧（#692）", () => {
+  const spotContext = { destination: { kind: "spot" as const, spotId: "s1" }, addMode: null };
+
+  it("絞り込みは出さず、並び替えは残す", () => {
+    renderScreen({ initialPage: { posts: [card("p1")], nextOffset: null }, context: spotContext });
+    expect(screen.queryByRole("button", { name: /絞り込み/ })).toBeNull();
+    expect(screen.getByRole("button", { name: /並び替え/ })).toBeInTheDocument();
+  });
+
+  it("投稿カードに「＋」を出さない", () => {
+    renderScreen({ initialPage: { posts: [card("p1")], nextOffset: null }, context: spotContext });
+    expect(screen.queryByRole("button", { name: "保存する" })).toBeNull();
+  });
+
+  it("検索結果（スポット別でない）では今までどおり両方出す", () => {
+    renderScreen({ initialPage: { posts: [card("p1")], nextOffset: null } });
+    expect(screen.getByRole("button", { name: /絞り込み/ })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "保存する" })).toBeInTheDocument();
   });
 });
