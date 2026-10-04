@@ -13,6 +13,7 @@ v1 の Epic: #105（v1 の投稿検索・絞り込み（/search））
 | 3 | [スクロール位置・条件の保持と「一覧に戻る」](03-scroll-and-back.md) | Task 2 |
 | 4 | [スポット別一覧の見出しと追加モードバナー](04-spot-list-header-and-add-mode.md) | Task 2、add-spots Task 2 |
 | 5 | [受入テスト（E2E）](05-acceptance-e2e.md) | Task 1〜4 すべて |
-| 6 | [検索結果に「タビコエだけの場所」の絞り込みを足す](06-manual-only-filter.md) | Task 2、explore-mode Task 4 |
+| 6 | ~~[検索結果に「タビコエだけの場所」の絞り込みを足す](06-manual-only-filter.md)~~ → 2026-10-04 に廃止（決定事項 70） | Task 2、explore-mode Task 4 |
+| 7 | [検索結果に「地図」タブを足す](07-search-map-tab.md) | Task 2、explore-mode Task 2 |
 
 各タスクファイルは「依存」「実装内容」「成果物」「テスト要件（単体／結合／E2E）」「関連する受入条件」の構成で統一している（[rule.md](../../../rule.md)のテストルール区分に準拠）。
