@@ -67,8 +67,14 @@ export function SearchMapView({
 
   const first = spots[0];
 
+  /*
+   * 2026-10-05 の撮影で見つけて直したこと ── 最初はカードを地図に**重ねて**置いていたが、
+   * **Google のロゴ（規約で必須の表記）を隠してしまっていた**。探すモードも重ねておらず
+   * （上が地図、下がカード）、同じ形に揃えた。
+   */
   return (
-    <div className="relative -mx-4 h-[calc(100dvh-220px)] min-h-[360px]" data-search-map>
+    <div className="-mx-4 flex h-[calc(100dvh-230px)] min-h-[380px] flex-col" data-search-map>
+      <div className="min-h-0 flex-1">
       <GoogleMap
         ref={mapRef}
         initialCenter={first ? { lat: first.lat, lng: first.lng } : { lat: 35.681, lng: 139.767 }}
@@ -87,12 +93,13 @@ export function SearchMapView({
         }}
         className="h-full w-full"
       />
+      </div>
 
-      {/* 下に横スクロールのカード（探すモードと同じ見せ方） */}
+      {/* 下に横スクロールのカード（探すモードと同じ見せ方。地図には重ねない） */}
       <div
         ref={stripRef}
         onScroll={onStripScroll}
-        className="absolute inset-x-0 bottom-0 flex snap-x snap-mandatory gap-2 overflow-x-auto px-4 pb-3"
+        className="flex shrink-0 snap-x snap-mandatory items-stretch gap-2 overflow-x-auto border-t border-line bg-app px-4 py-2"
         data-map-card-strip
       >
         {spots.map((spot) => (
