@@ -5,6 +5,7 @@ import Link from "next/link";
 import { ErrorNotice } from "@/components/notices/ErrorNotice";
 import { ERROR_MESSAGES } from "@/components/notices/error-messages";
 import { ReportLink } from "@/components/reports/ReportLink";
+import { TrashButton } from "@/components/ui/TrashButton";
 import { fetchWithAuthRedirect, UnauthorizedError } from "@/lib/api/fetch-with-auth-redirect";
 import { MAX_COMMENT_LENGTH } from "@/lib/comments/constants";
 import type { CommentData, CommentPage } from "@/lib/comments/list-comments";
@@ -324,15 +325,13 @@ function CommentItem({
             </button>
           )}
           {comment.isMine ? (
-            <button
-              type="button"
+            <TrashButton
               onClick={() => onDelete(comment.id)}
+              label="このコメントを削除"
               disabled={pendingDeleteId !== null}
-              aria-label="このコメントを削除"
-              className="text-[11px] font-medium text-accent underline underline-offset-2 disabled:opacity-45"
-            >
-              {pendingDeleteId === comment.id ? "削除中…" : "削除"}
-            </button>
+              busy={pendingDeleteId === comment.id}
+              className="h-7 w-7"
+            />
           ) : (
             <ReportLink targetType="comment" targetId={comment.id} returnTo={returnTo} className="text-[11px]" />
           )}

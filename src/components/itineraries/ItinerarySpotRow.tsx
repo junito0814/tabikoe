@@ -6,6 +6,7 @@ import { TimePicker10 } from "@/components/ui/TimePicker10";
 import type { ItinerarySpotItem } from "@/lib/itineraries/get-itinerary";
 import { composeHref } from "@/lib/posts/compose-initial-state";
 import { DayMoveDropdown } from "./DayMoveDropdown";
+import { TrashButton } from "@/components/ui/TrashButton";
 import type { DayKey } from "./DayTabs";
 
 /** メモの上限（書記素）。API と同じ値 */
@@ -180,9 +181,12 @@ export function ItinerarySpotRow({
           )}
           <span className="ml-auto flex items-center gap-1">
             <DayMoveDropdown value={spot.dayIndex} dayCount={dayCount} onChange={(day) => onMoveDay(spot.spotId, day)} disabled={pending !== null} />
-            <button type="button" onClick={() => onRemove(spot.spotId)} disabled={pending !== null} className="h-7 rounded-full px-2 text-[11px] font-medium text-saved disabled:opacity-45">
-              削除
-            </button>
+            <TrashButton
+              onClick={() => onRemove(spot.spotId)}
+              label={`${spot.name}をしおりから削除`}
+              disabled={pending !== null}
+              className="h-7 w-7"
+            />
             {/* v3.1: 時刻の無い行だけ取っ手 ≡（ドラッグで並べ替え。↑↓ キーでも動く） */}
             {!hasTime && dragHandleProps && (
               <button

@@ -2,6 +2,7 @@
 
 import { useState, type FormEvent, useMemo } from "react";
 import Link from "next/link";
+import { TrashButton } from "@/components/ui/TrashButton";
 import { InAppInvitePanel, searchUsersRequest, type InAppInviteApi } from "@/components/invitations/InAppInvitePanel";
 import type { InviteCandidate } from "@/lib/invitations/in-app";
 import type { UserSummary } from "@/lib/users/search-users";
@@ -272,18 +273,13 @@ export function AlbumScreen({
             * （消したいなら先に投稿を消してもらう）。ゴミ箱の印は #695 と同じ形。
             */}
           {canManage && album.posts.length === 0 && api.deleteAlbum && (
-            <button
-              type="button"
+            <TrashButton
               onClick={() => void handleDeleteAlbum()}
+              label="このアルバムを削除"
               disabled={busy !== null}
-              aria-label="このアルバムを削除"
-              className="inline-flex h-8 w-fit items-center gap-1.5 rounded-full border border-line px-3 text-[12px] font-semibold text-saved disabled:opacity-45"
-            >
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden>
-                <path d="M4 7h16M9 7V4h6v3m-8 0 1 13h8l1-13" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
-              {busy === "delete" ? "削除しています…" : "削除"}
-            </button>
+              busy={busy === "delete"}
+              className="border border-line"
+            />
           )}
           <div className="flex flex-wrap gap-2">
             {/* F-RC-05（SC-21）: このアルバムの写真・動画だけを並べて眺める（非公開投稿も含む） */}
