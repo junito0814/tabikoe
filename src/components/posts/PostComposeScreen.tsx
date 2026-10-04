@@ -381,6 +381,16 @@ export function PostComposeScreen({
                   }}
                   onNewPlaceNameChange={setNewPlaceName}
                   searchSpots={searchSpots}
+                  /*
+                   * #700: 確定の一手に要るもの。
+                   * `position` は地図の中心（＝確定したときに保存する座標）、
+                   * `onMoveMapTo` は候補を選んだときに地図をその位置へ動かす。
+                   */
+                  position={position}
+                  onMoveMapTo={(next) => {
+                    setPosition(next);
+                    setMoved(true);
+                  }}
                 />
               }
               mediaItems={mediaItems}

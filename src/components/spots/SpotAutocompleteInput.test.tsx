@@ -21,6 +21,7 @@ const REGISTERED: SpotCandidate = {
   lng: 127.719,
   source: "manual",
   postCount: 12,
+  placeId: null,
 };
 
 function Harness({
@@ -118,6 +119,7 @@ describe("Google の表記（#699）", () => {
     lng: 127.714,
     source: "places",
     postCount: 0,
+    placeId: "ChIJ-google",
   };
 
   it("出どころで分け、Google の組の下に公式のロゴを出す", async () => {

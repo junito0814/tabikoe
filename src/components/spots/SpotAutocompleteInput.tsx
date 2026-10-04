@@ -21,6 +21,8 @@ export interface SpotCandidate {
   lng: number;
   source: "places" | "manual";
   postCount: number;
+  /** #700: Google の Place ID。保存してよい唯一の値（要件 6.2）。手動登録には無い */
+  placeId: string | null;
 }
 
 interface SearchResult {
@@ -60,10 +62,16 @@ export function SpotAutocompleteInput({
   onSelect,
   searchSpots = searchSpotsFromApi,
   onCancel,
+  onPickUnregistered,
   autoFocus = false,
 }: {
   selectedSpot: RegisteredSpot | null;
   onSelect: (spot: RegisteredSpot | null) => void;
+  /**
+   * #700: Google 由来で未登録の候補を選んだときの受け取り口。
+   * ここが渡されていれば**登録せずに**親へ渡す（親が確定の一手を出す）。
+   */
+  onPickUnregistered?: (candidate: SpotCandidate) => void;
   /** 検索の差し替え口（単体テスト・開発用プレビューでモックを注入するため） */
   searchSpots?: (query: string) => Promise<SearchResult>;
   /** v3.0（spot-selection-v3 Task4）: SC-03 では手動登録モーダルを使わない（地図のピンが手動登録を兼ねる） */
@@ -154,7 +162,20 @@ export function SpotAutocompleteInput({
       return;
     }
 
-    // Google Places由来の未登録候補は、登録してIDを採番してから投稿に紐づける
+    /*
+     * #700: 未登録の候補は、**ここでは登録しない**。
+     *
+     * 【初心者向け】前は選んだ瞬間に登録していたので、Google が返した名前と座標が
+     * そのまま保存されていた（規約が禁じている形）。いまは親に渡し、
+     * 利用者が地図のピンと名前を確認して「この位置で確定」を押してから登録する。
+     */
+    if (onPickUnregistered) {
+      onPickUnregistered(candidate);
+      setCandidates([]);
+      return;
+    }
+
+    // 受け取り手がいない画面（開発用のプレビューなど）では、今までどおりその場で登録する
     setRegisteringKey(candidateKey(candidate));
     try {
       const response = await fetchWithAuthRedirect("/api/spots", {

@@ -26,6 +26,7 @@ const UNREGISTERED: SpotCandidate = {
   lng: 139.76,
   source: "places",
   postCount: 0,
+  placeId: "ChIJ-pending",
 };
 
 function Harness({ searchSpots }: { searchSpots: (query: string) => Promise<{ candidates: SpotCandidate[]; placesUnavailable: boolean }> }) {

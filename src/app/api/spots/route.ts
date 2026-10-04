@@ -7,6 +7,7 @@ import { DUPLICATE_SPOT_RADIUS_METERS, findNearbySpots } from "@/lib/spots/nearb
 import { reverseGeocodePrefecture } from "@/lib/google/geocoding";
 import { getMapPins, parseMapBounds } from "@/lib/map/get-map-pins";
 import { parseSpotFilters } from "@/lib/map/spot-aggregate";
+import { findPrefecture } from "@/lib/geo/prefectures";
 
 /** スポット名の最大文字数（要件定義書3.3.1） */
 const MAX_SPOT_NAME_LENGTH = 200;
@@ -63,7 +64,16 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
 
-  let body: { name?: unknown; lat?: unknown; lng?: unknown; source?: unknown };
+  let body: {
+    name?: unknown;
+    lat?: unknown;
+    lng?: unknown;
+    source?: unknown;
+    // #700: Google から保存してよい唯一の値（要件 6.2）
+    placeId?: unknown;
+    // #700: 利用者が投稿画面で確認した都道府県。無ければサーバーが逆引きする
+    prefecture?: unknown;
+  };
   try {
     body = await request.json();
   } catch {
@@ -72,6 +82,15 @@ export async function POST(request: Request) {
 
   const name = typeof body.name === "string" ? body.name.trim() : "";
   const { lat, lng, source } = body;
+  const placeId = parsePlaceId(body.placeId);
+  const confirmedPrefecture = parseConfirmedPrefecture(body.prefecture);
+
+  if (placeId === "invalid") {
+    return NextResponse.json({ error: "invalid_place_id" }, { status: 400 });
+  }
+  if (confirmedPrefecture === "invalid") {
+    return NextResponse.json({ error: "invalid_prefecture" }, { status: 400 });
+  }
 
   if (name.length === 0 || graphemeLength(name) > MAX_SPOT_NAME_LENGTH) {
     return NextResponse.json({ error: "invalid_name" }, { status: 400 });
@@ -107,12 +126,27 @@ export async function POST(request: Request) {
   const { data: spot, error: insertError } = await admin
     .from("spots")
     // v3.2: 手動登録なら登録者を記録する（スポット登録バッジ）
-    .insert({ name, lat, lng, source, ...(source === "manual" ? { created_by: user.id } : {}) })
+    .insert({
+      name,
+      lat,
+      lng,
+      source,
+      // #700: Google 由来のときだけ Place ID が付く（手動登録には無い）
+      ...(placeId ? { place_id: placeId } : {}),
+      // #700: 利用者が確認した都道府県があれば、逆引きを待たずにそれを入れる
+      ...(confirmedPrefecture ? { prefecture: confirmedPrefecture } : {}),
+      ...(source === "manual" ? { created_by: user.id } : {}),
+    })
     .select("id, name, lat, lng, prefecture, source")
     .single();
 
   if (insertError || !spot) {
     return NextResponse.json({ error: "insert_failed" }, { status: 500 });
+  }
+
+  // #700: 利用者が投稿画面で確認した都道府県があるときは、そちらを正とする（Google に問い合わせない）
+  if (confirmedPrefecture) {
+    return NextResponse.json({ spot }, { status: 201 });
   }
 
   // Task6: 都道府県を一度だけ確定させる。
@@ -136,4 +170,31 @@ export async function POST(request: Request) {
   }
 
   return NextResponse.json({ spot }, { status: 201 });
+}
+
+/**
+ * #700: Place ID の検査。Google が返す ID は英数字と記号の文字列で、長さに決まった上限は
+ * 示されていないため、常識的な長さで切る（おかしな値をそのまま保存しないため）。
+ *
+ * 戻り値は「正しい値」「無い（null）」「おかしい（"invalid"）」の 3 つ。
+ */
+export function parsePlaceId(value: unknown): string | null | "invalid" {
+  if (value === undefined || value === null) return null;
+  if (typeof value !== "string") return "invalid";
+  const trimmed = value.trim();
+  if (trimmed.length === 0) return null;
+  if (trimmed.length > 255) return "invalid";
+  return trimmed;
+}
+
+/**
+ * #700: 利用者が確認した都道府県の検査。**47 の名前のどれかでなければ受け取らない**
+ * （自由入力をそのまま入れると、バッジの集計（都道府県バッジ）が合わなくなる）。
+ */
+export function parseConfirmedPrefecture(value: unknown): string | null | "invalid" {
+  if (value === undefined || value === null) return null;
+  if (typeof value !== "string") return "invalid";
+  const trimmed = value.trim();
+  if (trimmed.length === 0) return null;
+  return findPrefecture(trimmed) ? trimmed : "invalid";
 }
