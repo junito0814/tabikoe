@@ -31,14 +31,16 @@ describe("MyPageScreen（SC-06）", () => {
     render(<MyPageScreen {...base} />);
     expect(screen.getByRole("heading", { name: "たろう" })).toBeInTheDocument();
     expect(screen.getByAltText("たろうのアイコン画像")).toHaveAttribute("src", "https://example.com/me.jpg");
-    expect(screen.getByRole("link", { name: "プロフィールを編集" })).toHaveAttribute("href", "/account");
+    // #683: アイコンと名前のどちらを押しても編集へ（「プロフィールを編集」のリンクは置かない）
+    expect(screen.getByRole("link", { name: "たろう（プロフィールを編集）" })).toHaveAttribute("href", "/account");
+    expect(screen.queryByRole("link", { name: "プロフィールを編集" })).toBeNull();
     expect(document.querySelector("[data-summary='postCount']")).toHaveTextContent("7");
     expect(document.querySelector("[data-summary='receivedLikeCount']")).toHaveTextContent("12");
   });
 
-  it("遷移メニューは 4 導線（行きたい／アルバム／投稿履歴／バッジ）でしおりが無い", () => {
+  it("遷移メニューは 3 導線（行きたい／アルバム／投稿履歴）。バッジはプロフィールの下の 1 行へ", () => {
     render(<MyPageScreen {...base} />);
-    expect(MY_PAGE_MENU.map((item) => item.href)).toEqual(["/wishlist", "/albums", "/mymap", "/badges"]);
+    expect(MY_PAGE_MENU.map((item) => item.href)).toEqual(["/wishlist", "/albums", "/mymap"]);
     expect((MY_PAGE_MENU as readonly { href: string }[]).some((item) => item.href === "/itineraries")).toBe(false);
     for (const item of MY_PAGE_MENU) {
       expect(screen.getByRole("link", { name: new RegExp(`^${item.label}`) })).toHaveAttribute("href", item.href);
@@ -62,5 +64,22 @@ describe("MyPageScreen（SC-06）", () => {
   it("管理者には管理者ダッシュボードへの導線を出す", () => {
     render(<MyPageScreen {...base} profile={{ ...base.profile, isAdmin: true }} />);
     expect(screen.getByRole("link", { name: "管理者ダッシュボード" })).toHaveAttribute("href", "/admin");
+  });
+});
+
+/** #683・#684（2026-10-05）: 決定事項 72 の整理 */
+describe("マイページの整理（#683・#684）", () => {
+  it("バッジは「◯/63」の 1 行。0 個でも出す", () => {
+    const { unmount } = render(<MyPageScreen {...base} badgeCount={5} />);
+    expect(document.querySelector("[data-badge-line]")).toHaveTextContent("ステータスバッジ5 / 63");
+    unmount();
+    render(<MyPageScreen {...base} />);
+    expect(document.querySelector("[data-badge-line]")).toHaveTextContent("0 / 63");
+  });
+
+  it("「アカウントの状態」への導線が無い", () => {
+    render(<MyPageScreen {...base} />);
+    expect(screen.queryByRole("link", { name: /アカウントの状態/ })).toBeNull();
+    expect(document.body.innerHTML).not.toContain("/account/status");
   });
 });

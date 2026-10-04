@@ -167,11 +167,14 @@ export function resolveNotificationHref(
         : { href: null, fallbackMessage: "この通報は削除されました" };
     case "admin_auto_hidden":
       return { href: "/admin/hidden", fallbackMessage: null };
-    // Phase 17（user-management Task2）: 本人向け。アカウントの状態（SC-28、#557）へ
+    /*
+     * #684（2026-10-05）: 「アカウントの状態」（SC-28）は廃止した（決定事項 72）。
+     * 行き先が無くなったので、通知の本文だけで伝える（モーダルで全文が読める。#711）。
+     */
     case "account_suspended":
     case "account_unsuspended":
     case "moderation_action":
-      return { href: "/account/status", fallbackMessage: null };
+      return { href: null, fallbackMessage: null };
     case "spot_fix_request":
       return lookups.spotFixes?.has(relatedId)
         ? { href: `/spots/${relatedId}/edit`, fallbackMessage: null }
