@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { hardRedirect } from "@/lib/navigation/hard-redirect";
 import { ConsentCheckbox } from "@/components/auth/ConsentCheckbox";
 import { ErrorNotice } from "@/components/notices/ErrorNotice";
 import { fetchWithAuthRedirect, UnauthorizedError } from "@/lib/api/fetch-with-auth-redirect";
@@ -31,7 +31,6 @@ export function ReconsentScreen({
   redirectTo: string;
   submit?: (kinds: LegalKind[]) => Promise<Response>;
 }) {
-  const router = useRouter();
   const [agreed, setAgreed] = useState<Record<string, boolean>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -47,8 +46,8 @@ export function ReconsentScreen({
         setErrorMessage("同意を記録できませんでした。時間をおいてお試しください");
         return;
       }
-      router.push(redirectTo);
-      router.refresh();
+      // #705 と同じ理由。同意の状態が変わった直後なので読み込み直す
+      hardRedirect(redirectTo);
     } catch (error) {
       if (error instanceof UnauthorizedError) return;
       setErrorMessage("同意を記録できませんでした。時間をおいてお試しください");

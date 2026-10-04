@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
+import { hardRedirect } from "@/lib/navigation/hard-redirect";
 import Image from "next/image";
 import Link from "next/link";
 import { ErrorNotice } from "@/components/notices/ErrorNotice";
@@ -38,7 +38,6 @@ export function AdminMfaScreen({
   startEnroll?: () => Promise<Response>;
   submitCode?: (body: { code: string; factorId?: string }) => Promise<Response>;
 }) {
-  const router = useRouter();
   const [enrollment, setEnrollment] = useState<AdminMfaEnrollment | null>(null);
   const [code, setCode] = useState("");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -81,8 +80,9 @@ export function AdminMfaScreen({
         setErrorMessage(messageForError(await readError(response), mode));
         return;
       }
-      router.replace(redirectTo);
-      router.refresh();
+      // #705: ここで router.replace を使うと、関所に飛ばされた結果が
+      // ブラウザに 30 秒とどまっていて、また 6 桁の画面へ戻ってしまう
+      hardRedirect(redirectTo);
     } catch (error) {
       if (error instanceof UnauthorizedError) return;
       setErrorMessage("確認できませんでした。時間をおいてお試しください");

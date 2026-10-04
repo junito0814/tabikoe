@@ -7,8 +7,9 @@ import { SignupConsentScreen, type SignupConsentApi } from "./SignupConsentScree
  * - メールアドレスの表示、片方だけでは無効、両方で有効、押すと API が呼ばれ href へ遷移、「やめる」で cancel が呼ばれ SC-01 へ
  * - 同意チェックボックスは実体のある input（要件 7.7）
  */
-const replace = vi.fn();
-vi.mock("next/navigation", () => ({ useRouter: () => ({ replace, push: vi.fn(), refresh: vi.fn() }) }));
+// #705（2026-10-05）: ログインの状態が変わった直後なので、ルーターではなく読み込み直す
+const hardRedirect = vi.fn();
+vi.mock("@/lib/navigation/hard-redirect", () => ({ hardRedirect: (href: string) => hardRedirect(href) }));
 vi.mock("@/app/fonts", () => ({ outfit: { className: "outfit" }, lora: { className: "lora" } }));
 
 const api = (overrides: Partial<SignupConsentApi> = {}): SignupConsentApi => ({
@@ -17,7 +18,7 @@ const api = (overrides: Partial<SignupConsentApi> = {}): SignupConsentApi => ({
   ...overrides,
 });
 
-beforeEach(() => replace.mockClear());
+beforeEach(() => hardRedirect.mockClear());
 
 describe("SignupConsentScreen（SC-20 同意画面）", () => {
   it("Google のアカウント（メール）を表示し、Google のボタンは無い", () => {
@@ -45,7 +46,7 @@ describe("SignupConsentScreen（SC-20 同意画面）", () => {
     fireEvent.click(screen.getByRole("checkbox", { name: "利用規約に同意する" }));
     fireEvent.click(screen.getByRole("checkbox", { name: "個人情報保護方針に同意する" }));
     fireEvent.click(screen.getByRole("button", { name: "同意してはじめる" }));
-    await waitFor(() => expect(replace).toHaveBeenCalledWith("/posts/new"));
+    await waitFor(() => expect(hardRedirect).toHaveBeenCalledWith("/posts/new"));
     expect(a.signup).toHaveBeenCalledWith({ terms: true, privacy: true, redirectTo: "/posts/new" });
   });
 
@@ -55,14 +56,14 @@ describe("SignupConsentScreen（SC-20 同意画面）", () => {
     fireEvent.click(screen.getByRole("checkbox", { name: "個人情報保護方針に同意する" }));
     fireEvent.click(screen.getByRole("button", { name: "同意してはじめる" }));
     await waitFor(() => expect(screen.getByText(/両方への同意が必要/)).toBeInTheDocument());
-    expect(replace).not.toHaveBeenCalled();
+    expect(hardRedirect).not.toHaveBeenCalled();
   });
 
   it("「やめる」で cancel API が呼ばれ、ログイン画面へ戻る", async () => {
     const a = api();
     render(<SignupConsentScreen email="a@b" api={a} />);
     fireEvent.click(screen.getByRole("button", { name: "やめる" }));
-    await waitFor(() => expect(replace).toHaveBeenCalledWith("/login"));
+    await waitFor(() => expect(hardRedirect).toHaveBeenCalledWith("/login"));
     expect(a.cancel).toHaveBeenCalledTimes(1);
   });
 });

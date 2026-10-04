@@ -3,8 +3,9 @@ import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { ReconsentScreen } from "./ReconsentScreen";
 
 /** 出典: docs/tasks/admin/legal-documents/03-reconsent.md 単体テスト */
-const push = vi.fn();
-vi.mock("next/navigation", () => ({ useRouter: () => ({ push, refresh: vi.fn() }) }));
+// #705（2026-10-05）: 同意の状態が変わった直後なので、ルーターではなく読み込み直す
+const hardRedirect = vi.fn();
+vi.mock("@/lib/navigation/hard-redirect", () => ({ hardRedirect: (href: string) => hardRedirect(href) }));
 
 describe("ReconsentScreen", () => {
   it("変更の要点と全文リンクが出て、チェックしないと押せない。チェックすると API を呼んで元の場所へ", async () => {
@@ -19,7 +20,7 @@ describe("ReconsentScreen", () => {
     expect(button).toBeEnabled();
     fireEvent.click(button);
     await waitFor(() => expect(submit).toHaveBeenCalledWith(["terms"]));
-    await waitFor(() => expect(push).toHaveBeenCalledWith("/mypage"));
+    await waitFor(() => expect(hardRedirect).toHaveBeenCalledWith("/mypage"));
   });
 
   it("2 種類とも変わったときは両方にチェックが要る", () => {
