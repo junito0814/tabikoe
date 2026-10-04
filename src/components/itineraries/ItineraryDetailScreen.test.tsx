@@ -301,3 +301,34 @@ describe("loading-feedback Task 3: 押した直後に画面が変わる", () => 
     expect(screen.queryByRole("status")).not.toBeInTheDocument();
   });
 });
+
+/**
+ * #694（2026-10-05）: しおり詳細の印を減らす（決定事項 74②③⑤）。
+ * 押せば編集できるものに印を付けない、という考え方（プロフィールと同じ）。
+ */
+describe("印を減らす（#694）", () => {
+  it("タイトルと期間に鉛筆の印を出さない（タップで変えられるのは今までどおり）", () => {
+    render(<ItineraryDetailScreen initial={detail()} viewerId="me" api={makeApi(detail())} />);
+    expect(document.body.textContent).not.toContain("✎");
+  });
+
+  it("「地図で見る」は文字だけ", () => {
+    render(<ItineraryDetailScreen initial={detail()} viewerId="me" api={makeApi(detail())} />);
+    const button = screen.getByRole("button", { name: "地図で見る" });
+    expect(button.textContent?.trim()).toBe("地図で見る");
+  });
+
+  it("期間に絵文字を出さない", () => {
+    render(<ItineraryDetailScreen initial={detail()} viewerId="me" api={makeApi(detail())} />);
+    expect(document.body.textContent).not.toContain("📅");
+  });
+
+  it("「投稿する」はチェックの有無にかかわらず塗りつぶし", () => {
+    const withChecked = detail({ spots: [spot("a", { checkedAt: "2026-10-01T00:00:00.000Z" }), spot("b", { sortOrder: 1 }), spot("c", { sortOrder: 2 })] });
+    render(<ItineraryDetailScreen initial={withChecked} viewerId="me" api={makeApi(withChecked)} />);
+    for (const link of screen.getAllByRole("link", { name: "投稿する" })) {
+      expect(link.className).toContain("bg-accent");
+      expect(link.className).not.toContain("border-accent");
+    }
+  });
+});
