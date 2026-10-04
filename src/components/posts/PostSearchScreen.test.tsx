@@ -14,7 +14,7 @@ import { saveListState } from "@/lib/search/list-state";
  * 出典: docs/tasks/map-search/post-timeline/02-timeline-ui.md 単体テスト
  * - カードに必須要素がすべて描画されること
  * - 並び替えドロップダウンで選択がボタン表示に反映されること
- * - 基準点が無いとき距離の絞り込みが出ないこと
+ * - #681: 距離の絞り込みは出ない（地図タブに置き換え）
  * 出典: docs/tasks/map-search/post-timeline/03-scroll-and-back.md 単体テスト
  * - 保存した状態が URL キーで復元されること
  * 出典: docs/tasks/map-search/post-filter/02-filter-ui.md 単体テスト
@@ -139,7 +139,6 @@ describe("PostSearchScreen（SC-04 タイムライン）", () => {
     fireEvent.click(screen.getByRole("button", { name: "絞り込み" }));
     fireEvent.click(screen.getByLabelText("グルメ"));
     fireEvent.click(screen.getByLabelText("宿泊施設"));
-    fireEvent.click(screen.getByLabelText("1km以内"));
     fireEvent.click(screen.getByLabelText("〜3,000円"));
     fireEvent.click(screen.getByLabelText("2時間以内"));
     fireEvent.click(screen.getByLabelText("今月"));
@@ -151,16 +150,16 @@ describe("PostSearchScreen（SC-04 タイムライン）", () => {
       lng: "139.7671",
       q: "東京駅",
       categories: "グルメ,宿泊施設",
-      distance: "1000",
       cost: "3000",
       duration: "2時間以内",
       period: "this_month",
     });
-    expect(screen.getByRole("button", { name: "絞り込み（5）" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "絞り込み（4）" })).toBeInTheDocument();
   });
 
-  it("基準点が無いとき距離の絞り込みは出ない", () => {
-    renderScreen({ context: pref });
+  /** #681（2026-10-05）: 距離は廃止した（地図タブに置き換え。要件 3.4.2） */
+  it("距離の絞り込みは出ない（基準点があっても）", () => {
+    renderScreen({ context: nearby, title: "東京駅" });
     fireEvent.click(screen.getByRole("button", { name: "絞り込み" }));
     expect(screen.queryByLabelText("1km以内")).toBeNull();
     expect(screen.getByLabelText("〜3,000円")).toBeInTheDocument();

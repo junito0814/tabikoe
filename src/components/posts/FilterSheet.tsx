@@ -7,8 +7,6 @@ import { POST_CATEGORIES, POST_DURATIONS, type PostCategory } from "@/lib/posts/
 import {
   COST_RANGE_LABELS,
   COST_RANGES,
-  DISTANCE_LABELS,
-  DISTANCE_OPTIONS,
   PERIOD_LABELS,
   PERIOD_OPTIONS,
 } from "@/lib/posts/search-posts";
@@ -24,7 +22,7 @@ import type { ListView } from "@/lib/search/list-view";
  *
  * 【初心者向け】シートの中では `draft`（編集中の条件）を持ち、「この条件で表示」で親に渡す。
  * 親の state を直接いじらないのは、途中でやめて「閉じる」を押したときに元に戻せるようにするため。
- * 距離は基準点（駅・スポット検索・現在地）があるときだけ出す（`hasDistanceCenter`）。
+ * #681: 距離は廃止した（地図タブに置き換え。要件 3.4.2）。
  * 費用が未入力の投稿は予算の絞り込みで除外される（サーバー側の判定。ここでは案内文だけ）。
  *
  * このシートは 2 か所で使う（同じ見た目を 2 つ書かないため。約束 14）。
@@ -72,14 +70,12 @@ export type FilterSheetVariant = "posts" | "spots";
 export function FilterSheet<T extends SheetFilters>({
   open,
   value,
-  hasDistanceCenter,
   variant = "posts",
   onApply,
   onClose,
 }: {
   open: boolean;
   value: T;
-  hasDistanceCenter: boolean;
   variant?: FilterSheetVariant;
   /**
    * post-timeline Task 6（2026-10-03）: 「タビコエだけの場所」を出すか（投稿一覧のとき）。
@@ -92,18 +88,16 @@ export function FilterSheet<T extends SheetFilters>({
 }) {
   // 閉じているときは中身ごと外す。開くたびに中身が作り直され、draft が適用中の条件から始まる
   if (!open) return null;
-  return <FilterSheetBody value={value} hasDistanceCenter={hasDistanceCenter} variant={variant} onApply={onApply} onClose={onClose} />;
+  return <FilterSheetBody value={value} variant={variant} onApply={onApply} onClose={onClose} />;
 }
 
 function FilterSheetBody<T extends SheetFilters>({
   value,
-  hasDistanceCenter,
   variant,
   onApply,
   onClose,
 }: {
   value: T;
-  hasDistanceCenter: boolean;
   variant: FilterSheetVariant;
   onApply: (next: T) => void;
   onClose: () => void;
@@ -254,16 +248,11 @@ function FilterSheetBody<T extends SheetFilters>({
 
   const durationSection = singleChoice("duration", "滞在時間", POST_DURATIONS, draft.duration, (next) => patch({ duration: next }));
 
-  const distanceSection = hasDistanceCenter
-    ? singleChoice(
-        "distance",
-        "距離（検索した場所から）",
-        DISTANCE_OPTIONS,
-        draft.distance ?? null,
-        (next) => patch({ distance: next }),
-        (option) => DISTANCE_LABELS[option]
-      )
-    : null;
+  /*
+   * #681: 「距離（検索した場所から）」は廃止した（要件 3.4.2・決定事項 71）。
+   * 地図タブが付くと基準点が 2 つ（検索した場所と地図の中心）になり紛らわしいので、
+   * **地図を動かして見る**形に置き換えた。
+   */
 
   /* explore-mode Task 4: 評価（平均）。「★4 以上」は平均 4.0 ちょうどを含む（要件 3.4.6） */
   const ratingSection = singleChoice(
@@ -307,7 +296,7 @@ function FilterSheetBody<T extends SheetFilters>({
         {isSpots
           /* #680: 「タビコエだけの場所」の行は廃止（決定事項 70）。地図は 4 つ、投稿一覧は 5 つ */
           ? [categorySection, costSection, durationSection, ratingSection]
-          : [costSection, periodSection, categorySection, durationSection, distanceSection]}
+          : [costSection, periodSection, categorySection, durationSection]}
 
         <div className="flex justify-between">
           <button

@@ -13,7 +13,7 @@ import { EMPTY_SEARCH_STATE } from "./post-search-query";
 describe("FilterSheet（絞り込みシート）", () => {
   it("カテゴリを選んで「この条件で表示」を押すと、その条件が onApply に渡る", () => {
     const onApply = vi.fn();
-    render(<FilterSheet open value={EMPTY_SEARCH_STATE} hasDistanceCenter={false} onApply={onApply} onClose={vi.fn()} />);
+    render(<FilterSheet open value={EMPTY_SEARCH_STATE} onApply={onApply} onClose={vi.fn()} />);
     fireEvent.click(screen.getByLabelText("グルメ"));
     fireEvent.click(screen.getByRole("button", { name: "この条件で表示" }));
     expect(onApply).toHaveBeenCalledWith(expect.objectContaining({ categories: ["グルメ"] }));
@@ -22,7 +22,7 @@ describe("FilterSheet（絞り込みシート）", () => {
   it("Bug #473: シートは body 直下（上 1/3 地図＋シートの枠の外）に z-50 で出て、メニューバー（z-40）に隠れない。メニューバーは隠さず残す", () => {
     const { container } = render(
       <div className="relative z-10">
-        <FilterSheet open value={EMPTY_SEARCH_STATE} hasDistanceCenter={false} onApply={vi.fn()} onClose={vi.fn()} />
+        <FilterSheet open value={EMPTY_SEARCH_STATE} onApply={vi.fn()} onClose={vi.fn()} />
       </div>
     );
     const sheet = document.querySelector("[data-filter-sheet]") as HTMLElement;
@@ -34,7 +34,7 @@ describe("FilterSheet（絞り込みシート）", () => {
   });
 
   it("閉じているときは何も描画しない", () => {
-    render(<FilterSheet open={false} value={EMPTY_SEARCH_STATE} hasDistanceCenter={false} onApply={vi.fn()} onClose={vi.fn()} />);
+    render(<FilterSheet open={false} value={EMPTY_SEARCH_STATE} onApply={vi.fn()} onClose={vi.fn()} />);
     expect(document.querySelector("[data-filter-sheet]")).toBeNull();
   });
 });
@@ -49,19 +49,19 @@ describe("絞り込みの選び方（explore-mode Task 5）", () => {
   const SPOT_VALUE = { categories: [] as string[], cost: null, duration: null, rating: null };
 
   it("投稿一覧に「指定なし」を出さない", () => {
-    render(<FilterSheet open value={EMPTY_SEARCH_STATE} hasDistanceCenter onApply={vi.fn()} onClose={vi.fn()} />);
+    render(<FilterSheet open value={EMPTY_SEARCH_STATE} onApply={vi.fn()} onClose={vi.fn()} />);
     expect(screen.queryByLabelText("指定なし")).toBeNull();
     expect((document.querySelector("[data-filter-sheet] form") as HTMLElement).textContent).not.toContain("指定なし");
   });
 
   it("地図（探すモード）にも「指定なし」を出さない", () => {
-    render(<FilterSheet open value={SPOT_VALUE} hasDistanceCenter={false} variant="spots" onApply={vi.fn()} onClose={vi.fn()} />);
+    render(<FilterSheet open value={SPOT_VALUE} variant="spots" onApply={vi.fn()} onClose={vi.fn()} />);
     expect((document.querySelector("[data-filter-sheet] form") as HTMLElement).textContent).not.toContain("指定なし");
   });
 
   it("選んだものをもう一度押すと解除される（予算・滞在時間）", () => {
     const onApply = vi.fn();
-    render(<FilterSheet open value={EMPTY_SEARCH_STATE} hasDistanceCenter={false} onApply={onApply} onClose={vi.fn()} />);
+    render(<FilterSheet open value={EMPTY_SEARCH_STATE} onApply={onApply} onClose={vi.fn()} />);
     // 1 回目で選ばれ、2 回目で外れる
     fireEvent.click(screen.getByLabelText("〜3,000円"));
     expect(screen.getByLabelText("〜3,000円")).toBeChecked();
@@ -76,7 +76,7 @@ describe("絞り込みの選び方（explore-mode Task 5）", () => {
 
   it("別のものを押すと乗り換わる（2 つ同時に選ばれない）", () => {
     const onApply = vi.fn();
-    render(<FilterSheet open value={EMPTY_SEARCH_STATE} hasDistanceCenter={false} onApply={onApply} onClose={vi.fn()} />);
+    render(<FilterSheet open value={EMPTY_SEARCH_STATE} onApply={onApply} onClose={vi.fn()} />);
     fireEvent.click(screen.getByLabelText("〜1,000円"));
     fireEvent.click(screen.getByLabelText("〜5,000円"));
     expect(screen.getByLabelText("〜1,000円")).not.toBeChecked();
@@ -87,7 +87,7 @@ describe("絞り込みの選び方（explore-mode Task 5）", () => {
 
   it("地図の評価も、もう一度押すと解除される", () => {
     const onApply = vi.fn();
-    render(<FilterSheet open value={SPOT_VALUE} hasDistanceCenter={false} variant="spots" onApply={onApply} onClose={vi.fn()} />);
+    render(<FilterSheet open value={SPOT_VALUE} variant="spots" onApply={onApply} onClose={vi.fn()} />);
     fireEvent.click(screen.getByLabelText("★4 以上"));
     fireEvent.click(screen.getByLabelText("★5"));
     expect(screen.getByLabelText("★4 以上")).not.toBeChecked();
@@ -98,7 +98,7 @@ describe("絞り込みの選び方（explore-mode Task 5）", () => {
 
   it("カテゴリは今までどおり複数選べる", () => {
     const onApply = vi.fn();
-    render(<FilterSheet open value={EMPTY_SEARCH_STATE} hasDistanceCenter={false} onApply={onApply} onClose={vi.fn()} />);
+    render(<FilterSheet open value={EMPTY_SEARCH_STATE} onApply={onApply} onClose={vi.fn()} />);
     fireEvent.click(screen.getByLabelText("グルメ"));
     fireEvent.click(screen.getByLabelText("宿泊施設"));
     fireEvent.click(screen.getByRole("button", { name: "この条件で表示" }));
@@ -111,17 +111,16 @@ describe("絞り込みの選び方（explore-mode Task 5）", () => {
       <FilterSheet
         open
         value={{ ...EMPTY_SEARCH_STATE, sort: "rating" as const }}
-        hasDistanceCenter
+       
         onApply={onApply}
         onClose={vi.fn()}
       />
     );
     fireEvent.click(screen.getByLabelText("〜1,000円"));
     fireEvent.click(screen.getByLabelText("グルメ"));
-    fireEvent.click(screen.getByLabelText("1km以内"));
     fireEvent.click(screen.getByRole("button", { name: "条件をクリア" }));
     fireEvent.click(screen.getByRole("button", { name: "この条件で表示" }));
-    expect(onApply).toHaveBeenCalledWith(expect.objectContaining({ cost: null, categories: [], distance: null, sort: "rating" }));
+    expect(onApply).toHaveBeenCalledWith(expect.objectContaining({ cost: null, categories: [], sort: "rating" }));
   });
 });
 
@@ -133,11 +132,23 @@ describe("#680: 「タビコエだけの場所」は出さない", () => {
   const SPOT_VALUE = { categories: [] as string[], cost: null, duration: null, rating: null };
 
   it("投稿一覧にも地図にも、その行が無い", () => {
-    const { unmount } = render(<FilterSheet open value={EMPTY_SEARCH_STATE} hasDistanceCenter={false} onApply={vi.fn()} onClose={vi.fn()} />);
+    const { unmount } = render(<FilterSheet open value={EMPTY_SEARCH_STATE} onApply={vi.fn()} onClose={vi.fn()} />);
     expect(screen.queryByText("タビコエだけの場所")).toBeNull();
     unmount();
 
-    render(<FilterSheet open variant="spots" value={SPOT_VALUE} hasDistanceCenter={false} onApply={vi.fn()} onClose={vi.fn()} />);
+    render(<FilterSheet open variant="spots" value={SPOT_VALUE} onApply={vi.fn()} onClose={vi.fn()} />);
     expect(screen.queryByText("タビコエだけの場所")).toBeNull();
+  });
+});
+
+/**
+ * #681（2026-10-05）: 「距離（検索した場所から）」は廃止した（要件 3.4.2・決定事項 71）。
+ * 地図タブが付くと基準点が 2 つ（検索した場所と地図の中心）になり紛らわしいため。
+ */
+describe("#681: 距離は出さない", () => {
+  it("投稿一覧の絞り込みに距離の段が無い", () => {
+    render(<FilterSheet open value={EMPTY_SEARCH_STATE} onApply={vi.fn()} onClose={vi.fn()} />);
+    expect(screen.queryByText(/距離/)).toBeNull();
+    expect(screen.queryByLabelText("1km以内")).toBeNull();
   });
 });

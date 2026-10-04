@@ -12,10 +12,22 @@ import type { ListView } from "@/lib/search/list-view";
  * （サーバーからも使うため、この "use client" ファイルには置かない）。
  */
 export type { ListView };
-export function ViewToggle({ value, onChange, className }: { value: ListView; onChange: (view: ListView) => void; className?: string }) {
+export function ViewToggle({
+  value,
+  onChange,
+  showMap = false,
+  className,
+}: {
+  value: ListView;
+  onChange: (view: ListView) => void;
+  /** #681: 検索結果のときだけ「地図」を出す（スポット別では出さない） */
+  showMap?: boolean;
+  className?: string;
+}) {
   const options: { view: ListView; label: string }[] = [
     { view: "posts", label: "投稿" },
     { view: "photos", label: "写真" },
+    ...(showMap ? [{ view: "map" as const, label: "地図" }] : []),
   ];
   return (
     <div role="radiogroup" aria-label="表示" className={`inline-flex rounded-full border border-line bg-surface p-0.5 ${className ?? ""}`}>

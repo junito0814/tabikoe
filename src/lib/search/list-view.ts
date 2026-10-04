@@ -6,8 +6,14 @@
  * `"use client"` の付いたコンポーネントファイルではなく、この何も付かないファイルに置く。
  * Next.js では `"use client"` のファイルから export した関数はサーバーから呼べない（#419 の原因）。
  */
-export type ListView = "posts" | "photos";
+/**
+ * #681（2026-10-05）: 検索結果に「地図」を足した（決定事項 71）。
+ * スポット別の投稿一覧では使わない（そのスポットは決まっているため）。
+ */
+export type ListView = "posts" | "photos" | "map";
 
 export function parseListView(value: string | null | undefined): ListView {
-  return value === "photos" ? "photos" : "posts";
+  if (value === "photos") return "photos";
+  if (value === "map") return "map";
+  return "posts";
 }
