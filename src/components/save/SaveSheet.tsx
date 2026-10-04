@@ -226,7 +226,7 @@ function SaveSheetBody({
         {showWishlist && (
           <label className="flex cursor-pointer items-center gap-3 rounded-[10px] border border-line px-3 py-2.5">
             <input type="checkbox" checked={wishlisted} onChange={() => void toggleWishlist()} disabled={busy} className="h-5 w-5 accent-[var(--accent)]" />
-            <span className="flex-1 text-[14px] font-semibold text-ink">🔖 行きたいスポット</span>
+            <span className="flex-1 text-[14px] font-semibold text-ink">行きたいスポット</span>
             {wishlistCount !== null && <span className="text-[12px] text-muted">{wishlistCount} 件</span>}
           </label>
         )}

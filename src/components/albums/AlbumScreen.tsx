@@ -3,6 +3,7 @@
 import { useState, type FormEvent, useMemo } from "react";
 import Link from "next/link";
 import { TrashButton } from "@/components/ui/TrashButton";
+import { PencilIcon } from "@/components/ui/LineIcons";
 import { InAppInvitePanel, searchUsersRequest, type InAppInviteApi } from "@/components/invitations/InAppInvitePanel";
 import type { InviteCandidate } from "@/lib/invitations/in-app";
 import type { UserSummary } from "@/lib/users/search-users";
@@ -245,7 +246,7 @@ export function AlbumScreen({
               </button>
             </form>
           ) : (
-            // v3.1（mentoring-7 Task9）: 「名前を変更」ボタンは置かない。しおりが無いアルバムだけタイトルをタップ（✎）で変更。
+            // v3.1（mentoring-7 Task9）: 「名前を変更」ボタンは置かない。しおりが無いアルバムだけタイトルをタップで変更。
             // しおりがあるアルバムは名前をしおり詳細のタイトルで変える（名前は 1 つ）
             canManage && !album.itineraryId ? (
               <button
@@ -258,7 +259,10 @@ export function AlbumScreen({
                 className="flex min-w-0 items-start gap-1.5 text-left text-[20px] font-bold text-ink"
               >
                 <span className="min-w-0 break-words">{title}</span>
-                <span aria-hidden className="mt-1 text-[13px] font-normal text-muted">✎</span>
+                {/* #713: 絵文字をやめ、線の鉛筆にした（「押すと変えられる」の合図） */}
+                <span className="mt-1 text-muted">
+                  <PencilIcon size={13} />
+                </span>
               </button>
             ) : (
               <h1 className="min-w-0 break-words text-[20px] font-bold text-ink">{title}</h1>
@@ -284,12 +288,12 @@ export function AlbumScreen({
           <div className="flex flex-wrap gap-2">
             {/* F-RC-05（SC-21）: このアルバムの写真・動画だけを並べて眺める（非公開投稿も含む） */}
             <Link href={`/albums/${album.tripId}/photos`} className="inline-flex h-8 w-fit items-center gap-1 rounded-full border border-line bg-surface px-3 text-[12px] font-semibold text-ink">
-              🖼 写真
+              写真
             </Link>
             {/* itinerary-basics Task4: しおりのメンバーにだけ「しおりを見る」 */}
             {album.itineraryId && (
               <Link href={`/itineraries/${album.itineraryId}?back=${encodeURIComponent(`/albums/${album.tripId}`)}`} className="inline-flex h-8 w-fit items-center gap-1 rounded-full border border-line bg-surface px-3 text-[12px] font-semibold text-ink">
-                🔖 しおりを見る
+                しおりを見る
               </Link>
             )}
           </div>

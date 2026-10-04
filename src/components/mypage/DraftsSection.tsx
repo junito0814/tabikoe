@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { PencilIcon } from "@/components/ui/LineIcons";
 import { TrashButton } from "@/components/ui/TrashButton";
 import { fetchWithAuthRedirect, UnauthorizedError } from "@/lib/api/fetch-with-auth-redirect";
 import { composeHref } from "@/lib/posts/compose-href";
@@ -58,7 +59,7 @@ export function DraftsSection({
   return (
     <section aria-label="下書き" data-drafts-section className="flex flex-col gap-2 rounded-[12px] border border-dashed border-line bg-surface p-3">
       <h2 className="flex items-center gap-1.5 text-[13px] font-bold text-ink">
-        <span aria-hidden>✎</span>
+        <PencilIcon size={12} />
         下書き {total} 件
       </h2>
       <ul className="flex flex-col gap-1.5">

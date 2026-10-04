@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { CommentIcon } from "@/components/ui/LineIcons";
 import { appendBackHref } from "@/lib/search/list-state";
 import { LikeButton } from "@/components/likes/LikeButton";
 import { MediaGrid } from "@/components/media/MediaGrid";
@@ -113,7 +114,7 @@ export function PostCard({
           aria-label={`コメント${post.commentCount}件`}
           className="inline-flex h-8 items-center gap-1 rounded-full px-2 text-[12px] text-muted"
         >
-          <span aria-hidden>💬</span>
+          <CommentIcon />
           {post.commentCount}
         </Link>
         <span className="ml-auto" />
