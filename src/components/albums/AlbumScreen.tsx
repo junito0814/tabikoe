@@ -36,6 +36,8 @@ export interface AlbumApi {
   changeRole: (tripId: string, userId: string, role: InvitableRole) => Promise<Response>;
   removeMember: (tripId: string, userId: string) => Promise<Response>;
   leave: (tripId: string) => Promise<Response>;
+  /** #715: 投稿 0 件のアルバムを消す */
+  deleteAlbum?: (tripId: string) => Promise<Response>;
 }
 
 /**
@@ -168,6 +170,22 @@ export function AlbumScreen({
     );
   };
 
+  /** #715: 投稿 0 件のアルバムを消す。確認してから */
+  const handleDeleteAlbum = () => {
+    if (!api.deleteAlbum) return;
+    if (!window.confirm(`「${title}」を削除しますか？（取り消せません）`)) return;
+    void run(
+      "delete",
+      async () => {
+        const response = await api.deleteAlbum!(album.tripId);
+        if (!response.ok) throw new Error("delete failed");
+        router.push("/albums");
+        router.refresh();
+      },
+      "削除できませんでした"
+    );
+  };
+
   const handleLeave = () => {
     if (!window.confirm("このアルバムから退出しますか？（これまでの自分の投稿はアルバムに残ります）")) return;
     void run(
@@ -248,6 +266,25 @@ export function AlbumScreen({
           <p className="text-[11px] text-muted">
             あなたの権限: {ALBUM_ROLE_LABELS[album.viewerRole]} ・ 投稿 {album.posts.length}件 ・ メンバー {members.length}人
           </p>
+          {/*
+            * #715: 投稿が 0 件のときだけ消せる。
+            * 投稿があるアルバムを消すと中の投稿も一緒に消えてしまうので、ボタン自体を出さない
+            * （消したいなら先に投稿を消してもらう）。ゴミ箱の印は #695 と同じ形。
+            */}
+          {canManage && album.posts.length === 0 && api.deleteAlbum && (
+            <button
+              type="button"
+              onClick={() => void handleDeleteAlbum()}
+              disabled={busy !== null}
+              aria-label="このアルバムを削除"
+              className="inline-flex h-8 w-fit items-center gap-1.5 rounded-full border border-line px-3 text-[12px] font-semibold text-saved disabled:opacity-45"
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden>
+                <path d="M4 7h16M9 7V4h6v3m-8 0 1 13h8l1-13" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+              {busy === "delete" ? "削除しています…" : "削除"}
+            </button>
+          )}
           <div className="flex flex-wrap gap-2">
             {/* F-RC-05（SC-21）: このアルバムの写真・動画だけを並べて眺める（非公開投稿も含む） */}
             <Link href={`/albums/${album.tripId}/photos`} className="inline-flex h-8 w-fit items-center gap-1 rounded-full border border-line bg-surface px-3 text-[12px] font-semibold text-ink">
@@ -446,6 +483,7 @@ export function AlbumScreen({
 }
 
 const defaultApi: AlbumApi = {
+  deleteAlbum: (tripId) => fetchWithAuthRedirect(`/api/trips/${tripId}`, { method: "DELETE" }),
   rename: (tripId, title) =>
     fetchWithAuthRedirect(`/api/trips/${tripId}`, {
       method: "PATCH",

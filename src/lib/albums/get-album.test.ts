@@ -51,3 +51,36 @@ describe("toAlbumMembers", () => {
     expect(members[2]).toMatchObject({ displayName: "みる", avatarUrl: "/default-avatar.svg" });
   });
 });
+
+/**
+ * #715（2026-10-05）: アルバムを自分で作れるようにしたので、
+ * **自分がオーナーのものは投稿 0 件でも一覧に残す**（これが無いと作った直後に消える）。
+ * 並び順も選べるようにした（既定は新着順）。
+ */
+describe("#715: 自分で作った空のアルバム", () => {
+  it("オーナーなら投稿 0 件でも残る", () => {
+    const albums = [
+      { tripId: "mine", postCount: 0, role: "owner" },
+      { tripId: "theirs", postCount: 0, role: "editor" },
+      { tripId: "with-posts", postCount: 3, role: "viewer" },
+    ];
+    expect(filterAlbumsWithPosts(albums).map((album) => album.tripId)).toEqual(["mine", "with-posts"]);
+  });
+});
+
+describe("#715: 並び順", () => {
+  const albums = [
+    { isDaily: false, updatedAt: "2026-10-01T00:00:00.000Z", tripId: "old" },
+    { isDaily: false, updatedAt: "2026-10-05T00:00:00.000Z", tripId: "new" },
+    { isDaily: false, updatedAt: null, tripId: "empty" },
+    { isDaily: true, updatedAt: "2026-09-01T00:00:00.000Z", tripId: "daily" },
+  ];
+
+  it("既定は新着順。「日常」は先頭のまま", () => {
+    expect(sortAlbumsDailyFirst(albums).map((album) => album.tripId)).toEqual(["daily", "new", "old", "empty"]);
+  });
+
+  it("古い順にすると入れ替わる。投稿が無いものは末尾のまま", () => {
+    expect(sortAlbumsDailyFirst(albums, "oldest").map((album) => album.tripId)).toEqual(["daily", "old", "new", "empty"]);
+  });
+});

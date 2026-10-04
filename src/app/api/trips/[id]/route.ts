@@ -104,3 +104,49 @@ export async function PATCH(
 
   return NextResponse.json({ trip: data });
 }
+
+/**
+ * DELETE /api/trips/[id] — アルバムを削除する（#715）
+ * 出典: 要件定義書 3.6.2・ワイヤーフレーム決定事項 82
+ *
+ * 【初心者向け】**投稿が 1 件でもあれば断る。** アルバムを消すと中の投稿も
+ * 一緒に消えてしまうため（外部キーの cascade）。消したいなら先に投稿を消してもらう。
+ * これなら「写真ごと消えた」という事故が起きない。
+ *
+ * 「日常」は消せない（1 人 1 つの入れ物なので）。オーナーだけが消せる。
+ */
+export async function DELETE(_request: Request, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  const supabase = await createClient();
+  const user = await getAuthenticatedUser(supabase);
+  if (!user) {
+    return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+  }
+
+  const admin = createAdminClient();
+  if (await isDailyTrip(admin, id)) {
+    return NextResponse.json({ error: "daily_album" }, { status: 400 });
+  }
+
+  // 投稿が 1 件でもあれば消させない（下書きも数える。消えると取り返せないため）
+  const { count, error: countError } = await admin
+    .from("posts")
+    .select("id", { count: "exact", head: true })
+    .eq("trip_id", id);
+  if (countError) {
+    return NextResponse.json({ error: "fetch_failed" }, { status: 500 });
+  }
+  if ((count ?? 0) > 0) {
+    return NextResponse.json({ error: "album_has_posts" }, { status: 400 });
+  }
+
+  // オーナーだけが消せる。user_id 条件と RLS の二重で担保する
+  const { data, error } = await supabase.from("trips").delete().eq("id", id).eq("user_id", user.id).select("id").maybeSingle();
+  if (error) {
+    return NextResponse.json({ error: "delete_failed" }, { status: 500 });
+  }
+  if (!data) {
+    return NextResponse.json({ error: "forbidden" }, { status: 403 });
+  }
+  return NextResponse.json({ ok: true });
+}
