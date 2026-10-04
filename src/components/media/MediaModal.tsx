@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState, type ReactNode } from "react"
 import { createPortal } from "react-dom";
 import Link from "next/link";
 import type { MediaItem } from "./MediaGrid";
+import { CloseButton } from "@/components/ui/CloseButton";
 
 /**
  * media-layout-v3 Task1: 写真・動画モーダル（全画面共通）
@@ -95,9 +96,8 @@ export function MediaModal({
         <span aria-live="polite">
           {index + 1} / {items.length}
         </span>
-        <button type="button" onClick={onClose} aria-label="閉じる" className="h-9 rounded-full bg-white/15 px-3 text-[13px] font-semibold">
-          閉じる
-        </button>
+        {/* #712: 文字の「閉じる」をやめ、× に揃えた（位置は元から右上） */}
+        <CloseButton onClick={onClose} className="bg-white/15 text-white" />
       </div>
 
       <div className="relative flex min-h-0 flex-1 items-center justify-center px-2" onClick={(event) => event.stopPropagation()}>

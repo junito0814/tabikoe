@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { CloseButton } from "@/components/ui/CloseButton";
 import type { MapPinData } from "@/lib/map/get-map-pins";
 import { composeHref } from "@/lib/posts/compose-initial-state";
 import { formatStatusLabel } from "@/lib/spots/format-status-label";
@@ -31,16 +32,8 @@ export function PinCallout({ target, backHref, onClose }: { target: CalloutTarge
       data-pin-callout={target.kind === "temp" ? "temp" : target.pin.kind}
       className="relative w-[min(260px,calc(100vw-48px))] rounded-[12px] border border-line bg-surface p-3 text-ink shadow-card"
     >
-      <button
-        type="button"
-        onClick={onClose}
-        aria-label="閉じる"
-        className="absolute right-1.5 top-1.5 flex h-6 w-6 items-center justify-center rounded-full text-muted"
-      >
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" aria-hidden>
-          <path d="M6 6l12 12M18 6L6 18" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" />
-        </svg>
-      </button>
+      {/* #712: 形を共通部品に寄せた（位置は元から右上） */}
+      <CloseButton onClick={onClose} className="absolute right-1 top-1" />
       {target.kind === "temp" ? (
         <TempBody lat={target.lat} lng={target.lng} />
       ) : target.pin.kind === "draft" ? (

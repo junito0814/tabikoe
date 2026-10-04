@@ -2,6 +2,7 @@
 
 import { useEffect, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
+import { CloseButton } from "@/components/ui/CloseButton";
 import { POST_CATEGORIES, POST_DURATIONS, type PostCategory } from "@/lib/posts/constants";
 import {
   COST_RANGE_LABELS,
@@ -299,9 +300,8 @@ function FilterSheetBody<T extends SheetFilters>({
           <h2 id="filter-sheet-title" className="text-[15px] font-bold text-ink">
             絞り込み
           </h2>
-          <button type="button" onClick={onClose} className="text-[12px] font-medium text-muted underline underline-offset-2">
-            閉じる
-          </button>
+          {/* #712: 文字の「閉じる」をやめ、右上の × に揃えた（要件 4.5.13） */}
+          <CloseButton onClick={onClose} />
         </div>
 
         {isSpots

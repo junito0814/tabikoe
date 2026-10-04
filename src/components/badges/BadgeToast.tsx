@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { CloseButton } from "@/components/ui/CloseButton";
 import { findBadgeDefinition } from "@/lib/badges/catalog";
 
 /** 自動で閉じるまでの時間。複数件をまとめて1枚に出すので少し長め */
@@ -67,14 +68,8 @@ export function BadgeToast({
             バッジ一覧を見る
           </Link>
         </div>
-        <button
-          type="button"
-          onClick={() => setIsOpen(false)}
-          aria-label="閉じる"
-          className="shrink-0 text-[14px] leading-none text-muted"
-        >
-          ×
-        </button>
+        {/* #712: 文字の × をやめ、形を共通部品に寄せた */}
+        <CloseButton onClick={() => setIsOpen(false)} />
       </div>
     </div>
   );
