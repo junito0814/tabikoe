@@ -7,13 +7,14 @@ import Link from "next/link";
  *       要件定義書 v3.0 3.6.1・4.2
  *
  * 【初心者向け】4 つだけ。しおりはメニューバー（旅行と結びつくもの）へ移し、ここには置かない
- * （自分の手元にあるもの＝行きたい・アルバム・あしあと・バッジ）。
+ * （自分の手元にあるもの＝行きたい・アルバム・投稿履歴・バッジ）。
  * strike-system Task 5（2026-09-27）: その下に「アカウントの状態」（SC-28）への 1 行を足す。制限中は赤い印を付ける。
  */
 export const MY_PAGE_MENU = [
   { key: "wishlist", label: "行きたい", href: "/wishlist" },
   { key: "albums", label: "アルバム", href: "/albums" },
-  { key: "mymap", label: "あしあと", href: "/mymap" },
+  // #682: 「あしあと」→「投稿履歴」に改称（URL は変えない）
+  { key: "mymap", label: "投稿履歴", href: "/mymap" },
   { key: "badges", label: "バッジ", href: "/badges" },
 ] as const;
 

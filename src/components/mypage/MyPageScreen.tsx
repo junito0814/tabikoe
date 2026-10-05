@@ -1,9 +1,6 @@
 import Link from "next/link";
-import type { MyPageSummary, MyPostsPage } from "@/lib/users/my-page";
-import type { DraftListPage } from "@/lib/posts/drafts";
-import { DraftsSection } from "./DraftsSection";
+import type { MyPageSummary } from "@/lib/users/my-page";
 import { MyPageMenu } from "./MyPageMenu";
-import { MyPostsList, type FetchMyPosts } from "./MyPostsList";
 import { PullToRefresh } from "@/components/layout/PullToRefresh";
 
 export interface MyPageProfile {
@@ -24,23 +21,14 @@ export interface MyPageProfile {
 export function MyPageScreen({
   profile,
   summary,
-  initialPosts,
-  tripOptions,
-  drafts,
   wishlistCount,
   restrictedUntil = null,
-  fetchPosts,
 }: {
   profile: MyPageProfile;
   summary: MyPageSummary;
-  initialPosts: MyPostsPage;
-  tripOptions: { id: string; title: string }[];
-  /** v3.0: 下書き（あるときだけ段を出す） */
-  drafts?: DraftListPage;
   wishlistCount?: number;
   /** strike-system Task 5: 投稿禁止中なら解除日時。先頭に帯を出す */
   restrictedUntil?: string | null;
-  fetchPosts?: FetchMyPosts;
 }) {
   return (
     <PullToRefresh>
@@ -71,8 +59,7 @@ export function MyPageScreen({
             </div>
           </section>
 
-          {/* 1.5 下書き（あるときだけ。my-page-v3 Task1） */}
-          {drafts && <DraftsSection initial={drafts} />}
+          {/* #682: 下書きと自分の投稿一覧は「投稿履歴」（SC-12）へ移した */}
 
           {/* 2. サマリー */}
           <section aria-label="サマリー" className="grid grid-cols-2 gap-2">
@@ -89,8 +76,6 @@ export function MyPageScreen({
           {/* 3. 遷移メニュー */}
           <MyPageMenu wishlistCount={wishlistCount} isRestricted={!!restrictedUntil} />
 
-          {/* 4. 自分の投稿一覧 */}
-          <MyPostsList initialPage={initialPosts} tripOptions={tripOptions} fetchPosts={fetchPosts} />
         </div>
       </div>
     </PullToRefresh>

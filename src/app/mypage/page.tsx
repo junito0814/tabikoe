@@ -34,12 +34,10 @@ export default async function MyPage() {
 
   return (
     <ContentEnter>
+      {/* #682: 投稿一覧と下書きは「投稿履歴」（/mymap）へ移した */}
       <MyPageScreen
         profile={data.profile}
         summary={data.summary}
-        initialPosts={data.initialPosts}
-        tripOptions={data.tripOptions}
-        drafts={data.drafts}
         wishlistCount={data.wishlistCount}
         restrictedUntil={data.restrictedUntil}
       />

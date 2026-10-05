@@ -34,7 +34,7 @@ const NAMED_PATHS: [RegExp, string][] = [
   [/^\/mypage\/?$/, "マイページ"],
   [/^\/wishlist\/?$/, "行きたい"],
   [/^\/notifications\/?$/, "通知"],
-  [/^\/mymap\/?$/, "あしあと"],
+  [/^\/mymap\/?$/, "投稿履歴"],
   [/^\/badges\/?$/, "バッジ"],
   [/^\/map\/?$/, "地図"],
 ];
