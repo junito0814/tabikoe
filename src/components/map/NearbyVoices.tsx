@@ -272,7 +272,6 @@ export function NearbyVoices({
       <FilterSheet
         open={isSheetOpen}
         value={toSheet(filters)}
-        hasDistanceCenter={false}
         variant="spots"
         onApply={(next) => {
           restoreSpotRef.current = null; // 条件を変えたら、復元の指定は忘れる

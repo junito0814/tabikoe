@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 
 const replace = vi.fn();
 vi.mock("next/navigation", () => ({ useRouter: () => ({ replace, push: vi.fn(), refresh: vi.fn() }) }));
@@ -96,5 +96,17 @@ describe("#673: 引っ張って更新", () => {
     expect(container, "検索結果は「付ける」6 画面の 1 つ（受入条件 96）").not.toBeNull();
     // 中身ごと包んでいること（一部だけ包むと、引ける場所が画面の一部に限られる）
     expect(container?.querySelector("[data-spot-card='s1']")).not.toBeNull();
+  });
+});
+
+/**
+ * #681（2026-10-05）: 検索結果に「地図」タブ（決定事項 71）。
+ * スポット別の投稿一覧には出さない（そのスポットは決まっているため）。
+ */
+describe("地図タブ（#681）", () => {
+  it("検索結果では 投稿／写真／地図 の 3 つが選べる", () => {
+    render(<SpotSearchScreen context={pref} initialState={EMPTY_SEARCH_STATE} initialPage={{ spots: [spot("s1")], nextOffset: null }} title="東京都" backHref="/" backLabel="ホーム" />);
+    const toggle = screen.getByRole("radiogroup", { name: "表示" });
+    expect(within(toggle).getAllByRole("radio").map((radio) => radio.textContent)).toEqual(["投稿", "写真", "地図"]);
   });
 });

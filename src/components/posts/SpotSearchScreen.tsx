@@ -17,7 +17,8 @@ import { PullToRefresh } from "@/components/layout/PullToRefresh";
 import { SortDropdown } from "./SortDropdown";
 import { SpotCard } from "./SpotCard";
 import { ViewToggle } from "./ViewToggle";
-import { buildPostSearchParams, buildSearchPageHref, countActiveFilters, distanceCenter, type PostSearchState, type SearchContext } from "./post-search-query";
+import { SearchMapView } from "./SearchMapView";
+import { buildPostSearchParams, buildSearchPageHref, countActiveFilters, type PostSearchState, type SearchContext } from "./post-search-query";
 import { useInfiniteScroll } from "./use-infinite-scroll";
 import { useListRestore } from "./use-search-list";
 
@@ -124,6 +125,8 @@ export function SpotSearchScreen({
   };
   const mediaParams = buildPostSearchParams({ ...state, view: "posts" }, context, 0);
   const isPhotos = state.view === "photos";
+  // #681: 地図タブ（検索結果のときだけ）
+  const isMap = state.view === "map";
 
   /*
    * #673（2026-10-03）: 引っ張って更新。
@@ -157,12 +160,20 @@ export function SpotSearchScreen({
               </button>
             </div>
             <div className="flex items-center justify-between gap-2">
-              <ViewToggle value={state.view} onChange={onViewChange} />
+              <ViewToggle value={state.view} onChange={onViewChange} showMap />
               <SortDropdown<SpotSort> value={state.sort as SpotSort} onChange={onSortChange} options={SPOT_SORTS} labels={SPOT_SORT_LABELS} />
             </div>
           </header>
 
-          {isPhotos ? (
+          {isMap ? (
+            <SearchMapView
+              spots={spots}
+              backHref={pageHref}
+              hasMore={nextOffset !== null}
+              isLoading={isLoading}
+              onLoadMore={loadMore}
+            />
+          ) : isPhotos ? (
             <PhotoGrid
               key={mediaParams.toString()}
               params={mediaParams}
@@ -183,12 +194,12 @@ export function SpotSearchScreen({
             </ul>
           )}
 
-          {!isPhotos && errorMessage && (
+          {!isPhotos && !isMap && errorMessage && (
             <ErrorNotice className="mt-3" message={errorMessage} onRetry={() => void load(state, spots.length === 0 ? 0 : (nextOffset ?? 0), spots.length === 0)} />
           )}
 
           <div ref={sentinelRef} aria-hidden className="h-1" />
-          {!isPhotos && nextOffset !== null && (
+          {!isPhotos && !isMap && nextOffset !== null && (
             <button
               type="button"
               onClick={loadMore}
@@ -204,7 +215,6 @@ export function SpotSearchScreen({
         <FilterSheet
           open={isSheetOpen}
           value={state}
-          hasDistanceCenter={distanceCenter(context) !== null}
             onApply={applyState}
             onClose={() => setIsSheetOpen(false)}
           />

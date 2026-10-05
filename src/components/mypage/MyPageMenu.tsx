@@ -20,7 +20,8 @@ export const MY_PAGE_MENU = [
 export function MyPageMenu({ wishlistCount }: { wishlistCount?: number }) {
   return (
     <nav aria-label="マイページメニュー">
-      <ul className="grid grid-cols-2 gap-2">
+      {/* #683: 3 つなので 3 列（2 列だと 1 つだけ次の行に余る。2026-10-05 の撮影で見つけた） */}
+      <ul className="grid grid-cols-3 gap-2">
         {MY_PAGE_MENU.map((item) => (
           <li key={item.key}>
             <Link href={item.href} className="flex h-12 items-center justify-center gap-1.5 rounded-[10px] border border-line bg-surface text-[13px] font-semibold text-ink">

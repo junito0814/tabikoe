@@ -21,7 +21,6 @@ import {
   buildPostSearchParams,
   buildSearchPageHref,
   countActiveFilters,
-  distanceCenter,
   type PostSearchState,
   type SearchContext,
 } from "./post-search-query";
@@ -249,7 +248,6 @@ export function PostSearchScreen({
       <FilterSheet
         open={isSheetOpen}
         value={state}
-        hasDistanceCenter={distanceCenter(context) !== null}
         onApply={applyState}
         onClose={() => setIsSheetOpen(false)}
       />
