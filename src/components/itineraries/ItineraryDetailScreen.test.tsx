@@ -167,6 +167,38 @@ describe("ItineraryDetailScreen（SC-23）", () => {
     await waitFor(() => expect(api.updateSpot).toHaveBeenCalledWith("it-1", "b", { memo: "昼前に行く" }));
   });
 
+  /**
+   * #685（2026-10-05）: メモの改行が表示に出ていなかった。
+   *
+   * 【初心者向け】HTML は既定で改行を 1 つの空白にまとめる。見張るのは
+   * **文字そのもの**（改行入りの文が 1 つの要素に入っていること）と
+   * **改行をそのまま見せる指定**（`whitespace-pre-wrap`）の 2 つ。
+   * 指定が外れると、文字は同じまま表示だけ 1 行に潰れるため、両方見る。
+   */
+  it("メモの改行が表示に出る", () => {
+    const withMemo = detail({ spots: [spot("a", { memo: "朝いち\n9 時に集合" }), spot("b", { sortOrder: 1 }), spot("c", { sortOrder: 2 })] });
+    render(<ItineraryDetailScreen initial={withMemo} viewerId="me" api={makeApi(withMemo)} />);
+    const rowA = document.querySelector("[data-itinerary-spot='a']") as HTMLElement;
+    const memo = within(rowA).getByRole("button", { name: /メモ:/ });
+    expect(memo).toHaveTextContent("メモ: 朝いち 9 時に集合");
+    expect(memo.textContent).toContain("\n");
+    expect(memo).toHaveClass("whitespace-pre-wrap");
+  });
+
+  it("長いメモでも枠から溢れない（折り返す指定がある）", () => {
+    const withMemo = detail({ spots: [spot("a", { memo: "あ".repeat(80) }), spot("b", { sortOrder: 1 }), spot("c", { sortOrder: 2 })] });
+    render(<ItineraryDetailScreen initial={withMemo} viewerId="me" api={makeApi(withMemo)} />);
+    const rowA = document.querySelector("[data-itinerary-spot='a']") as HTMLElement;
+    expect(within(rowA).getByRole("button", { name: /メモ:/ })).toHaveClass("break-words");
+  });
+
+  it("メモの入力欄は改行を打てる広さがある（3 行）", () => {
+    render(<ItineraryDetailScreen initial={detail()} viewerId="me" api={makeApi(detail())} />);
+    const rowB = document.querySelector("[data-itinerary-spot='b']") as HTMLElement;
+    fireEvent.click(within(rowB).getByRole("button", { name: "＋ メモを追加" }));
+    expect(within(rowB).getByRole("textbox", { name: "メモ" })).toHaveAttribute("rows", "3");
+  });
+
   it("Day を移動しても画面は今の Day に留まり、トーストから移動先を開ける", async () => {
     const moved = detail({ spots: [spot("a", { arrivalTime: "10:00" }), spot("b", { sortOrder: 1, dayIndex: 2 }), spot("c", { sortOrder: 2 })] });
     const api = makeApi(moved);

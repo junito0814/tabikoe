@@ -135,18 +135,30 @@ export function ItinerarySpotRow({
         </div>
 
         {isEditingMemo ? (
+          // #685: 改行を打つことが前提なので 2 行 → 3 行にした
           <textarea
             value={memo}
             onChange={(event) => setMemo(event.target.value)}
             onBlur={saveMemo}
             maxLength={MEMO_MAX_LENGTH * 2}
-            rows={2}
+            rows={3}
             autoFocus
             aria-label="メモ"
             className="w-full rounded-[8px] border border-line bg-surface px-2 py-1 text-[12px] text-ink focus:outline-none focus:ring-1 focus:ring-accent"
           />
         ) : (
-          <button type="button" onClick={() => setIsEditingMemo(true)} className="text-left text-[12px] text-muted">
+          <button
+            type="button"
+            onClick={() => setIsEditingMemo(true)}
+            /*
+             * #685: メモの改行をそのまま見せる。
+             *
+             * 【初心者向け】HTML は既定で、連続する空白と改行を 1 つの空白にまとめてしまう。
+             * `whitespace-pre-wrap` で「改行はそのまま、幅が足りなければ折り返す」になる。
+             * 長い語で枠を突き抜けないように `break-words` も付けている。
+             */
+            className="whitespace-pre-wrap break-words text-left text-[12px] text-muted"
+          >
             {spot.memo ? `メモ: ${spot.memo}` : "＋ メモを追加"}
           </button>
         )}
