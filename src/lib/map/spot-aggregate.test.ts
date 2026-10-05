@@ -168,11 +168,6 @@ describe("matchesSpotFilters: 代表値で絞る（ここが仕様の中心）",
     expect(matchesSpotFilters(aggregate, spot, filters({ duration: "1時間以内" }))).toBe(false);
   });
 
-  it("「タビコエだけの場所」だけを出す", () => {
-    const aggregate = aggregateSpot([post()]);
-    expect(matchesSpotFilters(aggregate, { manual: false }, filters({ manualOnly: true }))).toBe(false);
-    expect(matchesSpotFilters(aggregate, { manual: true }, filters({ manualOnly: true }))).toBe(true);
-  });
 
   it("条件が無ければ、どのスポットも残る", () => {
     const aggregate = aggregateSpot([post({ cost: null, duration: null, category: null, rating: null })]);
@@ -193,8 +188,8 @@ describe("効いている条件の数（ボタンに付ける数字）", () => {
   });
 
   it("入れた数だけ増える", () => {
-    const f = { ...EMPTY_SPOT_FILTERS, categories: ["グルメ"] as const, cost: "3000" as const, manualOnly: true };
-    expect(activeSpotFilterCount(f)).toBe(3);
+    const f = { ...EMPTY_SPOT_FILTERS, categories: ["グルメ"] as const, cost: "3000" as const };
+    expect(activeSpotFilterCount(f)).toBe(2);
     expect(hasActiveSpotFilters(f)).toBe(true);
   });
 
@@ -238,10 +233,6 @@ describe("aggregateSpots（ピンとカードで同じ答えを出す 1 か所�
     expect(result.get("a")?.ratingAverage).toBe(4);
   });
 
-  it("タビコエだけの場所: 手で登録したスポットだけが残る", () => {
-    const result = aggregateSpots([spot("a", [p()], true), spot("b", [p()], false)], { ...EMPTY_SPOT_FILTERS, manualOnly: true });
-    expect([...result.keys()]).toEqual(["a"]);
-  });
 });
 
 describe("URL クエリの読み書き", () => {
@@ -252,7 +243,6 @@ describe("URL クエリの読み書き", () => {
       cost: "3000",
       duration: "1時間以内",
       minRating: 4,
-      manualOnly: true,
     });
   });
 
@@ -265,7 +255,7 @@ describe("URL クエリの読み書き", () => {
   });
 
   it("書いて読み直すと同じ条件に戻る（URL と地図の状態の保存はこれに頼っている）", () => {
-    const filters = { categories: ["観光スポット"] as const, cost: "1000" as const, duration: "30分以内" as const, minRating: 5, manualOnly: true };
+    const filters = { categories: ["観光スポット"] as const, cost: "1000" as const, duration: "30分以内" as const, minRating: 5 };
     const restored = parseSpotFilters(new URLSearchParams(spotFiltersToParams(filters)));
     expect(restored).toEqual(filters);
   });

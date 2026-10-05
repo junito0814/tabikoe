@@ -80,7 +80,6 @@ export function SpotPostListScreen({
   const header = (
     <div className="flex flex-col gap-2">
       <p className="flex flex-wrap items-center gap-x-1.5 text-[12px] text-muted">
-        {spot.isManualSpot && <span className="rounded-full bg-tint px-2 py-0.5 text-[10px] font-semibold text-accent">タビコエだけの場所</span>}
         <span>{spot.prefecture ?? "都道府県未設定"}</span>
         <span aria-hidden>・</span>
         <span>投稿 {spot.postCount} 件</span>

@@ -61,11 +61,12 @@ describe("PostDetailScreen（SC-05）", () => {
     expect(screen.getByRole("heading", { name: /コメント/ })).toBeInTheDocument();
   });
 
-  it("v3.0/v3.1: 見出しはスポット名でスポット別一覧へのリンク。タビコエだけの場所・上 1/3 の地図・自分も投稿する", () => {
+  it("v3.0/v3.1: 見出しはスポット名でスポット別一覧へのリンク。上 1/3 の地図・自分も投稿する", () => {
     render(<PostDetailScreen post={post} initialComments={noComments} />);
     const heading = screen.getByRole("heading", { level: 1 });
     expect(heading).toHaveTextContent("東京駅 グランスタ");
-    expect(heading).toHaveTextContent("タビコエだけの場所");
+    // #680（2026-10-05）: ラベルは廃止（決定事項 70）
+    expect(heading).not.toHaveTextContent("タビコエだけの場所");
     // Bug #471: スポット別一覧から「← 投稿」でこの投稿に戻れるよう back を付ける
     expect(heading.querySelector("a")).toHaveAttribute("href", "/spots/s1?back=%2Fposts%2Fp1");
     // v3.1: 「地図で見る」ボタンは無く上 1/3 に地図（StaticSpotMap）。map-sheet Task1: 全画面への入口は右下のボタンだけ

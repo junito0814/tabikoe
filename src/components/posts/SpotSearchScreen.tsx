@@ -205,7 +205,6 @@ export function SpotSearchScreen({
           open={isSheetOpen}
           value={state}
           hasDistanceCenter={distanceCenter(context) !== null}
-          showManualOnly
             onApply={applyState}
             onClose={() => setIsSheetOpen(false)}
           />

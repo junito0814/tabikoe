@@ -45,8 +45,8 @@ describe("FilterSheet（絞り込みシート）", () => {
  *       要件定義書 3.4.2「絞り込みの選び方」・3.4.6「選び方」
  */
 describe("絞り込みの選び方（explore-mode Task 5）", () => {
-  /** 地図（探すモード）で使う形。評価と「タビコエだけの場所」が増える */
-  const SPOT_VALUE = { categories: [] as string[], cost: null, duration: null, rating: null, manualOnly: false };
+  /** 地図（探すモード）で使う形。評価が増える */
+  const SPOT_VALUE = { categories: [] as string[], cost: null, duration: null, rating: null };
 
   it("投稿一覧に「指定なし」を出さない", () => {
     render(<FilterSheet open value={EMPTY_SEARCH_STATE} hasDistanceCenter onApply={vi.fn()} onClose={vi.fn()} />);
@@ -125,25 +125,19 @@ describe("絞り込みの選び方（explore-mode Task 5）", () => {
   });
 });
 
-/*
- * post-timeline Task 6（2026-10-03）: 投稿一覧の「タビコエだけの場所」
- * 出典: docs/tasks/map-search/post-timeline/06-manual-only-filter.md
+/**
+ * #680（2026-10-05）: 「タビコエだけの場所」は概念ごと廃止（決定事項 70）。
+ * 絞り込みは 地図＝カテゴリ・予算・滞在時間・評価、投稿一覧＝予算・期間・カテゴリ・滞在時間・距離。
  */
-describe("Task 6: 投稿一覧の「タビコエだけの場所」", () => {
-  it("検索結果（showManualOnly）のときだけ出る", () => {
+describe("#680: 「タビコエだけの場所」は出さない", () => {
+  const SPOT_VALUE = { categories: [] as string[], cost: null, duration: null, rating: null };
+
+  it("投稿一覧にも地図にも、その行が無い", () => {
     const { unmount } = render(<FilterSheet open value={EMPTY_SEARCH_STATE} hasDistanceCenter={false} onApply={vi.fn()} onClose={vi.fn()} />);
-    expect(screen.queryByText("タビコエだけの場所"), "スポット別の一覧では出さない").toBeNull();
+    expect(screen.queryByText("タビコエだけの場所")).toBeNull();
     unmount();
 
-    render(<FilterSheet open value={EMPTY_SEARCH_STATE} hasDistanceCenter={false} showManualOnly onApply={vi.fn()} onClose={vi.fn()} />);
-    expect(screen.getByText("タビコエだけの場所")).toBeInTheDocument();
-  });
-
-  it("入れて「この条件で表示」を押すと親に渡る", () => {
-    const onApply = vi.fn();
-    render(<FilterSheet open value={EMPTY_SEARCH_STATE} hasDistanceCenter={false} showManualOnly onApply={onApply} onClose={vi.fn()} />);
-    fireEvent.click(screen.getByText("タビコエだけの場所").closest("label") as HTMLElement);
-    fireEvent.click(screen.getByRole("button", { name: "この条件で表示" }));
-    expect(onApply).toHaveBeenCalledWith(expect.objectContaining({ manualOnly: true }));
+    render(<FilterSheet open variant="spots" value={SPOT_VALUE} hasDistanceCenter={false} onApply={vi.fn()} onClose={vi.fn()} />);
+    expect(screen.queryByText("タビコエだけの場所")).toBeNull();
   });
 });

@@ -39,12 +39,13 @@ beforeEach(() => {
 });
 
 describe("SpotSearchScreen（SC-04 検索結果・スポット単位）", () => {
-  it("スポットカードに スポット名・タビコエだけの場所・★の平均・投稿件数・感想・まだあった が出て、リンク先はスポット別一覧", () => {
+  it("スポットカードに スポット名・★の平均・投稿件数・感想・まだあった が出て、リンク先はスポット別一覧", () => {
     render(<SpotSearchScreen context={pref} initialState={EMPTY_SEARCH_STATE} initialPage={{ spots: [spot("s1"), spot("s2")], nextOffset: null }} title="東京都" backHref="/" backLabel="ホーム" />);
     expect(document.querySelectorAll("[data-spot-card]")).toHaveLength(2);
     const card = document.querySelector("[data-spot-card='s2']") as HTMLElement;
     expect(card).toHaveTextContent("スポット s2");
-    expect(card).toHaveTextContent("タビコエだけの場所");
+    // #680（2026-10-05）: ラベルは廃止（決定事項 70）
+    expect(card).not.toHaveTextContent("タビコエだけの場所");
     expect(card).toHaveTextContent("4.5");
     expect(card).toHaveTextContent("投稿 3 件");
     expect(card).toHaveTextContent("朝イチが空いてる");

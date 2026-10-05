@@ -75,9 +75,6 @@ export function PostCard({
           <Link href={`/search?spot=${post.spotId}`} prefetch={false} className="min-w-0 truncate">
             {post.spotName}
           </Link>
-          {post.isManualSpot && (
-            <span className="rounded-full bg-tint px-2 py-0.5 text-[10px] font-semibold text-accent">タビコエだけの場所</span>
-          )}
         </h3>
       )}
 

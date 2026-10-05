@@ -112,7 +112,6 @@ export interface PostSearchFilters {
    * 地図の探すモード（3.4.6）に入れたのと**同じ条件**で、URL の名前も `manual=1` で揃えてある
    * （地図から投稿一覧へ条件を持ち越せるようにするため）。
    */
-  manualOnly?: boolean;
 }
 
 /** クエリ文字列 → 絞り込み条件。不正な値は無視する（単体テストの対象） */
@@ -141,7 +140,6 @@ export function parsePostSearchParams(
     Number.isFinite(lng)
       ? { lat, lng }
       : null;
-  const manualOnly = searchParams.get("manual") === "1";
   const costRaw = searchParams.get("cost") ?? "";
   const costRange = (COST_RANGES as readonly string[]).includes(costRaw)
     ? (costRaw as CostRange)
@@ -190,7 +188,6 @@ export function parsePostSearchParams(
     visitTo,
     sort: parsePostSort(searchParams.get("sort")),
     viewer,
-    manualOnly,
   };
 }
 
@@ -481,9 +478,6 @@ export function applyFilters<Q extends ReturnType<typeof baseQuery>>(
    * 【初心者向け】判定は**クエリ側**で行う。取ってから捨てると、1 回に 20 件という
    * ページングの数が合わなくなる（捨てたぶん足りない一覧になる）。
    */
-  if (filters.manualOnly) {
-    query = query.eq("spots.source", "manual") as Q;
-  }
   if (filters.duration) {
     // v3.2: 半日／1日／宿泊 を選んだら旧「それ以上」も含める（半日以上の束）
     query = query.in("duration", durationsMatching(filters.duration)) as Q;

@@ -109,7 +109,7 @@ export function SpotFixScreen({
         <button type="submit" disabled={!canSubmit} className="h-12 rounded-[10px] bg-accent text-[15px] font-semibold text-white disabled:cursor-not-allowed disabled:opacity-45">
           {isSubmitting ? "保存中..." : "直した内容を保存する"}
         </button>
-        <p className="text-[11px] text-muted">自分が登録した「タビコエだけの場所」だけ直せます。保存すると、このスポットへの「情報の誤り」の通報は対応済みになります</p>
+        <p className="text-[11px] text-muted">自分が登録した場所だけ直せます。保存すると、このスポットへの「情報の誤り」の通報は対応済みになります</p>
       </form>
     </div>
   );
