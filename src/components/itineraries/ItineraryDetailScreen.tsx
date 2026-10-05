@@ -31,7 +31,7 @@ import { defaultItineraryApi, type ItineraryApi } from "./itinerary-api";
  *       要件定義書 v3.0 3.11
  *
  * 【初心者向け】上から順に（v3.1 mentoring-7 Task8 で簡略化）:
- *   1. ヘッダー（戻る・タイトル ✎（タップで名前変更）・「地図で見る」）と「⋯」（招待・メンバー・しおりを削除。オーナーのみ）
+ *   1. ヘッダー（戻る・タイトル（タップで名前変更）・「地図で見る」）と「⋯」（招待・メンバー・しおりを削除。オーナーのみ）
  *   2. 期間（年つき。タップでカレンダー）、スポット数・メンバー数、「アルバムを見る」（投稿があるとき）。値段は出さない
  *   3. Day タブ（左端が ALL、続いて Day 1〜n。「未定」タブは無く、日付なしは ALL にだけ出る）
  *   4. そのタブのスポット行（時刻順→手動順。ItinerarySpotRow）。ALL では Day ごとの見出しを挟む。時刻の無い行は取っ手 ≡ でドラッグ並べ替え
@@ -228,10 +228,11 @@ export function ItineraryDetailScreen({
               </svg>
               {back?.label ?? "計画"}
             </Link>
-            {/* v3.1: タイトルをタップ（✎）で名前を変更。「名前を変更」ボタンは置かない */}
+            {/* v3.1: タイトルをタップで名前を変更。「名前を変更」ボタンは置かない。
+                #694: 鉛筆の印は外した（押せば編集できるものに印を付けない。プロフィールと同じ考え方） */}
             {isOwner ? (
               <button type="button" onClick={() => void rename()} aria-label={`${itinerary.title}（名前を変更）`} className="min-w-0 flex-1 truncate text-center text-[16px] font-bold text-ink">
-                {itinerary.title} <span aria-hidden className="text-[12px] font-normal text-muted">✎</span>
+                {itinerary.title}
               </button>
             ) : (
               <h1 className="min-w-0 flex-1 truncate text-center text-[16px] font-bold text-ink">{itinerary.title}</h1>
@@ -242,7 +243,8 @@ export function ItineraryDetailScreen({
               aria-pressed={showMap}
               className={`inline-flex h-8 shrink-0 items-center gap-1 rounded-full border px-3 text-[12px] font-semibold ${showMap ? "border-accent bg-accent text-white" : "border-line bg-surface text-ink"}`}
             >
-              🗺 {showMap ? "地図を閉じる" : "地図で見る"}
+              {/* #694: 絵文字は外して文字だけにした */}
+              {showMap ? "地図を閉じる" : "地図で見る"}
             </button>
             <div ref={menuRef} className="relative">
               <button
@@ -291,11 +293,12 @@ export function ItineraryDetailScreen({
           {/* v3.1: 期間は年つき。表示そのものをタップするとカレンダー（オーナーのみ）。「期間を変更」ボタンは置かない */}
           {canEdit ? (
             <button type="button" onClick={() => setDialog("period")} aria-label={itinerary.startDate ? `期間 ${periodLabel}（変更）` : "期間を設定"} className="flex w-fit items-center gap-1 text-[12px] text-ink" data-period>
-              📅 {itinerary.startDate ? periodLabel : "期間を設定"} <span aria-hidden className="text-muted">✎</span>
+              {/* #694: 絵文字も鉛筆の印も外した（タップでカレンダーが開くのは今までどおり） */}
+              {itinerary.startDate ? periodLabel : "期間を設定"}
             </button>
           ) : (
             <p className="text-[12px] text-ink" data-period>
-              📅 {periodLabel}
+              {periodLabel}
             </p>
           )}
           <p className="text-[12px] text-muted">

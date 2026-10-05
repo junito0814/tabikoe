@@ -172,7 +172,8 @@ export function ItinerarySpotRow({
           ) : (
             <Link
               href={composeHref({ kind: "itinerary", itineraryId, spotId: spot.spotId, dayIndex: spot.dayIndex })}
-              className={`inline-flex h-7 items-center rounded-full px-2.5 text-[11px] font-bold ${checked ? "bg-accent text-white" : "border border-accent text-accent"}`}
+              /* #694: チェックの有無で見た目を変えない。チェックは「行った」の印で、投稿を促す強さとは関係が無い */
+              className="inline-flex h-7 items-center rounded-full bg-accent px-2.5 text-[11px] font-bold text-white"
             >
               投稿する
             </Link>
