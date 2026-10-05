@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { hardRedirect } from "@/lib/navigation/hard-redirect";
 import { outfit, lora } from "@/app/fonts";
 import { ErrorNotice } from "@/components/notices/ErrorNotice";
 import { AppLogo } from "@/components/brand/AppLogo";
@@ -24,7 +24,6 @@ export interface SignupConsentApi {
  * 返ってきた着地点（ホームか元の遷移先）へ移る。「やめる」は認証状態を捨ててログイン画面へ戻る。
  */
 export function SignupConsentScreen({ email, redirectTo = null, api = defaultApi }: { email: string; redirectTo?: string | null; api?: SignupConsentApi }) {
-  const router = useRouter();
   const [agreedTerms, setAgreedTerms] = useState(false);
   const [agreedPrivacy, setAgreedPrivacy] = useState(false);
   const [busy, setBusy] = useState<"signup" | "cancel" | null>(null);
@@ -42,7 +41,8 @@ export function SignupConsentScreen({ email, redirectTo = null, api = defaultApi
         return;
       }
       const data = (await response.json()) as { href?: string };
-      router.replace(data.href ?? "/");
+      // #705 と同じ理由。ログインの状態が変わった直後なので読み込み直す
+      hardRedirect(data.href ?? "/");
     } catch {
       setError("アカウントを作成できませんでした。時間をおいてお試しください");
     } finally {
@@ -56,7 +56,7 @@ export function SignupConsentScreen({ email, redirectTo = null, api = defaultApi
     try {
       await api.cancel();
     } finally {
-      router.replace("/login");
+      hardRedirect("/login");
     }
   };
 

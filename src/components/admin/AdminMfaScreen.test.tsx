@@ -3,9 +3,13 @@ import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { AdminMfaScreen } from "./AdminMfaScreen";
 
 /** 出典: docs/tasks/admin/admin-login/05-mfa-screen.md 単体テスト（SC-32 の 2 つの顔） */
-const replace = vi.fn();
-const refresh = vi.fn();
-vi.mock("next/navigation", () => ({ useRouter: () => ({ replace, refresh }) }));
+/**
+ * #705（2026-10-05）: 6 桁が通ったあとの移動は `router.replace` ではなく
+ * **画面ごと読み込み直す**（`hardRedirect`）。ルーターのキャッシュに
+ * 「/admin は /admin/mfa へ飛ぶ」が 30 秒とどまっていて、戻されていた。
+ */
+const hardRedirect = vi.fn();
+vi.mock("@/lib/navigation/hard-redirect", () => ({ hardRedirect: (href: string) => hardRedirect(href) }));
 
 const enrollment = { factorId: "factor-1", qrImageSrc: "data:image/svg+xml;utf8,%3Csvg%3E", secret: "JBSW Y3DP EHPK 3PXP" };
 const okResponse = async () => Response.json({ ok: true });
@@ -28,7 +32,7 @@ describe("AdminMfaScreen（登録）", () => {
 
     // 登録の確認なので、enroll で作った factorId を一緒に送る
     await waitFor(() => expect(submitCode).toHaveBeenCalledWith({ code: "123456", factorId: "factor-1" }));
-    await waitFor(() => expect(replace).toHaveBeenCalledWith("/admin/reports"));
+    await waitFor(() => expect(hardRedirect).toHaveBeenCalledWith("/admin/reports"));
   });
 
   it("登録は 1 回しか始めない（二重描画で factor を 2 つ作らない）", async () => {
@@ -69,7 +73,7 @@ describe("AdminMfaScreen（確認）", () => {
 
     fireEvent.change(screen.getByLabelText("認証アプリの 6 桁"), { target: { value: "654321" } });
     fireEvent.click(screen.getByRole("button", { name: "管理画面へ" }));
-    await waitFor(() => expect(replace).toHaveBeenCalledWith("/admin/users"));
+    await waitFor(() => expect(hardRedirect).toHaveBeenCalledWith("/admin/users"));
   });
 
   it("番号が合わないときは画面にとどまり、入力欄を消さずに入れ直せる", async () => {
