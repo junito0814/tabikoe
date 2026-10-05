@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { WarningIcon } from "@/components/ui/LineIcons";
 
 /**
  * 投稿時の注意喚起 Task1: 注意喚起メッセージ共通コンポーネント
@@ -15,7 +16,7 @@ export function UploadNotice({ compact = false }: { compact?: boolean }) {
   if (!expanded) {
     return (
       <p className="flex items-center gap-1.5 text-[11px] text-muted">
-        <span aria-hidden>⚠</span>
+        <WarningIcon />
         写り込み・個人情報に注意
         <button type="button" onClick={() => setExpanded(true)} className="font-medium text-accent underline underline-offset-2">
           詳しく

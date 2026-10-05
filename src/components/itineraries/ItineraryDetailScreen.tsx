@@ -307,7 +307,7 @@ export function ItineraryDetailScreen({
           </p>
           {itinerary.albumPostCount > 0 && (
             <Link href={`/albums/${itinerary.tripId}?back=${encodeURIComponent(`/itineraries/${itinerary.id}`)}`} className="inline-flex h-8 w-fit items-center gap-1 rounded-full border border-line bg-surface px-3 text-[12px] font-semibold text-ink">
-              📷 アルバム「{itinerary.title}」を見る（{itinerary.albumPostCount}）
+              アルバム「{itinerary.title}」を見る（{itinerary.albumPostCount}）
             </Link>
           )}
         </header>

@@ -312,7 +312,7 @@ export function PostDetailScreen({
               href={composeHref({ kind: "spot", spotId: post.spot.id })}
               className="inline-flex h-11 w-fit items-center gap-1.5 rounded-full bg-accent px-5 text-[13px] font-bold text-white"
             >
-              ✍ 自分も投稿する
+              自分も投稿する
             </Link>
           )}
 

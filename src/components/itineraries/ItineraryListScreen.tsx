@@ -9,6 +9,7 @@ import { itineraryGroup, sortItineraries } from "@/lib/itineraries/sort-itinerar
 import { CreateItineraryDialog } from "./CreateItineraryDialog";
 import { defaultItineraryApi, type ItineraryApi } from "./itinerary-api";
 import { PullToRefresh } from "@/components/layout/PullToRefresh";
+import { HeartIcon } from "@/components/ui/LineIcons";
 
 /**
  * itinerary-basics Task2: しおり一覧（SC-22）
@@ -48,7 +49,10 @@ export function ItineraryListScreen({
           {/* v3.1: 先頭に「行きたいスポット」への入口 */}
           <Link href="/wishlist?back=%2Fitineraries" className="mb-3 flex items-center justify-between rounded-[12px] border border-line bg-surface p-3 shadow-card" data-wishlist-entry>
             <span className="flex items-center gap-2 text-[14px] font-bold text-ink">
-              <span aria-hidden className="text-saved">♥</span>
+              {/* #713: 絵文字をやめ、線のハートにした（色は「保存」の色のまま） */}
+              <span className="text-saved">
+                <HeartIcon />
+              </span>
               行きたいスポット
               {wishlistCount !== null && <span className="rounded-full bg-tint px-2 py-0.5 text-[11px] font-semibold text-muted">{wishlistCount}</span>}
             </span>
@@ -96,7 +100,7 @@ export function ItineraryListScreen({
                       </Link>
                       {group === "past" && item.hasAlbumPosts && (
                         <Link href={`/albums/${item.tripId}`} className="mt-2 inline-flex h-8 items-center gap-1 rounded-full border border-line bg-surface px-3 text-[12px] font-semibold text-ink">
-                          📷 アルバムを見る
+                          アルバムを見る
                         </Link>
                       )}
                     </article>

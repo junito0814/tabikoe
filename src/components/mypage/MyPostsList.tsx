@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { FadeInImage } from "@/components/media/FadeInImage";
 import Link from "next/link";
+import { HeartIcon } from "@/components/ui/LineIcons";
 import { ErrorNotice } from "@/components/notices/ErrorNotice";
 import { CardListSkeleton } from "@/components/skeleton/Skeletons";
 import { ERROR_MESSAGES } from "@/components/notices/error-messages";
@@ -127,7 +128,11 @@ export function MyPostsList({
                     )}
                   </span>
                   <span className="text-[11px] text-muted">
-                    {post.category} ・ {new Date(post.createdAt).toLocaleDateString("ja-JP")} ・ ♥ {post.likeCount}
+                    {post.category} ・ {new Date(post.createdAt).toLocaleDateString("ja-JP")} ・{" "}
+          <span className="inline-flex items-center gap-1 align-[-2px]">
+            <HeartIcon size={13} />
+            {post.likeCount}
+          </span>
                   </span>
                 </span>
               </Link>
