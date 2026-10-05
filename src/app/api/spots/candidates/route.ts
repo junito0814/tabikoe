@@ -14,6 +14,12 @@ export interface SpotSearchCandidate {
   lng: number;
   source: "places" | "manual";
   postCount: number;
+  /**
+   * #700: Google の Place ID。**Google から保存してよい唯一の値**（要件 6.2）。
+   * 登録するときにそのまま `spots.place_id` に入れ、#701 で営業時間を引く鍵にする。
+   * 手動登録のスポットには無いので null。
+   */
+  placeId: string | null;
 }
 
 /**
@@ -46,7 +52,7 @@ export async function GET(request: Request) {
   const escaped = query.replace(/[\\%_]/g, (char) => `\\${char}`);
   const { data: storedSpots, error: storedError } = await admin
     .from("spots")
-    .select("id, name, lat, lng, source, posts(count)")
+    .select("id, name, lat, lng, source, place_id, posts(count)")
     // F-AD-05: 非公開化されたスポットは候補に出さない
     .is("hidden_at", null)
     .ilike("name", `%${escaped}%`)
@@ -63,6 +69,7 @@ export async function GET(request: Request) {
     lng: spot.lng,
     source: spot.source,
     postCount: spot.posts?.[0]?.count ?? 0,
+    placeId: spot.place_id,
   }));
 
   let placesUnavailable = false;
@@ -80,6 +87,8 @@ export async function GET(request: Request) {
         lng: place.lng,
         source: "places" as const,
         postCount: 0,
+        // #700: 候補の段階から Place ID を持ち回す（登録のときに保存する）
+        placeId: place.placeId,
       }));
   } catch (error) {
     if (!(error instanceof PlacesApiError)) {

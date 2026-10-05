@@ -5,8 +5,8 @@ import { SpotAutocompleteInput, type SpotCandidate } from "@/components/spots/Sp
 import type { RegisteredSpot } from "@/lib/spots/types";
 
 const SAMPLE_CANDIDATES: SpotCandidate[] = [
-  { id: "s1", name: "首里城", lat: 26.217, lng: 127.719, source: "manual", postCount: 12 },
-  { id: null, name: "首里城公園", lat: 26.2168, lng: 127.7194, source: "places", postCount: 0 },
+  { id: "s1", name: "首里城", lat: 26.217, lng: 127.719, source: "manual", postCount: 12, placeId: null },
+  { id: null, name: "首里城公園", lat: 26.2168, lng: 127.7194, source: "places", postCount: 0, placeId: "ChIJ-preview" },
 ];
 
 /**
