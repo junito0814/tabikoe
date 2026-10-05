@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { TrashButton } from "@/components/ui/TrashButton";
 import { fetchWithAuthRedirect, UnauthorizedError } from "@/lib/api/fetch-with-auth-redirect";
 import { composeHref } from "@/lib/posts/compose-href";
 import type { DraftListPage, DraftSummary } from "@/lib/posts/drafts";
@@ -81,15 +82,13 @@ export function DraftsSection({
             <Link href={composeHref({ kind: "draft", draftId: draft.id })} className="shrink-0 rounded-full bg-accent px-3 py-1.5 text-[11px] font-bold text-white">
               続きを書く
             </Link>
-            <button
-              type="button"
+            <TrashButton
               onClick={() => void remove(draft)}
+              label={`下書き「${draft.spotName}」を削除`}
               disabled={pendingId !== null}
-              aria-label={`下書き「${draft.spotName}」を削除`}
-              className="shrink-0 text-[11px] text-muted underline underline-offset-2 disabled:opacity-45"
-            >
-              削除
-            </button>
+              busy={pendingId === draft.id}
+              className="h-7 w-7"
+            />
           </li>
         ))}
       </ul>
