@@ -61,21 +61,39 @@ interface AlbumListRow {
  * post-delete Task2: 投稿が1件以上あるアルバムだけを残す（`HAVING COUNT(posts) > 0` 相当）。
  * 純粋関数として切り出し、単体テストの対象にする。
  * v3.1（mentoring-7 Task2）: 「日常」（isDaily）は投稿 0 件でも残す。
+ *
+ * #715（2026-10-05）: **自分がオーナーのアルバムも、投稿 0 件で残す。**
+ *
+ * 【初心者向け】アルバムを自分で作れるようにしたため（決定事項 82）。これが無いと
+ * **作った直後に一覧から消える**。他の人のアルバム（editor・viewer として入っているもの）は
+ * 今までどおり 0 件なら出さない ── 自分が作ったものではないので、空のまま並ぶと邪魔になる。
  */
-export function filterAlbumsWithPosts<T extends { postCount: number; isDaily?: boolean }>(albums: T[]): T[] {
-  return albums.filter((album) => album.postCount > 0 || album.isDaily === true);
+export function filterAlbumsWithPosts<T extends { postCount: number; isDaily?: boolean; role?: string }>(albums: T[]): T[] {
+  return albums.filter((album) => album.postCount > 0 || album.isDaily === true || album.role === "owner");
 }
 
-/** v3.1: 「日常」を先頭に固定し、残りは最新投稿順（純粋関数） */
-export function sortAlbumsDailyFirst<T extends { isDaily: boolean; updatedAt: string | null }>(albums: T[]): T[] {
+/**
+ * v3.1: 「日常」を先頭に固定し、残りは最新投稿順（純粋関数）
+ * #715（2026-10-05）: 並び順を選べるようにした（「新着順」「古い順」。既定は新着順）。
+ * 投稿が無いアルバムは `updatedAt` が null なので、どちらの並びでも末尾に来る。
+ */
+export type AlbumSort = "newest" | "oldest";
+
+export function sortAlbumsDailyFirst<T extends { isDaily: boolean; updatedAt: string | null }>(
+  albums: T[],
+  sort: AlbumSort = "newest"
+): T[] {
   return [...albums].sort((a, b) => {
     if (a.isDaily !== b.isDaily) return a.isDaily ? -1 : 1;
-    return (b.updatedAt ?? "").localeCompare(a.updatedAt ?? "");
+    // 投稿が無いものは常に末尾（日付で比べられないため）
+    if ((a.updatedAt === null) !== (b.updatedAt === null)) return a.updatedAt === null ? 1 : -1;
+    if (a.updatedAt === null || b.updatedAt === null) return 0;
+    return sort === "newest" ? b.updatedAt.localeCompare(a.updatedAt) : a.updatedAt.localeCompare(b.updatedAt);
   });
 }
 
 /** 本人がメンバーのアルバム一覧（投稿1件以上、最新投稿順） */
-export async function getAlbumList(admin: SupabaseClient, userId: string): Promise<AlbumSummary[]> {
+export async function getAlbumList(admin: SupabaseClient, userId: string, sort: AlbumSort = "newest"): Promise<AlbumSummary[]> {
   const { data, error } = await admin
     .from("album_members")
     .select("role, trips!inner(id, title, user_id, is_daily, posts(count), album_members(count))")
@@ -142,7 +160,8 @@ export async function getAlbumList(admin: SupabaseClient, userId: string): Promi
         coverUrl: cover ? (urls.get(cover.path) ?? null) : null,
         updatedAt: cover?.createdAt ?? null,
       };
-    })
+    }),
+    sort
   );
 }
 

@@ -2,7 +2,13 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getAuthenticatedUser } from "@/lib/auth/get-authenticated-user";
-import { getAlbumList } from "@/lib/albums/get-album";
+import { getAlbumList, type AlbumSort } from "@/lib/albums/get-album";
+import {
+  TripTitleValidationError,
+  assertValidTripTitle,
+  normalizeTripTitle,
+  resolveTripId,
+} from "@/lib/trips/resolve-trip";
 
 const MAX_SUGGESTIONS = 10;
 
@@ -33,7 +39,9 @@ export async function GET(request: Request) {
 
   if (searchParams.get("view") === "albums") {
     try {
-      const albums = await getAlbumList(admin, user.id);
+      // #715: 並び順（新着順／古い順）。おかしな値は既定の新着順にする
+      const sort: AlbumSort = searchParams.get("sort") === "oldest" ? "oldest" : "newest";
+      const albums = await getAlbumList(admin, user.id, sort);
       return NextResponse.json({ albums });
     } catch {
       return NextResponse.json({ error: "fetch_failed" }, { status: 500 });
@@ -94,4 +102,55 @@ export async function GET(request: Request) {
   }
 
   return NextResponse.json({ trips: trips.slice(0, MAX_SUGGESTIONS) });
+}
+
+/**
+ * POST /api/trips — アルバムを作る（#715）
+ * 出典: 要件定義書 3.6.2「アルバム」・ワイヤーフレーム決定事項 82
+ *
+ * 【初心者向け】いままでアルバムは「投稿するとき」か「しおりを作るとき」にしか
+ * 作られなかった。一覧から名前だけで作れるようにする。**しおりは作らない。**
+ *
+ * 同じ名前のアルバムが既にあれば**新しく作らず、そのアルバムを返す**
+ * （`resolveTripId` と同じ考え方。同じ名前が 2 つ並ぶと見分けられないため）。
+ * オーナーの会員行はトリガー（`trips_ensure_owner_membership`）が作るので、ここでは入れない。
+ */
+export async function POST(request: Request) {
+  const supabase = await createClient();
+  const user = await getAuthenticatedUser(supabase);
+  if (!user) {
+    return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+  }
+
+  let rawTitle: unknown;
+  try {
+    rawTitle = (await request.json())?.title;
+  } catch {
+    return NextResponse.json({ error: "invalid_body" }, { status: 400 });
+  }
+  if (typeof rawTitle !== "string") {
+    return NextResponse.json({ error: "trip_title_required" }, { status: 400 });
+  }
+
+  const title = normalizeTripTitle(rawTitle);
+  try {
+    assertValidTripTitle(title);
+  } catch (error) {
+    if (error instanceof TripTitleValidationError) {
+      return NextResponse.json({ error: error.message }, { status: 400 });
+    }
+    throw error;
+  }
+
+  const admin = createAdminClient();
+  try {
+    // しおりは作らない（旅行＝アルバムだけを作る）
+    const tripId = await resolveTripId(admin, user.id, title);
+    return NextResponse.json({ tripId }, { status: 201 });
+  } catch (error) {
+    if (error instanceof TripTitleValidationError) {
+      return NextResponse.json({ error: error.message }, { status: 400 });
+    }
+    return NextResponse.json({ error: "create_failed" }, { status: 500 });
+  }
 }
