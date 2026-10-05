@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { BackLink } from "@/components/layout/BackLink";
 import { appendBackHref } from "@/lib/search/list-state";
 import { useRouter } from "next/navigation";
 import { ErrorNotice } from "@/components/notices/ErrorNotice";
@@ -80,12 +81,7 @@ export function WishlistScreen({
   const header = (
     <header className="flex flex-col gap-2.5">
       <div className="flex items-center gap-2">
-        <Link href={back?.href ?? "/mypage"} className="inline-flex h-8 shrink-0 items-center gap-1 text-[12px] font-medium text-muted">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden>
-            <path d="M15 5l-7 7 7 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
-          {back?.label ?? "マイページ"}
-        </Link>
+        <BackLink href={back?.href ?? "/mypage"} label={back?.label ?? "マイページ"} />
         <h1 className="min-w-0 flex-1 truncate text-center text-[16px] font-bold text-ink">行きたい</h1>
         <span className="shrink-0 text-[12px] text-muted">{items.length}件</span>
       </div>

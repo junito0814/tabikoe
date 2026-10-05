@@ -1,3 +1,4 @@
+import { BackLink } from "@/components/layout/BackLink";
 import type { BadgeStatus } from "@/lib/badges/badge-status";
 import type { BadgeCategory } from "@/lib/badges/catalog";
 
@@ -30,7 +31,11 @@ export function BadgeScreen({ badges }: { badges: BadgeStatus[] }) {
   const acquiredCount = badges.filter((badge) => badge.acquiredAt !== null).length;
 
   return (
-    <div className="flex min-h-screen flex-col items-center gap-6 bg-app px-6 py-12">
+    <div className="flex min-h-screen flex-col items-center gap-6 bg-app px-6 pb-12 pt-6">
+      {/* #686: ホーム画面から単独で開くとブラウザの戻るが無いので、左上に戻るを置く */}
+      <div className="flex w-full max-w-[420px] items-center">
+        <BackLink />
+      </div>
       <div className="flex flex-col items-center gap-1">
         <h1 className="text-[16px] font-bold text-ink">ステータスバッジ</h1>
         <p className="text-[12px] text-muted">
