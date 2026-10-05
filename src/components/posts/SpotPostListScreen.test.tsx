@@ -107,3 +107,35 @@ describe("SpotPostListScreen（SC-04 スポット別）", () => {
     expect(screen.getByRole("link", { name: "完了" })).toHaveAttribute("href", "/itineraries/it-1");
   });
 });
+
+/**
+ * #701（2026-10-05）: Google の公式情報は Server Component が作り、この画面は
+ * 「差し込み口」に置くだけ（API の鍵をブラウザに渡さないため。要件 6.2）。
+ * ここで見るのは「渡されたものを見出しに置くか」「無ければ何も出さないか」の 2 つ。
+ */
+describe("Google の公式情報の差し込み口（#701）", () => {
+  it("渡されたものを見出しに置く", () => {
+    render(
+      <SpotPostListScreen
+        spot={spot}
+        initialState={EMPTY_SEARCH_STATE}
+        initialPage={{ posts: [], nextOffset: null }}
+        fetchPage={vi.fn()}
+        official={<p data-official-info>いま 営業中</p>}
+      />
+    );
+    expect(document.querySelector("[data-official-info]")).toHaveTextContent("いま 営業中");
+  });
+
+  it("渡されなければ何も出さない（place_id が無いスポット・引けなかったとき）", () => {
+    render(
+      <SpotPostListScreen
+        spot={spot}
+        initialState={EMPTY_SEARCH_STATE}
+        initialPage={{ posts: [], nextOffset: null }}
+        fetchPage={vi.fn()}
+      />
+    );
+    expect(document.querySelector("[data-official-info]")).not.toBeInTheDocument();
+  });
+});

@@ -10,6 +10,7 @@ import { MapSheetSkeleton } from "@/components/skeleton/Skeletons";
 import { loadSearchFirstPage, loadSearchShell, retryableEmptyFirstPage, type SearchPageQuery } from "@/lib/search/load-search-page";
 import { resolveListBack } from "@/lib/search/list-state";
 import { ContentEnter } from "@/components/transitions/Reveal";
+import { OfficialInfo } from "@/components/spots/OfficialInfo";
 
 /**
  * SC-04 投稿一覧（スポット別）
@@ -49,7 +50,23 @@ export default async function SpotPostsPage({
   return (
     <ContentEnter>
       <Suspense fallback={<MapSheetSkeleton backLabel={back?.label ?? "地図"} title={data.spot.name} />}>
-        <StreamingSpotPostListScreen spot={data.spot} initialState={data.initialState} addMode={data.addMode} back={back} firstPage={firstPage} />
+        <StreamingSpotPostListScreen
+          spot={data.spot}
+          initialState={data.initialState}
+          addMode={data.addMode}
+          back={back}
+          firstPage={firstPage}
+          /*
+           * #701: Google の公式情報。**一覧より遅くても構わない**ので、
+           * さらに内側の Suspense に入れて後から流し込む（この引きで画面を待たせない）。
+           * 出せないときは黙って何も出さないので、骨組みも出さない（fallback は null）。
+           */
+          official={
+            <Suspense fallback={null}>
+              <OfficialInfo spotId={id} />
+            </Suspense>
+          }
+        />
       </Suspense>
     </ContentEnter>
   );
