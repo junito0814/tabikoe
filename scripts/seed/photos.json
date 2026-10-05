@@ -1,0 +1,30 @@
+{
+  "source": "Pixabay（https://pixabay.com/ja/）",
+  "fetchedAt": "2026-10-05",
+  "license": "Pixabay Content License。アプリの中で使うのは可。写真そのものの再配布・販売は不可。識別できる人物が主題のものは使わない（写っている人の権利までは許諾されないため）",
+  "checkedBy": "2026-10-05 に 20 枚を 1 枚ずつ目で見て確認した。人が写っていた 3 枚（寺の参道・ラーメンを持つ手・居酒屋の客）とイラスト 1 枚を外し、残った 16 枚を使う",
+  "photos": [
+    { "file": "landscape-01.jpg", "kind": "landscape", "what": "朱の鳥居（奉納の札）", "url": "https://cdn.pixabay.com/photo/2023/09/15/11/43/torii-8254663_1280.jpg" },
+    { "file": "landscape-02.jpg", "kind": "landscape", "what": "紅葉と寺の屋根", "url": "https://cdn.pixabay.com/photo/2021/08/30/01/41/koyasan-6584637_640.jpg" },
+    { "file": "landscape-03.jpg", "kind": "landscape", "what": "夜の五重塔", "url": "https://cdn.pixabay.com/photo/2022/01/24/13/51/temple-6963458_640.jpg" },
+    { "file": "landscape-04.jpg", "kind": "landscape", "what": "新緑と和風建築", "url": "https://cdn.pixabay.com/photo/2025/03/29/10/59/ryoan-ji-9500830_640.jpg" },
+    { "file": "landscape-05.jpg", "kind": "landscape", "what": "池に映る金色の楼閣", "url": "https://cdn.pixabay.com/photo/2019/02/14/06/08/kinkaku-ji-3995910_640.jpg" },
+    { "file": "landscape-06.jpg", "kind": "landscape", "what": "湖に立つ鳥居（白黒）", "url": "https://cdn.pixabay.com/photo/2017/01/13/08/08/tori-1976609_640.jpg" },
+    { "file": "landscape-07.jpg", "kind": "landscape", "what": "夜に並ぶ和傘", "url": "https://cdn.pixabay.com/photo/2015/02/15/03/04/japanese-umbrellas-636870_1280.jpg" },
+    { "file": "landscape-08.jpg", "kind": "landscape", "what": "夕暮れの海辺", "url": "https://cdn.pixabay.com/photo/2022/04/15/07/58/sunset-7133867_640.jpg" },
+    { "file": "landscape-09.jpg", "kind": "landscape", "what": "緑の中の滝", "url": "https://cdn.pixabay.com/photo/2023/09/16/22/05/japan-8257601_640.jpg" },
+    { "file": "landscape-10.jpg", "kind": "landscape", "what": "夜の木造の店先", "url": "https://cdn.pixabay.com/photo/2021/12/17/10/09/night-6876155_640.jpg" },
+    { "file": "food-01.jpg", "kind": "food", "what": "担々麺", "url": "https://cdn.pixabay.com/photo/2019/11/23/15/30/ramen-4647411_640.jpg" },
+    { "file": "food-02.jpg", "kind": "food", "what": "そばにつゆを注ぐ", "url": "https://cdn.pixabay.com/photo/2017/08/05/07/24/japanese-food-2582411_640.jpg" },
+    { "file": "food-03.jpg", "kind": "food", "what": "湯気の立つラーメン", "url": "https://cdn.pixabay.com/photo/2020/09/17/12/25/ramen-5579023_640.jpg" },
+    { "file": "food-04.jpg", "kind": "food", "what": "塩ラーメン", "url": "https://cdn.pixabay.com/photo/2015/03/20/15/13/ramen-682343_640.jpg" },
+    { "file": "food-05.jpg", "kind": "food", "what": "干されたそうめん", "url": "https://cdn.pixabay.com/photo/2020/10/05/03/07/noodles-5628035_640.jpg" },
+    { "file": "food-06.jpg", "kind": "food", "what": "和食の前菜", "url": "https://cdn.pixabay.com/photo/2022/02/11/05/54/food-7006591_640.jpg" }
+  ],
+  "rejected": [
+    { "url": "https://cdn.pixabay.com/photo/2020/01/31/07/27/temple-4807321_640.jpg", "reason": "参道に人が 2 人（後ろ姿）" },
+    { "url": "https://cdn.pixabay.com/photo/2022/06/02/18/22/ramen-7238665_640.jpg", "reason": "丼を持つ手と胴体が写っている" },
+    { "url": "https://cdn.pixabay.com/photo/2021/12/21/03/54/street-6884533_640.jpg", "reason": "居酒屋の客が写っている" },
+    { "url": "https://cdn.pixabay.com/photo/2023/12/07/22/24/cherry-blossoms-8436420_640.jpg", "reason": "イラストで人物も描かれている（投稿写真として不自然）" }
+  ]
+}

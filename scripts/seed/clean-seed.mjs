@@ -79,6 +79,16 @@ async function main() {
   if (dangling.length) await must(admin.from("notifications").delete().in("id", dangling), "notifications(delete)");
   console.log(`宙に浮いた通知: ${dangling.length} 件を削除`);
 
+  // 5. Storage に入れた seed の写真を消す（#703）。
+  //    投稿が消えても Storage のファイルは残るので、ここで片付ける
+  const { data: files } = await admin.storage.from("post-media").list("seed");
+  const paths = (files ?? []).map((file) => `seed/${file.name}`);
+  if (paths.length) {
+    const { error } = await admin.storage.from("post-media").remove(paths);
+    if (error) throw new Error(`storage(seed): ${error.message}`);
+  }
+  console.log(`seed の写真: ${paths.length} 枚を削除`);
+
   console.log("\n完了。");
 }
 
