@@ -25,7 +25,8 @@ export interface SpotSummary {
   postCount: number;
   /** map-sheet Task2: 地図を広くした段階の 1 行に出す星の平均（4.5.6）。投稿が無ければ null */
   ratingAverage: number | null;
-  isWishlisted: boolean;
+  /** #696: 「行きたい」か「しおり」のどちらかに入っているか（どちらでも ✓ を出す） */
+  isSaved: boolean;
   latestStatus: LatestSpotStatus | null;
 }
 
@@ -94,7 +95,7 @@ export function SpotPostListScreen({
       <div className="flex flex-wrap items-center gap-2">
         <SaveButton
           spotId={spot.id}
-          initialSaved={spot.isWishlisted}
+          initialSaved={spot.isSaved}
           addMode={addMode ? { itineraryId: addMode.itineraryId, day: addMode.day, initialAdded: addMode.spotIds.includes(spot.id) } : null}
         />
         <Link
