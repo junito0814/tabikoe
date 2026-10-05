@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { fetchWithAuthRedirect, UnauthorizedError } from "@/lib/api/fetch-with-auth-redirect";
 import type { AlbumSort } from "@/lib/albums/get-album";
+import { CloseButton } from "@/components/ui/CloseButton";
 
 /**
  * #715: アルバム一覧の「＋ 新規」と並び順
@@ -83,16 +84,7 @@ export function AlbumListControls({
                 アルバムを作る
               </h2>
               {/* 要件 4.5.13: 重ねて出したものを閉じる × は右上 */}
-              <button
-                type="button"
-                onClick={() => setIsOpen(false)}
-                aria-label="閉じる"
-                className="flex h-6 w-6 items-center justify-center rounded-full text-muted"
-              >
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" aria-hidden>
-                  <path d="M6 6l12 12M18 6L6 18" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" />
-                </svg>
-              </button>
+              <CloseButton onClick={() => setIsOpen(false)} />
             </div>
             <input
               value={title}

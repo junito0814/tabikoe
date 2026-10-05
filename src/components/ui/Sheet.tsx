@@ -2,6 +2,7 @@
 
 import { useEffect, useId, type ReactNode } from "react";
 import { createPortal } from "react-dom";
+import { CloseButton } from "./CloseButton";
 
 /**
  * 共通: 下から出るシート（パソコン幅では中央のダイアログ）
@@ -53,9 +54,8 @@ export function Sheet({
           <h2 id={titleId} className="text-[15px] font-bold text-ink">
             {title}
           </h2>
-          <button type="button" onClick={onClose} className="text-[12px] font-medium text-muted underline underline-offset-2">
-            閉じる
-          </button>
+          {/* #712: 文字の「閉じる」をやめ、右上の × に揃えた（要件 4.5.13） */}
+          <CloseButton onClick={onClose} />
         </div>
         <div className="flex-1 overflow-y-auto px-4 pb-4">{children}</div>
         {footer && <div className="border-t border-line px-4 py-3 pb-[max(12px,env(safe-area-inset-bottom))]">{footer}</div>}

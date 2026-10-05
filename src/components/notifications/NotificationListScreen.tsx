@@ -10,6 +10,7 @@ import type { FeedItem, FeedPage } from "@/lib/notifications/feed";
 import { useInfiniteScroll } from "@/components/posts/use-infinite-scroll";
 import { dispatchNotificationsRead } from "./notification-events";
 import { PullToRefresh } from "@/components/layout/PullToRefresh";
+import { CloseButton } from "@/components/ui/CloseButton";
 
 export interface NotificationApi {
   fetchPage: (offset: number) => Promise<FeedPage>;
@@ -314,16 +315,7 @@ export function NotificationListScreen({
                     ? `お知らせ ・ ${new Date(open.publishedAt).toLocaleString("ja-JP")}`
                     : `通知 ・ ${new Date(open.createdAt).toLocaleString("ja-JP")}`}
                 </p>
-                <button
-                  type="button"
-                  onClick={() => setOpenIndex(null)}
-                  aria-label="閉じる"
-                  className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-muted"
-                >
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" aria-hidden>
-                    <path d="M6 6l12 12M18 6L6 18" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" />
-                  </svg>
-                </button>
+                <CloseButton onClick={() => setOpenIndex(null)} />
               </div>
               <h2 id="notification-modal-title" className="mb-2 text-[15px] font-bold text-ink">
                 {open.kind === "announcement" ? open.title : open.message}
