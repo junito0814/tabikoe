@@ -82,7 +82,7 @@ export function ItineraryInvitationAcceptScreen({
         )}
         {errorMessage && <ErrorNotice message={errorMessage} />}
         <Link href="/itineraries" className="text-center text-[12px] text-muted underline underline-offset-2">
-          しおり一覧へ
+          計画へ
         </Link>
       </div>
     </div>

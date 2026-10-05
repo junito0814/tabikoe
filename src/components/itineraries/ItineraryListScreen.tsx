@@ -40,11 +40,9 @@ export function ItineraryListScreen({
     <PullToRefresh>
       <div className="flex min-h-screen flex-col items-center bg-app px-4 py-6">
         <div className="w-full max-w-[520px]">
-          <header className="mb-4 flex items-center justify-between">
-            <h1 className="text-[18px] font-bold text-ink">しおり</h1>
-            <button type="button" onClick={() => setIsCreating(true)} className="h-9 rounded-full bg-accent px-4 text-[12px] font-bold text-white">
-              ＋ 新規
-            </button>
+          {/* #693: 画面名は「計画」。中の区切りの見出しが「しおり」になる（決定事項 75） */}
+          <header className="mb-4">
+            <h1 className="text-[18px] font-bold text-ink">計画</h1>
           </header>
 
           {/* v3.1: 先頭に「行きたいスポット」への入口 */}
@@ -54,8 +52,15 @@ export function ItineraryListScreen({
               行きたいスポット
               {wishlistCount !== null && <span className="rounded-full bg-tint px-2 py-0.5 text-[11px] font-semibold text-muted">{wishlistCount}</span>}
             </span>
-            <span aria-hidden className="text-muted">›</span>
           </Link>
+
+          {/* #693: 「しおり」の見出しで区切り、「＋ 新規」は作るものの見出しの横に置く（決定事項 75） */}
+          <div className="mb-2 mt-5 flex items-center justify-between">
+            <h2 className="text-[14px] font-bold text-ink">しおり</h2>
+            <button type="button" onClick={() => setIsCreating(true)} className="h-9 rounded-full bg-accent px-4 text-[12px] font-bold text-white">
+              ＋ 新規
+            </button>
+          </div>
 
           {sorted.length === 0 ? (
             <div className="py-16 text-center text-[13px] leading-[1.8] text-muted">

@@ -226,7 +226,7 @@ export function ItineraryDetailScreen({
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden>
                 <path d="M15 5l-7 7 7 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
               </svg>
-              {back?.label ?? "しおり一覧"}
+              {back?.label ?? "計画"}
             </Link>
             {/* v3.1: タイトルをタップ（✎）で名前を変更。「名前を変更」ボタンは置かない */}
             {isOwner ? (

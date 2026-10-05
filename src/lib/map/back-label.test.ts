@@ -29,7 +29,7 @@ describe("classifyBackHref / backLabelFor", () => {
     expect(label("/albums")).toBe("アルバム一覧");
     expect(label("/albums/t1")).toBe("アルバム");
     expect(label("/albums/t1/photos")).toBe("写真");
-    expect(label("/itineraries")).toBe("しおり一覧");
+    expect(label("/itineraries")).toBe("計画");
     expect(label("/notifications")).toBe("通知");
     expect(label("/mymap?mode=saved")).toBe("あしあと");
     expect(label("/badges")).toBe("バッジ");
