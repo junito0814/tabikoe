@@ -1,12 +1,12 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useState } from "react";
 import Link from "next/link";
 import { appendBackHref } from "@/lib/search/list-state";
 import { ErrorNotice } from "@/components/notices/ErrorNotice";
 import { ERROR_MESSAGES } from "@/components/notices/error-messages";
 import { fetchWithAuthRedirect, UnauthorizedError } from "@/lib/api/fetch-with-auth-redirect";
-import type { AnnouncementItem, FeedItem, FeedPage } from "@/lib/notifications/feed";
+import type { FeedItem, FeedPage } from "@/lib/notifications/feed";
 import { useInfiniteScroll } from "@/components/posts/use-infinite-scroll";
 import { dispatchNotificationsRead } from "./notification-events";
 import { PullToRefresh } from "@/components/layout/PullToRefresh";
@@ -14,6 +14,10 @@ import { PullToRefresh } from "@/components/layout/PullToRefresh";
 export interface NotificationApi {
   fetchPage: (offset: number) => Promise<FeedPage>;
   markRead: (notificationIds: string[]) => Promise<Response>;
+  /** #711: 未読に戻す */
+  markUnread: (notificationIds: string[]) => Promise<Response>;
+  /** #711: すべて既読にする（読み込んでいない分も含めて） */
+  markAllRead: () => Promise<Response>;
   /** v3.2: アプリ内招待に応答する（参加する／辞退） */
   respondInvitation: (invitationId: string, kind: "album" | "itinerary", action: "accept" | "decline") => Promise<Response>;
 }
@@ -46,8 +50,14 @@ export function NotificationListScreen({
   const [nextOffset, setNextOffset] = useState<number | null>(initialPage.nextOffset);
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [openAnnouncement, setOpenAnnouncement] = useState<AnnouncementItem | null>(null);
-  const [fallbackNotice, setFallbackNotice] = useState<string | null>(null);
+  /*
+   * #711: 開いている通知の位置（一覧の何番目か）。
+   *
+   * 【初心者向け】中身そのものではなく**位置**を持つのは、「次へ」で隣へ送るため。
+   * 既読にしたときに一覧の中身を書き換えるので、位置で持っておくと常に最新が出る。
+   */
+  const [openIndex, setOpenIndex] = useState<number | null>(null);
+  const [isMarkingAll, setIsMarkingAll] = useState(false);
   /** v3.2: 応答中の招待通知の id */
   const [respondingId, setRespondingId] = useState<string | null>(null);
 
@@ -77,35 +87,62 @@ export function NotificationListScreen({
       setRespondingId(null);
     }
   };
-  const markedRef = useRef(new Set<string>());
-
-  // Task3: 表示した未読の個人通知を既読化する（お知らせは対象外）
-  const markVisibleAsRead = useCallback(
-    async (visible: FeedItem[]) => {
-      const unreadIds = visible
-        .filter((item): item is Extract<FeedItem, { kind: "notification" }> => item.kind === "notification" && !item.isRead)
-        .map((item) => item.id)
-        .filter((id) => !markedRef.current.has(id));
-      if (unreadIds.length === 0) return;
-      unreadIds.forEach((id) => markedRef.current.add(id));
+  /** #711: モーダルを開く。個人通知で未読なら、このとき既読にする */
+  const openAt = (index: number) => {
+    setOpenIndex(index);
+    const item = items[index];
+    if (item?.kind !== "notification" || item.isRead) return;
+    void (async () => {
       try {
-        const response = await api.markRead(unreadIds);
-        if (response.ok) {
-          dispatchNotificationsRead();
-        }
+        const response = await api.markRead([item.id]);
+        if (!response.ok) return;
+        setItems((current) => current.map((entry) => (entry.kind === "notification" && entry.id === item.id ? { ...entry, isRead: true } : entry)));
+        dispatchNotificationsRead();
       } catch (error) {
         if (error instanceof UnauthorizedError) return;
-        // 既読化の失敗は一覧の表示を妨げない
+        // 既読にできなくても読むのは妨げない
       }
-    },
-    [api]
-  );
+    })();
+  };
 
-  useEffect(() => {
-    void markVisibleAsRead(initialPage.items);
-    // 初期表示分だけを対象にする
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  /** #711: 未読に戻す（モーダルの中だけに置く） */
+  const markUnread = async (item: Extract<FeedItem, { kind: "notification" }>) => {
+    try {
+      const response = await api.markUnread([item.id]);
+      if (!response.ok) return;
+      setItems((current) => current.map((entry) => (entry.kind === "notification" && entry.id === item.id ? { ...entry, isRead: false } : entry)));
+      dispatchNotificationsRead();
+      setOpenIndex(null);
+    } catch (error) {
+      if (error instanceof UnauthorizedError) return;
+      setErrorMessage("未読に戻せませんでした");
+    }
+  };
+
+  /** #711: すべて既読にする。読み込んでいない分も含めて */
+  const markAllRead = async () => {
+    if (isMarkingAll) return;
+    setIsMarkingAll(true);
+    try {
+      const response = await api.markAllRead();
+      if (!response.ok) return;
+      setItems((current) => current.map((entry) => (entry.kind === "notification" ? { ...entry, isRead: true } : entry)));
+      dispatchNotificationsRead();
+    } catch (error) {
+      if (error instanceof UnauthorizedError) return;
+      setErrorMessage("既読にできませんでした");
+    } finally {
+      setIsMarkingAll(false);
+    }
+  };
+
+  /*
+   * #711: 一覧を開いただけでは既読にしない。
+   *
+   * 【初心者向け】前は「画面に出した瞬間」に既読にしていた。そのままだと
+   * **開いた瞬間に全部既読**になり、「未読に戻す」と噛み合わない（戻してもすぐ既読に戻る）。
+   * いまはモーダルを開いたときだけ既読にする。
+   */
 
   const loadMore = useCallback(async () => {
     if (isLoading || nextOffset === null) return;
@@ -119,39 +156,47 @@ export function NotificationListScreen({
         return [...current, ...page.items.filter((item) => !seen.has(`${item.kind}:${item.id}`))];
       });
       setNextOffset(page.nextOffset);
-      void markVisibleAsRead(page.items);
     } catch (error) {
       if (error instanceof UnauthorizedError) return;
       setErrorMessage(ERROR_MESSAGES.dbLoadFailure);
     } finally {
       setIsLoading(false);
     }
-  }, [api, isLoading, nextOffset, markVisibleAsRead]);
+  }, [api, isLoading, nextOffset]);
 
   const sentinelRef = useInfiniteScroll(nextOffset !== null && !isLoading, () => void loadMore());
+
+  /** いま開いている通知（位置から引く。既読にした直後も最新が出る） */
+  const open = openIndex === null ? null : (items[openIndex] ?? null);
 
   return (
     <PullToRefresh>
       <div className="flex min-h-screen flex-col items-center bg-app px-4 py-6">
         <div className="flex w-full max-w-[520px] flex-col gap-3">
-          <h1 className="text-[18px] font-bold text-ink">通知</h1>
+          <div className="flex items-center justify-between gap-2">
+            <h1 className="text-[18px] font-bold text-ink">通知</h1>
+            {/* #711: 自動既読をやめたので、まとめて消す道を右上に置く（決定事項 79） */}
+            <button
+              type="button"
+              onClick={() => void markAllRead()}
+              disabled={isMarkingAll}
+              className="h-8 shrink-0 rounded-full border border-line bg-surface px-3 text-[12px] font-semibold text-ink disabled:opacity-45"
+            >
+              {isMarkingAll ? "既読にしています…" : "すべて既読にする"}
+            </button>
+          </div>
 
-          {fallbackNotice && (
-            <p role="status" className="rounded-lg border border-line bg-surface px-3.5 py-2.5 text-[12px] text-ink">
-              {fallbackNotice}
-            </p>
-          )}
 
           {items.length === 0 ? (
             <p className="py-16 text-center text-[13px] text-muted">通知はありません</p>
           ) : (
             <ul className="flex flex-col gap-2">
-              {items.map((item) =>
+              {items.map((item, index) =>
                 item.kind === "announcement" ? (
                   <li key={`a:${item.id}`}>
                     <button
                       type="button"
-                      onClick={() => setOpenAnnouncement(item)}
+                      onClick={() => openAt(index)}
                       data-announcement={item.id}
                       data-new={item.isNew ? "true" : undefined}
                       className={`flex w-full items-start gap-3 rounded-[12px] border bg-surface p-3 text-left ${
@@ -209,23 +254,18 @@ export function NotificationListScreen({
                           </button>
                         </div>
                       </div>
-                    ) : item.href ? (
-                      <Link
-                        href={appendBackHref(item.href, "/notifications")}
-                        prefetch={false}
-                        data-notification={item.id}
-                        className={`flex items-start gap-3 rounded-[12px] border border-line bg-surface p-3 ${
-                          item.isRead ? "" : "shadow-card"
-                        }`}
-                      >
-                        <NotificationBody item={item} />
-                      </Link>
                     ) : (
+                      /*
+                       * #711: 行き先の有無にかかわらず**モーダルを開く**（決定事項 79。種類で出し分けない）。
+                       * 行き先へは、モーダルの中のボタンから行く。
+                       */
                       <button
                         type="button"
                         data-notification={item.id}
-                        onClick={() => setFallbackNotice(item.fallbackMessage ?? "対象が見つかりません")}
-                        className="flex w-full items-start gap-3 rounded-[12px] border border-line bg-surface p-3 text-left"
+                        onClick={() => openAt(index)}
+                        className={`flex w-full items-start gap-3 rounded-[12px] border border-line p-3 text-left ${
+                          item.isRead ? "border-line bg-surface" : "border-accent/40 bg-tint shadow-card"
+                        }`}
                       >
                         <NotificationBody item={item} />
                       </button>
@@ -251,27 +291,93 @@ export function NotificationListScreen({
           )}
         </div>
 
-        {openAnnouncement && (
+        {/*
+          * #711: 通知もお知らせも、同じモーダルで読む（決定事項 79。種類で出し分けない）。
+          * 中身は 本文・行き先へ行くボタン・未読に戻す・次へ／前へ。
+          * × は右上（要件 4.5.13）。下に全幅の「閉じる」は置かない。
+          */}
+        {open && (
           <div
             role="dialog"
             aria-modal="true"
-            aria-labelledby="announcement-title"
+            aria-labelledby="notification-modal-title"
             className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-6"
-            onClick={() => setOpenAnnouncement(null)}
+            onClick={() => setOpenIndex(null)}
           >
-            <div className="max-h-[80vh] w-full max-w-[420px] overflow-y-auto rounded-[14px] bg-surface p-5 shadow-xl" onClick={(event) => event.stopPropagation()}>
-              <p className="mb-1 text-[11px] text-muted">
-                お知らせ ・ {new Date(openAnnouncement.publishedAt).toLocaleString("ja-JP")}
-              </p>
-              <h2 id="announcement-title" className="mb-3 text-[16px] font-bold text-ink">{openAnnouncement.title}</h2>
-              <p className="whitespace-pre-wrap text-[13px] leading-[1.8] text-ink">{openAnnouncement.body}</p>
-              <button
-                type="button"
-                onClick={() => setOpenAnnouncement(null)}
-                className="mt-4 h-10 w-full rounded-[10px] border border-line text-[13px] font-medium text-ink"
-              >
-                閉じる
-              </button>
+            <div
+              className="max-h-[80vh] w-full max-w-[420px] overflow-y-auto rounded-[14px] bg-surface p-4 shadow-xl"
+              onClick={(event) => event.stopPropagation()}
+            >
+              <div className="mb-1 flex items-start gap-2">
+                <p className="flex-1 text-[11px] text-muted">
+                  {open.kind === "announcement"
+                    ? `お知らせ ・ ${new Date(open.publishedAt).toLocaleString("ja-JP")}`
+                    : `通知 ・ ${new Date(open.createdAt).toLocaleString("ja-JP")}`}
+                </p>
+                <button
+                  type="button"
+                  onClick={() => setOpenIndex(null)}
+                  aria-label="閉じる"
+                  className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-muted"
+                >
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" aria-hidden>
+                    <path d="M6 6l12 12M18 6L6 18" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" />
+                  </svg>
+                </button>
+              </div>
+              <h2 id="notification-modal-title" className="mb-2 text-[15px] font-bold text-ink">
+                {open.kind === "announcement" ? open.title : open.message}
+              </h2>
+              {open.kind === "announcement" && (
+                <p className="whitespace-pre-wrap text-[13px] leading-[1.8] text-ink">{open.body}</p>
+              )}
+              {open.kind === "notification" && open.fallbackMessage && (
+                <p className="text-[12px] leading-[1.7] text-muted">{open.fallbackMessage}</p>
+              )}
+
+              <div className="mt-3 flex flex-col gap-2">
+                {open.kind === "notification" && open.href && (
+                  <Link
+                    href={appendBackHref(open.href, "/notifications")}
+                    prefetch={false}
+                    className="h-10 rounded-[10px] bg-accent text-center text-[13px] font-bold leading-10 text-white"
+                  >
+                    {open.invitation ? "招待を見る" : "この投稿を見る"}
+                  </Link>
+                )}
+                {open.kind === "notification" && open.isRead && (
+                  <button
+                    type="button"
+                    onClick={() => void markUnread(open)}
+                    className="h-10 rounded-[10px] border border-line text-[13px] font-semibold text-ink"
+                  >
+                    未読に戻す
+                  </button>
+                )}
+              </div>
+
+              {/* #711: 閉じずに読み進められる（写真の拡大と同じ考え方） */}
+              <div className="mt-3 flex items-center justify-between border-t border-line pt-2 text-[12px]">
+                <button
+                  type="button"
+                  onClick={() => openAt(openIndex! - 1)}
+                  disabled={openIndex === 0}
+                  className="h-8 rounded-full px-3 font-semibold text-ink disabled:opacity-35"
+                >
+                  ← 前へ
+                </button>
+                <span className="text-muted">
+                  {openIndex! + 1} / {items.length}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => openAt(openIndex! + 1)}
+                  disabled={openIndex! >= items.length - 1}
+                  className="h-8 rounded-full px-3 font-semibold text-ink disabled:opacity-35"
+                >
+                  次へ →
+                </button>
+              </div>
             </div>
           </div>
         )}
@@ -320,6 +426,18 @@ const defaultApi: NotificationApi = {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ notificationIds }),
+    }),
+  markUnread: (notificationIds) =>
+    fetchWithAuthRedirect("/api/notifications/read", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ notificationIds, read: false }),
+    }),
+  markAllRead: () =>
+    fetchWithAuthRedirect("/api/notifications/read", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ all: true }),
     }),
   respondInvitation: (invitationId, kind, action) =>
     fetchWithAuthRedirect(`/api/invitation-responses/${invitationId}`, {
