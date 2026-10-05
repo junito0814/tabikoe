@@ -43,6 +43,7 @@ export function PostCard({
   post,
   backHref = null,
   showSpotName = true,
+  showSaveButton = true,
   addMode = null,
 }: {
   post: PostCardData;
@@ -50,6 +51,8 @@ export function PostCard({
   backHref?: string | null;
   /** スポット別一覧では見出しにスポット名があるので省略できる */
   showSpotName?: boolean;
+  /** #692: スポット別の一覧では「＋」を出さない */
+  showSaveButton?: boolean;
   /** 追加モード中: 「＋」でしおりに直接追加する（add-spots Task2） */
   addMode?: AddModeInfo | null;
 }) {
@@ -63,11 +66,8 @@ export function PostCard({
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src={post.author.avatarUrl} alt="" className="h-5 w-5 rounded-full object-cover" />
         <span className="min-w-0 truncate font-medium text-ink">{post.author.displayName}</span>
-        <span className="ml-auto flex shrink-0 items-center gap-1">
-          {visit && <span>訪問 {visit}</span>}
-          {visit && post.walkMinutes !== null && <span aria-hidden>・</span>}
-          {post.walkMinutes !== null && <span data-walk-minutes>徒歩 {post.walkMinutes}分</span>}
-        </span>
+        {/* #692: 「徒歩 N 分」は外した（位置情報の許可と取得を待つぶん、一覧が遅れていた） */}
+        <span className="ml-auto flex shrink-0 items-center gap-1">{visit && <span>訪問 {visit}</span>}</span>
       </div>
 
       {showSpotName && (
@@ -85,13 +85,13 @@ export function PostCard({
       <Link href={appendBackHref(`/posts/${post.id}`, backHref)} prefetch={false} className="flex flex-col gap-1.5">
         {post.commentExcerpt && <p className="line-clamp-2 text-[13px] leading-[1.6] text-ink">{post.commentExcerpt}</p>}
         <p className="flex flex-wrap items-center gap-x-2.5 gap-y-0.5 text-[12px] text-muted">
+          {/* #692: 「星4」の文字は外し、★ の数だけで出す（読み上げ用の名前は残す） */}
           {post.rating !== null && (
-            <span className="flex items-center gap-1" aria-label={`星${post.rating}`}>
-              <span className="text-[13px] text-star" aria-hidden>
+            <span className="text-[13px] text-star" aria-label={`星${post.rating}`}>
+              <span aria-hidden>
                 {"★".repeat(post.rating)}
                 <span className="text-line">{"★".repeat(5 - post.rating)}</span>
               </span>
-              <span>星{post.rating}</span>
             </span>
           )}
           {cost && <span>{cost === "無料" ? cost : `${cost}/人`}</span>}
@@ -120,12 +120,15 @@ export function PostCard({
           {post.commentCount}
         </Link>
         <span className="ml-auto" />
-        <SaveButton
-          spotId={post.spotId}
-          initialSaved={post.viewerHasSaved}
-          size="sm"
-          addMode={addMode ? { itineraryId: addMode.itineraryId, day: addMode.day, initialAdded: addMode.spotIds.includes(post.spotId) } : null}
-        />
+        {/* #692: スポット別の一覧では出さない（保存先はスポット単位なので、見出しの「＋」1 つで足りる） */}
+        {showSaveButton && (
+          <SaveButton
+            spotId={post.spotId}
+            initialSaved={post.viewerHasSaved}
+            size="sm"
+            addMode={addMode ? { itineraryId: addMode.itineraryId, day: addMode.day, initialAdded: addMode.spotIds.includes(post.spotId) } : null}
+          />
+        )}
       </div>
 
       {/* v3.2（feedback-0919 Task5）: 最新のコメント 1 件のプレビューと「コメント N 件をすべて見る」（コメントがあるときだけ） */}

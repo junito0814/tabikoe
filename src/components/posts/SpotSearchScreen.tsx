@@ -7,7 +7,6 @@ import { ErrorNotice } from "@/components/notices/ErrorNotice";
 import { CardListSkeleton } from "@/components/skeleton/Skeletons";
 import { ERROR_MESSAGES } from "@/components/notices/error-messages";
 import { fetchWithAuthRedirect, UnauthorizedError } from "@/lib/api/fetch-with-auth-redirect";
-import { walkMinutesBetween } from "@/lib/geo/walk-minutes";
 import { SPOT_SORT_LABELS, SPOT_SORTS, type SpotCardData, type SpotCardPage, type SpotSort } from "@/lib/spots/search-spots";
 import { PhotoGrid, type FetchMediaPage } from "@/components/media/PhotoGrid";
 import type { SpotMediaPage } from "@/lib/posts/search-photos";
@@ -20,7 +19,7 @@ import { SpotCard } from "./SpotCard";
 import { ViewToggle } from "./ViewToggle";
 import { buildPostSearchParams, buildSearchPageHref, countActiveFilters, distanceCenter, type PostSearchState, type SearchContext } from "./post-search-query";
 import { useInfiniteScroll } from "./use-infinite-scroll";
-import { useListRestore, useViewerPosition } from "./use-search-list";
+import { useListRestore } from "./use-search-list";
 
 export type FetchSpotPage = (params: URLSearchParams) => Promise<SpotCardPage>;
 
@@ -48,8 +47,6 @@ export function SpotSearchScreen({
   fetchPage = defaultFetchSpotPage,
   initialMediaPage = null,
   fetchMediaPage,
-  geolocation,
-  permissions,
 }: {
   context: SearchContext;
   initialState: PostSearchState;
@@ -62,8 +59,6 @@ export function SpotSearchScreen({
   fetchPage?: FetchSpotPage;
   initialMediaPage?: { key: string; page: SpotMediaPage } | null;
   fetchMediaPage?: FetchMediaPage;
-  geolocation?: Pick<Geolocation, "getCurrentPosition">;
-  permissions?: Pick<Permissions, "query">;
 }) {
   const router = useRouter();
   const [state, setState] = useState<PostSearchState>(initialState);
@@ -117,9 +112,8 @@ export function SpotSearchScreen({
 
   const loadPage = useCallback(async (offset: number) => (await load(initialState, offset, false))?.nextOffset ?? null, [load, initialState]);
   useListRestore({ pageHref, itemCount: spots.length, initialNextOffset: initialPage.nextOffset, loadPage });
-  const viewer = useViewerPosition(geolocation, permissions);
 
-  const withWalk = (spot: SpotCardData): SpotCardData => (viewer ? { ...spot, walkMinutes: walkMinutesBetween(viewer, { lat: spot.lat, lng: spot.lng }) } : spot);
+
 
   const activeCount = countActiveFilters(state, context);
   const onSortChange = (sort: SpotSort) => applyState({ ...state, sort });
@@ -183,7 +177,7 @@ export function SpotSearchScreen({
             <ul className="flex flex-col gap-3" data-spot-list>
               {spots.map((spot) => (
                 <li key={spot.id}>
-                  <SpotCard spot={withWalk(spot)} addMode={addMode} backHref={pageHref} />
+                  <SpotCard spot={spot} addMode={addMode} backHref={pageHref} />
                 </li>
               ))}
             </ul>

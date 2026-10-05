@@ -8,7 +8,6 @@ import { ErrorNotice } from "@/components/notices/ErrorNotice";
 import { CardListSkeleton } from "@/components/skeleton/Skeletons";
 import { ERROR_MESSAGES } from "@/components/notices/error-messages";
 import { fetchWithAuthRedirect, UnauthorizedError } from "@/lib/api/fetch-with-auth-redirect";
-import { walkMinutesBetween } from "@/lib/geo/walk-minutes";
 import type { PostCardData, PostCardPage, PostSort } from "@/lib/posts/post-cards";
 import { PhotoGrid, type FetchMediaPage } from "@/components/media/PhotoGrid";
 import type { SpotMediaPage } from "@/lib/posts/search-photos";
@@ -27,7 +26,7 @@ import {
   type SearchContext,
 } from "./post-search-query";
 import { useInfiniteScroll } from "./use-infinite-scroll";
-import { useListRestore, useViewerPosition } from "./use-search-list";
+import { useListRestore } from "./use-search-list";
 
 export type FetchSearchPage = (params: URLSearchParams) => Promise<PostCardPage>;
 
@@ -64,8 +63,6 @@ export function PostSearchScreen({
   fetchPage = defaultFetchPage,
   initialMediaPage = null,
   fetchMediaPage,
-  geolocation,
-  permissions,
 }: {
   context: SearchContext;
   /** URL から読んだ絞り込み・並び替え */
@@ -88,8 +85,6 @@ export function PostSearchScreen({
   initialMediaPage?: { key: string; page: SpotMediaPage } | null;
   /** 差し替え口（単体テスト用） */
   fetchMediaPage?: FetchMediaPage;
-  geolocation?: Pick<Geolocation, "getCurrentPosition">;
-  permissions?: Pick<Permissions, "query">;
 }) {
   const router = useRouter();
   const [state, setState] = useState<PostSearchState>(initialState);
@@ -148,10 +143,8 @@ export function PostSearchScreen({
   // ── Task3: 「一覧に戻る」の復元と保存、「徒歩 N 分」の現在地（use-search-list.ts に共通化。v3.1） ──
   const loadPage = useCallback(async (offset: number) => (await load(initialState, offset, false))?.nextOffset ?? null, [load, initialState]);
   useListRestore({ pageHref, itemCount: posts.length, initialNextOffset: initialPage.nextOffset, loadPage });
-  const viewer = useViewerPosition(geolocation, permissions);
 
-  const withWalk = (post: PostCardData): PostCardData =>
-    viewer ? { ...post, walkMinutes: walkMinutesBetween(viewer, { lat: post.spotLat, lng: post.spotLng }) } : post;
+
 
   const activeCount = countActiveFilters(state, context);
   const onSortChange = (sort: PostSort) => applyState({ ...state, sort });
@@ -166,6 +159,9 @@ export function PostSearchScreen({
   const mediaParams = buildPostSearchParams({ ...state, view: "posts" }, context, 0);
   const isPhotos = state.view === "photos";
 
+  // #692: スポット別の一覧か（絞り込みを出すかと、カードに「＋」を出すかの分かれ目）
+  const isSpotList = context.destination?.kind === "spot";
+
   return (
     <div className="flex min-h-screen flex-col items-center bg-app pb-6">
       {addMode && <AddModeBanner info={addMode} />}
@@ -179,14 +175,20 @@ export function PostSearchScreen({
               {backLabel}
             </Link>
             <h1 className="min-w-0 flex-1 truncate text-center text-[16px] font-bold text-ink">{title}</h1>
-            <button
-              type="button"
-              onClick={() => setIsSheetOpen(true)}
-              aria-haspopup="dialog"
-              className="h-8 shrink-0 rounded-full border border-line bg-surface px-3 text-[12px] font-semibold text-ink"
-            >
-              絞り込み{activeCount > 0 && `（${activeCount}）`}
-            </button>
+            {/*
+              * #692: スポット別の一覧では絞り込みを出さない（並び替えは残す）。
+              * 1 つの場所の中で予算や評価で絞る場面が無く、押す場所だけが増えていた。
+              */}
+            {!isSpotList && (
+              <button
+                type="button"
+                onClick={() => setIsSheetOpen(true)}
+                aria-haspopup="dialog"
+                className="h-8 shrink-0 rounded-full border border-line bg-surface px-3 text-[12px] font-semibold text-ink"
+              >
+                絞り込み{activeCount > 0 && `（${activeCount}）`}
+              </button>
+            )}
           </div>
           {header}
           <div className="flex items-center justify-between gap-2">
@@ -210,7 +212,14 @@ export function PostSearchScreen({
           <ul className="flex flex-col gap-3">
             {posts.map((post) => (
               <li key={post.id}>
-                <PostCard post={withWalk(post)} backHref={appendBackHref(pageHref, backParam)} showSpotName={context.destination?.kind !== "spot"} addMode={addMode} />
+                <PostCard
+                  post={post}
+                  backHref={appendBackHref(pageHref, backParam)}
+                  showSpotName={!isSpotList}
+                  addMode={addMode}
+                  /* #692: スポット別では「＋」を出さない（保存先はスポット単位。見出しの「＋」1 つに任せる） */
+                  showSaveButton={!isSpotList}
+                />
               </li>
             ))}
           </ul>
