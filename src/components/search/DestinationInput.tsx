@@ -3,6 +3,12 @@
 import { useEffect, useId, useRef, useState } from "react";
 import { UnauthorizedError } from "@/lib/api/fetch-with-auth-redirect";
 import { SUGGESTION_KIND_LABELS, type DestinationSuggestion } from "@/lib/search/suggest-destinations";
+import { GoogleMapsAttribution } from "@/components/google/GoogleMapsAttribution";
+import {
+  ATTRIBUTION_SOURCE_LABELS,
+  destinationSuggestionSource,
+  groupBySource,
+} from "@/lib/google/attribution-source";
 
 const DEBOUNCE_MS = 300;
 
@@ -169,34 +175,55 @@ export function DestinationInput({
         </p>
       )}
 
+      {/*
+        * #699: 出どころ（タビコエ／Google）で分け、Google の組の下に公式のロゴを置く。
+        * Google の規約が「Places のデータを地図の無い画面に出すときは表記を出す」
+        * 「どれが Google 由来か分かるようにする」と求めている（要件 6.2）。
+        */}
       {isOpen && visibleSuggestions.length > 0 && (
-        <ul
-          id={`${inputId}-suggestions`}
-          role="listbox"
-          className="absolute z-20 mt-1 w-full overflow-hidden rounded-[12px] border border-line bg-surface shadow-card"
-        >
-          {visibleSuggestions.map((suggestion) => (
-            <li key={`${suggestion.kind}:${suggestion.name}`} role="option" aria-selected={false}>
-              <button
-                type="button"
-                onMouseDown={(event) => event.preventDefault()}
-                onClick={() => select(suggestion)}
-                className="flex w-full items-center gap-2 px-4 py-2.5 text-left text-[14px] text-ink hover:bg-tint"
-              >
-                <span className="text-muted" aria-hidden>
-                  {suggestion.kind === "spot" ? "🏷" : "📍"}
-                </span>
-                <span className="min-w-0 flex-1 truncate">
-                  {suggestion.name}
-                  {"secondaryText" in suggestion && suggestion.secondaryText && (
-                    <span className="ml-1.5 text-[11px] text-muted">{suggestion.secondaryText}</span>
-                  )}
-                </span>
-                <span className="shrink-0 text-[11px] text-muted">{SUGGESTION_KIND_LABELS[suggestion.kind]}</span>
-              </button>
-            </li>
-          ))}
-        </ul>
+        <div className="absolute z-20 mt-1 w-full overflow-hidden rounded-[12px] border border-line bg-surface shadow-card">
+          {groupBySource(visibleSuggestions, (suggestion) => destinationSuggestionSource(suggestion.kind)).map(
+            (group, groupIndex) => (
+              <section key={group.source} className={groupIndex > 0 ? "border-t border-line" : undefined}>
+                <h3 className="px-4 pb-0.5 pt-2 text-[10.5px] font-bold text-muted">
+                  {ATTRIBUTION_SOURCE_LABELS[group.source]}
+                </h3>
+                <ul
+                  id={groupIndex === 0 ? `${inputId}-suggestions` : undefined}
+                  role="listbox"
+                  aria-label={ATTRIBUTION_SOURCE_LABELS[group.source]}
+                >
+                  {group.items.map((suggestion) => (
+                    <li key={`${suggestion.kind}:${suggestion.name}`} role="option" aria-selected={false}>
+                      <button
+                        type="button"
+                        onMouseDown={(event) => event.preventDefault()}
+                        onClick={() => select(suggestion)}
+                        className="flex w-full items-center gap-2 px-4 py-2.5 text-left text-[14px] text-ink hover:bg-tint"
+                      >
+                        <span className="text-muted" aria-hidden>
+                          {suggestion.kind === "spot" ? "🏷" : "📍"}
+                        </span>
+                        <span className="min-w-0 flex-1 truncate">
+                          {suggestion.name}
+                          {"secondaryText" in suggestion && suggestion.secondaryText && (
+                            <span className="ml-1.5 text-[11px] text-muted">{suggestion.secondaryText}</span>
+                          )}
+                        </span>
+                        <span className="shrink-0 text-[11px] text-muted">{SUGGESTION_KIND_LABELS[suggestion.kind]}</span>
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+                {group.source === "google" && (
+                  <div className="px-4 pb-2 pt-0.5">
+                    <GoogleMapsAttribution />
+                  </div>
+                )}
+              </section>
+            )
+          )}
+        </div>
       )}
     </div>
   );

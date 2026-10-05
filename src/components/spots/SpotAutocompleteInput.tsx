@@ -6,6 +6,12 @@ import { ERROR_MESSAGES } from "@/components/notices/error-messages";
 import { fetchWithAuthRedirect, UnauthorizedError } from "@/lib/api/fetch-with-auth-redirect";
 import type { RegisteredSpot } from "@/lib/spots/types";
 import type { NearbySpot } from "@/lib/spots/nearby";
+import { GoogleMapsAttribution } from "@/components/google/GoogleMapsAttribution";
+import {
+  ATTRIBUTION_SOURCE_LABELS,
+  groupBySource,
+  spotCandidateSource,
+} from "@/lib/google/attribution-source";
 
 export interface SpotCandidate {
   /** 既に`spots`に存在する場合のみ入る。Google由来の未登録候補ではnull */
@@ -241,32 +247,49 @@ export function SpotAutocompleteInput({
         </p>
       )}
 
+      {/*
+        * #699: 出どころ（タビコエに登録済み／Google 由来で未登録）で分け、
+        * Google の組の下に公式のロゴを置く（要件 6.2・規約の求め）。
+        */}
       {visibleCandidates.length > 0 && (
-        <ul
+        <div
           id={`${inputId}-candidates`}
-          role="listbox"
           /* Task 4-1: 登録中は一覧ごと「処理中」と伝える（読み上げにも効く） */
           aria-busy={registeringKey !== null}
           className="mt-1 overflow-hidden rounded-[10px] border border-line bg-surface"
         >
-          {visibleCandidates.map((candidate) => {
-            const key = candidateKey(candidate);
-            const isRegistering = registeringKey === key;
-            return (
-              <li key={key} role="option" aria-selected={false}>
-                <button
-                  type="button"
-                  onClick={() => handleSelectCandidate(candidate)}
-                  /* Task 4-1: どれか 1 つを登録している間は、一覧の**どの候補も**押せない */
-                  disabled={registeringKey !== null}
-                  className="block w-full px-3 py-2.5 text-left text-[14px] text-ink hover:bg-tint disabled:cursor-not-allowed disabled:opacity-45"
-                >
-                  {isRegistering ? "登録しています…" : candidate.name}
-                </button>
-              </li>
-            );
-          })}
-        </ul>
+          {groupBySource(visibleCandidates, spotCandidateSource).map((group, groupIndex) => (
+            <section key={group.source} className={groupIndex > 0 ? "border-t border-line" : undefined}>
+              <h3 className="px-3 pb-0.5 pt-2 text-[10.5px] font-bold text-muted">
+                {ATTRIBUTION_SOURCE_LABELS[group.source]}
+              </h3>
+              <ul role="listbox" aria-label={ATTRIBUTION_SOURCE_LABELS[group.source]}>
+                {group.items.map((candidate) => {
+                  const key = candidateKey(candidate);
+                  const isRegistering = registeringKey === key;
+                  return (
+                    <li key={key} role="option" aria-selected={false}>
+                      <button
+                        type="button"
+                        onClick={() => handleSelectCandidate(candidate)}
+                        /* Task 4-1: どれか 1 つを登録している間は、一覧の**どの候補も**押せない */
+                        disabled={registeringKey !== null}
+                        className="block w-full px-3 py-2.5 text-left text-[14px] text-ink hover:bg-tint disabled:cursor-not-allowed disabled:opacity-45"
+                      >
+                        {isRegistering ? "登録しています…" : candidate.name}
+                      </button>
+                    </li>
+                  );
+                })}
+              </ul>
+              {group.source === "google" && (
+                <div className="px-3 pb-2 pt-0.5">
+                  <GoogleMapsAttribution />
+                </div>
+              )}
+            </section>
+          ))}
+        </div>
       )}
 
       {placesUnavailable && (

@@ -105,3 +105,45 @@ describe("SpotAutocompleteInput", () => {
     expect(screen.queryByText(/候補が見つかりません/)).not.toBeInTheDocument();
   });
 });
+
+/**
+ * #699（2026-10-05）: Google の規約が「Places のデータを地図の無い画面に出すときは
+ * 「Google マップ」の表記を出す」「どれが Google 由来か分かるようにする」と求めている。
+ */
+describe("Google の表記（#699）", () => {
+  const FROM_GOOGLE: SpotCandidate = {
+    id: null,
+    name: "首里金城町石畳道",
+    lat: 26.213,
+    lng: 127.714,
+    source: "places",
+    postCount: 0,
+  };
+
+  it("出どころで分け、Google の組の下に公式のロゴを出す", async () => {
+    render(
+      <Harness
+        searchSpots={async () => ({ candidates: [FROM_GOOGLE, REGISTERED], placesUnavailable: false })}
+      />
+    );
+    fireEvent.change(screen.getByRole("combobox"), { target: { value: "首里" } });
+    await screen.findByRole("option", { name: "首里城" });
+
+    const groups = screen.getAllByRole("listbox");
+    expect(groups).toHaveLength(2);
+    // タビコエが先、Google が後
+    expect(groups[0]).toHaveAttribute("aria-label", "タビコエの中から");
+    expect(groups[1]).toHaveAttribute("aria-label", "Google マップから");
+    expect(document.querySelector("[data-google-maps-attribution]")).toBeInTheDocument();
+  });
+
+  it("登録済みだけのときは Google の見出しもロゴも出さない", async () => {
+    render(<Harness searchSpots={async () => ({ candidates: [REGISTERED], placesUnavailable: false })} />);
+    fireEvent.change(screen.getByRole("combobox"), { target: { value: "首里" } });
+    await screen.findByRole("option", { name: "首里城" });
+
+    expect(screen.getAllByRole("listbox")).toHaveLength(1);
+    expect(screen.queryByText("Google マップから")).not.toBeInTheDocument();
+    expect(document.querySelector("[data-google-maps-attribution]")).not.toBeInTheDocument();
+  });
+});

@@ -54,6 +54,26 @@ describe("SearchTopScreen", () => {
     expect(push).toHaveBeenCalledWith("/search?spot=s1");
   });
 
+  /**
+   * #699（2026-10-05）: Google の規約が「Places のデータを地図の無い画面に出すときは
+   * 「Google マップ」の表記を出す」「どれが Google 由来か分かるようにする」と求めている。
+   */
+  it("候補を出どころで分け、Google の組の下に公式のロゴを出す", async () => {
+    render(<SearchTopScreen api={api} geolocation={granted} />);
+    fireEvent.change(screen.getByRole("combobox", { name: "行き先" }), { target: { value: "おおさ" } });
+    await act(async () => {
+      vi.advanceTimersByTime(350);
+    });
+    await screen.findByRole("option", { name: /^大阪府/ });
+
+    const groups = screen.getAllByRole("listbox");
+    expect(groups.map((group) => group.getAttribute("aria-label"))).toEqual([
+      "タビコエの中から",
+      "Google マップから",
+    ]);
+    expect(document.querySelector("[data-google-maps-attribution]")).toBeInTheDocument();
+  });
+
   it("候補に無い文字列で決定して座標化できなければエラーを出し、遷移しない", async () => {
     const failing: SearchTopApi = { suggest: async () => ({ suggestions: [], placesUnavailable: false }), geocode: async () => null };
     render(<SearchTopScreen api={failing} geolocation={granted} />);
