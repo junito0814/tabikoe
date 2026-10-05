@@ -2,7 +2,6 @@ import { describe, expect, it } from "vitest";
 import { render, screen } from "@testing-library/react";
 import { existsSync, globSync, readFileSync } from "node:fs";
 import ConsentRenewLoading from "./consent/renew/loading";
-import AccountStatusLoading from "./account/status/loading";
 import AccountLoading from "./account/loading";
 import SignupLoading from "./signup/loading";
 import PostsNewLoading from "./posts/new/loading";
@@ -23,7 +22,6 @@ import ItineraryInvitationLoading from "./itinerary-invitations/[token]/loading"
  */
 const ADDED: [string, () => React.ReactElement, string][] = [
   ["/consent/renew", ConsentRenewLoading, "src/app/consent/renew/loading.tsx"],
-  ["/account/status", AccountStatusLoading, "src/app/account/status/loading.tsx"],
   ["/account", AccountLoading, "src/app/account/loading.tsx"],
   ["/signup", SignupLoading, "src/app/signup/loading.tsx"],
   ["/posts/new", PostsNewLoading, "src/app/posts/new/loading.tsx"],
@@ -32,9 +30,9 @@ const ADDED: [string, () => React.ReactElement, string][] = [
   ["/itinerary-invitations/[token]", ItineraryInvitationLoading, "src/app/itinerary-invitations/[token]/loading.tsx"],
 ];
 
-describe("Task 5: 足した 8 枚の受け皿", () => {
-  it("8 枚ある（要件 4.5.11 の表で「置く」としたぶん）", () => {
-    expect(ADDED).toHaveLength(8);
+describe("Task 5: 足した受け皿", () => {
+  it("7 枚ある（#684 でアカウントの状態を廃止したぶん 1 枚減った）", () => {
+    expect(ADDED).toHaveLength(7);
   });
 
   it.each(ADDED)("%s は「読み込んでいます」と伝わる形を描く", (_route, Loading) => {
@@ -72,9 +70,9 @@ describe("Task 5: 足した 8 枚の受け皿", () => {
     expect(existsSync("src/app/admin/(shell)/loading.tsx")).toBe(false);
   });
 
-  it("受け皿は全部で 18 枚（既存 10 ＋ 今回の 8）", () => {
+  it("受け皿は全部で 17 枚（既存 10 ＋ 7）", () => {
     // 数を書いておくと、うっかり増やした・消したときに気づける
     const all = globSync("src/app/**/loading.tsx");
-    expect(all.sort()).toHaveLength(18);
+    expect(all.sort()).toHaveLength(17);
   });
 });

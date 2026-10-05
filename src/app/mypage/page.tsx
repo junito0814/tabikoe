@@ -5,9 +5,9 @@ import { ErrorNotice } from "@/components/notices/ErrorNotice";
 import { ERROR_MESSAGES } from "@/components/notices/error-messages";
 import { MyPageScreen } from "@/components/mypage/MyPageScreen";
 import { DEFAULT_AVATAR_URL } from "@/lib/users/constants";
-import { getMyPageSummary, getMyPosts, getMyTripOptions } from "@/lib/users/my-page";
-import { getMyDrafts } from "@/lib/posts/drafts";
-import { getPostingRestrictionUntil } from "@/lib/moderation/posting-restriction";
+import { getMyPageSummary } from "@/lib/users/my-page";
+
+import { getBadgeStatuses } from "@/lib/badges/badge-status";
 import { ContentEnter } from "@/components/transitions/Reveal";
 
 /**
@@ -39,7 +39,7 @@ export default async function MyPage() {
         profile={data.profile}
         summary={data.summary}
         wishlistCount={data.wishlistCount}
-        restrictedUntil={data.restrictedUntil}
+        badgeCount={data.badgeCount}
       />
     </ContentEnter>
   );
@@ -47,16 +47,12 @@ export default async function MyPage() {
 
 async function loadMyPageData(admin: ReturnType<typeof createAdminClient>, userId: string) {
   try {
-    const [profile, summary, initialPosts, tripOptions, drafts, wishlist, restrictedUntil] = await Promise.all([
+    const [profile, summary, wishlist, badges] = await Promise.all([
       admin.from("users").select("display_name, avatar_url, is_admin").eq("id", userId).maybeSingle(),
       getMyPageSummary(admin, userId),
-      getMyPosts(admin, userId, null, 0),
-      getMyTripOptions(admin, userId),
-      // v3.0: 下書き（先頭の段）。取れなくてもページは出す
-      getMyDrafts(admin, userId).catch((): { drafts: []; total: number } => ({ drafts: [], total: 0 })),
       admin.from("wishlist").select("id", { count: "exact", head: true }).eq("user_id", userId),
-      // strike-system Task 5: 投稿禁止中なら先頭に帯を出す
-      getPostingRestrictionUntil(admin, userId),
+      // #683: バッジは「◯/63」の 1 行に出す。取れなくてもページは出す
+      getBadgeStatuses(admin, userId).catch((): [] => []),
     ]);
     if (profile.error) throw profile.error;
     return {
@@ -66,11 +62,8 @@ async function loadMyPageData(admin: ReturnType<typeof createAdminClient>, userI
         isAdmin: profile.data?.is_admin ?? false,
       },
       summary,
-      initialPosts,
-      tripOptions,
-      drafts,
       wishlistCount: wishlist.count ?? 0,
-      restrictedUntil,
+      badgeCount: badges.filter((badge) => badge.acquiredAt !== null).length,
     };
   } catch {
     return null;
