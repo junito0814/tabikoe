@@ -1,12 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { TimePicker10 } from "@/components/ui/TimePicker10";
 import type { ItinerarySpotItem } from "@/lib/itineraries/get-itinerary";
 import { composeHref } from "@/lib/posts/compose-initial-state";
 import { DayMoveDropdown } from "./DayMoveDropdown";
-import { TrashButton } from "@/components/ui/TrashButton";
 import type { DayKey } from "./DayTabs";
 
 /** メモの上限（書記素）。API と同じ値 */
@@ -18,13 +17,23 @@ export const MEMO_MAX_LENGTH = 500;
  *       docs/tasks/itinerary/itinerary-check/03-row-display-and-map-pins.md
  *       docs/tasks/itinerary/itinerary-map-and-post/02-post-links.md
  *
- * 【初心者向け】左の列は「時刻／その下にチェック」、右の列は「番号＋スポット名・メモ・導線」。
- *   - 時刻（TimePicker10）を押すと 10 分刻みのピッカー。時刻のある行は自動で時刻順に並ぶので上下ボタンは無効
- *   - チェック: 済みはスポット名に取り消し線＋薄字。位置は動かさない。確認は出さない
- *   - メモ: インライン編集（blur で保存）
- *   - 「投稿一覧」→ /spots/[id]、「投稿する」→ /posts/new?itinerary=&spot=、投稿済みなら「投稿済み ✓」
- *   - 「Day n ▾」で移動、取っ手「≡」のドラッグで手動順（時刻の無い行のみ。v3.1。use-row-drag.ts）、「削除」
- *   - 値段（費用の平均）は出さない（v3.1）
+ * #753（2026-10-06）: 行の形を直した（決定事項 83 の前に決めた「案 F」）。
+ *
+ * 【初心者向け】以前は下の段に 5〜6 個（投稿一覧・投稿する・Day・ゴミ箱・取っ手）が並び、
+ * **時刻の無い行だけ取っ手が増えて 2 段に落ちる**ので、同じしおりの中で行の形が揃わなかった。
+ * 赤いゴミ箱が丸いボタンの列に裸で立っているのも、取り返しのつかない操作がいちばん目立つ形だった。
+ *
+ * 今の形:
+ *   - 左の列 … 時刻（TimePicker10）／チェック／取っ手「≡」（時刻の無い行だけ。今まで空いていた場所）
+ *   - 中 …… 番号＋スポット名、メモ、そして **「Day n ▾」だけ**（投稿済みの行はその横に「投稿済み ✓」）
+ *   - 右の列 … ★の平均の下に「⋯」。**★が無い行でも場所を空けて** ⋯ の位置が行ごとに上下しないようにする
+ *   - 「⋯」の中 … 投稿を見る／投稿する／しおりから外す
+ *
+ * 段に Day だけを残したのは、**スポットは必ず「日付なし」でしおりに入る**（SaveSheet が
+ * `addSpot(…, null)`）ので、Day の割り振りが全件の通る道だから。投稿の入口は検索・地図・
+ * ピン・スポット詳細にもある（`composeHref` を使う画面が 8 つ）。
+ *
+ * #793: 「日付なし」の行には番号を付けない（順番がまだ無いものに番号を振らない）。
  * 保存はすべて親の `onUpdate`（API 呼び出し）に任せ、この行は表示と入力だけを持つ。
  */
 export function ItinerarySpotRow({
@@ -66,6 +75,17 @@ export function ItinerarySpotRow({
   const [isPickingTime, setIsPickingTime] = useState(false);
   const [memo, setMemo] = useState(spot.memo ?? "");
   const [isEditingMemo, setIsEditingMemo] = useState(false);
+  // #753: 右端の「⋯」。外をタップしたら閉じる（しおり詳細・アルバムの「⋯」と同じ作法）
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!isMenuOpen) return;
+    const onPointerDown = (event: PointerEvent) => {
+      if (!menuRef.current?.contains(event.target as Node)) setIsMenuOpen(false);
+    };
+    document.addEventListener("pointerdown", onPointerDown);
+    return () => document.removeEventListener("pointerdown", onPointerDown);
+  }, [isMenuOpen]);
   const checked = spot.checkedAt !== null;
   const hasTime = spot.arrivalTime !== null;
 
@@ -113,26 +133,40 @@ export function ItinerarySpotRow({
           aria-label={`${spot.name} を行った場所にする`}
           className="h-5 w-5 accent-[var(--done)]"
         />
+        {/*
+          * #753: 取っ手「≡」は左の列へ（時刻とチェックの下。今まで空いていた場所）。
+          * 下の段から外れるので、時刻の有無で行の形が変わらなくなる。
+          */}
+        {!hasTime && dragHandleProps && (
+          <button
+            type="button"
+            {...dragHandleProps}
+            aria-label={`${spot.name} を並べ替え`}
+            data-drag-handle
+            className="h-7 w-6 cursor-grab touch-none text-[13px] text-muted active:cursor-grabbing"
+          >
+            ≡
+          </button>
+        )}
       </div>
 
-      {/* 右の列 */}
+      {/* 右：中（名前・メモ・Day）と、その右の縦 1 列（★ の下に ⋯） */}
+      <div className="flex min-w-0 flex-1 gap-2">
       <div className="flex min-w-0 flex-1 flex-col gap-1.5">
-        <div className="flex items-start justify-between gap-2">
-          <p className={`min-w-0 text-[14px] font-bold ${checked ? "text-muted line-through" : "text-ink"}`} data-spot-name>
+        <p className={`min-w-0 text-[14px] font-bold ${checked ? "text-muted line-through" : "text-ink"}`} data-spot-name>
+          {/*
+            * #793: 「日付なし」には番号を付けない（順番がまだ無いものに番号を振ると
+            * 「1 番目に行く」という意味が付いてしまう）。代わりに小さな印を置く。
+            */}
+          {spot.dayIndex === null ? (
+            <span className="mr-1.5 inline-flex h-5 w-5 items-center justify-center rounded-full bg-line text-[11px] text-muted no-underline" aria-hidden>
+              ・
+            </span>
+          ) : (
             <span className="mr-1.5 inline-flex h-5 w-5 items-center justify-center rounded-full bg-ink text-[11px] text-on-ink no-underline">{index}</span>
-            {spot.name}
-          </p>
-          <span className="flex shrink-0 items-center gap-1.5 text-[11px] text-muted">
-            {spot.ratingAverage !== null && (
-              <span>
-                <span className="text-star" aria-hidden>
-                  ★
-                </span>
-                {spot.ratingAverage}
-              </span>
-            )}
-          </span>
-        </div>
+          )}
+          {spot.name}
+        </p>
 
         {isEditingMemo ? (
           // #685: 改行を打つことが前提なので 2 行 → 3 行にした
@@ -163,44 +197,81 @@ export function ItinerarySpotRow({
           </button>
         )}
 
+        {/*
+          * #753: 段に残すのは Day だけ。投稿済みはその横に**状態の印**として置く
+          * （操作ではないので、ボタンの列から外した）。
+          */}
         <div className="flex flex-wrap items-center gap-1.5">
-          {/* Bug #471: 「← しおり」で戻れるように、このしおりの URL を back= で渡す */}
-          <Link href={`/spots/${spot.spotId}?back=${encodeURIComponent(`/itineraries/${itineraryId}`)}`} prefetch={false} className="inline-flex h-7 items-center rounded-full border border-line bg-surface px-2.5 text-[11px] font-semibold text-ink">
-            投稿一覧
-          </Link>
-          {spot.hasPosted ? (
-            <span className="inline-flex h-7 items-center rounded-full bg-done/10 px-2.5 text-[11px] font-semibold text-done">投稿済み ✓</span>
-          ) : (
-            <Link
-              href={composeHref({ kind: "itinerary", itineraryId, spotId: spot.spotId, dayIndex: spot.dayIndex })}
-              /* #694: チェックの有無で見た目を変えない。チェックは「行った」の印で、投稿を促す強さとは関係が無い */
-              className="inline-flex h-7 items-center rounded-full bg-accent px-2.5 text-[11px] font-bold text-white"
-            >
-              投稿する
-            </Link>
+          <DayMoveDropdown value={spot.dayIndex} dayCount={dayCount} onChange={(day) => onMoveDay(spot.spotId, day)} disabled={pending !== null} />
+          {spot.hasPosted && (
+            <span className="inline-flex h-6 items-center rounded-full bg-done/10 px-2 text-[10.5px] font-bold text-done">投稿済み ✓</span>
           )}
-          <span className="ml-auto flex items-center gap-1">
-            <DayMoveDropdown value={spot.dayIndex} dayCount={dayCount} onChange={(day) => onMoveDay(spot.spotId, day)} disabled={pending !== null} />
-            <TrashButton
-              onClick={() => onRemove(spot.spotId)}
-              label={`${spot.name}をしおりから削除`}
-              disabled={pending !== null}
-              className="h-7 w-7"
-            />
-            {/* v3.1: 時刻の無い行だけ取っ手 ≡（ドラッグで並べ替え。↑↓ キーでも動く） */}
-            {!hasTime && dragHandleProps && (
-              <button
-                type="button"
-                {...dragHandleProps}
-                aria-label={`${spot.name} を並べ替え`}
-                data-drag-handle
-                className="h-7 w-7 cursor-grab touch-none rounded-full border border-line text-[13px] text-muted active:cursor-grabbing"
-              >
-                ≡
-              </button>
-            )}
-          </span>
         </div>
+      </div>
+
+      {/*
+        * #753: 右端の縦 1 列（★ の下に ⋯）。
+        * **★ が無い行でも場所を空ける**（`invisible`）ので、⋯ の位置が行ごとに上下しない。
+        */}
+      <div className="flex shrink-0 flex-col items-end gap-1">
+        <span className={`flex h-[17px] items-center gap-0.5 text-[11px] text-muted ${spot.ratingAverage === null ? "invisible" : ""}`} aria-hidden={spot.ratingAverage === null}>
+          <span className="text-star">★</span>
+          {spot.ratingAverage ?? "0.0"}
+        </span>
+        <div ref={menuRef} className="relative">
+          <button
+            type="button"
+            onClick={() => setIsMenuOpen((open) => !open)}
+            aria-haspopup="menu"
+            aria-expanded={isMenuOpen}
+            aria-label={`${spot.name} のその他`}
+            disabled={pending !== null}
+            className="flex h-7 w-7 items-center justify-center rounded-full border border-line bg-surface text-[13px] font-bold text-ink disabled:opacity-45"
+          >
+            ⋯
+          </button>
+          {isMenuOpen && (
+            <ul role="menu" className="absolute right-0 z-20 mt-1 min-w-[150px] overflow-hidden rounded-[10px] border border-line bg-surface py-1 shadow-card">
+              <li role="presentation">
+                {/* Bug #471: 「← しおり」で戻れるように、このしおりの URL を back= で渡す */}
+                <Link
+                  role="menuitem"
+                  href={`/spots/${spot.spotId}?back=${encodeURIComponent(`/itineraries/${itineraryId}`)}`}
+                  prefetch={false}
+                  className="flex w-full px-3 py-2 text-left text-[13px] text-ink hover:bg-tint"
+                >
+                  投稿を見る
+                </Link>
+              </li>
+              {!spot.hasPosted && (
+                <li role="presentation">
+                  <Link
+                    role="menuitem"
+                    href={composeHref({ kind: "itinerary", itineraryId, spotId: spot.spotId, dayIndex: spot.dayIndex })}
+                    className="flex w-full px-3 py-2 text-left text-[13px] text-ink hover:bg-tint"
+                  >
+                    投稿する
+                  </Link>
+                </li>
+              )}
+              <li role="presentation">
+                <button
+                  type="button"
+                  role="menuitem"
+                  onClick={() => {
+                    setIsMenuOpen(false);
+                    onRemove(spot.spotId);
+                  }}
+                  disabled={pending !== null}
+                  className="flex w-full px-3 py-2 text-left text-[13px] text-saved hover:bg-tint disabled:opacity-45"
+                >
+                  しおりから外す
+                </button>
+              </li>
+            </ul>
+          )}
+        </div>
+      </div>
       </div>
     </li>
   );
