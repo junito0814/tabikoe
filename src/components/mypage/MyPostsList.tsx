@@ -88,10 +88,10 @@ export function MyPostsList({
         <select
           value={tripId ?? ""}
           onChange={(event) => setTripId(event.target.value || null)}
-          aria-label="旅行で絞り込み"
+          aria-label="アルバムで絞り込み"
           className="h-9 max-w-[200px] rounded-[8px] border border-line bg-surface px-2 text-[0.75rem] text-ink"
         >
-          <option value="">すべての旅行</option>
+          <option value="">すべてのアルバム</option>
           {tripOptions.map((trip) => (
             <option key={trip.id} value={trip.id}>
               {trip.title}

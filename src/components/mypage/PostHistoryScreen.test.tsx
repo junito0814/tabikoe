@@ -91,12 +91,13 @@ describe("PostHistoryScreen（SC-12 投稿履歴）", () => {
     expect(replace).toHaveBeenCalledWith("/mymap");
   });
 
-  it("旅行で絞り込むと trip_id 付きで取り直す", async () => {
+  it("アルバムで絞り込むと trip_id 付きで取り直す", async () => {
     const fetchPosts = vi.fn(async () => ({ posts: [post("b", "夏旅")], nextOffset: null }));
     render(
       <PostHistoryScreen {...base} view="list" initialPosts={{ posts: [post("a", "冬旅")], nextOffset: null }} fetchPosts={fetchPosts} />
     );
-    fireEvent.change(screen.getByRole("combobox", { name: "旅行で絞り込み" }), { target: { value: "t1" } });
+    fireEvent.change(// #766: 用語は「アルバム」（決定事項 25）
+    screen.getByRole("combobox", { name: "アルバムで絞り込み" }), { target: { value: "t1" } });
     await waitFor(() => expect(fetchPosts).toHaveBeenCalledWith("t1", 0));
   });
 

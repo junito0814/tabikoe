@@ -223,7 +223,7 @@ export function ItineraryDetailScreen({
   };
 
   const deleteItinerary = async () => {
-    if (!(await confirm({ title: "このしおりを削除しますか？", description: "同じ旅行のアルバム（投稿）は残ります。", confirmLabel: "削除", danger: true }))) return;
+    if (!(await confirm({ title: "このしおりを削除しますか？", description: "同じ名前のアルバム（投稿）は残ります。", confirmLabel: "削除", danger: true }))) return;
     setPending({ kind: "delete" });
     try {
       const response = await api.remove(itinerary.id);

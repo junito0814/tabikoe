@@ -63,6 +63,7 @@ export default async function AlbumsPage({ searchParams }: { searchParams: Promi
 
             {albums.length === 0 ? (
               /* #800: 空の画面は同じ部品で。ここは上に「＋ 新規」があるのでボタンは置かない */
+              /* #774: 「…まとまりま／す」と 1 文字だけ落ちていた。文を短くし、EmptyState 側で text-wrap: balance を効かせる */
               <EmptyState title="まだアルバムがありません" description="「＋ 新規」で作るか、投稿するとアルバムごとにまとまります" />
             ) : (
               <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3">
@@ -78,7 +79,7 @@ export default async function AlbumsPage({ searchParams }: { searchParams: Promi
                       <span className="block p-2.5">
                         <span className="block truncate text-[0.8125rem] font-semibold text-ink">
                           {album.title}
-                          {album.isDaily && <span className="ml-1.5 rounded-full bg-tint px-1.5 py-0.5 text-[0.625rem] font-medium text-muted">旅行ではない投稿</span>}
+                          {album.isDaily && <span className="ml-1.5 rounded-full bg-tint px-1.5 py-0.5 text-[0.625rem] font-medium text-muted">日常の投稿</span>}
                         </span>
                         <span className="block text-[0.6875rem] text-muted">
                           {album.postCount}件 ・ {album.memberCount}人 ・ {ALBUM_ROLE_LABELS[album.role]}

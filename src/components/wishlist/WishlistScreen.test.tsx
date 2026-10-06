@@ -99,7 +99,8 @@ describe("WishlistScreen", () => {
   it("v3.0: 一覧／地図の切替で URL と表示が変わり、地図は保存済みのピンだけ", () => {
     render(<WishlistScreen initialItems={items} submitRemove={vi.fn()} />);
     expect(screen.getByText(/投稿 3 件/)).toBeInTheDocument();
-    expect(screen.getByText(/大阪旅行 Day 1/)).toBeInTheDocument();
+    // #790: しおり名は別の行で「Day 1 ・ 〈しおり名〉」
+    expect(screen.getByText("Day 1 ・ 大阪旅行")).toBeInTheDocument();
     fireEvent.click(screen.getByRole("radio", { name: "地図" }));
     expect(replace).toHaveBeenCalledWith("/wishlist?view=map", { scroll: false });
     expect(screen.getByTestId("map-stub")).toHaveAttribute("data-saved-only", "true");
@@ -214,5 +215,25 @@ describe("地図タブの戻るは 1 つ（#788）", () => {
     render(<WishlistScreen initialItems={items} submitRemove={vi.fn()} />);
     fireEvent.click(screen.getByRole("radio", { name: "地図" }));
     expect(screen.getAllByRole("link", { name: "マイページ" })).toHaveLength(1);
+  });
+});
+
+/**
+ * #790（2026-10-06）: しおり名が単語の途中で折り返していた
+ * 出典: Issue #790「行きたい一覧でしおり名が単語の途中で折り返す」
+ */
+describe("しおり名は別の行（#790）", () => {
+  it("1 行目は「都道府県 ・ 投稿 N 件」、2 行目は「Day n ・ 〈しおり名〉」", () => {
+    render(<WishlistScreen initialItems={items} submitRemove={vi.fn()} />);
+    const row = document.querySelector("[data-wishlist-item='a']") as HTMLElement;
+    const second = row.querySelector("[data-wishlist-itineraries]");
+    expect(second?.textContent).toBe("Day 1 ・ 大阪旅行");
+    // 長い名前は 2 行目だけで省く
+    expect(second?.className).toContain("truncate");
+  });
+
+  it("しおりに入っていないスポットは 2 行目を出さない", () => {
+    render(<WishlistScreen initialItems={items} submitRemove={vi.fn()} />);
+    expect(document.querySelector("[data-wishlist-item='b'] [data-wishlist-itineraries]")).toBeNull();
   });
 });

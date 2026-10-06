@@ -56,11 +56,11 @@ export function CreateItineraryDialog({
     try {
       const response = await onSubmit({ title: title.trim(), startDate: period.startDate, endDate: period.endDate });
       if (response.status === 409) {
-        setError("この旅行にはすでにしおりがあります");
+        setError("このアルバムにはすでにしおりがあります");
         return;
       }
       if (response.status === 403) {
-        setError("共同アルバムの旅行には、オーナーだけがしおりを作れます");
+        setError("共同アルバムでは、オーナーだけがしおりを作れます");
         return;
       }
       if (!response.ok) {
