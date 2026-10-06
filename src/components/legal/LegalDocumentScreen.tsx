@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { BackLink } from "@/components/layout/BackLink";
 import { LEGAL_KIND_LABELS, LEGAL_KIND_PATHS, type LegalDocument, type LegalKind } from "@/lib/legal/legal-documents";
 import { parseMarkdownBlocks } from "@/lib/legal/markdown";
 
@@ -12,15 +13,25 @@ import { parseMarkdownBlocks } from "@/lib/legal/markdown";
 export function LegalDocumentScreen({
   document,
   versions,
+  back,
 }: {
   document: LegalDocument;
   versions: { version: string; status: string; publishedAt: string | null }[];
+  /**
+   * #792（2026-10-06）: 来た画面（`?back=`）。無ければホーム。
+   *
+   * 【初心者向け】ここには戻るがまったく無く、メニューバーしかありませんでした（要件 4.5.13 違反）。
+   * **未ログインではメニューバーも出ない**ので、同意画面からここを開くと戻る手段が無くなります。
+   */
+  back?: { href: string; label: string } | null;
 }) {
   const blocks = parseMarkdownBlocks(document.body);
   const path = LEGAL_KIND_PATHS[document.kind as LegalKind];
   return (
     <div className="flex min-h-screen flex-col items-center bg-app px-4 py-6">
       <article className="flex w-full max-w-[640px] flex-col gap-3 text-[14px] leading-[1.8] text-ink">
+        {/* #792: 左上に戻る。来た画面が分からなければホーム（未ログインならログイン画面） */}
+        <BackLink href={back?.href ?? "/"} label={back?.label ?? "ホーム"} className="self-start" />
         <p className="flex flex-wrap items-center gap-x-3 text-[12px] text-muted">
           <span>
             {LEGAL_KIND_LABELS[document.kind as LegalKind]} 版 {document.version}

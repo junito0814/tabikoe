@@ -59,7 +59,8 @@ export function SearchTopScreen({
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const goTo = (target: DestinationSuggestion) => {
-    router.push(buildSearchHref(target, addMode));
+    // #756: ホームから来たことを伝える（戻るが「‹ 地図」ではなく「‹ ホーム」になる）
+    router.push(buildSearchHref(target, addMode, "/"));
   };
 
   // 候補に無い文字列で決定 → 座標化して周辺検索
@@ -72,7 +73,7 @@ export function SearchTopScreen({
         setError("見つかりませんでした。都道府県名・駅名・スポット名で入力してください");
         return;
       }
-      router.push(buildSearchHref({ kind: "coords", lat: place.lat, lng: place.lng, q: text }, addMode));
+      router.push(buildSearchHref({ kind: "coords", lat: place.lat, lng: place.lng, q: text }, addMode, "/"));
     } catch (caught) {
       if (caught instanceof UnauthorizedError) return;
       setError("場所を調べられませんでした。時間をおいてお試しください");

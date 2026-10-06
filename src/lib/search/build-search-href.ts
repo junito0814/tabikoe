@@ -16,31 +16,45 @@ export interface AddModeParams {
   day: string | null;
 }
 
-function withAddMode(params: URLSearchParams, addMode?: AddModeParams | null): string {
+/**
+ * #756（2026-10-06）: どこから来たか（`back=`）。
+ *
+ * 【初心者向け】ホームの「どこ行く？」でスポットを選ぶと、開いた先の戻るが **「‹ 地図」**
+ * になっていました。既定値が「地図」なのは**地図のピンから来た場合**のためで（Bug #469）、
+ * それ自体は正しい。問題は**ホームから来たことを誰も伝えていない**ことでした。
+ * ここで `back=` を付ければ、受け取る側（`resolveListBack`）が「ホーム」と読んでくれます。
+ */
+function withExtras(params: URLSearchParams, addMode?: AddModeParams | null, back?: string | null): string {
   if (addMode) {
     params.set("itinerary", addMode.itinerary);
     if (addMode.day) params.set("day", addMode.day);
   }
+  if (back) params.set("back", back);
   return `/search?${params.toString()}`;
 }
 
-export function buildSearchHref(target: DestinationSuggestion | { kind: "coords"; lat: number; lng: number; q: string }, addMode?: AddModeParams | null): string {
+export function buildSearchHref(
+  target: DestinationSuggestion | { kind: "coords"; lat: number; lng: number; q: string },
+  addMode?: AddModeParams | null,
+  /** 来た画面の URL。ホームの「どこ行く？」からは "/"（戻るが「ホーム」になる） */
+  back?: string | null
+): string {
   const params = new URLSearchParams();
   switch (target.kind) {
     case "prefecture":
       params.set("pref", target.name);
-      return withAddMode(params, addMode);
+      return withExtras(params, addMode, back);
     case "spot":
       params.set("spot", target.spotId);
-      return withAddMode(params, addMode);
+      return withExtras(params, addMode, back);
     case "station":
     case "locality":
       params.set("q", target.name);
-      return withAddMode(params, addMode);
+      return withExtras(params, addMode, back);
     case "coords":
       params.set("lat", String(target.lat));
       params.set("lng", String(target.lng));
       params.set("q", target.q);
-      return withAddMode(params, addMode);
+      return withExtras(params, addMode, back);
   }
 }

@@ -77,8 +77,9 @@ export function SignupConsentScreen({ email, redirectTo = null, api = defaultApi
         </p>
 
         <div className="mb-6 flex w-full flex-col gap-3">
-          <ConsentCheckbox checked={agreedTerms} onChange={setAgreedTerms} label="利用規約" href="/terms" />
-          <ConsentCheckbox checked={agreedPrivacy} onChange={setAgreedPrivacy} label="個人情報保護方針" href="/privacy" />
+          {/* #792: 読みに行った先から「← 同意」で戻れるように、来た画面を渡す */}
+          <ConsentCheckbox checked={agreedTerms} onChange={setAgreedTerms} label="利用規約" href="/terms?back=%2Fsignup" />
+          <ConsentCheckbox checked={agreedPrivacy} onChange={setAgreedPrivacy} label="個人情報保護方針" href="/privacy?back=%2Fsignup" />
         </div>
 
         <button

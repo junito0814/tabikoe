@@ -25,6 +25,7 @@ import { defaultItineraryApi, type ItineraryApi } from "./itinerary-api";
 import { useOutsideClose } from "@/lib/ui/use-outside-close";
 import { HIGHLIGHT_MS, scrollBehaviorFor, scrollRowIntoView } from "@/lib/ui/scroll-to-row";
 import { useConfirm } from "@/components/ui/ConfirmSheet";
+import { BackLink } from "@/components/layout/BackLink";
 
 /**
  * itinerary-basics Task3 / itinerary-days Task2 / arrival-time Task3 / itinerary-check Task3: しおり詳細（SC-23）
@@ -277,12 +278,8 @@ export function ItineraryDetailScreen({
             * 「地図で見る／地図を閉じる」は文字だけで 84px 取っていたので記号にした（要件 4.5.15）。
             */}
           <div className="flex items-center gap-2">
-            <Link href={back?.href ?? "/itineraries"} className="inline-flex h-8 shrink-0 items-center gap-1 text-[12px] font-medium text-muted">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden>
-                <path d="M15 5l-7 7 7 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
-              {back?.label ?? "計画"}
-            </Link>
+            {/* #813: 戻るは共通部品（自前で ‹ を描かない） */}
+            <BackLink href={back?.href ?? "/itineraries"} label={back?.label ?? "計画"} />
             {/* 戻ると右の操作を左右の端に寄せるための余白 */}
             <span aria-hidden className="flex-1" />
             <button

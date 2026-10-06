@@ -22,7 +22,8 @@ const item = (id: string, postId: string): SpotMediaItem => ({
 describe("AlbumPhotoGalleryScreen（SC-21）", () => {
   it("アルバムへ戻るリンクとグリッドが出て、タップでモーダルから投稿へ飛べる", () => {
     render(<AlbumPhotoGalleryScreen tripId="trip-1" title="夏の東北旅行" initialPage={{ items: [item("a", "post-1")], nextOffset: null }} />);
-    expect(screen.getByRole("link", { name: "← 夏の東北旅行" })).toHaveAttribute("href", "/albums/trip-1");
+    // #813: 戻るは共通部品（BackLink）になり、文字の「←」ではなく記号になった
+    expect(screen.getByRole("link", { name: "夏の東北旅行" })).toHaveAttribute("href", "/albums/trip-1");
     fireEvent.click(screen.getByRole("button", { name: "浅草寺の写真 a" }));
     // Bug #471: 投稿詳細から「← 写真」で戻れるよう back を付ける
     expect(screen.getByRole("link", { name: "この投稿を見る →" })).toHaveAttribute("href", "/posts/post-1?back=%2Falbums%2Ftrip-1%2Fphotos");

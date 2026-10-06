@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, type FormEvent } from "react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ErrorNotice } from "@/components/notices/ErrorNotice";
 import { PostLocationMap } from "@/components/posts/PostLocationMap";
@@ -9,6 +8,7 @@ import type { LatLng } from "@/components/map/initial-center";
 import { fetchWithAuthRedirect, UnauthorizedError } from "@/lib/api/fetch-with-auth-redirect";
 import { PREFECTURES } from "@/lib/geo/prefectures";
 import { MAX_SPOT_NAME_LENGTH } from "@/lib/moderation/spot-fix";
+import { BackLink } from "@/components/layout/BackLink";
 
 export type SubmitSpotFix = (spotId: string, body: { name: string; prefecture: string | null; lat: number; lng: number }) => Promise<Response>;
 
@@ -69,9 +69,8 @@ export function SpotFixScreen({
     <div className="flex min-h-screen flex-col items-center bg-app px-4 py-6">
       <form onSubmit={handleSubmit} className="flex w-full max-w-[520px] flex-col gap-4">
         <header className="flex items-center gap-3">
-          <Link href="/notifications" aria-label="通知へ戻る" className="text-[20px] text-ink">
-            ‹
-          </Link>
+          {/* #813: 記号だけの ‹ をやめ、戻り先の画面名を出す共通部品に揃えた */}
+          <BackLink href="/notifications" label="通知" />
           <h1 className="text-[18px] font-bold text-ink">スポットの修正</h1>
         </header>
 

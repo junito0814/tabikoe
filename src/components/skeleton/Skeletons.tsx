@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { SkeletonExit } from "@/components/transitions/Reveal";
+import { BackChevron } from "@/components/layout/BackLink";
 
 /**
  * performance Task2（2026-09-22）: 読み込み中の骨組み（スケルトン）
@@ -26,9 +27,8 @@ export function TopBarSkeleton({ backLabel, title, right = true }: { backLabel?:
     <div className="flex items-center gap-2">
       {backLabel ? (
         <span className="inline-flex h-8 shrink-0 items-center gap-1 text-[12px] font-medium text-muted">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden>
-            <path d="M15 5l-7 7 7 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
+          {/* #813: 形は BackLink と同じものを使う（骨組みなのでリンクにはしない） */}
+          <BackChevron />
           {backLabel}
         </span>
       ) : (
@@ -433,9 +433,7 @@ export function MyPageSkeleton() {
 function BackSkeleton() {
   return (
     <span className="inline-flex h-8 shrink-0 items-center gap-1 text-[12px] font-medium text-muted">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden>
-        <path d="M15 5l-7 7 7 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-      </svg>
+      <BackChevron />
       <SkeletonBlock className="h-3 w-14" />
     </span>
   );

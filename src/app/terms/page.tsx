@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { LegalDocumentScreen } from "@/components/legal/LegalDocumentScreen";
 import { getLegalDocument, listLegalVersions } from "@/lib/legal/legal-documents";
+import { resolveListBack } from "@/lib/search/list-state";
 
 export const dynamic = "force-dynamic";
 
@@ -14,8 +15,10 @@ export const dynamic = "force-dynamic";
 export default async function TermsPage({ searchParams }: PageProps<"/terms">) {
   const params = await searchParams;
   const version = typeof params.version === "string" ? params.version : null;
+  // #792: 来た画面（アカウント・同意画面など）。無ければホーム
+  const back = resolveListBack(typeof params.back === "string" ? params.back : null);
   const admin = createAdminClient();
   const [document, versions] = await Promise.all([getLegalDocument(admin, "terms", version).catch(() => null), listLegalVersions(admin, "terms").catch(() => [])]);
   if (!document) notFound();
-  return <LegalDocumentScreen document={document} versions={versions} />;
+  return <LegalDocumentScreen document={document} versions={versions} back={back} />;
 }

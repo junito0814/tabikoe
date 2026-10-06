@@ -28,6 +28,7 @@ import type { TravelMode } from "@/lib/geo/travel-time";
 import { PinCallout, type CalloutTarget } from "./PinCallout";
 import { ALL_DAYS, buildItineraryPins, ItineraryMapOverlay, useItineraryForMap, type ItineraryMapDay } from "./ItineraryMapOverlay";
 import type { ItineraryApi } from "@/components/itineraries/itinerary-api";
+import { BackLink } from "@/components/layout/BackLink";
 
 /** 地図の移動が連続する間はまとめて1回の取得にする */
 const FETCH_DEBOUNCE_MS = 300;
@@ -506,15 +507,8 @@ export function MapScreen({
         {/* 上部：戻る＋凡例（地図に重ねる） */}
         <div className="pointer-events-none absolute inset-x-0 top-0 z-10 flex flex-col gap-2 p-3">
           <div className="flex items-start gap-2">
-            <Link
-              href={open.back.href}
-              className="pointer-events-auto inline-flex h-9 shrink-0 items-center gap-1 rounded-full bg-surface px-3 text-[12px] font-semibold text-ink shadow-card"
-            >
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden>
-                <path d="M15 5l-7 7 7 7" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
-              {open.back.label}
-            </Link>
+            {/* #813: 地図の上に浮く戻るも同じ部品（variant="floating"） */}
+            <BackLink href={open.back.href} label={open.back.label} variant="floating" className="pointer-events-auto" />
             {/*
               * #763: しおりのときは右上に出していたタイトルの帯を外した。
               * しおりから開いているので、どのしおりかは分かっている。凡例もしおり用のものを下に出している。
