@@ -1,12 +1,13 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ErrorNotice } from "@/components/notices/ErrorNotice";
 import { fetchWithAuthRedirect, UnauthorizedError } from "@/lib/api/fetch-with-auth-redirect";
 import { useCurrentPosition } from "@/lib/geo/use-current-position";
 import { clearMapState } from "@/lib/map/map-state";
-import { composeHref } from "@/lib/posts/compose-initial-state";
+import { PostFab } from "@/components/posts/PostFab";
 import { buildSearchHref, type AddModeParams } from "@/lib/search/build-search-href";
 import type { DestinationSuggestion } from "@/lib/search/suggest-destinations";
 import { outfit, lora } from "@/app/fonts";
@@ -28,7 +29,9 @@ export interface SearchTopApi {
  * 【初心者向け】ログイン後の着地点。置くのは 3 つだけ:
  *   1. 行き先の入力欄（候補 → 投稿一覧 /search へ）
  *   2. 「近くのスポットを探す」（位置情報 → 地図の探すモード /map?mode=explore）
- *   3. 「ここを投稿」（位置情報 → 現在地にピンが刺さった投稿画面 /posts/new?lat&lng&from=current）
+ *   3. ~~「ここを投稿」~~ → #807（2026-10-06）: 右下に浮いた「＋ ここに投稿」（PostFab）に移した。
+ *   3. 「みんなの投稿を見る」（#808）── 行き先を決めずに全部のスポットを新着順で見る（/search）。
+ *      行き先が決まっていない人に、開いた瞬間に見るものを与えるため
  * 位置情報が拒否されたら、2 は入力欄にフォーカスして案内、3 は東京駅周辺で投稿画面を開く（地図を動かす案内は画面側）。
  * この画面だけ背景上部に空のグラデーション（bg-sky）を敷く。
  */
@@ -93,17 +96,6 @@ export function SearchTopScreen({
     router.push(`/map?mode=explore&lat=${result.lat}&lng=${result.lng}`);
   };
 
-  const postHere = async () => {
-    setNotice(null);
-    const result = await locate();
-    if (!result.ok) {
-      // 拒否時は東京駅周辺で開く（案内は投稿画面側が出す）
-      router.push(composeHref({ kind: "current" }));
-      return;
-    }
-    router.push(composeHref({ kind: "current", lat: result.lat, lng: result.lng }));
-  };
-
   return (
     <div className={`${outfit.className} bg-sky flex min-h-[calc(100dvh-60px)] flex-col items-center justify-center gap-7 px-6 md:min-h-dvh`} data-search-top data-home-fixed>
       {addMode && (
@@ -156,19 +148,25 @@ export function SearchTopScreen({
           </svg>
           近くのスポットを探す
         </button>
-        <button
-          type="button"
-          onClick={() => void postHere()}
-          disabled={isLocating}
-          className="flex h-[52px] w-full items-center justify-center gap-2 rounded-full bg-accent text-[15px] font-bold text-white shadow-[0_4px_20px_rgba(47,127,216,0.30)] disabled:opacity-60"
+        {/*
+          * #808（2026-10-06）: 3 つ目は「みんなの投稿を見る」。
+          * 位置情報も入力も要らないので、ここだけ Link（押した瞬間に進む）。
+          */}
+        <Link
+          href="/search"
+          className="flex h-[52px] w-full items-center justify-center gap-2 rounded-full bg-accent text-[15px] font-bold text-white shadow-[0_4px_20px_rgba(47,127,216,0.30)]"
+          data-see-all-posts
         >
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden>
-            <path d="M12 5v14M5 12h14" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" />
+            <rect x="4" y="4" width="16" height="16" rx="3" stroke="currentColor" strokeWidth="2" />
+            <path d="M8 9h8M8 13h5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
           </svg>
-          ここを投稿
-        </button>
+          みんなの投稿を見る
+        </Link>
       </div>
 
+      {/* #807: 投稿の入口は右下に浮いた「＋ ここに投稿」。ホーム・計画・マイページで同じ場所に出る */}
+      <PostFab geolocation={geolocation} />
     </div>
   );
 }

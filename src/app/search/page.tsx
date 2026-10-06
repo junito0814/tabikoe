@@ -19,7 +19,7 @@ import { ContentEnter } from "@/components/transitions/Reveal";
  *       要件定義書 v3.0 3.4.2
  *
  * 【初心者向け】検索トップ（SC-00）で行き先を決めると、ここに来る。URL が条件そのもの:
- *   /search?pref=大阪府 ／ /search?lat=&lng=&q=大阪駅 ／ /search?spot=<id>（スポット別）
+ *   /search（引数なし＝**みんなの投稿**。#808） ／ /search?pref=大阪府 ／ /search?lat=&lng=&q=大阪駅 ／ /search?spot=<id>（スポット別）
  * 読み込みは lib/search/load-search-page.ts にまとめ、行き先の種類で画面を出し分ける。
  * 「戻る」は検索トップ（ホーム）へ。スポット別は `?back=`（検索結果から来たならその URL）へ、無ければ地図へ（Bug #469）。
  */

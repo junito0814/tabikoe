@@ -15,6 +15,7 @@ import {
 } from "@/lib/map/spot-aggregate";
 import type { PostCategory, PostDuration } from "@/lib/posts/constants";
 import type { CostRange } from "@/lib/posts/search-posts";
+import { FilterButton } from "@/components/posts/FilterButton";
 import { FilterSheet } from "@/components/posts/FilterSheet";
 import { CARD_ATTRIBUTE, centeredCardIndex, scrollToCard } from "./card-strip";
 import { Select } from "@/components/ui/Select";
@@ -217,25 +218,13 @@ export function NearbyVoices({
             options={TRAVEL_MODES}
             label={(option) => TRAVEL_MODE_LABELS[option]}
           />
-          <button
-            type="button"
-            aria-label="絞り込み"
-            aria-expanded={isSheetOpen}
+          {/* #811: 見た目は検索結果と同じ部品に寄せた（約束 14） */}
+          <FilterButton
+            count={isActive ? activeSpotFilterCount(filters) : 0}
+            expanded={isSheetOpen}
             onClick={() => setIsSheetOpen(true)}
-            data-nearby-filter
-            className={`relative flex h-8 w-8 items-center justify-center rounded-full border ${
-              isActive ? "border-accent bg-accent text-white" : "border-line bg-surface text-ink"
-            }`}
-          >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden>
-              <path d="M4 6h16M7 12h10M10 18h4" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" />
-            </svg>
-            {isActive && (
-              <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-ink px-1 text-[10px] font-bold text-on-ink">
-                {activeSpotFilterCount(filters)}
-              </span>
-            )}
-          </button>
+            dataAttr="data-nearby-filter"
+          />
         </div>
       </div>
 

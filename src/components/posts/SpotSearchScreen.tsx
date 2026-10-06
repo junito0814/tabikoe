@@ -11,12 +11,14 @@ import { PhotoGrid, type FetchMediaPage } from "@/components/media/PhotoGrid";
 import type { SpotMediaPage } from "@/lib/posts/search-photos";
 import type { ListView } from "@/lib/search/list-view";
 import { AddModeBanner, type AddModeInfo } from "./AddModeBanner";
+import { FilterButton } from "./FilterButton";
 import { FilterSheet } from "./FilterSheet";
 import { PullToRefresh } from "@/components/layout/PullToRefresh";
 import { SpotCard } from "./SpotCard";
 import { ViewToggle } from "./ViewToggle";
 import { SearchMapView } from "./SearchMapView";
-import { buildPostSearchParams, buildSearchPageHref, countActiveFilters, type PostSearchState, type SearchContext } from "./post-search-query";
+import { areaChips, removeAreaChip } from "@/lib/search/regions";
+import { buildPostSearchParams, buildSearchPageHref, canFilterByArea, countActiveFilters, type PostSearchState, type SearchContext } from "./post-search-query";
 import { useInfiniteScroll } from "./use-infinite-scroll";
 import { useListRestore } from "./use-search-list";
 import { BackLink } from "@/components/layout/BackLink";
@@ -127,6 +129,9 @@ export function SpotSearchScreen({
   const isPhotos = state.view === "photos";
   // #681: 地図タブ（検索結果のときだけ）
   const isMap = state.view === "map";
+  // #809: エリアの絞り込みは「みんなの投稿」（行き先なし）のときだけ
+  const showArea = canFilterByArea(context);
+  const chips = showArea ? areaChips(state.areas) : [];
 
   /*
    * #673（2026-10-03）: 引っ張って更新。
@@ -146,20 +151,35 @@ export function SpotSearchScreen({
               {/* #813: 戻るは共通部品（自前で ‹ を描かない） */}
               <BackLink href={backHref} label={backLabel} />
               <h1 className="min-w-0 flex-1 truncate text-center text-[16px] font-bold text-ink">{title}</h1>
-              <button
-                type="button"
-                onClick={() => setIsSheetOpen(true)}
-                aria-haspopup="dialog"
-                className="h-8 shrink-0 rounded-full border border-line bg-surface px-3 text-[12px] font-semibold text-ink"
-              >
-                絞り込み{activeCount > 0 && `（${activeCount}）`}
-              </button>
+              {/* #811: 文字の「絞り込み（2）」をやめ、探すモードと同じ 3 本線の記号＋数にした（要件 4.5.15） */}
+              <FilterButton count={activeCount} expanded={isSheetOpen} onClick={() => setIsSheetOpen(true)} />
             </div>
             <div className="flex items-center justify-between gap-2">
               <ViewToggle value={state.view} onChange={onViewChange} showMap />
               {/* #812: 自前のリストをやめ、ブラウザ標準の <select> に */}
               <Select<SpotSort> value={state.sort as SpotSort} onChange={onSortChange} options={SPOT_SORTS} label={(sort) => SPOT_SORT_LABELS[sort]} ariaLabel="並び替え" />
             </div>
+            {/*
+              * #809: 絞っているエリアの札。**全部選んだ地方は 1 枚にまとめる**（areaChips）。
+              * 都道府県ごとに出すと 2 地方で 14 枚になり、一覧が下に押し出されるため。
+              * × を押すとその塊ごと外れる。1 つずつ直したいときは「絞り込み → エリア」で。
+              */}
+            {showArea && chips.length > 0 && (
+              <div className="flex flex-wrap gap-1.5" data-area-chips>
+                {chips.map((chip) => (
+                  <button
+                    key={chip.label}
+                    type="button"
+                    onClick={() => applyState({ ...state, areas: removeAreaChip(chip, state.areas) })}
+                    className="inline-flex h-7 items-center gap-1 rounded-full bg-ink px-2.5 text-[11px] font-semibold text-on-ink"
+                  >
+                    {chip.label}
+                    <span aria-hidden>×</span>
+                    <span className="sr-only">を外す</span>
+                  </button>
+                ))}
+              </div>
+            )}
           </header>
 
           {isMap ? (
@@ -212,6 +232,7 @@ export function SpotSearchScreen({
         <FilterSheet
           open={isSheetOpen}
           value={state}
+            showArea={showArea}
             onApply={applyState}
             onClose={() => setIsSheetOpen(false)}
           />

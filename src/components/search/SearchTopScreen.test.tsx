@@ -37,7 +37,7 @@ describe("SearchTopScreen", () => {
     const { container } = render(<SearchTopScreen api={api} geolocation={granted} />);
     expect(screen.getByRole("combobox", { name: "行き先" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "近くのスポットを探す" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "ここを投稿" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "ここに投稿" })).toBeInTheDocument(); // #807: 右下の PostFab
     expect(container.querySelector("[role=region]")).toBeNull();
   });
 
@@ -99,14 +99,14 @@ describe("SearchTopScreen", () => {
     await waitFor(() => expect(screen.getByRole("combobox", { name: "行き先" })).toHaveFocus());
   });
 
-  it("「ここを投稿」は許可なら現在地付き、拒否なら位置なしで投稿画面へ", async () => {
+  it("右下の「ここに投稿」（#807）は許可なら現在地付き、拒否なら位置なしで投稿画面へ", async () => {
     const { unmount } = render(<SearchTopScreen api={api} geolocation={granted} />);
-    fireEvent.click(screen.getByRole("button", { name: "ここを投稿" }));
+    fireEvent.click(screen.getByRole("button", { name: "ここに投稿" }));
     await waitFor(() => expect(push).toHaveBeenCalledWith("/posts/new?lat=35.1&lng=139.2&from=current"));
     unmount();
     push.mockReset();
     render(<SearchTopScreen api={api} geolocation={denied} />);
-    fireEvent.click(screen.getByRole("button", { name: "ここを投稿" }));
+    fireEvent.click(screen.getByRole("button", { name: "ここに投稿" }));
     await waitFor(() => expect(push).toHaveBeenCalledWith("/posts/new?from=current"));
   });
 
@@ -186,5 +186,25 @@ describe("キーボードが出ても表記が見える（#749）", () => {
   it("キーボードが出ているときはメニューバーのぶんを引かない（その下に隠れるため）", () => {
     expect(source).toContain("keyboardOpen");
     expect(source).toContain("!keyboardOpen && window.innerWidth < 768");
+  });
+});
+
+/**
+ * #808（2026-10-06）: ホームの 3 つ目は「みんなの投稿を見る」
+ * 出典: 要件定義書 3.4.1、ワイヤーフレーム決定事項 83
+ */
+describe("みんなの投稿を見る（#808）", () => {
+  it("3 つ目は /search へのリンク（位置情報も入力も要らない）", () => {
+    render(<SearchTopScreen api={api} geolocation={granted} />);
+    expect(screen.getByRole("link", { name: "みんなの投稿を見る" })).toHaveAttribute("href", "/search");
+  });
+
+  it("ホームに置くのは 入力欄・近くのスポットを探す・みんなの投稿を見る の 3 つだけ（投稿は右下の PostFab）", () => {
+    const { container } = render(<SearchTopScreen api={api} geolocation={granted} />);
+    const labels = [...container.querySelectorAll("button, a")]
+      .filter((el) => !el.closest("[data-post-fab]"))
+      .map((el) => el.textContent?.trim())
+      .filter((t) => t && t.length > 0);
+    expect(labels).toEqual(["近くのスポットを探す", "みんなの投稿を見る"]);
   });
 });

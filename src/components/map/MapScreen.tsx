@@ -1,7 +1,6 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore, type ReactNode } from "react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ErrorNotice } from "@/components/notices/ErrorNotice";
 import { ERROR_MESSAGES } from "@/components/notices/error-messages";
@@ -26,6 +25,7 @@ import {
 } from "@/lib/map/spot-aggregate";
 import type { TravelMode } from "@/lib/geo/travel-time";
 import { PinCallout, type CalloutTarget } from "./PinCallout";
+import { PostHereButton } from "@/components/posts/PostHereButton";
 import { ALL_DAYS, buildItineraryPins, ItineraryMapOverlay, useItineraryForMap, type ItineraryMapDay } from "./ItineraryMapOverlay";
 import type { ItineraryApi } from "@/components/itineraries/itinerary-api";
 import { BackLink } from "@/components/layout/BackLink";
@@ -608,15 +608,8 @@ export function MapScreen({
               <path d="M12 2v4M12 18v4M2 12h4M18 12h4" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
             </svg>
           </button>
-          <Link
-            href={postHereHref}
-            className="pointer-events-auto flex h-11 items-center gap-1.5 rounded-full bg-accent px-4 text-[13px] font-bold text-white shadow-[0_4px_20px_rgba(47,127,216,0.30)]"
-          >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden>
-              <path d="M12 5v14M5 12h14" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" />
-            </svg>
-            ここに投稿
-          </Link>
+          {/* #807: 見た目はホーム・計画・マイページの右下（PostFab）と同じ部品 */}
+          <PostHereButton href={postHereHref} className="pointer-events-auto" />
         </div>
       </div>
 
