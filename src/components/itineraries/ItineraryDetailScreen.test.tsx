@@ -473,3 +473,75 @@ describe("見出しの作り直し（#757・#762）", () => {
     expect(document.body.textContent).not.toContain("を見る（");
   });
 });
+
+/*
+ * 本2-3（2026-10-06）
+ * - #779: 名前の変更が `window.prompt("アルバム名", …)` だった
+ * - #789: 時刻ピッカーが外をタップしても閉じず、Day の一覧と重なっていた
+ */
+describe("名前の変更と重なり（#779・#789）", () => {
+  it("#779: タイトルを押すとその場が入力欄。prompt は出ないし「アルバム名」とも書かない", async () => {
+    const promptSpy = vi.spyOn(window, "prompt");
+    const api = makeApi(detail());
+    render(<ItineraryDetailScreen initial={detail()} viewerId="me" api={api} />);
+    fireEvent.click(screen.getByRole("button", { name: "大阪旅行（名前を変更）" }));
+    expect(promptSpy).not.toHaveBeenCalled();
+    expect(document.body.textContent).not.toContain("アルバム名");
+
+    const input = screen.getByRole("textbox", { name: "しおりの名前" });
+    expect(input).toHaveValue("大阪旅行");
+    fireEvent.change(input, { target: { value: "京都 2 泊 3 日" } });
+    fireEvent.click(screen.getByRole("button", { name: "保存" }));
+    await waitFor(() => expect(api.rename).toHaveBeenCalledWith("it-1", "京都 2 泊 3 日"));
+    promptSpy.mockRestore();
+  });
+
+  it("#779: 取消で元に戻る（API を呼ばない）", () => {
+    const api = makeApi(detail());
+    render(<ItineraryDetailScreen initial={detail()} viewerId="me" api={api} />);
+    fireEvent.click(screen.getByRole("button", { name: "大阪旅行（名前を変更）" }));
+    fireEvent.change(screen.getByRole("textbox", { name: "しおりの名前" }), { target: { value: "書きかけ" } });
+    fireEvent.click(screen.getByRole("button", { name: "取消" }));
+    expect(screen.getByRole("button", { name: "大阪旅行（名前を変更）" })).toBeInTheDocument();
+    expect(api.rename).not.toHaveBeenCalled();
+  });
+
+  it("#779: 空のまま保存しても何も起きない（元の名前のまま）", () => {
+    const api = makeApi(detail());
+    render(<ItineraryDetailScreen initial={detail()} viewerId="me" api={api} />);
+    fireEvent.click(screen.getByRole("button", { name: "大阪旅行（名前を変更）" }));
+    fireEvent.change(screen.getByRole("textbox", { name: "しおりの名前" }), { target: { value: "   " } });
+    fireEvent.click(screen.getByRole("button", { name: "保存" }));
+    expect(api.rename).not.toHaveBeenCalled();
+    expect(screen.getByRole("button", { name: "大阪旅行（名前を変更）" })).toBeInTheDocument();
+  });
+
+  it("#789: 時刻ピッカーを開いたまま外を触ると閉じる", () => {
+    const data = detail({ spots: [spot("a")] });
+    render(<ItineraryDetailScreen initial={data} viewerId="me" api={makeApi(data)} />);
+    fireEvent.click(screen.getByRole("button", { name: "到着予定時刻を設定" }));
+    expect(document.querySelector("[data-time-picker]")).toBeInTheDocument();
+    fireEvent.pointerDown(document.querySelector("[data-period]") as HTMLElement);
+    expect(document.querySelector("[data-time-picker]")).toBeNull();
+  });
+
+  it("#789: 時刻ピッカーを開いたまま「Day ▾」を押すと、ピッカーが閉じて Day の一覧だけ開く", () => {
+    const data = detail({ spots: [spot("a")] });
+    render(<ItineraryDetailScreen initial={data} viewerId="me" api={makeApi(data)} />);
+    fireEvent.click(screen.getByRole("button", { name: "到着予定時刻を設定" }));
+    const dayButton = screen.getByRole("button", { name: /Day を移動/ });
+    // 実機のタップは pointerdown → click の順に起きる
+    fireEvent.pointerDown(dayButton);
+    fireEvent.click(dayButton);
+    expect(document.querySelector("[data-time-picker]")).toBeNull();
+    expect(screen.getByRole("listbox", { name: "移動先の Day" })).toBeInTheDocument();
+  });
+
+  it("#789: Esc で時刻ピッカーが閉じる", () => {
+    const data = detail({ spots: [spot("a")] });
+    render(<ItineraryDetailScreen initial={data} viewerId="me" api={makeApi(data)} />);
+    fireEvent.click(screen.getByRole("button", { name: "到着予定時刻を設定" }));
+    fireEvent.keyDown(document, { key: "Escape" });
+    expect(document.querySelector("[data-time-picker]")).toBeNull();
+  });
+});

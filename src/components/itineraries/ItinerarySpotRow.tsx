@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import { TimePicker10 } from "@/components/ui/TimePicker10";
+import { useOutsideClose } from "@/lib/ui/use-outside-close";
 import type { ItinerarySpotItem } from "@/lib/itineraries/get-itinerary";
 import { composeHref } from "@/lib/posts/compose-initial-state";
 import { DayMoveDropdown } from "./DayMoveDropdown";
@@ -72,20 +73,19 @@ export function ItinerarySpotRow({
    */
   pending?: "remove" | "move" | null;
 }) {
+  /*
+   * #789（2026-10-06）: 時刻ピッカーは「クリア」「○○にする」を押したときしか閉じず、
+   * 開いたまま「Day ▾」を押すと**両方が開いて重なって**いた。外をタップ／Esc で閉じる。
+   * ref は引き金のボタンごと包む `div.relative` に付ける（ボタンを外に出すと、
+   * 「閉じる → ボタンの click で開き直す」が同じタップの中で起きて閉じない）。
+   */
   const [isPickingTime, setIsPickingTime] = useState(false);
+  const timeRef = useOutsideClose<HTMLDivElement>(isPickingTime, () => setIsPickingTime(false));
   const [memo, setMemo] = useState(spot.memo ?? "");
   const [isEditingMemo, setIsEditingMemo] = useState(false);
   // #753: 右端の「⋯」。外をタップしたら閉じる（しおり詳細・アルバムの「⋯」と同じ作法）
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const menuRef = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    if (!isMenuOpen) return;
-    const onPointerDown = (event: PointerEvent) => {
-      if (!menuRef.current?.contains(event.target as Node)) setIsMenuOpen(false);
-    };
-    document.addEventListener("pointerdown", onPointerDown);
-    return () => document.removeEventListener("pointerdown", onPointerDown);
-  }, [isMenuOpen]);
+  const menuRef = useOutsideClose<HTMLDivElement>(isMenuOpen, () => setIsMenuOpen(false));
   const checked = spot.checkedAt !== null;
   const hasTime = spot.arrivalTime !== null;
 
@@ -107,7 +107,7 @@ export function ItinerarySpotRow({
     >
       {/* 左の列: 時刻／チェック */}
       <div className="flex w-14 shrink-0 flex-col items-center gap-2">
-        <div className="relative">
+        <div ref={timeRef} className="relative">
           <button
             type="button"
             onClick={() => setIsPickingTime((open) => !open)}
