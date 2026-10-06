@@ -8,6 +8,7 @@ import {
   MAX_ANNOUNCEMENT_TITLE_LENGTH,
 } from "@/lib/announcements/validate-announcement";
 import { graphemeLength } from "@/lib/text/grapheme-length";
+import { useConfirm } from "@/components/ui/ConfirmSheet";
 
 export interface Announcement {
   id: string;
@@ -54,6 +55,8 @@ export function AnnouncementManager({
   // 「予約」表示の基準時刻。描画中に Date.now() を呼ばないよう state に持つ
   const [now] = useState(() => Date.now());
   const [editingId, setEditingId] = useState<string | null>(null);
+  // #778: 確認はブラウザ標準の箱ではなく、アプリ共通のシートで聞く
+  const { confirm, confirmSheet } = useConfirm();
   const [title, setTitle] = useState("");
   const [body, setBody] = useState("");
   const [publishedAt, setPublishedAt] = useState(() => toLocalInputValue(new Date().toISOString()));
@@ -118,7 +121,7 @@ export function AnnouncementManager({
 
   // 削除はブラウザ標準の confirm で確認してから API を呼ぶ。編集中のものを消したらフォームも空に戻す
   const handleDelete = async (announcement: Announcement) => {
-    if (!window.confirm(`「${announcement.title}」を削除しますか？`)) return;
+    if (!(await confirm({ title: `「${announcement.title}」を削除しますか？`, description: "利用者の通知からも消えます。", confirmLabel: "削除", danger: true }))) return;
     setErrorMessage(null);
     try {
       const response = await api.remove(announcement.id);
@@ -136,6 +139,7 @@ export function AnnouncementManager({
 
   return (
     <div className="flex w-full flex-col">
+      {confirmSheet}
       <div className="flex w-full flex-col gap-5">
         <form onSubmit={handleSubmit} className="flex flex-col gap-3 rounded-[12px] border border-line bg-surface p-4">
           <h2 className="text-[13px] font-bold text-ink">{editingId ? "お知らせを編集" : "新しいお知らせ"}</h2>

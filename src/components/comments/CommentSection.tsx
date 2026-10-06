@@ -11,6 +11,7 @@ import { MAX_COMMENT_LENGTH } from "@/lib/comments/constants";
 import type { CommentData, CommentPage } from "@/lib/comments/list-comments";
 import { graphemeLength } from "@/lib/text/grapheme-length";
 import { POSTING_RESTRICTED_ERROR, postingRestrictedMessage } from "@/lib/moderation/posting-restriction";
+import { useConfirm } from "@/components/ui/ConfirmSheet";
 
 export interface CommentApi {
   fetchPage: (postId: string, offset: number) => Promise<CommentPage>;
@@ -57,6 +58,8 @@ export function CommentSection({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
+  // #778: 確認はブラウザ標準の箱ではなく、アプリ共通のシートで聞く
+  const { confirm, confirmSheet } = useConfirm();
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   /** v3.2: 返信モード（返信先のコメントと、そのやり取りの最上位コメント） */
   const [replyTo, setReplyTo] = useState<{ id: string; rootId: string; name: string } | null>(null);
@@ -131,7 +134,7 @@ export function CommentSection({
 
   const handleDelete = async (commentId: string) => {
     if (pendingDeleteId) return;
-    if (!window.confirm("このコメントを削除しますか？")) return;
+    if (!(await confirm({ title: "このコメントを削除しますか？", confirmLabel: "削除", danger: true }))) return;
     setPendingDeleteId(commentId);
     setErrorMessage(null);
     try {
@@ -170,6 +173,7 @@ export function CommentSection({
 
   return (
     <section aria-labelledby="comments-heading" className="flex flex-col gap-3">
+      {confirmSheet}
       <h2 id="comments-heading" className="text-[14px] font-bold text-ink">
         コメント <span className="text-[12px] font-medium text-muted">{totalCount}件</span>
       </h2>

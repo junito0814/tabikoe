@@ -8,6 +8,7 @@ import { UnauthorizedError } from "@/lib/api/fetch-with-auth-redirect";
 import type { ItineraryMember } from "@/lib/itineraries/get-itinerary";
 import { ITINERARY_ROLE_LABELS, type ItineraryRole } from "@/lib/itineraries/membership";
 import type { ItineraryApi } from "./itinerary-api";
+import { useConfirm } from "@/components/ui/ConfirmSheet";
 
 /**
  * itinerary-sharing Task2: 「メンバー」ダイアログ（一覧・削除・退出）
@@ -44,10 +45,13 @@ export function MembersDialog({
    * どの「削除」が動いているのか見えない）。目印を持たせて、押した 1 つだけ文言を変える。
    */
   const [busyKey, setBusyKey] = useState<string | null>(null);
+  // #778: 確認はブラウザ標準の箱ではなく、アプリ共通のシートで聞く
+  const { confirm, confirmSheet } = useConfirm();
   const busy = busyKey !== null;
 
   const remove = async (userId: string) => {
-    if (busy || !window.confirm("このメンバーをしおりから外しますか？")) return;
+    if (busy) return;
+    if (!(await confirm({ title: "このメンバーをしおりから外しますか？", confirmLabel: "外す", danger: true }))) return;
     setBusyKey(`remove:${userId}`);
     setError(null);
     try {
@@ -66,7 +70,8 @@ export function MembersDialog({
   };
 
   const leave = async () => {
-    if (busy || !window.confirm("このしおりから退出しますか？")) return;
+    if (busy) return;
+    if (!(await confirm({ title: "このしおりから退出しますか？", description: "もう一度招待されれば戻れます。", confirmLabel: "退出", danger: true }))) return;
     setBusyKey("leave");
     setError(null);
     try {
@@ -87,6 +92,7 @@ export function MembersDialog({
 
   return (
     <Sheet open={open} title="メンバー" onClose={onClose}>
+      {confirmSheet}
       <div className="flex flex-col gap-3" data-members-dialog>
         <ul className="flex flex-col gap-1.5">
           {members.map((member) => (

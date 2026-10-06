@@ -5,6 +5,7 @@ import { MembersDialog } from "./MembersDialog";
 import { InviteDialog } from "./InviteDialog";
 import type { ItineraryApi } from "./itinerary-api";
 import type { ItineraryMember } from "@/lib/itineraries/get-itinerary";
+import { acceptConfirm } from "@/components/ui/confirm-sheet.testing";
 
 vi.mock("next/navigation", () => ({ useRouter: () => ({ push: vi.fn(), replace: vi.fn(), refresh: vi.fn() }) }));
 
@@ -35,20 +36,20 @@ describe("4-7: メンバー（MembersDialog）", () => {
   ];
   const api = { removeMember: never, leave: never } as unknown as ItineraryApi;
 
-  it("押した行だけ「削除中…」になる（他の行は「削除」のまま）", () => {
-    vi.spyOn(window, "confirm").mockReturnValue(true);
+  it("押した行だけ「削除中…」になる（他の行は「削除」のまま）", async () => {
     render(<MembersDialog open itineraryId="it-1" members={members} viewerId="u1" role="owner" onClose={vi.fn()} api={api} />);
     // 「削除」は 2 人ぶん並ぶので、1 人目を押す
     fireEvent.click(screen.getAllByRole("button", { name: "削除" })[0]);
+    await acceptConfirm(); // #778: 確認はアプリ共通のシート
     expect(screen.getByRole("button", { name: "削除中…" })).toBeInTheDocument();
     // もう 1 人ぶんの「削除」は文言が変わっていない
     expect(screen.getByRole("button", { name: "削除" })).toBeInTheDocument();
   });
 
-  it("退出を押すと「退出しています…」になる", () => {
-    vi.spyOn(window, "confirm").mockReturnValue(true);
+  it("退出を押すと「退出しています…」になる", async () => {
     render(<MembersDialog open itineraryId="it-1" members={members} viewerId="u2" role="member" onClose={vi.fn()} api={api} />);
     fireEvent.click(screen.getByRole("button", { name: "このしおりから退出" }));
+    await acceptConfirm();
     expect(screen.getByRole("button", { name: "退出しています…" })).toBeInTheDocument();
   });
 });
