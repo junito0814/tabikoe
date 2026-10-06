@@ -114,7 +114,8 @@ export function WishlistScreen({
     return (
       <div className="flex min-h-screen flex-col bg-app">
         <div className="px-4 pt-4 pb-2">{header}</div>
-        <MapScreen open={{ ...resolveMapOpen({}), savedOnly: true, back: back ?? { href: "/mypage", label: "マイページ" } }} selfHref={selfHref} />
+        {/* #788: 見出しに戻るがあるので、地図の上の戻るは出さない（同じものが 2 つ出ていた） */}
+        <MapScreen open={{ ...resolveMapOpen({}), savedOnly: true, back: back ?? { href: "/mypage", label: "マイページ" } }} selfHref={selfHref} hideBack />
       </div>
     );
   }

@@ -43,8 +43,15 @@ export interface MapPinData {
   lat: number;
   lng: number;
   prefecture: string | null;
-  /** 公開投稿の件数（下書きは 0） */
-  postCount: number;
+  /**
+   * 公開投稿の件数（下書きは 0）。
+   *
+   * #781（2026-10-06）: **まだ分からないときは `null`**。
+   * 【初心者向け】探すモードでカードから吹き出しを出すとき、その範囲のピンをまだ取れていないことがあります。
+   * 以前はそこで仮の `1` を入れていたので、投稿が 3 件のスポットでも**「1件」と嘘が出て**いました。
+   * 分からないものは**出さない**のが正しい（吹き出し側で `null` なら省きます）。
+   */
+  postCount: number | null;
   /** 星評価の平均（小数 1 桁）。投稿が無ければ null */
   ratingAverage: number | null;
   /** pin-categories Task2: ピンの色と記号を決めるカテゴリ（公開投稿から決める。無ければ null） */

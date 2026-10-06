@@ -60,8 +60,15 @@ export type FetchMapPins = (bounds: MapBounds, filters: SpotFilters) => Promise<
  */
 const CALLOUT_OFFSET_DEGREES = 0.0007;
 
-/** 近くのスポットのカードから、吹き出しに出すピンの形を作る（件数・星は一覧のピンから補う） */
-function nearbyPinFrom(post: NearbyPost, pins: MapPinData[]): MapPinData {
+/**
+ * 近くのスポットのカードから、吹き出しに出すピンの形を作る（件数・星は一覧のピンから補う）。
+ *
+ * #781（2026-10-06）: ピンがまだ取れていないとき、**仮の `postCount: 1`** を入れていた。
+ * 投稿が 3 件のスポットでも吹き出しに「**1件**」と出る（嘘）。
+ * 分からないときは `null` にして、吹き出し側で**出さない**ようにした。
+ * 単体テストの対象（情報あり／なし）。
+ */
+export function nearbyPinFrom(post: NearbyPost, pins: MapPinData[]): MapPinData {
   const known = pins.find((pin) => pin.spotId === post.spotId);
   if (known) return known;
   // 表示範囲の外などでピンがまだ取れていないときは、カードの情報だけで最低限の吹き出しを出す
@@ -74,7 +81,8 @@ function nearbyPinFrom(post: NearbyPost, pins: MapPinData[]): MapPinData {
     kind: "post",
     category: null,
     prefecture: null,
-    postCount: 1,
+    // #781: 件数も★も「分からない」。仮の値は入れない
+    postCount: null,
     ratingAverage: null,
     latestStatus: null,
     draftId: null,
@@ -90,8 +98,17 @@ export function MapScreen({
   geolocation,
   notice,
   selfHref: selfHrefProp,
+  hideBack = false,
 }: {
   open: MapOpenOptions;
+  /**
+   * #788（2026-10-06）: 地図の上に浮く戻るを出さない。
+   *
+   * 【初心者向け】この地図は**他の画面の中に埋め込んで**使うことがあります（行きたいの「地図」タブ）。
+   * そのとき埋め込んだ側の見出しにも戻るがあるので、**同じ「‹ マイページ」が 2 つ**出ていました。
+   * 埋め込む側がこれを渡して、地図の分を消します。
+   */
+  hideBack?: boolean;
   /** Bug #471: この地図の URL（吹き出し・近くのスポットから開く画面の戻り先）。無ければブラウザの URL を使う */
   selfHref?: string;
   /** 差し替え口（単体テスト用） */
@@ -507,8 +524,8 @@ export function MapScreen({
         {/* 上部：戻る＋凡例（地図に重ねる） */}
         <div className="pointer-events-none absolute inset-x-0 top-0 z-10 flex flex-col gap-2 p-3">
           <div className="flex items-start gap-2">
-            {/* #813: 地図の上に浮く戻るも同じ部品（variant="floating"） */}
-            <BackLink href={open.back.href} label={open.back.label} variant="floating" className="pointer-events-auto" />
+            {/* #813: 地図の上に浮く戻るも同じ部品（variant="floating"）。#788: 埋め込みのときは出さない */}
+            {!hideBack && <BackLink href={open.back.href} label={open.back.label} variant="floating" className="pointer-events-auto" />}
             {/*
               * #763: しおりのときは右上に出していたタイトルの帯を外した。
               * しおりから開いているので、どのしおりかは分かっている。凡例もしおり用のものを下に出している。
