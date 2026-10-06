@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { requireUserOrRedirect } from "@/lib/auth/require-user-or-redirect";
 import { ErrorNotice } from "@/components/notices/ErrorNotice";
@@ -10,6 +9,7 @@ import DeleteAccountDialog from "./delete-account-dialog";
 import { BlockedUsersList, type BlockedUser } from "@/components/blocks/BlockedUsersList";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { ContentEnter } from "@/components/transitions/Reveal";
+import { AccountScreen } from "@/components/account/AccountScreen";
 
 // #785: ブラウザのタブ名（「アカウント | タビコエ」）
 export const metadata = { title: "アカウント" };
@@ -66,31 +66,21 @@ export default async function AccountPage() {
 
   return (
     <ContentEnter>
-      <div className="flex min-h-screen flex-col items-center gap-8 bg-app px-6 py-16">
-        <h1 className="text-[1rem] font-bold text-ink">アカウント</h1>
-
-        <AvatarUploadForm initialAvatarUrl={profile?.avatar_url ?? null} />
-        <DisplayNameForm initialDisplayName={profile?.display_name ?? ""} />
-
-        {/* menu-bar Task3: 管理画面への導線はメニューバーには置かず、is_adminユーザーにだけここで出す（4.2、3.10.1） */}
-        {profile?.is_admin && (
-          <Link
-            href="/admin"
-            className="flex h-11 w-full max-w-[360px] items-center justify-center rounded-[10px] border border-line bg-surface text-[0.875rem] font-semibold text-ink"
-          >
-            管理者ダッシュボード
-          </Link>
-        )}
-
-        <div className="w-full max-w-[360px] border-t border-line pt-6">
-          <BlockedUsersList initialBlockedUsers={blockedUsers} />
-        </div>
-
-        <div className="flex w-full max-w-[360px] flex-col items-center gap-4 border-t border-line pt-6">
-          <LogoutButton />
-          <DeleteAccountDialog isAdmin={profile?.is_admin ?? false} />
-        </div>
-      </div>
+      {/* #799・#783: iOS の「設定」と同じ行の形。中身（名前と画像・ブロック）はシートで開く */}
+      <AccountScreen
+        displayName={profile?.display_name ?? ""}
+        blockedCount={blockedUsers.length}
+        isAdmin={profile?.is_admin ?? false}
+        profileForm={
+          <>
+            <AvatarUploadForm initialAvatarUrl={profile?.avatar_url ?? null} />
+            <DisplayNameForm initialDisplayName={profile?.display_name ?? ""} />
+          </>
+        }
+        blockedList={<BlockedUsersList initialBlockedUsers={blockedUsers} />}
+        logoutButton={<LogoutButton />}
+        deleteDialog={<DeleteAccountDialog isAdmin={profile?.is_admin ?? false} />}
+      />
     </ContentEnter>
   );
 }

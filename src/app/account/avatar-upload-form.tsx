@@ -74,8 +74,9 @@ export default function AvatarUploadForm({ initialAvatarUrl }: { initialAvatarUr
         alt={selectedFile ? "選択したアイコン画像のプレビュー" : "現在のアイコン画像"}
         className="h-20 w-20 rounded-full border border-line object-cover"
       />
-      <label className="cursor-pointer text-[0.75rem] font-medium text-accent underline underline-offset-2">
-        画像を選択
+      {/* #799: 下線の文字リンクをやめ、押せるボタンに（要件 4.5.16） */}
+      <label className="flex h-9 cursor-pointer items-center rounded-full border border-line bg-surface px-4 text-[0.75rem] font-semibold text-ink">
+        画像を選ぶ
         <input
           type="file"
           accept="image/jpeg,image/png"

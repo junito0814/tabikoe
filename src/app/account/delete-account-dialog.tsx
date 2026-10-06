@@ -62,7 +62,8 @@ export default function DeleteAccountDialog({ isAdmin }: { isAdmin: boolean }) {
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="tap-target text-[0.8125rem] font-medium text-accent underline underline-offset-2"
+        /* #799: 下線の文字リンクをやめ、行の中の文字に。取り返しがつかないので赤（要件 4.5.16） */
+        className="w-full text-left text-[0.875rem] text-saved"
       >
         退会する
       </button>
