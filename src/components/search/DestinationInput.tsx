@@ -122,8 +122,8 @@ export function DestinationInput({
   /** #740: メニューバーの高さ（スマホのとき。パソコンは左の縦並びなので引かない） */
   const MENU_BAR_PX = 60;
   const PANEL_GAP_PX = 8;
-  /** これより狭ければ測った値を使わない（CSS の上限に任せる） */
-  const MIN_PANEL_PX = 160;
+  /** これ以上縮んでいたらキーボードが出ていると見なす */
+  const KEYBOARD_THRESHOLD_PX = 120;
 
 
   const trimmedQuery = query.trim();
@@ -131,19 +131,51 @@ export function DestinationInput({
   const visibleSuggestions = searchedQuery === trimmedQuery ? suggestions : [];
 
   /*
-   * #740: 候補の高さは「入力欄の下に実際に残っている余白」で決める。
-   * 開いたとき・候補の数が変わったときだけ測る（毎回測ると描き直しが止まらなくなる）。
+   * #740・#749: 候補の高さは「入力欄の下に**実際に見えている**余白」で決める。
+   *
+   * 【初心者向け】#740 では画面全体の高さ（`window.innerHeight`）で測っていたが、
+   * **実機では文字を打っている間キーボードが出ていて、見えるのはその上だけ**だった。
+   * そのため Google のロゴがキーボードの下に隠れていた（規約が求める表記なので、
+   * 見えないのは出していないのと同じ）。
+   *
+   * `window.visualViewport` は「いま実際に見えている範囲」を表す。キーボードが出ると縮む。
+   * 開閉のたびに測り直すので、閉じれば元の高さに戻る。
    */
   useLayoutEffect(() => {
-    const panel = panelRef.current;
-    if (!panel) {
-      setMaxHeight(null);
-      return;
-    }
-    const top = panel.getBoundingClientRect().top;
-    const bar = window.innerWidth < 768 ? MENU_BAR_PX : 0;
-    const space = Math.floor(window.innerHeight - top - bar - PANEL_GAP_PX);
-    setMaxHeight(space >= MIN_PANEL_PX ? space : null);
+    const measure = () => {
+      const panel = panelRef.current;
+      if (!panel) {
+        setMaxHeight(null);
+        return;
+      }
+      const viewport = window.visualViewport;
+      // 見えている範囲の下端。キーボードが出ているとここが上がる
+      const visibleBottom = viewport ? viewport.offsetTop + viewport.height : window.innerHeight;
+      // キーボードが出ているとメニューバーもその下に隠れるので、そのときは引かない
+      const keyboardOpen = viewport ? window.innerHeight - viewport.height > KEYBOARD_THRESHOLD_PX : false;
+      const bar = !keyboardOpen && window.innerWidth < 768 ? MENU_BAR_PX : 0;
+      const top = panel.getBoundingClientRect().top;
+      const space = Math.floor(visibleBottom - top - bar - PANEL_GAP_PX);
+      /*
+       * 測れたなら、その値を**必ず**使う。
+       *
+       * 【初心者向け】最初は「狭すぎたら CSS の上限に任せる」としていたが、それだと
+       * **狭いときほど背が高くなる**（上限 420px に戻る）という逆の動きになり、
+       * キーボードが出たときにロゴが隠れたままだった（2026-10-06 に測って気づいた）。
+       * 狭いときは狭いまま出す ── 中はスクロールでき、ロゴはその外に固定してあるので必ず見える。
+       */
+      setMaxHeight(space > 0 ? space : null);
+    };
+
+    measure();
+    const viewport = window.visualViewport;
+    if (!viewport) return;
+    viewport.addEventListener("resize", measure);
+    viewport.addEventListener("scroll", measure);
+    return () => {
+      viewport.removeEventListener("resize", measure);
+      viewport.removeEventListener("scroll", measure);
+    };
   }, [isOpen, visibleSuggestions.length]);
   /** 探している最中か。300ms 待っている間も含む（#665: 変換中は探していないので出さない） */
   const isSearching = !isComposing && trimmedQuery.length > 0 && searchedQuery !== trimmedQuery;
