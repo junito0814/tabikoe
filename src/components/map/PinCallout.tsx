@@ -79,7 +79,7 @@ function SpotBody({ pin, backHref }: { pin: MapPinData; backHref: string | null 
           </span>
         )}
         {pin.ratingAverage !== null && pin.postCount !== null && <span aria-hidden>・</span>}
-        {pin.postCount !== null && <span>{pin.postCount}件</span>}
+        {pin.postCount !== null && <span>{pin.postCount} 件</span>}
         {statusLabel && (
           <>
             <span aria-hidden>・</span>

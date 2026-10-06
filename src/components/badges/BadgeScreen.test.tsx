@@ -16,11 +16,11 @@ describe("BadgeScreen", () => {
 
     expect(screen.getByText("1 / 63 個を獲得")).toBeInTheDocument();
 
-    const acquired = screen.getByLabelText("投稿1件（獲得済み）");
+    const acquired = screen.getByLabelText("投稿1 件（獲得済み）");
     expect(acquired).toHaveAttribute("data-acquired", "true");
     expect(acquired).toHaveTextContent("2026/9/1");
 
-    const notYet = screen.getByLabelText("投稿10件（未獲得）");
+    const notYet = screen.getByLabelText("投稿10 件（未獲得）");
     expect(notYet).toHaveAttribute("data-acquired", "false");
     expect(notYet).toHaveTextContent("未獲得");
 

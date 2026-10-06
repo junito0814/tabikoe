@@ -65,7 +65,7 @@ export const CATEGORY_PIN_STYLE: Record<PostCategory, { color: PinColorToken; gl
 /** 種別ごとの名前（読み上げ・凡例） */
 export const PIN_TYPE_LABELS: Record<PinType, string> = {
   post: "みんなの投稿",
-  saved: "保存済み",
+  saved: "行きたい",
   posted: "投稿済みのスポット",
   draft: "下書き",
   focus: "選択中のスポット",

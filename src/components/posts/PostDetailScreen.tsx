@@ -20,6 +20,7 @@ import { StaticSpotMap } from "@/components/map/StaticSpotMap";
 import { formatCost } from "./PostCard";
 import { BackLink } from "@/components/layout/BackLink";
 import { formatDate, formatDateTime } from "@/lib/format/date-time";
+import { TERMS } from "@/lib/terms";
 
 /**
  * F-VW-01 Task2 / post-detail-view-v3 Task1（v3.0）: 投稿詳細画面（SC-05）
@@ -54,7 +55,7 @@ export function PostDetailScreen({
   // Bug #471: この画面の URL（back を含む）。ここから開く地図・スポット別一覧の戻り先にする
   const selfHref = appendBackHref(`/posts/${post.id}`, back?.href);
   const backHref = back?.href ?? `/spots/${post.spot.id}`;
-  const backLabel = back?.label ?? "投稿一覧";
+  const backLabel = back?.label ?? TERMS.seePosts;
   const returnTo = `/posts/${post.id}`;
   const cost = formatCost(post.cost);
 
@@ -269,7 +270,7 @@ export function PostDetailScreen({
               href={composeHref({ kind: "spot", spotId: post.spot.id })}
               className="inline-flex h-11 w-fit items-center gap-1.5 rounded-full bg-accent px-5 text-[0.8125rem] font-bold text-white"
             >
-              自分も投稿する
+              {TERMS.post}
             </Link>
           )}
 

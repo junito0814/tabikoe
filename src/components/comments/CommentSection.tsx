@@ -180,7 +180,7 @@ export function CommentSection({
     <section aria-labelledby="comments-heading" className="flex flex-col gap-3 pb-24">
       {confirmSheet}
       <h2 id="comments-heading" className="text-[0.875rem] font-bold text-ink">
-        コメント <span className="text-[0.75rem] font-medium text-muted">{totalCount}件</span>
+        コメント <span className="text-[0.75rem] font-medium text-muted">{totalCount} 件</span>
       </h2>
 
       {canComment ? (

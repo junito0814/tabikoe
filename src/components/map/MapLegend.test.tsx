@@ -9,7 +9,7 @@ import { MapLegend } from "./MapLegend";
 describe("MapLegend", () => {
   it("通常は みんなの投稿・保存済み・下書き の 3 項目", () => {
     render(<MapLegend />);
-    expect(screen.getAllByRole("listitem").map((el) => el.textContent)).toEqual(["みんなの投稿", "保存済み", "下書き"]);
+    expect(screen.getAllByRole("listitem").map((el) => el.textContent)).toEqual(["みんなの投稿", "行きたい", "下書き"]);
   });
   it("しおり表示では Day の数だけ項目を出す", () => {
     render(<MapLegend mode="itinerary" dayCount={3} />);

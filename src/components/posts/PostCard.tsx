@@ -111,7 +111,7 @@ export function PostCard({
         <LikeButton postId={post.id} initialLiked={post.viewerHasLiked} initialCount={post.likeCount} className="h-8" />
         <Link
           href={`/posts/${post.id}#comments`} prefetch={false}
-          aria-label={`コメント${post.commentCount}件`}
+          aria-label={`コメント ${post.commentCount} 件`}
           className="inline-flex h-8 items-center gap-1 rounded-full px-2 text-[0.75rem] text-muted"
         >
           <CommentIcon />

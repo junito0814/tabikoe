@@ -71,7 +71,7 @@ describe("SpotPostListScreen（SC-04 スポット別）", () => {
     expect(document.querySelector("[data-static-spot-map]")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "地図を全画面に" })).toHaveAttribute("href", "/map?spot=spot-1&lat=35.68&lng=139.76&back=%2Fsearch%3Fspot%3Dspot-1");
     expect(screen.queryByRole("link", { name: "地図で見る" })).toBeNull();
-    expect(screen.getAllByRole("button", { name: "保存する" }).length).toBeGreaterThan(0);
+    expect(screen.getAllByRole("button", { name: "行きたい" }).length).toBeGreaterThan(0);
     expect(screen.getByRole("link", { name: "投稿する" })).toHaveAttribute("href", "/posts/new?spot=spot-1");
     // 見出しにスポット名があるので、カードの見出しは出さない
     expect(document.querySelector("[data-post-card='p1'] h3")).toBeNull();

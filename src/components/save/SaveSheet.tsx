@@ -9,6 +9,7 @@ import { dayKeys, type DayKey } from "@/components/itineraries/DayTabs";
 import { dayLabel } from "@/components/itineraries/DayMoveDropdown";
 import { defaultItineraryApi, type ItineraryApi } from "@/components/itineraries/itinerary-api";
 import { MAX_TRIP_TITLE_LENGTH } from "@/lib/trips/constants";
+import { TERMS } from "@/lib/terms";
 
 /**
  * wishlist-v3 Task1 / Task2: 保存先シート（行きたい＋しおり＋Day）
@@ -221,7 +222,8 @@ function SaveSheetBody({
 
   // #758: 閉じるときに「いまどれかのしおりに入っているか」も返す
   const close = () => onClose({ savedItinerary, wishlisted, inAnyItinerary: (items ?? []).some((item) => item.containsSpot === true) });
-  const title = showWishlist ? "保存先" : `${spotName ?? "このスポット"} をしおりへ`;
+  // #810: 「保存先」とは言わない（この画面でできるのは「行きたい」と「しおり」）
+  const title = showWishlist ? `${TERMS.wishlist}・しおりに入れる` : `${spotName ?? "このスポット"} をしおりへ`;
 
   return (
     <Sheet

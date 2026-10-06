@@ -136,7 +136,7 @@ describe("MapScreen（SC-02 v3.0）", () => {
     await settle();
     fireEvent.click(await screen.findByRole("button", { name: "spot-1:post" }));
     const callout = await screen.findByRole("dialog", { name: "スポットspot-1" });
-    expect(callout).toHaveTextContent("7件");
+    expect(callout).toHaveTextContent("7 件");
     expect(callout).toHaveTextContent("9月にまだあった");
     expect(screen.queryByRole("link", { name: "一覧" })).toBeNull();
     // Bug #471: 一覧から「← 地図」でこの地図（URL ごと）に戻れるよう back を付ける（テストでは jsdom の URL "/"）

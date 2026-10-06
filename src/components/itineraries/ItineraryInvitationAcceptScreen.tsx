@@ -75,7 +75,7 @@ export function ItineraryInvitationAcceptScreen({
               {invitation.status === "expired"
                 ? "有効期限（7日間）が切れています。オーナーに新しいリンクの発行を依頼してください。"
                 : invitation.status === "revoked"
-                  ? "このリンクはオーナーによって無効化されました。"
+                  ? "このリンクはオーナーによって取り消されました。"
                   : "リンクが正しくありません。"}
             </p>
           </>

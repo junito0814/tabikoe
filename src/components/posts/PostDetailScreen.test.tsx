@@ -57,7 +57,7 @@ describe("PostDetailScreen（SC-05）", () => {
     // #771: 秒は出さない。24 時間以上前なので日付だけ（日本時間で 2026/9/2）
     expect(screen.getByText("2026/9/2 投稿")).toBeInTheDocument();
     // 組み込み: 保存（＋）・いいね・コメント欄
-    expect(screen.getByRole("button", { name: "保存する" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "行きたい" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "いいねする" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: /コメント/ })).toBeInTheDocument();
   });
@@ -76,7 +76,7 @@ describe("PostDetailScreen（SC-05）", () => {
     expect(mapHref.pathname).toBe("/map");
     expect(mapHref.searchParams.get("spot")).toBe("s1");
     expect(screen.queryByRole("link", { name: "🗺 地図で見る" })).toBeNull();
-    expect(screen.getByRole("link", { name: /自分も投稿する/ })).toHaveAttribute("href", "/posts/new?spot=s1");
+    expect(screen.getByRole("link", { name: /投稿する/ })).toHaveAttribute("href", "/posts/new?spot=s1");
   });
 
   it("Bug #469・#471: back があれば戻るはその画面名でそこへ。無ければスポット名でスポット別一覧へ。地図・見出しのスポット名にはこの画面を back で渡す", () => {
@@ -87,7 +87,7 @@ describe("PostDetailScreen（SC-05）", () => {
     expect(screen.getByRole("link", { name: /^東京駅 グランスタ$/ })).toHaveAttribute("href", "/spots/s1?back=%2Fposts%2Fp1%3Fback%3D%252Fmypage");
     unmount();
     render(<PostDetailScreen post={post} initialComments={noComments} />);
-    expect(screen.getByRole("link", { name: "投稿一覧" })).toHaveAttribute("href", "/spots/s1");
+    expect(screen.getByRole("link", { name: "投稿を見る" })).toHaveAttribute("href", "/spots/s1");
   });
 
   it("旅行タイトルは画面のどこにも表示されない", () => {
@@ -112,7 +112,7 @@ describe("PostDetailScreen（SC-05）", () => {
     fireEvent.click(screen.getByRole("button", { name: "その他" }));
     expect(screen.getByRole("menuitem", { name: "編集" })).toHaveAttribute("href", "/posts/p1/edit");
     expect(screen.getByRole("button", { name: "この投稿を削除" })).toBeInTheDocument();
-    expect(screen.queryByRole("link", { name: /自分も投稿する/ })).toBeNull();
+    expect(screen.queryByRole("link", { name: /投稿する/ })).toBeNull();
   });
 
   it("非公開投稿ではいいねボタンとコメントフォームを出さない", () => {

@@ -57,16 +57,16 @@ describe("AppMenuBar 表示制御（Task1）", () => {
 });
 
 describe("AppMenuBar 未読バッジ（Task2）", () => {
-  it("未読0件ではバッジを出さない", async () => {
+  it("未読 0 件ではバッジを出さない", async () => {
     const fetchUnreadCount = vi.fn(async () => 0);
     render(<AppMenuBar fetchUnreadCount={fetchUnreadCount} />);
     await waitFor(() => expect(fetchUnreadCount).toHaveBeenCalled());
     expect(screen.queryByLabelText(/未読/)).not.toBeInTheDocument();
   });
 
-  it("未読1件以上でバッジに件数を出す", async () => {
+  it("未読 1 件以上でバッジに件数を出す", async () => {
     render(<AppMenuBar fetchUnreadCount={async () => 3} />);
-    expect(await screen.findByLabelText("未読3件")).toHaveTextContent("3");
+    expect(await screen.findByLabelText("未読 3 件")).toHaveTextContent("3");
   });
 
   it("件数取得に失敗してもメニュー自体は表示される", async () => {
@@ -99,7 +99,7 @@ describe("UnreadBadge", () => {
 
   it("100件以上は 99+ と表示する", () => {
     render(<UnreadBadge count={150} />);
-    expect(screen.getByLabelText("未読150件")).toHaveTextContent("99+");
+    expect(screen.getByLabelText("未読 150 件")).toHaveTextContent("99+");
   });
 });
 
@@ -124,11 +124,11 @@ describe("未読件数の間引き（performance Task1）", () => {
   it("画面遷移をまたいでも 60 秒以内なら API を呼ばず、既読イベントでは必ず取り直す", async () => {
     const fetchUnreadCount = vi.fn(async () => 2);
     const { unmount } = render(<AppMenuBar fetchUnreadCount={fetchUnreadCount} />);
-    expect(await screen.findByLabelText("未読2件")).toBeInTheDocument();
+    expect(await screen.findByLabelText("未読 2 件")).toBeInTheDocument();
     unmount();
     pathname = "/mypage";
     render(<AppMenuBar fetchUnreadCount={fetchUnreadCount} />);
-    expect(await screen.findByLabelText("未読2件")).toBeInTheDocument();
+    expect(await screen.findByLabelText("未読 2 件")).toBeInTheDocument();
     expect(fetchUnreadCount).toHaveBeenCalledTimes(1);
     window.dispatchEvent(new Event(NOTIFICATIONS_READ_EVENT));
     await waitFor(() => expect(fetchUnreadCount).toHaveBeenCalledTimes(2));

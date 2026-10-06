@@ -71,7 +71,7 @@ export function ItineraryListScreen({
 
           {sorted.length === 0 ? (
             /* #800: 空の画面は同じ部品で（約束 14）。ここは上に「＋ 新規」があるのでボタンは置かない */
-            <EmptyState title="しおりがありません" description="「＋ 新規」か、投稿一覧の「＋」から作れます" />
+            <EmptyState title="しおりがありません" description="「＋ 新規」か、スポットの「＋」から作れます" />
           ) : (
             <ul className="flex flex-col gap-2.5">
               {sorted.map((item) => {

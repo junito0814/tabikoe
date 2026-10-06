@@ -70,7 +70,7 @@ export function ReportForm({
       if (response.status === 409) {
         setErrorMessage("この対象は既に通報済みです");
       } else if (response.status === 429) {
-        setErrorMessage("通報の上限（1日20件）に達しました。しばらく時間をおいてお試しください");
+        setErrorMessage("通報の上限（1 日 20 件）に達しました。しばらく時間をおいてお試しください");
       } else if (response.status === 404) {
         setErrorMessage("通報対象が見つかりませんでした");
       } else {

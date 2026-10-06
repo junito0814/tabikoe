@@ -118,7 +118,7 @@ describe("絞り込みの選び方（explore-mode Task 5）", () => {
     );
     fireEvent.click(screen.getByLabelText("〜1,000円"));
     fireEvent.click(screen.getByLabelText("グルメ"));
-    fireEvent.click(screen.getByRole("button", { name: "条件をクリア" }));
+    fireEvent.click(screen.getByRole("button", { name: "条件を消す" }));
     fireEvent.click(screen.getByRole("button", { name: "この条件で表示" }));
     expect(onApply).toHaveBeenCalledWith(expect.objectContaining({ cost: null, categories: [], sort: "rating" }));
   });

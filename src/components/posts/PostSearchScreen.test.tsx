@@ -98,8 +98,8 @@ describe("PostSearchScreen（SC-04 タイムライン）", () => {
     expect(screen.queryByRole("link", { name: "地図で見る" })).toBeNull();
     // v3.2: コメントが無ければプレビューは出ない
     expect(document.querySelector("[data-comment-preview]")).toBeNull();
-    expect(screen.getByRole("button", { name: "保存する" })).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "コメント3件" })).toHaveAttribute("href", "/posts/p1#comments");
+    expect(screen.getByRole("button", { name: "行きたい" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "コメント 3 件" })).toHaveAttribute("href", "/posts/p1#comments");
     expect(screen.getByRole("link", { name: "たこ焼き〇〇の写真 1" })).toHaveAttribute("href", "/posts/p1"); // v3.1: カードの写真は投稿詳細へ直接
   });
 
@@ -302,12 +302,12 @@ describe("スポット別の一覧（#692）", () => {
 
   it("投稿カードに「＋」を出さない", () => {
     renderScreen({ initialPage: { posts: [card("p1")], nextOffset: null }, context: spotContext });
-    expect(screen.queryByRole("button", { name: "保存する" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "行きたい" })).toBeNull();
   });
 
   it("検索結果（スポット別でない）では今までどおり両方出す", () => {
     renderScreen({ initialPage: { posts: [card("p1")], nextOffset: null } });
     expect(screen.getByRole("button", { name: /絞り込み/ })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "保存する" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "行きたい" })).toBeInTheDocument();
   });
 });
