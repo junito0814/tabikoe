@@ -106,6 +106,11 @@ export interface PostSearchFilters {
   /** v3.0: 閲覧者の現在地（徒歩分の計算用。絞り込みには使わない） */
   viewer?: { lat: number; lng: number } | null;
   /**
+   * #809: エリア（都道府県の並び）。「みんなの投稿」（行き先なし）のときだけ使う。
+   * 行き先が決まっているときは URL から読まないので、ここは空になる。
+   */
+  areas?: string[];
+  /**
    * post-timeline Task 6（2026-10-03）: 「タビコエだけの場所」だけに絞るか（要件 3.4.2）。
    *
    * 【初心者向け】Google Places に無く、利用者が自分で登録したスポット（`spots.source = manual`）。
@@ -150,6 +155,10 @@ export function parsePostSearchParams(
     : null;
 
   // v3.0: 行き先
+  const areas = (searchParams.get("areas") ?? "")
+    .split(",")
+    .map((item) => item.trim())
+    .filter(Boolean);
   const pref = searchParams.get("pref")?.trim() ?? "";
   const spot = searchParams.get("spot")?.trim() ?? "";
   // 優先順: スポット別 > 都道府県 > 座標（駅・市区町村・現在地の周辺 5km）
@@ -188,6 +197,7 @@ export function parsePostSearchParams(
     visitTo,
     sort: parsePostSort(searchParams.get("sort")),
     viewer,
+    areas,
   };
 }
 
@@ -451,6 +461,11 @@ export function applyFilters<Q extends ReturnType<typeof baseQuery>>(
 ): Q {
   if (blockedIds.length > 0) {
     query = query.not("user_id", "in", `(${blockedIds.join(",")})`) as Q;
+  }
+  // #809: エリア（都道府県の並び）。行き先が決まっていないときだけ効く
+  const areas = filters.areas ?? [];
+  if (!filters.destination && areas.length > 0) {
+    query = query.in("spots.prefecture", areas) as Q;
   }
   const destination = filters.destination ?? null;
   if (destination?.kind === "prefecture") {
