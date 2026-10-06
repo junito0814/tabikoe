@@ -18,6 +18,7 @@ import { formatCost } from "@/components/posts/PostCard";
 import { useOutsideClose } from "@/lib/ui/use-outside-close";
 import { useConfirm } from "@/components/ui/ConfirmSheet";
 import { BackLink } from "@/components/layout/BackLink";
+import { formatDate, formatDateTime } from "@/lib/format/date-time";
 
 export interface AlbumInvitation {
   id: string;
@@ -453,7 +454,7 @@ export function AlbumScreen({
               {invitations.map((invitation) => (
                 <li key={invitation.id} className="flex items-center gap-2 text-[11px] text-muted">
                   <span>{ALBUM_ROLE_LABELS[invitation.role as InvitableRole] ?? invitation.role}</span>
-                  <span>期限 {new Date(invitation.expiresAt).toLocaleDateString("ja-JP")}</span>
+                  <span>期限 {formatDate(invitation.expiresAt)}</span>
                   <span className="ml-auto">
                     {invitation.status === "valid" ? (
                       <button
@@ -509,7 +510,7 @@ export function AlbumScreen({
                     {post.mediaCount > 1 && ` ・ ${post.mediaCount}点`}
                   </span>
                   <span className="text-[11px] text-muted">
-                    {post.author.displayName} ・ {new Date(post.createdAt).toLocaleDateString("ja-JP")}
+                    {post.author.displayName} ・ {formatDateTime(post.createdAt)}
                   </span>
                 </Link>
               </article>

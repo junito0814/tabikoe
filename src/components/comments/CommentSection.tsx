@@ -12,6 +12,7 @@ import type { CommentData, CommentPage } from "@/lib/comments/list-comments";
 import { graphemeLength } from "@/lib/text/grapheme-length";
 import { POSTING_RESTRICTED_ERROR, postingRestrictedMessage } from "@/lib/moderation/posting-restriction";
 import { useConfirm } from "@/components/ui/ConfirmSheet";
+import { formatDateTime } from "@/lib/format/date-time";
 
 export interface CommentApi {
   fetchPage: (postId: string, offset: number) => Promise<CommentPage>;
@@ -321,7 +322,7 @@ function CommentItem({
             {comment.author.displayName}
           </Link>
         )}
-        <span>・{new Date(comment.createdAt).toLocaleString("ja-JP")}</span>
+        <span>・{formatDateTime(comment.createdAt)}</span>
         <span className="ml-auto flex items-center gap-3">
           {canReply && (
             <button type="button" onClick={onReply} className="text-[11px] font-medium text-ink underline underline-offset-2" data-reply-button>

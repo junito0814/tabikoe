@@ -9,6 +9,7 @@ import {
 } from "@/lib/announcements/validate-announcement";
 import { graphemeLength } from "@/lib/text/grapheme-length";
 import { useConfirm } from "@/components/ui/ConfirmSheet";
+import { formatDateTime } from "@/lib/format/date-time";
 
 export interface Announcement {
   id: string;
@@ -208,7 +209,7 @@ export function AnnouncementManager({
                     <div className="min-w-0">
                       <p className="truncate text-[13px] font-semibold text-ink">{announcement.title}</p>
                       <p className="text-[11px] text-muted">
-                        公開 {new Date(announcement.published_at).toLocaleString("ja-JP")}
+                        公開 {formatDateTime(announcement.published_at)}
                         {Date.parse(announcement.published_at) > now && "（予約）"}
                       </p>
                     </div>

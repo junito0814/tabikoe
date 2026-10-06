@@ -19,6 +19,7 @@ import {
   type ReportListItem,
 } from "@/lib/admin/report-filters";
 import { buildReportListParams, EMPTY_REPORT_LIST_STATE, type ReportListState } from "./report-list-query";
+import { formatDateTime } from "@/lib/format/date-time";
 
 export type FetchReports = (params: URLSearchParams) => Promise<{ reports: ReportListItem[]; nextOffset: number | null }>;
 
@@ -145,7 +146,7 @@ export function ReportListScreen({
                     <span className="rounded-full bg-tint px-2 py-0.5 font-semibold text-accent">{REPORT_STATUS_LABELS[report.status]}</span>
                     <span className="font-semibold text-ink">{REPORT_TARGET_LABELS[report.targetType]}</span>
                     <span className="text-ink">{REPORT_REASON_LABELS[report.reason]}</span>
-                    <span className="ml-auto text-[11px] text-muted">{new Date(report.createdAt).toLocaleString("ja-JP")}</span>
+                    <span className="ml-auto text-[11px] text-muted">{formatDateTime(report.createdAt)}</span>
                   </span>
                   {report.detail && <span className="line-clamp-2 text-muted">{report.detail}</span>}
                 </Link>

@@ -12,6 +12,7 @@ import { dispatchNotificationsRead } from "./notification-events";
 import { PullToRefresh } from "@/components/layout/PullToRefresh";
 import { CloseButton } from "@/components/ui/CloseButton";
 import { useCloseOnBack } from "@/lib/ui/use-close-on-back";
+import { formatDateTime } from "@/lib/format/date-time";
 
 export interface NotificationApi {
   fetchPage: (offset: number) => Promise<FeedPage>;
@@ -224,7 +225,7 @@ export function NotificationListScreen({
                               NEW
                             </span>
                           )}
-                          <span className="ml-auto text-muted">{new Date(item.publishedAt).toLocaleDateString("ja-JP")}</span>
+                          <span className="ml-auto text-muted">{formatDateTime(item.publishedAt)}</span>
                         </span>
                         <span className="mt-1 block truncate text-[13px] font-semibold text-ink">{item.title}</span>
                         <span className="mt-0.5 line-clamp-2 block text-[12px] leading-[1.6] text-muted">{item.body}</span>
@@ -315,8 +316,8 @@ export function NotificationListScreen({
               <div className="mb-1 flex items-start gap-2">
                 <p className="flex-1 text-[11px] text-muted">
                   {open.kind === "announcement"
-                    ? `お知らせ ・ ${new Date(open.publishedAt).toLocaleString("ja-JP")}`
-                    : `通知 ・ ${new Date(open.createdAt).toLocaleString("ja-JP")}`}
+                    ? `お知らせ ・ ${formatDateTime(open.publishedAt)}`
+                    : `通知 ・ ${formatDateTime(open.createdAt)}`}
                 </p>
                 <CloseButton onClick={() => setOpenIndex(null)} />
               </div>
@@ -393,7 +394,7 @@ function NotificationBody({ item }: { item: Extract<FeedItem, { kind: "notificat
           {!item.isRead && <span className="sr-only">（未読）</span>}
         </span>
         <span className="mt-0.5 block text-[11px] text-muted">
-          {new Date(item.createdAt).toLocaleString("ja-JP")}
+          {formatDateTime(item.createdAt)}
           {item.fallbackMessage && ` ・ ${item.fallbackMessage}`}
           {item.invitation && item.invitation.status !== "pending" && ` ・ ${INVITATION_STATUS_LABELS[item.invitation.status]}`}
         </span>

@@ -19,6 +19,7 @@ import { StaticSpotMap } from "@/components/map/StaticSpotMap";
 import { formatCost } from "./PostCard";
 import { useOutsideClose } from "@/lib/ui/use-outside-close";
 import { BackLink } from "@/components/layout/BackLink";
+import { formatDate, formatDateTime } from "@/lib/format/date-time";
 
 /**
  * F-VW-01 Task2 / post-detail-view-v3 Task1（v3.0）: 投稿詳細画面（SC-05）
@@ -94,7 +95,7 @@ export function PostDetailScreen({
           <span>{post.rating}</span>
         </span>
       )}
-      {post.visitDate && <span className="shrink-0 font-normal text-muted">訪問 {new Date(post.visitDate).toLocaleDateString("ja-JP")}</span>}
+      {post.visitDate && <span className="shrink-0 font-normal text-muted">訪問 {formatDate(post.visitDate)}</span>}
     </p>
   );
 
@@ -200,7 +201,7 @@ export function PostDetailScreen({
                 <dt className="text-muted">訪問日</dt>
                 <dd>
                   {post.visitDate
-                    ? new Date(post.visitDate).toLocaleDateString("ja-JP")
+                    ? formatDate(post.visitDate)
                     : "未入力"}
                 </dd>
               </div>
@@ -255,7 +256,7 @@ export function PostDetailScreen({
               </Link>
             )}
             <time dateTime={post.createdAt} className="text-[11px] text-muted">
-              {new Date(post.createdAt).toLocaleString("ja-JP")} 投稿
+              {formatDateTime(post.createdAt)} 投稿
             </time>
           </div>
 

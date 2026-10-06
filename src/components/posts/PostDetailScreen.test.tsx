@@ -46,7 +46,7 @@ describe("PostDetailScreen（SC-05）", () => {
     render(<PostDetailScreen post={{ ...post, comment: "駅弁がとても美味しかった" }} initialComments={noComments} />);
     expect(screen.getByText("東京駅 グランスタ")).toBeInTheDocument();
     expect(screen.getByText("グルメ")).toBeInTheDocument();
-    expect(screen.getByText(new Date("2026-09-01").toLocaleDateString("ja-JP"))).toBeInTheDocument();
+    expect(screen.getByText("2026/9/1")).toBeInTheDocument();
     expect(screen.getByText("1時間以内")).toBeInTheDocument();
     expect(screen.getByText("¥1,200/人")).toBeInTheDocument();
     expect(screen.getByLabelText("星4")).toBeInTheDocument();
@@ -54,7 +54,8 @@ describe("PostDetailScreen（SC-05）", () => {
     expect(screen.getByAltText("東京駅 グランスタの動画 2")).toBeInTheDocument();
     expect(screen.getByText("駅弁がとても美味しかった")).toBeInTheDocument();
     expect(screen.getByText("たろう")).toBeInTheDocument();
-    expect(screen.getByText(`${new Date("2026-09-02T03:04:05Z").toLocaleString("ja-JP")} 投稿`)).toBeInTheDocument();
+    // #771: 秒は出さない。24 時間以上前なので日付だけ（日本時間で 2026/9/2）
+    expect(screen.getByText("2026/9/2 投稿")).toBeInTheDocument();
     // 組み込み: 保存（＋）・いいね・コメント欄
     expect(screen.getByRole("button", { name: "保存する" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "いいねする" })).toBeInTheDocument();

@@ -6,6 +6,7 @@ import { Sheet } from "@/components/ui/Sheet";
 import { ErrorNotice } from "@/components/notices/ErrorNotice";
 import { UnauthorizedError } from "@/lib/api/fetch-with-auth-redirect";
 import type { ItineraryApi } from "./itinerary-api";
+import { formatDate } from "@/lib/format/date-time";
 
 /**
  * itinerary-sharing Task2: 「招待」ダイアログ（リンク発行・コピー・無効化。オーナーのみ）
@@ -132,7 +133,7 @@ export function InviteDialog({ open, itineraryId, onClose, api }: { open: boolea
               {pending.map((item) => (
                 <li key={item.id} className="flex items-center justify-between gap-2 rounded-[8px] border border-line px-3 py-2 text-[12px] text-ink">
                   <span>
-                    {item.inviteeName} <span className="text-muted">（{new Date(item.expiresAt).toLocaleDateString("ja-JP")} まで）</span>
+                    {item.inviteeName} <span className="text-muted">（{formatDate(item.expiresAt)} まで）</span>
                   </span>
                   <button type="button" onClick={() => void revoke(item.id)} disabled={busy} className="text-[12px] font-medium text-saved underline underline-offset-2 disabled:opacity-45">
                     {busyKey === `revoke:${item.id}` ? "取り消し中…" : "取り消し"}
@@ -169,7 +170,7 @@ export function InviteDialog({ open, itineraryId, onClose, api }: { open: boolea
             <ul className="flex flex-col gap-1.5">
               {invitations.map((item) => (
                 <li key={item.id} className="flex items-center justify-between gap-2 rounded-[8px] border border-line px-3 py-2 text-[12px] text-ink">
-                  <span>{new Date(item.expiresAt).toLocaleDateString("ja-JP")} まで有効</span>
+                  <span>{formatDate(item.expiresAt)} まで有効</span>
                   <button type="button" onClick={() => void revoke(item.id)} disabled={busy} className="text-[12px] font-medium text-saved underline underline-offset-2 disabled:opacity-45">
                     {busyKey === `revoke:${item.id}` ? "無効化しています…" : "無効化"}
                   </button>

@@ -10,6 +10,7 @@ import { ERROR_MESSAGES } from "@/components/notices/error-messages";
 import { fetchWithAuthRedirect, UnauthorizedError } from "@/lib/api/fetch-with-auth-redirect";
 import type { MyPost, MyPostsPage } from "@/lib/users/my-page";
 import { useInfiniteScroll } from "@/components/posts/use-infinite-scroll";
+import { formatDateTime } from "@/lib/format/date-time";
 
 export type FetchMyPosts = (tripId: string | null, offset: number) => Promise<MyPostsPage>;
 
@@ -128,7 +129,7 @@ export function MyPostsList({
                     )}
                   </span>
                   <span className="text-[11px] text-muted">
-                    {post.category} ・ {new Date(post.createdAt).toLocaleDateString("ja-JP")} ・{" "}
+                    {post.category} ・ {formatDateTime(post.createdAt)} ・{" "}
           <span className="inline-flex items-center gap-1 align-[-2px]">
             <HeartIcon size={13} />
             {post.likeCount}

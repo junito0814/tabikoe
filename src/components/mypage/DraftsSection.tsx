@@ -8,6 +8,7 @@ import { fetchWithAuthRedirect, UnauthorizedError } from "@/lib/api/fetch-with-a
 import { composeHref } from "@/lib/posts/compose-href";
 import type { DraftListPage, DraftSummary } from "@/lib/posts/drafts";
 import { useConfirm } from "@/components/ui/ConfirmSheet";
+import { formatDateTime } from "@/lib/format/date-time";
 
 /**
  * my-page-v3 Task1: マイページの「下書き」の段
@@ -83,7 +84,7 @@ export function DraftsSection({
                 </span>
                 {draft.spotName}
               </span>
-              <span className="block text-[11px] text-muted">{new Date(draft.updatedAt).toLocaleString("ja-JP", { month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit" })}</span>
+              <span className="block text-[11px] text-muted">{formatDateTime(draft.updatedAt)}</span>
             </span>
             <Link href={composeHref({ kind: "draft", draftId: draft.id })} className="shrink-0 rounded-full bg-accent px-3 py-1.5 text-[11px] font-bold text-white">
               続きを書く
