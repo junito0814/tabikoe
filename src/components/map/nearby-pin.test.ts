@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { nearbyPinFrom } from "./MapScreen";
 import type { MapPinData } from "@/lib/map/get-map-pins";
-import type { NearbyPost } from "@/lib/posts/nearby-posts";
+import type { NearbySpot } from "@/lib/posts/nearby-spots";
 
 /**
  * 出典: Issue #781「Bug 2: 地図の吹き出しに違う件数が出る（「1件」）」
@@ -9,7 +9,7 @@ import type { NearbyPost } from "@/lib/posts/nearby-posts";
  * 【初心者向け】カードから吹き出しを出すとき、その範囲のピンをまだ取れていないことがある。
  * 以前はそこで仮の `postCount: 1` を入れていたので、投稿が 3 件のスポットでも「1件」と嘘が出ていた。
  */
-const post = { spotId: "s1", spotName: "浅草寺", lat: 35.71, lng: 139.79 } as unknown as NearbyPost;
+const post = { spotId: "s1", spotName: "浅草寺", lat: 35.71, lng: 139.79 } as unknown as NearbySpot;
 
 const pin = (overrides: Partial<MapPinData> = {}): MapPinData => ({
   id: "s1",

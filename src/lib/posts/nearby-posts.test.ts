@@ -11,6 +11,7 @@ const row = (id: string, lat: number, lng: number) => ({
   id,
   spot_id: `s-${id}`,
   comment: "とても良かったです",
+  rating: 4,
   spots: { id: `s-${id}`, name: `スポット${id}`, lat, lng },
   post_photos: [{ storage_url: `${id}.jpg`, display_order: 0 }],
 });
@@ -74,7 +75,7 @@ describe("travel-time Task3（2026-09-26）: バスの半径を 8km に広げる
     const { radiusForTravelMode, selectNearbyPosts } = await import("./nearby-posts");
     const center = { lat: 35.68, lng: 139.76 };
     // 緯度 0.06 度 ≒ 6.7km
-    const row = { id: "p", spot_id: "s", comment: null, spots: { id: "s", name: "遠いバス停の先", lat: 35.74, lng: 139.76 }, post_photos: [] };
+    const row = { id: "p", spot_id: "s", comment: null, rating: null, spots: { id: "s", name: "遠いバス停の先", lat: 35.74, lng: 139.76 }, post_photos: [] };
     expect(selectNearbyPosts([row], center, radiusForTravelMode("bus"), 20, "bus")).toHaveLength(1);
     expect(selectNearbyPosts([row], center, radiusForTravelMode("walk"), 20, "walk")).toHaveLength(0);
     expect(selectNearbyPosts([row], center, radiusForTravelMode("bicycle"), 20, "bicycle")).toHaveLength(0);
@@ -98,7 +99,7 @@ describe("v3.2: 移動手段", () => {
     expect(radiusForTravelMode("train")).toBe(15000);
     expect(radiusForTravelMode("bus")).toBe(8000);
     const center = { lat: 35.68, lng: 139.76 };
-    const row = { id: "p", spot_id: "s", comment: null, spots: { id: "s", name: "遠い店", lat: 35.7, lng: 139.76 }, post_photos: [] };
+    const row = { id: "p", spot_id: "s", comment: null, rating: null, spots: { id: "s", name: "遠い店", lat: 35.7, lng: 139.76 }, post_photos: [] };
     // 約 2.2km: 徒歩では範囲外（1km）だが車（10km）では入り、分数は車の速度
     expect(selectNearbyPosts([row], center, 1000, 20, "walk")).toHaveLength(0);
     const byCar = selectNearbyPosts([row], center, 10000, 20, "car");
@@ -111,8 +112,8 @@ describe("v3.2: 移動手段", () => {
 
 describe("getNearbyPosts（2026-09-25: 車・電車・バスは Routes API の実測に差し替える）", () => {
   const rows = [
-    { id: "a", spot_id: "s1", comment: null, spots: { id: "s1", name: "近い店", lat: 35.685, lng: 139.76 }, post_photos: [] },
-    { id: "b", spot_id: "s2", comment: null, spots: { id: "s2", name: "遠い店", lat: 35.70, lng: 139.76 }, post_photos: [] },
+    { id: "a", spot_id: "s1", comment: null, rating: null, spots: { id: "s1", name: "近い店", lat: 35.685, lng: 139.76 }, post_photos: [] },
+    { id: "b", spot_id: "s2", comment: null, rating: null, spots: { id: "s2", name: "遠い店", lat: 35.70, lng: 139.76 }, post_photos: [] },
   ];
   const admin = {
     from: () => {

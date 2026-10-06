@@ -186,8 +186,8 @@ describe("MapScreen（SC-02 v3.0）", () => {
   // 全体の上限は 5 秒のままにする（延ばすと、本当に固まったテストの発見が遅れるため）。
   it("探すモード: 近くのスポットが出て、半径切替で再取得、カード切替でフォーカスピンが変わる", { timeout: 15000 }, async () => {
     const fetchNearby = vi.fn(async () => [
-      { id: "p1", spotId: "s1", spotName: "展望台", commentExcerpt: "夕日", thumbnailUrl: null, lat: 35.66, lng: 139.76, distanceMeters: 480, walkMinutes: 6, minutes: 6, mode: "walk" as const },
-      { id: "p2", spotId: "s2", spotName: "直売所", commentExcerpt: "トマト", thumbnailUrl: null, lat: 35.67, lng: 139.77, distanceMeters: 900, walkMinutes: 12, minutes: 12, mode: "walk" as const },
+      { id: "p1", spotId: "s1", spotName: "展望台", latestComment: "夕日", postCount: 1, averageRating: null, thumbnailUrl: null, lat: 35.66, lng: 139.76, distanceMeters: 480, walkMinutes: 6, minutes: 6, mode: "walk" as const },
+      { id: "p2", spotId: "s2", spotName: "直売所", latestComment: "トマト", postCount: 1, averageRating: null, thumbnailUrl: null, lat: 35.67, lng: 139.77, distanceMeters: 900, walkMinutes: 12, minutes: 12, mode: "walk" as const },
     ]);
     const open = resolveMapOpen({ mode: "explore", lat: "35.65", lng: "139.75" });
     render(<MapScreen open={open} fetchPins={async () => [pin("s1"), pin("s2")]} fetchNearby={fetchNearby} resolveCenter={resolveCenter} />);
@@ -253,8 +253,8 @@ describe("v3.1（mentoring-7 Task7）: 地図の状態の復元", () => {
 
   it("Task3（2026-09-25）: カードを選ぶと地図が動き、そのスポットの吹き出しが開く", async () => {
     const fetchNearby = vi.fn(async () => [
-      { id: "p1", spotId: "s1", spotName: "カフェ", commentExcerpt: null, thumbnailUrl: null, lat: 35.651, lng: 139.751, distanceMeters: 100, walkMinutes: 2, minutes: 2, mode: "walk" as const },
-      { id: "p2", spotId: "s9", spotName: "展望台", commentExcerpt: null, thumbnailUrl: null, lat: 35.652, lng: 139.752, distanceMeters: 300, walkMinutes: 5, minutes: 5, mode: "walk" as const },
+      { id: "p1", spotId: "s1", spotName: "カフェ", latestComment: null, postCount: 1, averageRating: null, thumbnailUrl: null, lat: 35.651, lng: 139.751, distanceMeters: 100, walkMinutes: 2, minutes: 2, mode: "walk" as const },
+      { id: "p2", spotId: "s9", spotName: "展望台", latestComment: null, postCount: 1, averageRating: null, thumbnailUrl: null, lat: 35.652, lng: 139.752, distanceMeters: 300, walkMinutes: 5, minutes: 5, mode: "walk" as const },
     ]);
     render(<MapScreen open={resolveMapOpen({ mode: "explore", lat: "35.65", lng: "139.75" })} fetchPins={async () => [pin("s2")]} fetchNearby={fetchNearby} resolveCenter={resolveCenter} />);
     await settle();
@@ -283,8 +283,8 @@ describe("v3.1（mentoring-7 Task7）: 地図の状態の復元", () => {
       })
     );
     const nearby = [
-      { id: "p1", spotId: "s1", spotName: "カフェ", commentExcerpt: null, thumbnailUrl: null, lat: 35.651, lng: 139.751, distanceMeters: 100, walkMinutes: 2, minutes: 2, mode: "walk" as const },
-      { id: "p2", spotId: "s9", spotName: "展望台", commentExcerpt: null, thumbnailUrl: null, lat: 35.652, lng: 139.752, distanceMeters: 300, walkMinutes: 5, minutes: 5, mode: "walk" as const },
+      { id: "p1", spotId: "s1", spotName: "カフェ", latestComment: null, postCount: 1, averageRating: null, thumbnailUrl: null, lat: 35.651, lng: 139.751, distanceMeters: 100, walkMinutes: 2, minutes: 2, mode: "walk" as const },
+      { id: "p2", spotId: "s9", spotName: "展望台", latestComment: null, postCount: 1, averageRating: null, thumbnailUrl: null, lat: 35.652, lng: 139.752, distanceMeters: 300, walkMinutes: 5, minutes: 5, mode: "walk" as const },
     ];
     const fetchNearby = vi.fn<(center: { lat: number; lng: number }, mode: string) => Promise<typeof nearby>>(async () => nearby);
     // 戻ってきたときの位置情報の取り直し（少し歩いた位置が返る）
@@ -298,7 +298,8 @@ describe("v3.1（mentoring-7 Task7）: 地図の状態の復元", () => {
     await waitFor(() => expect(fetchNearby).toHaveBeenLastCalledWith(relocated, "walk", EMPTY_SPOT_FILTERS));
     expect(fetchNearby.mock.calls.every((call) => call[0].lat !== 35.652)).toBe(true);
     // 選んでいたカードはそのまま
-    await waitFor(() => expect(document.querySelector("[data-map-card=\"p2\"]")).toHaveAttribute("aria-current", "true"));
+    // #769: カードはスポット単位になったので、鍵は spotId
+    await waitFor(() => expect(document.querySelector("[data-map-card=\"s9\"]")).toHaveAttribute("aria-current", "true"));
     window.sessionStorage.clear();
   });
   /**
@@ -401,7 +402,7 @@ describe("v3.1（mentoring-7 Task7）: 地図の状態の復元", () => {
  */
 describe("探すモードの絞り込み（explore-mode Task 4）", () => {
   const nearby = [
-    { id: "p1", spotId: "s1", spotName: "カフェ", commentExcerpt: null, thumbnailUrl: null, lat: 35.651, lng: 139.751, distanceMeters: 100, walkMinutes: 2, minutes: 2, mode: "walk" as const },
+    { id: "p1", spotId: "s1", spotName: "カフェ", latestComment: null, postCount: 1, averageRating: null, thumbnailUrl: null, lat: 35.651, lng: 139.751, distanceMeters: 100, walkMinutes: 2, minutes: 2, mode: "walk" as const },
   ];
 
   it("URL の条件でピンとカードの両方を取る", async () => {
