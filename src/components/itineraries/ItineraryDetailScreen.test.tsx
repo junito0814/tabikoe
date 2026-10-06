@@ -89,6 +89,15 @@ beforeEach(() => {
   vi.spyOn(window, "confirm").mockReturnValue(true);
 });
 
+/**
+ * #753（2026-10-06）: 行の操作（投稿を見る・投稿する・しおりから外す）は右端の「⋯」の中へ移した。
+ * そのため、中を見るテストは **まず「⋯」を開く**必要がある。
+ */
+const openRowMenu = (row: HTMLElement) => {
+  fireEvent.click(within(row).getByRole("button", { name: /のその他$/ }));
+  return row;
+};
+
 describe("ItineraryDetailScreen（SC-23）", () => {
   it("v3.1: タブは ALL（左端・初期選択）＋日数分。期間未設定なら ALL だけ。日付なしのスポットは ALL にだけ出る", () => {
     const withUndated = detail({ spots: [spot("a", { arrivalTime: "10:00" }), spot("u", { dayIndex: null })] });
@@ -112,7 +121,9 @@ describe("ItineraryDetailScreen（SC-23）", () => {
     const data = detail({ spots: [spot("a", { arrivalTime: "10:00" })], albumPostCount: 3 });
     const { unmount } = render(<ItineraryDetailScreen initial={data} viewerId="me" api={makeApi(data)} back={{ href: "/albums/trip-1", label: "アルバム" }} />);
     expect(screen.getByRole("link", { name: "アルバム" })).toHaveAttribute("href", "/albums/trip-1");
-    expect(screen.getByRole("link", { name: "投稿一覧" })).toHaveAttribute("href", "/spots/a?back=%2Fitineraries%2Fit-1");
+    // #753: 「投稿一覧」は「⋯」の中の「投稿を見る」になった（要件 4.5.15 の言葉の統一）
+    openRowMenu(document.querySelector("[data-itinerary-spot='a']") as HTMLElement);
+    expect(screen.getByRole("menuitem", { name: "投稿を見る" })).toHaveAttribute("href", "/spots/a?back=%2Fitineraries%2Fit-1");
     expect(screen.getByRole("link", { name: /アルバム「.*」を見る/ })).toHaveAttribute("href", "/albums/trip-1?back=%2Fitineraries%2Fit-1");
     unmount();
     render(<ItineraryDetailScreen initial={data} viewerId="me" api={makeApi(data)} />);
@@ -140,10 +151,13 @@ describe("ItineraryDetailScreen（SC-23）", () => {
     // b(1)・c(2) → c(0)・b(1)。変わった c だけ API を呼ぶ
     await waitFor(() => expect(api.updateSpot).toHaveBeenCalledWith("it-1", "c", { sortOrder: 0 }));
     expect(api.updateSpot).not.toHaveBeenCalledWith("it-1", "b", expect.anything());
-    expect(within(rowB).getByRole("link", { name: "投稿する" })).toHaveAttribute("href", "/posts/new?itinerary=it-1&spot=b&day=1");
+    // #753: 「投稿する」は「⋯」の中。投稿済みの行には出さず、代わりに段に「投稿済み ✓」の印
+    openRowMenu(rowB);
+    expect(within(rowB).getByRole("menuitem", { name: "投稿する" })).toHaveAttribute("href", "/posts/new?itinerary=it-1&spot=b&day=1");
     const rowC = document.querySelector("[data-itinerary-spot='c']") as HTMLElement;
     expect(within(rowC).getByText("投稿済み ✓")).toBeInTheDocument();
-    expect(within(rowC).queryByRole("link", { name: "投稿する" })).toBeNull();
+    openRowMenu(rowC);
+    expect(within(rowC).queryByRole("menuitem", { name: "投稿する" })).toBeNull();
   });
 
   it("チェックで取り消し線が付き、順序は変わらない。API に checked を送る", async () => {
@@ -261,12 +275,14 @@ describe("loading-feedback Task 3: 押した直後に画面が変わる", () => 
     api.removeSpot = vi.fn(() => new Promise<Response>((resolve) => { resolveRemove = resolve; }));
     render(<ItineraryDetailScreen initial={current} viewerId="me" api={api} />);
 
-    const row = document.querySelector("[data-spot-row='b']") ?? screen.getByText("スポットb").closest("li")!;
-    fireEvent.click(within(row as HTMLElement).getByRole("button", { name: /をしおりから削除$/ }));
+    const row = (document.querySelector("[data-spot-row='b']") ?? screen.getByText("スポットb").closest("li")!) as HTMLElement;
+    openRowMenu(row);
+    fireEvent.click(within(row).getByRole("menuitem", { name: "しおりから外す" }));
 
     // 押した直後に出る（API の結果を待たない）
     expect(await screen.findByRole("status")).toHaveTextContent("しおりから外しています…");
-    expect(within(row as HTMLElement).getByRole("button", { name: /をしおりから削除$/ })).toBeDisabled();
+    // #753: 外している間は、その行の「⋯」が押せなくなる
+    expect(within(row).getByRole("button", { name: /のその他$/ })).toBeDisabled();
 
     resolveRemove(Response.json({ ok: true }));
     await waitFor(() => expect(screen.queryByRole("status")).not.toBeInTheDocument());
@@ -279,8 +295,9 @@ describe("loading-feedback Task 3: 押した直後に画面が変わる", () => 
     api.get = vi.fn(() => new Promise<{ itinerary: ItineraryDetail }>((resolve) => { resolveGet = resolve; }));
     render(<ItineraryDetailScreen initial={current} viewerId="me" api={api} />);
 
-    const row = screen.getByText("スポットb").closest("li")!;
-    fireEvent.click(within(row).getByRole("button", { name: /をしおりから削除$/ }));
+    const row = screen.getByText("スポットb").closest("li")! as HTMLElement;
+    openRowMenu(row);
+    fireEvent.click(within(row).getByRole("menuitem", { name: "しおりから外す" }));
 
     // 1 往復目（removeSpot）は終わったが、再取得はまだ
     await waitFor(() => expect(api.get).toHaveBeenCalled());
@@ -296,7 +313,9 @@ describe("loading-feedback Task 3: 押した直後に画面が変わる", () => 
     api.removeSpot = vi.fn(async () => Response.json({ error: "x" }, { status: 500 }));
     render(<ItineraryDetailScreen initial={current} viewerId="me" api={api} />);
 
-    fireEvent.click(within(screen.getByText("スポットb").closest("li")!).getByRole("button", { name: /をしおりから削除$/ }));
+    const rowB = screen.getByText("スポットb").closest("li")! as HTMLElement;
+    openRowMenu(rowB);
+    fireEvent.click(within(rowB).getByRole("menuitem", { name: "しおりから外す" }));
     await waitFor(() => expect(screen.getByText("外せませんでした")).toBeInTheDocument());
     expect(screen.queryByRole("status")).not.toBeInTheDocument();
   });
@@ -323,12 +342,74 @@ describe("印を減らす（#694）", () => {
     expect(document.body.textContent).not.toContain("📅");
   });
 
-  it("「投稿する」はチェックの有無にかかわらず塗りつぶし", () => {
-    const withChecked = detail({ spots: [spot("a", { checkedAt: "2026-10-01T00:00:00.000Z" }), spot("b", { sortOrder: 1 }), spot("c", { sortOrder: 2 })] });
+  it("#753: チェックの有無で「⋯」の中身は変わらない（チェックは「行った」の印で、投稿とは関係が無い）", () => {
+    const withChecked = detail({ spots: [spot("a", { checkedAt: "2026-10-01T00:00:00.000Z" }), spot("b", { sortOrder: 1 })] });
     render(<ItineraryDetailScreen initial={withChecked} viewerId="me" api={makeApi(withChecked)} />);
-    for (const link of screen.getAllByRole("link", { name: "投稿する" })) {
-      expect(link.className).toContain("bg-accent");
-      expect(link.className).not.toContain("border-accent");
+    const labels = (id: string) => {
+      const row = document.querySelector(`[data-itinerary-spot='${id}']`) as HTMLElement;
+      openRowMenu(row);
+      return within(row).getAllByRole("menuitem").map((item) => item.textContent?.trim());
+    };
+    expect(labels("a")).toEqual(["投稿を見る", "投稿する", "しおりから外す"]);
+    expect(labels("b")).toEqual(["投稿を見る", "投稿する", "しおりから外す"]);
+  });
+});
+
+/**
+ * #753・#793（2026-10-06）: 行の形（案 F）
+ * 出典: 要件定義書 3.11、ワイヤーフレーム決定事項 83 の前の相談
+ */
+describe("行の形（#753・#793）", () => {
+  const openMenu = (row: HTMLElement) => fireEvent.click(within(row).getByRole("button", { name: /のその他$/ }));
+  const row = (id: string) => document.querySelector(`[data-itinerary-spot='${id}']`) as HTMLElement;
+
+  it("段に出るのは Day だけ（投稿一覧・投稿する・ゴミ箱は段から消える）", () => {
+    render(<ItineraryDetailScreen initial={detail()} viewerId="me" api={makeApi(detail())} />);
+    const r = row("b");
+    expect(within(r).queryByRole("link", { name: "投稿一覧" })).toBeNull();
+    expect(within(r).queryByRole("link", { name: "投稿する" })).toBeNull();
+    expect(within(r).queryByRole("button", { name: /をしおりから削除$/ })).toBeNull();
+    expect(within(r).getByRole("button", { name: /^Day を(移動|決める)/ })).toBeInTheDocument();
+  });
+
+  it("赤いゴミ箱が行に出ていない（取り返しのつかない操作がいちばん目立つ形をやめた）", () => {
+    render(<ItineraryDetailScreen initial={detail()} viewerId="me" api={makeApi(detail())} />);
+    expect(document.querySelector("[data-trash-button]")).toBeNull();
+  });
+
+  it("「⋯」の中は 投稿を見る／投稿する／しおりから外す", () => {
+    render(<ItineraryDetailScreen initial={detail()} viewerId="me" api={makeApi(detail())} />);
+    const r = row("b");
+    openMenu(r);
+    expect(within(r).getAllByRole("menuitem").map((item) => item.textContent?.trim())).toEqual(["投稿を見る", "投稿する", "しおりから外す"]);
+  });
+
+  it("取っ手「≡」は左の列（時刻とチェックの下）にあり、時刻のある行には出ない", () => {
+    render(<ItineraryDetailScreen initial={detail()} viewerId="me" api={makeApi(detail())} />);
+    expect(within(row("a")).queryByRole("button", { name: /並べ替え/ })).toBeNull();
+    expect(within(row("b")).getByRole("button", { name: /並べ替え/ })).toBeInTheDocument();
+  });
+
+  it("★ が無い行でも場所を空けるので、「⋯」の位置が行ごとにずれない", () => {
+    const data = detail({ spots: [spot("a", { ratingAverage: 4.5 }), spot("b", { sortOrder: 1, ratingAverage: null })] });
+    render(<ItineraryDetailScreen initial={data} viewerId="me" api={makeApi(data)} />);
+    for (const id of ["a", "b"]) {
+      const star = row(id).querySelector("[class*='text-star']")?.parentElement;
+      expect(star, `${id} の★の場所`).not.toBeNull();
     }
+    expect(row("b").querySelector("[class*='invisible']")).not.toBeNull();
+  });
+
+  it("#793: 「日付なし」の行には番号を付けない（順番がまだ無いため）", () => {
+    const data = detail({ spots: [spot("a", { dayIndex: 1 }), spot("z", { dayIndex: null, sortOrder: 9 })] });
+    render(<ItineraryDetailScreen initial={data} viewerId="me" api={makeApi(data)} />);
+    expect(within(row("a")).getByText("1")).toBeInTheDocument();
+    expect(within(row("z")).queryByText("1")).toBeNull();
+  });
+
+  it("#793: 「日付なし」の行のボタンは「Day を決める」（その塊にいる時点で日付なしだと分かるため）", () => {
+    const data = detail({ spots: [spot("z", { dayIndex: null })] });
+    render(<ItineraryDetailScreen initial={data} viewerId="me" api={makeApi(data)} />);
+    expect(within(row("z")).getByRole("button", { name: "Day を決める" })).toHaveTextContent("Day を決める");
   });
 });

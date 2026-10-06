@@ -14,6 +14,18 @@ export function dayLabel(day: DayKey): string {
   return day === null ? "日付なし" : `Day ${day}`;
 }
 
+/**
+ * #753（2026-10-06）: ボタンの顔に出す文字。
+ *
+ * 【初心者向け】「日付なし」の塊にいる行で「日付なし ▾」と出すと、**その塊にいる時点で
+ * 日付なしだと分かる**ぶんくどい。やること（Day を決める）を書く。
+ * `dayLabel` 自体は変えない ── あれは**塊の見出し・移動後のトースト・保存先シートの選択肢**でも
+ * 使っており、そこで「Day を決める」になると日本語として壊れるため（6 か所中ここだけ変える）。
+ */
+export function dayButtonLabel(day: DayKey): string {
+  return day === null ? "Day を決める" : dayLabel(day);
+}
+
 export function DayMoveDropdown({ value, dayCount, onChange, disabled = false }: { value: DayKey; dayCount: number; onChange: (day: DayKey) => void; disabled?: boolean }) {
   const [isOpen, setIsOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
@@ -44,10 +56,10 @@ export function DayMoveDropdown({ value, dayCount, onChange, disabled = false }:
         aria-haspopup="listbox"
         aria-expanded={isOpen}
         aria-controls={listId}
-        aria-label={`Day を移動: ${dayLabel(value)}`}
+        aria-label={value === null ? "Day を決める" : `Day を移動: ${dayLabel(value)}`}
         className="inline-flex h-7 items-center gap-1 rounded-full border border-line bg-surface px-2.5 text-[11px] font-semibold text-ink disabled:opacity-45"
       >
-        {dayLabel(value)}
+        {dayButtonLabel(value)}
         <svg width="10" height="10" viewBox="0 0 24 24" fill="none" aria-hidden>
           <path d="M6 9l6 6 6-6" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
         </svg>

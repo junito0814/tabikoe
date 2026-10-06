@@ -40,14 +40,24 @@ describe("TrashButton", () => {
 describe("削除を出す画面は、この部品を使う", () => {
   const read = (p: string) => readFileSync(p, "utf8");
 
-  it("コメント・しおりの行・下書きの 3 つ", () => {
+  it("コメントと下書きの 2 つ", () => {
     for (const path of [
       "src/components/comments/CommentSection.tsx",
-      "src/components/itineraries/ItinerarySpotRow.tsx",
       "src/components/mypage/DraftsSection.tsx",
     ]) {
       expect(read(path), `${path} が TrashButton を使っていない`).toContain("<TrashButton");
     }
+  });
+
+  /**
+   * #753（2026-10-06）: しおりの行のゴミ箱は**「⋯」の中の「しおりから外す」**に移した。
+   * 1 日 8 件なら赤いゴミ箱が 8 つ並ぶ形で、取り返しのつかない操作がいちばん目立っていた。
+   * アルバム（#742）と同じ考え方。
+   */
+  it("しおりの行の削除は「⋯」のメニューの中（ゴミ箱の印ではない）", () => {
+    const source = read("src/components/itineraries/ItinerarySpotRow.tsx");
+    expect(source, "ゴミ箱の印は使わない").not.toContain("<TrashButton");
+    expect(source, "「⋯」の中に「しおりから外す」がある").toContain("しおりから外す");
   });
 
   /**
