@@ -107,11 +107,22 @@ export function TripTitleInput({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  /*
+   * #798（2026-10-06）: `layout="inline"`（左 84px にラベル）をやめ、上にラベルへ揃えた。
+   *
+   * 【初心者向け】投稿を書く画面で、上 3 行だけ左にラベル・下 4 行は欄の上にラベル、と
+   * **同じ画面に 2 つの型が混ざって**いました。左ラベルは幅が 84px しかないので
+   * 「費用（任意・1人あたり）」のような言葉が 2 行に折れます。
+   * 上にラベルなら欄の幅が 84px → 358px になり、折れません。
+   *
+   * #768（2026-10-06）: 必須の印 `*` を外し「アルバム（任意）」にした。
+   * `*` が付いているのに案内は「空なら『日常』に入ります」で、**矛盾**していたため。
+   */
   const isInline = layout === "inline";
   return (
-    <div ref={containerRef} className={`relative w-full ${isInline ? "flex flex-wrap items-center gap-x-2 gap-y-1" : ""}`}>
-      <label htmlFor={inputId} className={isInline ? "w-[84px] shrink-0 text-[0.75rem] font-medium text-muted" : "mb-1.5 block text-[0.75rem] font-medium text-muted"}>
-        アルバム{isInline ? " *" : ""}
+    <div ref={containerRef} className="relative w-full">
+      <label htmlFor={inputId} className="mb-1.5 block text-[0.75rem] font-medium text-muted">
+        アルバム{isInline ? "（任意）" : ""}
       </label>
       <input
         id={inputId}
@@ -126,7 +137,7 @@ export function TripTitleInput({
         aria-expanded={isOpen && visibleSuggestions.length > 0}
         aria-controls={`${inputId}-suggestions`}
         placeholder={isInline ? "空なら「日常」に入ります" : undefined}
-        className={`h-11 rounded-[10px] border border-line bg-surface px-3 text-[0.875rem] text-ink focus:outline-none focus:ring-1 focus:ring-accent ${isInline ? "min-w-0 flex-1" : "w-full"}`}
+        className="h-11 w-full rounded-[10px] border border-line bg-surface px-3 text-[0.875rem] text-ink focus:outline-none focus:ring-1 focus:ring-accent"
       />
 
       {/*

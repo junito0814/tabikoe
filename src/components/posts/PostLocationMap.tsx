@@ -161,12 +161,20 @@ export function PostLocationMap({
         </svg>
       </button>
 
+      {/*
+        * #782（2026-10-06）: 吹き出しを 1 つにまとめた。
+        *
+        * 【初心者向け】以前は 2 つ出していて、現在地が取れないときは
+        * 「現在地が取れないため東京駅周辺を…」と「現地でなければ「変更」から場所を探せます」が
+        * **重なって**読めませんでした。言うことは同じなので 1 文にします。
+        */}
       {showHint && !lockedPosition && (
-        <div className="pointer-events-none absolute left-1/2 top-3 flex -translate-x-1/2 flex-col items-center gap-1" data-map-hint>
-          <span className="rounded-full bg-ink/85 px-3 py-1 text-[0.6875rem] text-surface">
-            {isFallback ? "現在地が取れないため東京駅周辺を表示しています。地図を動かして場所を合わせてください" : "地図を動かしてピンを合わせる"}
+        <div className="pointer-events-none absolute left-1/2 top-3 flex max-w-[86%] -translate-x-1/2 flex-col items-center" data-map-hint>
+          <span className="rounded-[14px] bg-ink/85 px-3 py-1.5 text-center text-[0.6875rem] leading-[1.6] text-surface">
+            {isFallback
+              ? "現在地が取れないので東京駅周辺を表示しています。地図を動かすか、「変更」で場所を探せます"
+              : "地図を動かしてピンを合わせる。現地でなければ「変更」から探せます"}
           </span>
-          <span className="rounded-full bg-surface/90 px-3 py-1 text-[0.6875rem] text-ink">現地でなければ「変更」から場所を探せます</span>
         </div>
       )}
     </div>

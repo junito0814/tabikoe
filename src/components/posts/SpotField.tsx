@@ -246,9 +246,10 @@ export function SpotField({
 
   if (isSearching) {
     return (
-      <div className="flex w-full items-start gap-2">
-        <span className="w-[84px] shrink-0 pt-3 text-[0.75rem] font-medium text-muted">スポット名 *</span>
-        <div className="min-w-0 flex-1">
+      /* #798: ラベルは欄の上（画面の中で型を揃える） */
+      <div className="flex w-full flex-col gap-1.5">
+        <span className="text-[0.75rem] font-medium text-muted">スポット名 *</span>
+        <div className="min-w-0">
           <SpotAutocompleteInput
             selectedSpot={null}
             onSelect={(spot) => {
@@ -258,19 +259,28 @@ export function SpotField({
             /* #700: Google 由来で未登録の候補は、登録せずに確定の一手へ回す */
             onPickUnregistered={startConfirm}
             searchSpots={searchSpots}
-            onCancel={() => setIsSearching(false)}
             autoFocus
           />
-          <button
-            type="button"
-            onClick={() => {
-              onUnlock(null);
-              setIsSearching(false);
-            }}
-            className="mt-2 text-[0.75rem] font-medium text-accent underline underline-offset-2"
-          >
-            新しい場所（ピンの位置）にする
-          </button>
+          {/*
+            * #786（2026-10-06）: 「検索をやめる」と「新しい場所（ピンの位置）にする」が
+            * 2 行に分かれて並んでいた。**同じ行**にし、「検索をやめる」は「やめる」に縮めた
+            * （ここで何をやめるのかは、上の入力欄を見れば分かる）。
+            */}
+          <div className="mt-2 flex items-center justify-between gap-3">
+            <button
+              type="button"
+              onClick={() => {
+                onUnlock(null);
+                setIsSearching(false);
+              }}
+              className="tap-target text-[0.75rem] font-medium text-accent underline underline-offset-2"
+            >
+              新しい場所（ピンの位置）にする
+            </button>
+            <button type="button" onClick={() => setIsSearching(false)} className="tap-target shrink-0 text-[0.75rem] font-medium text-muted underline underline-offset-2">
+              やめる
+            </button>
+          </div>
         </div>
       </div>
     );
@@ -283,8 +293,9 @@ export function SpotField({
 
   return (
     <div className="flex w-full flex-col gap-1.5">
-      <div className="flex items-center gap-2">
-        <label htmlFor="spot-field-name" className="w-[84px] shrink-0 text-[0.75rem] font-medium text-muted">
+      {/* #798: ラベルは欄の上 */}
+      <div className="flex flex-col gap-1.5">
+        <label htmlFor="spot-field-name" className="text-[0.75rem] font-medium text-muted">
           スポット名 *
         </label>
         <div
@@ -316,8 +327,8 @@ export function SpotField({
         </button>
       )}
       {isNewPlace && (
-        <div className="flex items-center gap-2">
-          <span className="w-[84px] shrink-0 text-[0.6875rem] text-muted">場所の名前</span>
+        <div className="flex flex-col gap-1">
+          <span className="text-[0.6875rem] text-muted">場所の名前</span>
           <input
             value={newPlaceName}
             onChange={(event) => onNewPlaceNameChange(event.target.value)}

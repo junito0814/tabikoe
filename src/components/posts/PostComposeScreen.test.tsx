@@ -40,7 +40,7 @@ function makeApi(overrides: Partial<ComposeApi> = {}): ComposeApi {
 const currentLocation = buildComposeInitialState({ lat: "35.6", lng: "139.7", from: "current" });
 
 async function fillRequired() {
-  fireEvent.change(screen.getByLabelText("アルバム *"), { target: { value: "大阪旅行" } });
+  fireEvent.change(screen.getByLabelText("アルバム（任意）"), { target: { value: "大阪旅行" } });
   fireEvent.change(screen.getByLabelText("カテゴリ *"), { target: { value: "グルメ" } });
   fireEvent.change(screen.getByLabelText("滞在時間 *"), { target: { value: "1時間以内" } });
   fireEvent.click(screen.getByRole("radio", { name: "4" }));
@@ -138,5 +138,45 @@ describe("loading-feedback Task 3: 押した直後に文言が変わる", () => 
 
     resolveCreate(Response.json({ postId: "p1" }, { status: 201 }));
     await waitFor(() => expect(api.create).toHaveBeenCalled());
+  });
+});
+
+/**
+ * 本5-1（2026-10-06）: 投稿を書く画面の形
+ * - #768: 「アルバム *」が必須の印なのに必須ではなかった
+ * - #798: 上 3 行だけ左ラベルで、同じ画面に 2 つの型が混ざっていた
+ * - #786: 「スポット名」の中にもう 1 つ「スポット」の小見出しが出ていた
+ */
+describe("投稿を書く画面の形（#768・#798・#786）", () => {
+  it("#768: アルバムは「（任意）」。必須の印は付けない（空なら「日常」に入るため）", async () => {
+    render(<PostComposeScreen initial={currentLocation} api={makeApi()} />);
+    expect(screen.getByLabelText("アルバム（任意）")).toBeInTheDocument();
+    expect(screen.queryByLabelText("アルバム *")).toBeNull();
+  });
+
+  it("#798: ラベルは全部「欄の上」。左に 84px のラベルを置かない", async () => {
+    const { container } = render(<PostComposeScreen initial={currentLocation} api={makeApi()} />);
+    const narrowLabels = Array.from(container.querySelectorAll("label, span")).filter((element) => element.className.includes("w-[84px]"));
+    expect(narrowLabels.map((element) => element.textContent)).toEqual([]);
+  });
+
+  it("#786: 「変更」を押しても「スポット」の小見出しは増えない（読み上げ用のラベルは残る）", async () => {
+    render(<PostComposeScreen initial={currentLocation} api={makeApi()} />);
+    fireEvent.click(screen.getByRole("button", { name: "変更" }));
+    // 見える小見出しは外側の「スポット名 *」だけ
+    const visible = Array.from(document.querySelectorAll("label, span")).filter(
+      (element) => !element.className.includes("sr-only") && element.textContent?.trim() === "スポット"
+    );
+    expect(visible).toEqual([]);
+    expect(screen.getByLabelText("スポット名で探す")).toBeInTheDocument();
+  });
+
+  it("#786: 「新しい場所（ピンの位置）にする」と「やめる」が同じ行", async () => {
+    render(<PostComposeScreen initial={currentLocation} api={makeApi()} />);
+    fireEvent.click(screen.getByRole("button", { name: "変更" }));
+    const newPlace = screen.getByRole("button", { name: "新しい場所（ピンの位置）にする" });
+    const cancel = screen.getByRole("button", { name: "やめる" });
+    expect(screen.queryByRole("button", { name: "検索をやめる" })).toBeNull();
+    expect(newPlace.parentElement).toBe(cancel.parentElement);
   });
 });

@@ -61,7 +61,6 @@ export function SpotAutocompleteInput({
   selectedSpot,
   onSelect,
   searchSpots = searchSpotsFromApi,
-  onCancel,
   onPickUnregistered,
   autoFocus = false,
 }: {
@@ -76,7 +75,6 @@ export function SpotAutocompleteInput({
   searchSpots?: (query: string) => Promise<SearchResult>;
   /** v3.0（spot-selection-v3 Task4）: SC-03 では手動登録モーダルを使わない（地図のピンが手動登録を兼ねる） */
   /** 検索をやめて元の表示に戻す（SC-03 の「変更」の取消） */
-  onCancel?: () => void;
   autoFocus?: boolean;
 }) {
   const inputId = useId();
@@ -245,8 +243,15 @@ export function SpotAutocompleteInput({
 
   return (
     <div className="w-full">
-      <label htmlFor={inputId} className="mb-1.5 block text-[0.75rem] font-medium text-muted">
-        スポット
+      {/*
+        * #786（2026-10-06）: ここに出していた「スポット」の小見出しを消した。
+        *
+        * 【初心者向け】この部品は投稿を書く画面の「スポット名 *」の**中**に入ります。
+        * すぐ外に同じ意味の見出しがあるのに、中でもう一度「スポット」と書いていました。
+        * 見出しは消しても、読み上げには `aria-label` が残るので意味は失いません。
+        */}
+      <label htmlFor={inputId} className="sr-only">
+        スポット名で探す
       </label>
       <input
         id={inputId}
@@ -322,11 +327,6 @@ export function SpotAutocompleteInput({
         <p className="mt-2 text-[0.75rem] leading-[1.6] text-muted">
           候補が見つかりません。地図でピンを合わせて「新しい場所」として投稿できます
         </p>
-      )}
-      {onCancel && (
-        <button type="button" onClick={onCancel} className="mt-2 text-[0.75rem] font-medium text-muted underline underline-offset-2">
-          検索をやめる
-        </button>
       )}
 
     </div>
