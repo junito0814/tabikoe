@@ -69,6 +69,7 @@ function SpotBody({ pin, backHref }: { pin: MapPinData; backHref: string | null 
             <span aria-hidden>・</span>
           </>
         )}
+        {/* #781: 分からないもの（null）は出さない。仮の値を出すと嘘になる */}
         {pin.ratingAverage !== null && (
           <span>
             <span className="text-star" aria-hidden>
@@ -77,8 +78,8 @@ function SpotBody({ pin, backHref }: { pin: MapPinData; backHref: string | null 
             {pin.ratingAverage}
           </span>
         )}
-        {pin.ratingAverage !== null && <span aria-hidden>・</span>}
-        <span>{pin.postCount}件</span>
+        {pin.ratingAverage !== null && pin.postCount !== null && <span aria-hidden>・</span>}
+        {pin.postCount !== null && <span>{pin.postCount}件</span>}
         {statusLabel && (
           <>
             <span aria-hidden>・</span>

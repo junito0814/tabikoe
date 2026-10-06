@@ -2,7 +2,11 @@ import { describe, expect, it, vi } from "vitest";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 const replace = vi.fn();
 vi.mock("next/navigation", () => ({ useRouter: () => ({ replace, push: vi.fn(), refresh: vi.fn() }) }));
-vi.mock("@/components/map/MapScreen", () => ({ MapScreen: ({ open }: { open: { savedOnly?: boolean } }) => <div data-testid="map-stub" data-saved-only={open.savedOnly ? "true" : "false"} /> }));
+vi.mock("@/components/map/MapScreen", () => ({
+  MapScreen: ({ open, hideBack }: { open: { savedOnly?: boolean }; hideBack?: boolean }) => (
+    <div data-testid="map-stub" data-saved-only={open.savedOnly ? "true" : "false"} data-hide-back={hideBack ? "true" : "false"} />
+  ),
+}));
 
 import { WishlistScreen } from "./WishlistScreen";
 import { SPOT_PLACEHOLDER_IMAGE_URL, type WishlistItem } from "@/lib/wishlist/constants";
@@ -169,5 +173,23 @@ describe("見出しの位置（#746）", () => {
     render(<WishlistScreen initialItems={items} submitRemove={vi.fn()} />);
     const row = screen.getByRole("heading", { name: "行きたい" }).parentElement!;
     expect(row.className).toContain("grid-cols-[1fr_auto_1fr]");
+  });
+});
+
+/**
+ * #788（2026-10-06）: 地図タブに戻るが 2 つ出る
+ * 出典: Issue #788「Bug 7: 行きたいの「地図」タブに戻るボタンが 2 つ出る」
+ */
+describe("地図タブの戻るは 1 つ（#788）", () => {
+  it("埋め込んだ地図には「戻るを出さない」を渡す（見出しの戻るだけ残す）", () => {
+    render(<WishlistScreen initialItems={items} submitRemove={vi.fn()} />);
+    fireEvent.click(screen.getByRole("radio", { name: "地図" }));
+    expect(screen.getByTestId("map-stub")).toHaveAttribute("data-hide-back", "true");
+  });
+
+  it("見出しの戻るは 1 つだけ残る", () => {
+    render(<WishlistScreen initialItems={items} submitRemove={vi.fn()} />);
+    fireEvent.click(screen.getByRole("radio", { name: "地図" }));
+    expect(screen.getAllByRole("link", { name: "マイページ" })).toHaveLength(1);
   });
 });
