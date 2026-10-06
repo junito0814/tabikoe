@@ -28,12 +28,12 @@ export function ErrorNotice({ message, onRetry, retryable, className }: ErrorNot
         <line x1="12" y1="8" x2="12" y2="13" stroke="var(--accent)" strokeWidth="1.8" strokeLinecap="round" />
         <circle cx="12" cy="16.5" r="1" fill="var(--accent)" />
       </svg>
-      <span className="flex-1 text-[13px] leading-[1.5] text-accent">{message}</span>
+      <span className="flex-1 text-[0.8125rem] leading-[1.5] text-accent">{message}</span>
       {showRetryButton && (
         <button
           type="button"
           onClick={handleRetry}
-          className="shrink-0 text-[12px] font-semibold text-accent underline underline-offset-2"
+          className="shrink-0 text-[0.75rem] font-semibold text-accent underline underline-offset-2"
         >
           再読み込み
         </button>

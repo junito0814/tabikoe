@@ -175,14 +175,14 @@ export function CommentSection({
   return (
     <section aria-labelledby="comments-heading" className="flex flex-col gap-3">
       {confirmSheet}
-      <h2 id="comments-heading" className="text-[14px] font-bold text-ink">
-        コメント <span className="text-[12px] font-medium text-muted">{totalCount}件</span>
+      <h2 id="comments-heading" className="text-[0.875rem] font-bold text-ink">
+        コメント <span className="text-[0.75rem] font-medium text-muted">{totalCount}件</span>
       </h2>
 
       {canComment ? (
         <form onSubmit={handleSubmit} className="flex flex-col gap-2">
           {replyTo && (
-            <div className="flex items-center gap-2 text-[12px]" data-reply-to={replyTo.id}>
+            <div className="flex items-center gap-2 text-[0.75rem]" data-reply-to={replyTo.id}>
               <span className="inline-flex items-center gap-1 rounded-full bg-tint px-2 py-0.5 font-semibold text-accent">
                 @{replyTo.name}
                 <button type="button" onClick={() => setReplyTo(null)} aria-label="返信をやめる" className="ml-0.5 text-muted">
@@ -198,11 +198,11 @@ export function CommentSection({
             rows={3}
             placeholder={replyTo ? "返信を書く" : "コメントを書く"}
             aria-label="コメント本文"
-            className="w-full rounded-[10px] border border-line bg-surface px-3 py-2 text-[14px] text-ink focus:outline-none focus:ring-1 focus:ring-accent"
+            className="w-full rounded-[10px] border border-line bg-surface px-3 py-2 text-[0.875rem] text-ink focus:outline-none focus:ring-1 focus:ring-accent"
           />
           <div className="flex items-center justify-between">
             <span
-              className={`text-[11px] ${remaining < 0 ? "text-accent" : "text-muted"}`}
+              className={`text-[0.6875rem] ${remaining < 0 ? "text-accent" : "text-muted"}`}
               aria-live="polite"
             >
               残り{remaining.toLocaleString("ja-JP")}文字（{MAX_COMMENT_LENGTH.toLocaleString("ja-JP")}文字まで）
@@ -210,20 +210,20 @@ export function CommentSection({
             <button
               type="submit"
               disabled={!canSubmit}
-              className="h-9 rounded-[8px] bg-accent px-4 text-[12px] font-semibold text-white disabled:cursor-not-allowed disabled:opacity-45"
+              className="h-9 rounded-[8px] bg-accent px-4 text-[0.75rem] font-semibold text-white disabled:cursor-not-allowed disabled:opacity-45"
             >
               {isSubmitting ? "投稿中…" : replyTo ? "返信する" : "コメントする"}
             </button>
           </div>
         </form>
       ) : (
-        <p className="text-[12px] text-muted">非公開の投稿にはコメントできません</p>
+        <p className="text-[0.75rem] text-muted">非公開の投稿にはコメントできません</p>
       )}
 
       {errorMessage && <ErrorNotice message={errorMessage} />}
 
       {comments.length === 0 ? (
-        <p className="py-6 text-center text-[12px] text-muted">まだコメントはありません</p>
+        <p className="py-6 text-center text-[0.75rem] text-muted">まだコメントはありません</p>
       ) : (
         <ul className="flex flex-col gap-2">
           {comments.map((comment) => {
@@ -259,7 +259,7 @@ export function CommentSection({
                         <button
                           type="button"
                           onClick={() => setExpandedRoots((current) => new Set(current).add(comment.id))}
-                          className="text-[12px] font-semibold text-accent"
+                          className="text-[0.75rem] font-semibold text-accent"
                         >
                           返信をさらに {hiddenCount} 件見る
                         </button>
@@ -278,7 +278,7 @@ export function CommentSection({
           type="button"
           onClick={() => void handleLoadMore()}
           disabled={isLoadingMore}
-          className="h-10 w-full rounded-[10px] border border-line bg-surface text-[13px] font-semibold text-ink disabled:opacity-45"
+          className="h-10 w-full rounded-[10px] border border-line bg-surface text-[0.8125rem] font-semibold text-ink disabled:opacity-45"
         >
           {isLoadingMore ? "読み込み中…" : "もっと見る"}
         </button>
@@ -305,14 +305,14 @@ function CommentItem({
 }) {
   if (comment.deleted) {
     return (
-      <p className="text-[12px] text-muted" data-deleted-comment>
+      <p className="text-[0.75rem] text-muted" data-deleted-comment>
         削除されたコメント
       </p>
     );
   }
   return (
     <>
-      <div className="mb-1 flex items-center gap-2 text-[11px] text-muted">
+      <div className="mb-1 flex items-center gap-2 text-[0.6875rem] text-muted">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src={comment.author.avatarUrl} alt="" className="h-5 w-5 rounded-full object-cover" />
         {comment.author.isDeleted ? (
@@ -325,7 +325,7 @@ function CommentItem({
         <span>・{formatDateTime(comment.createdAt)}</span>
         <span className="ml-auto flex items-center gap-3">
           {canReply && (
-            <button type="button" onClick={onReply} className="tap-target text-[11px] font-medium text-ink underline underline-offset-2" data-reply-button>
+            <button type="button" onClick={onReply} className="tap-target text-[0.6875rem] font-medium text-ink underline underline-offset-2" data-reply-button>
               返信
             </button>
           )}
@@ -338,16 +338,16 @@ function CommentItem({
               className="h-7 w-7"
             />
           ) : (
-            <ReportLink targetType="comment" targetId={comment.id} returnTo={returnTo} className="text-[11px]" />
+            <ReportLink targetType="comment" targetId={comment.id} returnTo={returnTo} className="text-[0.6875rem]" />
           )}
         </span>
       </div>
       {comment.parentId && comment.replyToName && (
-        <p className="mb-0.5 text-[11px] font-medium text-accent" data-reply-to-name>
+        <p className="mb-0.5 text-[0.6875rem] font-medium text-accent" data-reply-to-name>
           @{comment.replyToName} への返信
         </p>
       )}
-      <p className="whitespace-pre-wrap break-words text-[13px] leading-[1.7] text-ink">{comment.body}</p>
+      <p className="whitespace-pre-wrap break-words text-[0.8125rem] leading-[1.7] text-ink">{comment.body}</p>
     </>
   );
 }

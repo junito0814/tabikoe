@@ -128,14 +128,14 @@ export function InviteDialog({ open, itineraryId, onClose, api }: { open: boolea
         <InAppInvitePanel api={inAppApi} />
         {pending.length > 0 && (
           <div>
-            <h3 className="mb-1.5 text-[12px] font-semibold text-muted">未回答の招待</h3>
+            <h3 className="mb-1.5 text-[0.75rem] font-semibold text-muted">未回答の招待</h3>
             <ul className="flex flex-col gap-1.5" data-pending-invitations>
               {pending.map((item) => (
-                <li key={item.id} className="flex items-center justify-between gap-2 rounded-[8px] border border-line px-3 py-2 text-[12px] text-ink">
+                <li key={item.id} className="flex items-center justify-between gap-2 rounded-[8px] border border-line px-3 py-2 text-[0.75rem] text-ink">
                   <span>
                     {item.inviteeName} <span className="text-muted">（{formatDate(item.expiresAt)} まで）</span>
                   </span>
-                  <button type="button" onClick={() => void revoke(item.id)} disabled={busy} className="text-[12px] font-medium text-saved underline underline-offset-2 disabled:opacity-45">
+                  <button type="button" onClick={() => void revoke(item.id)} disabled={busy} className="text-[0.75rem] font-medium text-saved underline underline-offset-2 disabled:opacity-45">
                     {busyKey === `revoke:${item.id}` ? "取り消し中…" : "取り消し"}
                   </button>
                 </li>
@@ -144,34 +144,34 @@ export function InviteDialog({ open, itineraryId, onClose, api }: { open: boolea
           </div>
         )}
         <div className="border-t border-line" />
-        <h3 className="text-[12px] font-bold text-ink">
+        <h3 className="text-[0.75rem] font-bold text-ink">
           リンクで招待 <span className="font-normal text-muted">（アプリを使っていない人向け・7 日間有効）</span>
         </h3>
-        <p className="text-[12px] leading-[1.7] text-muted">リンクを開いた人がメンバーになります。メンバーはスポットの追加・Day・時刻・メモ・チェックができます。</p>
-        <button type="button" onClick={() => void issue()} disabled={busy} className="h-11 rounded-[10px] bg-accent text-[14px] font-semibold text-white disabled:opacity-45">
+        <p className="text-[0.75rem] leading-[1.7] text-muted">リンクを開いた人がメンバーになります。メンバーはスポットの追加・Day・時刻・メモ・チェックができます。</p>
+        <button type="button" onClick={() => void issue()} disabled={busy} className="h-11 rounded-[10px] bg-accent text-[0.875rem] font-semibold text-white disabled:opacity-45">
           {busyKey === "issue" ? "発行しています…" : "招待リンクを発行"}
         </button>
         {latestUrl && (
           <div className="flex flex-col gap-2 rounded-[10px] border border-line bg-app p-3">
-            <input readOnly value={latestUrl} aria-label="招待リンク" onFocus={(event) => event.target.select()} className="h-9 rounded-[8px] border border-line bg-surface px-2 text-[12px] text-ink" />
-            <button type="button" onClick={() => void copy()} className="h-9 rounded-[8px] bg-ink text-[12px] font-semibold text-on-ink">
+            <input readOnly value={latestUrl} aria-label="招待リンク" onFocus={(event) => event.target.select()} className="h-9 rounded-[8px] border border-line bg-surface px-2 text-[0.75rem] text-ink" />
+            <button type="button" onClick={() => void copy()} className="h-9 rounded-[8px] bg-ink text-[0.75rem] font-semibold text-on-ink">
               {copied ? "コピーしました" : "リンクをコピー"}
             </button>
           </div>
         )}
         {error && <ErrorNotice message={error} />}
         <div>
-          <h3 className="mb-1.5 text-[12px] font-semibold text-muted">有効な招待リンク</h3>
+          <h3 className="mb-1.5 text-[0.75rem] font-semibold text-muted">有効な招待リンク</h3>
           {invitations === null ? (
-            <p className="text-[12px] text-muted">読み込んでいます…</p>
+            <p className="text-[0.75rem] text-muted">読み込んでいます…</p>
           ) : invitations.length === 0 ? (
-            <p className="text-[12px] text-muted">有効なリンクはありません</p>
+            <p className="text-[0.75rem] text-muted">有効なリンクはありません</p>
           ) : (
             <ul className="flex flex-col gap-1.5">
               {invitations.map((item) => (
-                <li key={item.id} className="flex items-center justify-between gap-2 rounded-[8px] border border-line px-3 py-2 text-[12px] text-ink">
+                <li key={item.id} className="flex items-center justify-between gap-2 rounded-[8px] border border-line px-3 py-2 text-[0.75rem] text-ink">
                   <span>{formatDate(item.expiresAt)} まで有効</span>
-                  <button type="button" onClick={() => void revoke(item.id)} disabled={busy} className="text-[12px] font-medium text-saved underline underline-offset-2 disabled:opacity-45">
+                  <button type="button" onClick={() => void revoke(item.id)} disabled={busy} className="text-[0.75rem] font-medium text-saved underline underline-offset-2 disabled:opacity-45">
                     {busyKey === `revoke:${item.id}` ? "無効化しています…" : "無効化"}
                   </button>
                 </li>

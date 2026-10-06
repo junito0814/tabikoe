@@ -359,7 +359,7 @@ export function GoogleMap({
       <div ref={containerRef} className="h-full w-full" />
       {mapsState === "loading" && (
         <div className="absolute inset-0 flex items-center justify-center">
-          <span className="text-[12px] text-muted">地図を読み込んでいます…</span>
+          <span className="text-[0.75rem] text-muted">地図を読み込んでいます…</span>
         </div>
       )}
     </div>

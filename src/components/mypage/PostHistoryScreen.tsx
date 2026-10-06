@@ -44,7 +44,7 @@ export function PostHistoryScreen({
     <header className="flex flex-col gap-2">
       <BackLink />
       <div className="flex items-center gap-2">
-        <h1 className="flex-1 text-[18px] font-bold text-ink">投稿履歴</h1>
+        <h1 className="flex-1 text-[1.125rem] font-bold text-ink">投稿履歴</h1>
       </div>
       <div role="radiogroup" aria-label="表示" className="inline-flex w-fit rounded-full border border-line bg-surface p-0.5">
         {(["list", "map"] as const).map((option) => (
@@ -54,7 +54,7 @@ export function PostHistoryScreen({
             role="radio"
             aria-checked={view === option}
             onClick={() => view !== option && router.replace(option === "map" ? "/mymap?view=map" : "/mymap")}
-            className={`tap-target h-7 rounded-full px-3 text-[12px] font-semibold ${view === option ? "bg-ink text-on-ink" : "text-muted"}`}
+            className={`tap-target h-7 rounded-full px-3 text-[0.75rem] font-semibold ${view === option ? "bg-ink text-on-ink" : "text-muted"}`}
           >
             {option === "list" ? "一覧" : "地図"}
           </button>

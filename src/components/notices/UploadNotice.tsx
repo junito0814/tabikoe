@@ -15,7 +15,7 @@ export function UploadNotice({ compact = false }: { compact?: boolean }) {
   const [expanded, setExpanded] = useState(!compact);
   if (!expanded) {
     return (
-      <p className="flex items-center gap-1.5 text-[11px] text-muted">
+      <p className="flex items-center gap-1.5 text-[0.6875rem] text-muted">
         <WarningIcon />
         写り込み・個人情報に注意
         <button type="button" onClick={() => setExpanded(true)} className="font-medium text-accent underline underline-offset-2">
@@ -25,7 +25,7 @@ export function UploadNotice({ compact = false }: { compact?: boolean }) {
     );
   }
   return (
-    <ul className="list-disc space-y-1 pl-4 text-[11px] leading-[1.6] text-muted">
+    <ul className="list-disc space-y-1 pl-4 text-[0.6875rem] leading-[1.6] text-muted">
       <li>他人が写り込んだ写真・動画は、本人の同意を得てから投稿してください</li>
       <li>個人が特定できる情報（車のナンバー等）が写っていないか確認してください</li>
     </ul>

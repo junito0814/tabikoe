@@ -49,7 +49,7 @@ export function MapLegend({
       role="list"
       aria-label="ピンの凡例"
       data-map-legend={mode}
-      className={`flex flex-wrap items-center gap-x-3 gap-y-1 rounded-[8px] bg-surface/92 px-2.5 py-1.5 text-[10px] text-ink shadow-card ${className ?? ""}`}
+      className={`flex flex-wrap items-center gap-x-3 gap-y-1 rounded-[8px] bg-surface/92 px-2.5 py-1.5 text-[0.625rem] text-ink shadow-card ${className ?? ""}`}
     >
       {items.map((item) => (
         <span key={item.key} role="listitem" className="inline-flex items-center gap-1">

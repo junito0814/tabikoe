@@ -118,16 +118,16 @@ export function InAppInvitePanel({ api, className }: { api: InAppInviteApi; clas
     <li key={user.id} className="flex items-center gap-2" data-invite-user={user.id}>
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img src={user.avatarUrl} alt="" className="h-7 w-7 rounded-full object-cover" />
-      <span className="min-w-0 flex-1 truncate text-[13px] font-semibold text-ink">{user.displayName}</span>
+      <span className="min-w-0 flex-1 truncate text-[0.8125rem] font-semibold text-ink">{user.displayName}</span>
       {isSent(user) ? (
-        <span className="text-[11px] text-muted">送信済み</span>
+        <span className="text-[0.6875rem] text-muted">送信済み</span>
       ) : (
         <button
           type="button"
           onClick={() => void send(user)}
           disabled={busyId !== null}
           aria-label={`${user.displayName}に招待を送る`}
-          className="h-8 rounded-full bg-accent px-3 text-[12px] font-bold text-white disabled:opacity-45"
+          className="h-8 rounded-full bg-accent px-3 text-[0.75rem] font-bold text-white disabled:opacity-45"
         >
           {busyId === user.id ? "送信中…" : "招待を送る"}
         </button>
@@ -143,26 +143,26 @@ export function InAppInvitePanel({ api, className }: { api: InAppInviteApi; clas
         onChange={(event) => setQuery(event.target.value)}
         placeholder="ユーザー名で探す"
         aria-label="ユーザー名で探す"
-        className="h-10 rounded-[10px] border border-line bg-surface px-3 text-[13px] text-ink focus:outline-none focus:ring-1 focus:ring-accent"
+        className="h-10 rounded-[10px] border border-line bg-surface px-3 text-[0.8125rem] text-ink focus:outline-none focus:ring-1 focus:ring-accent"
       />
       {query.trim().length >= 2 && (
         <ul className="flex flex-col gap-2" aria-label="検索結果">
           {/* 探し終わるまでは「見つかりませんでした」と言わない（要件 4.5.11 の共通の決まり） */}
           {isSearching ? (
-            <li className="text-[12px] text-muted">探しています…</li>
+            <li className="text-[0.75rem] text-muted">探しています…</li>
           ) : searchOnly.length === 0 ? (
-            <li className="text-[12px] text-muted">見つかりませんでした</li>
+            <li className="text-[0.75rem] text-muted">見つかりませんでした</li>
           ) : (
             searchOnly.map((user) => row(user))
           )}
         </ul>
       )}
       <div>
-        <h3 className="mb-1.5 text-[12px] font-bold text-ink">一緒だった人</h3>
+        <h3 className="mb-1.5 text-[0.75rem] font-bold text-ink">一緒だった人</h3>
         {candidates === null ? (
-          <p className="text-[12px] text-muted">読み込んでいます…</p>
+          <p className="text-[0.75rem] text-muted">読み込んでいます…</p>
         ) : candidates.length === 0 ? (
-          <p className="text-[12px] text-muted">まだいません。リンクで招待できます</p>
+          <p className="text-[0.75rem] text-muted">まだいません。リンクで招待できます</p>
         ) : (
           <ul className="flex flex-col gap-2" aria-label="一緒だった人">
             {candidates.map((candidate) => row(candidate))}
@@ -170,7 +170,7 @@ export function InAppInvitePanel({ api, className }: { api: InAppInviteApi; clas
         )}
       </div>
       {error && (
-        <p role="alert" className="text-[12px] text-saved">
+        <p role="alert" className="text-[0.75rem] text-saved">
           {error}
         </p>
       )}

@@ -78,12 +78,12 @@ export function AdminActionsScreen({
     void load(draft, 0, true);
   };
 
-  const selectClass = "h-9 rounded-[8px] border border-line bg-surface px-2 text-[12px] text-ink";
+  const selectClass = "h-9 rounded-[8px] border border-line bg-surface px-2 text-[0.75rem] text-ink";
 
   return (
     <div className="flex w-full flex-col gap-4">
       <form onSubmit={handleSubmit} className="flex flex-wrap items-end gap-2 rounded-[12px] border border-line bg-surface p-3">
-        <label className="text-[11px] text-muted">
+        <label className="text-[0.6875rem] text-muted">
           管理者
           <select className={`${selectClass} block`} value={draft.actor} onChange={(e) => setDraft({ ...draft, actor: e.target.value })}>
             <option value="">すべて</option>
@@ -95,7 +95,7 @@ export function AdminActionsScreen({
             ))}
           </select>
         </label>
-        <label className="text-[11px] text-muted">
+        <label className="text-[0.6875rem] text-muted">
           操作
           <select
             className={`${selectClass} block`}
@@ -110,15 +110,15 @@ export function AdminActionsScreen({
             ))}
           </select>
         </label>
-        <label className="text-[11px] text-muted">
+        <label className="text-[0.6875rem] text-muted">
           期間（から）
           <input type="date" className={`${selectClass} block`} value={draft.from} onChange={(e) => setDraft({ ...draft, from: e.target.value })} />
         </label>
-        <label className="text-[11px] text-muted">
+        <label className="text-[0.6875rem] text-muted">
           期間（まで）
           <input type="date" className={`${selectClass} block`} value={draft.to} onChange={(e) => setDraft({ ...draft, to: e.target.value })} />
         </label>
-        <button type="submit" disabled={isLoading} className="h-9 rounded-[8px] bg-ink px-4 text-[12px] font-semibold text-on-ink disabled:opacity-45">
+        <button type="submit" disabled={isLoading} className="h-9 rounded-[8px] bg-ink px-4 text-[0.75rem] font-semibold text-on-ink disabled:opacity-45">
           表示
         </button>
       </form>
@@ -126,8 +126,8 @@ export function AdminActionsScreen({
       {errorMessage && <ErrorNotice message={errorMessage} />}
 
       <div className="overflow-x-auto rounded-[12px] border border-line bg-surface">
-        <table className="w-full min-w-[720px] text-left text-[12px] text-ink">
-          <thead className="border-b border-line text-[11px] text-muted">
+        <table className="w-full min-w-[720px] text-left text-[0.75rem] text-ink">
+          <thead className="border-b border-line text-[0.6875rem] text-muted">
             <tr>
               <th className="px-3 py-2 font-medium">日時</th>
               <th className="px-3 py-2 font-medium">誰が</th>
@@ -149,7 +149,7 @@ export function AdminActionsScreen({
                 <td className="whitespace-nowrap px-3 py-2 tabular-nums text-muted">{formatDateTime(item.createdAt)}</td>
                 <td className="whitespace-nowrap px-3 py-2">
                   {/* #585: actor_id が NULL でも、退会した管理者の行は「自動」と区別する */}
-                  {item.isAutomatic ? <span className="rounded-full border border-line px-1.5 py-0.5 text-[10px] text-muted">自動</span> : item.actorName}
+                  {item.isAutomatic ? <span className="rounded-full border border-line px-1.5 py-0.5 text-[0.625rem] text-muted">自動</span> : item.actorName}
                 </td>
                 <td className="whitespace-nowrap px-3 py-2 font-semibold">{ADMIN_ACTION_LABELS[item.action]}</td>
                 <td className="px-3 py-2">{item.targetLabel ?? "—"}</td>
@@ -165,7 +165,7 @@ export function AdminActionsScreen({
           type="button"
           onClick={() => void load(applied, nextOffset, false)}
           disabled={isLoading}
-          className="h-10 rounded-[8px] border border-line bg-surface text-[13px] font-medium text-ink disabled:opacity-45"
+          className="h-10 rounded-[8px] border border-line bg-surface text-[0.8125rem] font-medium text-ink disabled:opacity-45"
         >
           {isLoading ? "読み込み中..." : "もっと見る"}
         </button>

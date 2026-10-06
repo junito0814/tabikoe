@@ -36,7 +36,7 @@ export function ConsentCheckbox({
                     </svg>
                 )}
             </span>
-            <span className="select-none text-[13px] leading-[1.65] text-ink">
+            <span className="select-none text-[0.8125rem] leading-[1.65] text-ink">
                 {href ? (
                     // 本文を読みに行ってもチェック欄の状態が消えないよう、新しいタブで開く
                     <a href={href} target="_blank" rel="noreferrer" onClick={(event) => event.stopPropagation()} className="font-medium text-accent underline underline-offset-2">

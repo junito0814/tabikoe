@@ -63,7 +63,7 @@ export function PostCard({
 
   return (
     <article className="flex flex-col gap-2 rounded-[12px] border border-line bg-surface p-3 shadow-card" data-post-card={post.id}>
-      <div className="flex items-center gap-1.5 text-[11px] text-muted">
+      <div className="flex items-center gap-1.5 text-[0.6875rem] text-muted">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src={post.author.avatarUrl} alt="" className="h-5 w-5 rounded-full object-cover" />
         <span className="min-w-0 truncate font-medium text-ink">{post.author.displayName}</span>
@@ -72,7 +72,7 @@ export function PostCard({
       </div>
 
       {showSpotName && (
-        <h3 className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-0.5 text-[15px] font-bold leading-tight text-ink">
+        <h3 className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-0.5 text-[0.9375rem] font-bold leading-tight text-ink">
           <Link href={`/search?spot=${post.spotId}`} prefetch={false} className="min-w-0 truncate">
             {post.spotName}
           </Link>
@@ -81,11 +81,11 @@ export function PostCard({
 
 {/* performance Task1: 一覧のカードは先読みしない（1 画面で何十本も裏で走り、関所と Supabase を叩くため） */}
       <Link href={appendBackHref(`/posts/${post.id}`, backHref)} prefetch={false} className="flex flex-col gap-1.5">
-        {post.commentExcerpt && <p className="line-clamp-2 text-[13px] leading-[1.6] text-ink">{post.commentExcerpt}</p>}
-        <p className="flex flex-wrap items-center gap-x-2.5 gap-y-0.5 text-[12px] text-muted">
+        {post.commentExcerpt && <p className="line-clamp-2 text-[0.8125rem] leading-[1.6] text-ink">{post.commentExcerpt}</p>}
+        <p className="flex flex-wrap items-center gap-x-2.5 gap-y-0.5 text-[0.75rem] text-muted">
           {/* #692: 「星4」の文字は外し、★ の数だけで出す（読み上げ用の名前は残す） */}
           {post.rating !== null && (
-            <span className="text-[13px] text-star" aria-label={`星${post.rating}`}>
+            <span className="text-[0.8125rem] text-star" aria-label={`星${post.rating}`}>
               <span aria-hidden>
                 {"★".repeat(post.rating)}
                 <span className="text-line">{"★".repeat(5 - post.rating)}</span>
@@ -93,7 +93,7 @@ export function PostCard({
             </span>
           )}
           {cost && <span>{cost === "無料" ? cost : `${cost}/人`}</span>}
-          <span className="rounded-full bg-tint px-2 py-0.5 text-[11px] text-accent">{post.category}</span>
+          <span className="rounded-full bg-tint px-2 py-0.5 text-[0.6875rem] text-accent">{post.category}</span>
           {post.duration && <span>{post.duration}</span>}
         </p>
       </Link>
@@ -102,7 +102,7 @@ export function PostCard({
       {post.media.length > 0 && <MediaGrid items={post.media} postHref={`/posts/${post.id}`} linkToPost morphPostId={post.id} />}
 
       {statusLabel && (
-        <p className="text-[12px] font-medium text-done" data-spot-status>
+        <p className="text-[0.75rem] font-medium text-done" data-spot-status>
           {statusLabel}
         </p>
       )}
@@ -112,7 +112,7 @@ export function PostCard({
         <Link
           href={`/posts/${post.id}#comments`} prefetch={false}
           aria-label={`コメント${post.commentCount}件`}
-          className="inline-flex h-8 items-center gap-1 rounded-full px-2 text-[12px] text-muted"
+          className="inline-flex h-8 items-center gap-1 rounded-full px-2 text-[0.75rem] text-muted"
         >
           <CommentIcon />
           {post.commentCount}
@@ -131,7 +131,7 @@ export function PostCard({
 
       {/* v3.2（feedback-0919 Task5）: 最新のコメント 1 件のプレビューと「コメント N 件をすべて見る」（コメントがあるときだけ） */}
       {post.latestComment && (
-        <Link href={`/posts/${post.id}#comments`} prefetch={false} className="flex flex-col gap-0.5 text-[12px]" data-comment-preview>
+        <Link href={`/posts/${post.id}#comments`} prefetch={false} className="flex flex-col gap-0.5 text-[0.75rem]" data-comment-preview>
           <span className="truncate">
             <span className="font-semibold text-ink">{post.latestComment.authorName}</span> <span className="text-ink">{post.latestComment.excerpt}</span>
           </span>

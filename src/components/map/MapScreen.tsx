@@ -523,7 +523,7 @@ export function MapScreen({
           )}
           {/* Task 4-4: しおりの中身を取っている間は無言にしない（Day タブもピンもまだ出ないため） */}
           {isItinerary && itineraryLoading && (
-            <p role="status" className="pointer-events-none mx-auto w-fit rounded-full bg-surface px-3 py-1 text-[12px] text-ink shadow-card">
+            <p role="status" className="pointer-events-none mx-auto w-fit rounded-full bg-surface px-3 py-1 text-[0.75rem] text-ink shadow-card">
               読み込んでいます…
             </p>
           )}
@@ -554,7 +554,7 @@ export function MapScreen({
           />
         ) : (
           <div role="region" aria-label="地図" className="flex h-full items-center justify-center bg-line">
-            <span className="text-[12px] text-muted">現在地を確認しています…</span>
+            <span className="text-[0.75rem] text-muted">現在地を確認しています…</span>
           </div>
         )}
 
@@ -563,7 +563,7 @@ export function MapScreen({
           * あしあとの地図（MyMapScreen）と同じ形・同じ位置に出す。
           */}
         {bounds && !fetchFailed && !isItinerary && (isFetchingPins || mapPins.length === 0) && (
-          <p className="pointer-events-none absolute inset-x-0 bottom-20 z-10 text-center text-[12px] text-ink">
+          <p className="pointer-events-none absolute inset-x-0 bottom-20 z-10 text-center text-[0.75rem] text-ink">
             {isFetchingPins ? "読み込んでいます…" : hasActiveSpotFilters(filters) ? "条件に合う場所がありません" : "この範囲に投稿はありません"}
           </p>
         )}

@@ -67,7 +67,7 @@ export default async function AccountPage() {
   return (
     <ContentEnter>
       <div className="flex min-h-screen flex-col items-center gap-8 bg-app px-6 py-16">
-        <h1 className="text-[16px] font-bold text-ink">アカウント</h1>
+        <h1 className="text-[1rem] font-bold text-ink">アカウント</h1>
 
         <AvatarUploadForm initialAvatarUrl={profile?.avatar_url ?? null} />
         <DisplayNameForm initialDisplayName={profile?.display_name ?? ""} />
@@ -76,7 +76,7 @@ export default async function AccountPage() {
         {profile?.is_admin && (
           <Link
             href="/admin"
-            className="flex h-11 w-full max-w-[360px] items-center justify-center rounded-[10px] border border-line bg-surface text-[14px] font-semibold text-ink"
+            className="flex h-11 w-full max-w-[360px] items-center justify-center rounded-[10px] border border-line bg-surface text-[0.875rem] font-semibold text-ink"
           >
             管理者ダッシュボード
           </Link>

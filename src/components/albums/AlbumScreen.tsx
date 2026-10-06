@@ -247,17 +247,17 @@ export function AlbumScreen({
                 onChange={(event) => setDraftTitle(event.target.value)}
                 maxLength={MAX_TRIP_TITLE_LENGTH * 2}
                 aria-label="アルバム名"
-                className="h-10 min-w-0 flex-1 rounded-[8px] border border-line bg-surface px-3 text-[14px] text-ink"
+                className="h-10 min-w-0 flex-1 rounded-[8px] border border-line bg-surface px-3 text-[0.875rem] text-ink"
               />
               {/*
                 * loading-feedback Task 4-8（2026-10-02）: `run(key, …)` が「どの操作か」を
                 * もう持っているので、その key を見て押したボタンだけ文言を変える。
                 * 以前は招待リンクの発行だけに「発行中…」があり、他は押せなくなるだけだった。
                 */}
-              <button type="submit" disabled={busy !== null} className="h-10 rounded-[8px] bg-accent px-3 text-[12px] font-semibold text-white disabled:opacity-45">
+              <button type="submit" disabled={busy !== null} className="h-10 rounded-[8px] bg-accent px-3 text-[0.75rem] font-semibold text-white disabled:opacity-45">
                 {busy === "rename" ? "保存しています…" : "保存"}
               </button>
-              <button type="button" onClick={() => setIsRenaming(false)} className="h-10 rounded-[8px] border border-line bg-surface px-3 text-[12px] text-ink">
+              <button type="button" onClick={() => setIsRenaming(false)} className="h-10 rounded-[8px] border border-line bg-surface px-3 text-[0.75rem] text-ink">
                 取消
               </button>
             </form>
@@ -277,12 +277,12 @@ export function AlbumScreen({
                     setIsRenaming(true);
                   }}
                   aria-label={`${title}（名前を変更）`}
-                  className="min-w-0 flex-1 break-words text-left text-[20px] font-bold text-ink"
+                  className="min-w-0 flex-1 break-words text-left text-[1.25rem] font-bold text-ink"
                 >
                   {title}
                 </button>
               ) : (
-                <h1 className="min-w-0 flex-1 break-words text-[20px] font-bold text-ink">{title}</h1>
+                <h1 className="min-w-0 flex-1 break-words text-[1.25rem] font-bold text-ink">{title}</h1>
               )}
               {/* #750: 「⋯」は誰にでも出す（メンバーは誰でも見られる。中身は権限で変わる） */}
               <div className="relative shrink-0">
@@ -292,7 +292,7 @@ export function AlbumScreen({
                   aria-haspopup="menu"
                   aria-expanded={isMenuOpen}
                   aria-label="その他"
-                  className="h-8 w-8 rounded-full border border-line bg-surface text-[14px] font-bold text-ink"
+                  className="h-8 w-8 rounded-full border border-line bg-surface text-[0.875rem] font-bold text-ink"
                 >
                   ⋯
                 </button>
@@ -330,17 +330,17 @@ export function AlbumScreen({
               </div>
             </div>
           )}
-          <p className="text-[11px] text-muted">
+          <p className="text-[0.6875rem] text-muted">
             あなたの権限: {ALBUM_ROLE_LABELS[album.viewerRole]} ・ 投稿 {album.posts.length}件 ・ メンバー {members.length}人
           </p>
           <div className="flex flex-wrap gap-2">
             {/* F-RC-05（SC-21）: このアルバムの写真・動画だけを並べて眺める（非公開投稿も含む） */}
-            <Link href={`/albums/${album.tripId}/photos`} className="inline-flex h-8 w-fit items-center gap-1 rounded-full border border-line bg-surface px-3 text-[12px] font-semibold text-ink">
+            <Link href={`/albums/${album.tripId}/photos`} className="inline-flex h-8 w-fit items-center gap-1 rounded-full border border-line bg-surface px-3 text-[0.75rem] font-semibold text-ink">
               写真
             </Link>
             {/* itinerary-basics Task4: しおりのメンバーにだけ「しおりを見る」 */}
             {album.itineraryId && (
-              <Link href={`/itineraries/${album.itineraryId}?back=${encodeURIComponent(`/albums/${album.tripId}`)}`} className="inline-flex h-8 w-fit items-center gap-1 rounded-full border border-line bg-surface px-3 text-[12px] font-semibold text-ink">
+              <Link href={`/itineraries/${album.itineraryId}?back=${encodeURIComponent(`/albums/${album.tripId}`)}`} className="inline-flex h-8 w-fit items-center gap-1 rounded-full border border-line bg-surface px-3 text-[0.75rem] font-semibold text-ink">
                 しおりを見る
               </Link>
             )}
@@ -353,7 +353,7 @@ export function AlbumScreen({
         <Sheet open={dialog === "members"} title="メンバー" onClose={() => setDialog(null)}>
           <ul className="flex flex-col gap-2">
             {members.map((member) => (
-              <li key={member.userId} className="flex items-center gap-2 text-[12px]" data-member={member.userId}>
+              <li key={member.userId} className="flex items-center gap-2 text-[0.75rem]" data-member={member.userId}>
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src={member.avatarUrl} alt="" className="h-6 w-6 rounded-full object-cover" />
                 <span className="min-w-0 flex-1 truncate text-ink">
@@ -367,7 +367,7 @@ export function AlbumScreen({
                       aria-label={`${member.displayName}の権限`}
                       onChange={(event) => void handleChangeRole(member.userId, event.target.value as InvitableRole)}
                       disabled={busy !== null}
-                      className="h-8 rounded-[6px] border border-line bg-surface px-2 text-[12px]"
+                      className="h-8 rounded-[6px] border border-line bg-surface px-2 text-[0.75rem]"
                     >
                       {INVITABLE_ROLES.map((role) => (
                         <option key={role} value={role}>
@@ -381,7 +381,7 @@ export function AlbumScreen({
                       * 代わりに隣に小さく出す。
                       */}
                     {busy === `role:${member.userId}` && (
-                      <span role="status" className="text-[11px] text-muted">
+                      <span role="status" className="text-[0.6875rem] text-muted">
                         変更しています…
                       </span>
                     )}
@@ -390,13 +390,13 @@ export function AlbumScreen({
                       onClick={() => handleRemove(member)}
                       disabled={busy !== null}
                       aria-label={`${member.displayName}を削除`}
-                      className="tap-target text-[11px] font-medium text-accent underline underline-offset-2 disabled:opacity-45"
+                      className="tap-target text-[0.6875rem] font-medium text-accent underline underline-offset-2 disabled:opacity-45"
                     >
                       {busy === `remove:${member.userId}` ? "削除中…" : "削除"}
                     </button>
                   </>
                 ) : (
-                  <span className="rounded-full bg-tint px-2 py-0.5 text-[11px] text-muted">{ALBUM_ROLE_LABELS[member.role]}</span>
+                  <span className="rounded-full bg-tint px-2 py-0.5 text-[0.6875rem] text-muted">{ALBUM_ROLE_LABELS[member.role]}</span>
                 )}
               </li>
             ))}
@@ -406,20 +406,20 @@ export function AlbumScreen({
               type="button"
               onClick={handleLeave}
               disabled={busy !== null}
-              className="mt-3 text-[12px] font-medium text-muted underline underline-offset-2 disabled:opacity-45"
+              className="mt-3 text-[0.75rem] font-medium text-muted underline underline-offset-2 disabled:opacity-45"
             >
               {busy === "leave" ? "退出しています…" : "このアルバムから退出"}
             </button>
           )}
         </Sheet>
         <Sheet open={dialog === "invite" && canManage} title="招待" onClose={() => setDialog(null)}>
-          <label className="mb-2 flex items-center gap-2 text-[12px] text-muted">
+          <label className="mb-2 flex items-center gap-2 text-[0.75rem] text-muted">
             付与する権限
             <select
               value={inviteRole}
               aria-label="付与する権限"
               onChange={(event) => setInviteRole(event.target.value as InvitableRole)}
-              className="h-9 rounded-[6px] border border-line bg-surface px-2 text-[12px] text-ink"
+              className="h-9 rounded-[6px] border border-line bg-surface px-2 text-[0.75rem] text-ink"
             >
               {INVITABLE_ROLES.map((role) => (
                 <option key={role} value={role}>
@@ -430,7 +430,7 @@ export function AlbumScreen({
           </label>
           {/* v3.2（feedback-0919 Task6）: アプリ内招待（一緒だった人・ユーザー名検索）。選んだ権限で送る */}
           {inAppApi && <InAppInvitePanel api={inAppApi} className="mb-3" />}
-          <h3 className="mb-1 text-[12px] font-bold text-ink">
+          <h3 className="mb-1 text-[0.75rem] font-bold text-ink">
             リンクで招待 <span className="font-normal text-muted">（アプリを使っていない人向け）</span>
           </h3>
           <div className="flex items-center gap-2">
@@ -438,21 +438,21 @@ export function AlbumScreen({
               type="button"
               onClick={() => void handleIssue()}
               disabled={busy !== null}
-              className="h-9 rounded-[8px] bg-ink px-3 text-[12px] font-semibold text-on-ink disabled:opacity-45"
+              className="h-9 rounded-[8px] bg-ink px-3 text-[0.75rem] font-semibold text-on-ink disabled:opacity-45"
             >
               {busy === "issue" ? "発行中…" : "リンクを発行（7日間有効）"}
             </button>
           </div>
           {issuedPath && (
-            <div className="mt-2 rounded-[8px] bg-tint p-2.5 text-[12px] text-ink">
-              <p className="mb-1 text-[11px] text-muted">このリンクを共有してください（再表示はできません）</p>
+            <div className="mt-2 rounded-[8px] bg-tint p-2.5 text-[0.75rem] text-ink">
+              <p className="mb-1 text-[0.6875rem] text-muted">このリンクを共有してください（再表示はできません）</p>
               <code className="break-all" data-invitation-url>{`${origin}${issuedPath}`}</code>
             </div>
           )}
           {invitations.length > 0 && (
             <ul className="mt-3 flex flex-col gap-1.5">
               {invitations.map((invitation) => (
-                <li key={invitation.id} className="flex items-center gap-2 text-[11px] text-muted">
+                <li key={invitation.id} className="flex items-center gap-2 text-[0.6875rem] text-muted">
                   <span>{ALBUM_ROLE_LABELS[invitation.role as InvitableRole] ?? invitation.role}</span>
                   <span>期限 {formatDate(invitation.expiresAt)}</span>
                   <span className="ml-auto">
@@ -478,9 +478,9 @@ export function AlbumScreen({
         </Sheet>
 
         <section aria-labelledby="posts-heading" className="flex flex-col gap-3">
-          <h2 id="posts-heading" className="text-[13px] font-bold text-ink">投稿</h2>
+          <h2 id="posts-heading" className="text-[0.8125rem] font-bold text-ink">投稿</h2>
           {album.posts.length === 0 ? (
-            <p className="py-8 text-center text-[12px] text-muted">まだ投稿がありません</p>
+            <p className="py-8 text-center text-[0.75rem] text-muted">まだ投稿がありません</p>
           ) : (
             album.posts.map((post) => (
               <article key={post.id} className="overflow-hidden rounded-[12px] border border-line bg-surface" data-album-post={post.id}>
@@ -497,19 +497,19 @@ export function AlbumScreen({
                   />
                 )}
                 <Link href={`/posts/${post.id}?back=${encodeURIComponent(`/albums/${album.tripId}`)}`} prefetch={false} className="flex flex-col gap-1 p-3">
-                  <span className="flex items-center gap-2 text-[13px] font-semibold text-ink">
+                  <span className="flex items-center gap-2 text-[0.8125rem] font-semibold text-ink">
                     {post.spotName}
                     {post.visibility === "private" && (
-                      <span className="rounded-full bg-line px-2 py-0.5 text-[10px] font-medium text-ink">非公開</span>
+                      <span className="rounded-full bg-line px-2 py-0.5 text-[0.625rem] font-medium text-ink">非公開</span>
                     )}
                   </span>
-                  <span className="text-[11px] text-muted">
+                  <span className="text-[0.6875rem] text-muted">
                     {post.category}
                     {post.duration && ` ・ ${post.duration}`}
                     {formatCost(post.cost) && ` ・ ${formatCost(post.cost)}`}
                     {post.mediaCount > 1 && ` ・ ${post.mediaCount}点`}
                   </span>
-                  <span className="text-[11px] text-muted">
+                  <span className="text-[0.6875rem] text-muted">
                     {post.author.displayName} ・ {formatDateTime(post.createdAt)}
                   </span>
                 </Link>
@@ -574,7 +574,7 @@ function AlbumMenuItem({ label, onClick, danger = false, disabled = false }: { l
         role="menuitem"
         onClick={onClick}
         disabled={disabled}
-        className={`flex w-full px-3 py-2 text-left text-[13px] hover:bg-tint disabled:opacity-45 ${danger ? "text-saved" : "text-ink"}`}
+        className={`flex w-full px-3 py-2 text-left text-[0.8125rem] hover:bg-tint disabled:opacity-45 ${danger ? "text-saved" : "text-ink"}`}
       >
         {label}
       </button>

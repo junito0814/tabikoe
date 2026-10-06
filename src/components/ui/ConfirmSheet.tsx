@@ -71,19 +71,19 @@ export function useConfirm() {
     <Sheet open={options !== null} title={options?.title ?? ""} onClose={() => answer(false)}>
       {options && (
         <div className="flex flex-col gap-4" data-confirm-sheet>
-          {options.description && <p className="text-[13px] leading-[1.7] text-muted">{options.description}</p>}
+          {options.description && <p className="text-[0.8125rem] leading-[1.7] text-muted">{options.description}</p>}
           <div className="flex gap-2">
             <button
               type="button"
               onClick={() => answer(false)}
-              className="h-11 flex-1 rounded-[10px] border border-line bg-surface text-[14px] font-semibold text-ink"
+              className="h-11 flex-1 rounded-[10px] border border-line bg-surface text-[0.875rem] font-semibold text-ink"
             >
               やめる
             </button>
             <button
               type="button"
               onClick={() => answer(true)}
-              className={`h-11 flex-1 rounded-[10px] text-[14px] font-bold text-white ${options.danger ? "bg-saved" : "bg-accent"}`}
+              className={`h-11 flex-1 rounded-[10px] text-[0.875rem] font-bold text-white ${options.danger ? "bg-saved" : "bg-accent"}`}
             >
               {options.confirmLabel}
             </button>

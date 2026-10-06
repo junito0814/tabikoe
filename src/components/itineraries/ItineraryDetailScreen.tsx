@@ -303,7 +303,7 @@ export function ItineraryDetailScreen({
                 aria-haspopup="menu"
                 aria-expanded={isMenuOpen}
                 aria-label="その他"
-                className="h-8 w-8 rounded-full border border-line bg-surface text-[14px] font-bold text-ink"
+                className="h-8 w-8 rounded-full border border-line bg-surface text-[0.875rem] font-bold text-ink"
               >
                 ⋯
               </button>
@@ -321,7 +321,7 @@ export function ItineraryDetailScreen({
                         role="menuitem"
                         href={`/albums/${itinerary.tripId}?back=${encodeURIComponent(`/itineraries/${itinerary.id}`)}`}
                         onClick={() => setIsMenuOpen(false)}
-                        className="flex w-full px-3 py-2 text-left text-[13px] text-ink hover:bg-tint"
+                        className="flex w-full px-3 py-2 text-left text-[0.8125rem] text-ink hover:bg-tint"
                         data-album-link
                       >
                         アルバム
@@ -369,12 +369,12 @@ export function ItineraryDetailScreen({
                 maxLength={MAX_TRIP_TITLE_LENGTH}
                 aria-label="しおりの名前"
                 autoFocus
-                className="h-10 min-w-0 flex-1 rounded-[8px] border border-line bg-surface px-3 text-[14px] text-ink focus:outline-none focus:ring-1 focus:ring-accent"
+                className="h-10 min-w-0 flex-1 rounded-[8px] border border-line bg-surface px-3 text-[0.875rem] text-ink focus:outline-none focus:ring-1 focus:ring-accent"
               />
-              <button type="submit" disabled={pending !== null} className="h-10 shrink-0 rounded-[8px] bg-accent px-3 text-[12px] font-semibold text-white disabled:opacity-45">
+              <button type="submit" disabled={pending !== null} className="h-10 shrink-0 rounded-[8px] bg-accent px-3 text-[0.75rem] font-semibold text-white disabled:opacity-45">
                 保存
               </button>
-              <button type="button" onClick={() => setIsRenaming(false)} className="h-10 shrink-0 rounded-[8px] border border-line bg-surface px-3 text-[12px] text-ink">
+              <button type="button" onClick={() => setIsRenaming(false)} className="h-10 shrink-0 rounded-[8px] border border-line bg-surface px-3 text-[0.75rem] text-ink">
                 取消
               </button>
             </form>
@@ -383,26 +383,26 @@ export function ItineraryDetailScreen({
               type="button"
               onClick={startRename}
               aria-label={`${itinerary.title}（名前を変更）`}
-              className="line-clamp-2 w-full break-words text-left text-[18px] font-bold leading-[1.3] text-ink"
+              className="line-clamp-2 w-full break-words text-left text-[1.125rem] font-bold leading-[1.3] text-ink"
             >
               {itinerary.title}
             </button>
           ) : (
-            <h1 className="line-clamp-2 w-full break-words text-[18px] font-bold leading-[1.3] text-ink">{itinerary.title}</h1>
+            <h1 className="line-clamp-2 w-full break-words text-[1.125rem] font-bold leading-[1.3] text-ink">{itinerary.title}</h1>
           )}
 
           {/* v3.1: 期間は年つき。表示そのものをタップするとカレンダー（オーナーのみ）。「期間を変更」ボタンは置かない */}
           {canEdit ? (
-            <button type="button" onClick={() => setDialog("period")} aria-label={itinerary.startDate ? `期間 ${periodLabel}（変更）` : "期間を設定"} className="flex w-fit items-center gap-1 text-[12px] text-ink" data-period>
+            <button type="button" onClick={() => setDialog("period")} aria-label={itinerary.startDate ? `期間 ${periodLabel}（変更）` : "期間を設定"} className="flex w-fit items-center gap-1 text-[0.75rem] text-ink" data-period>
               {/* #694: 絵文字も鉛筆の印も外した（タップでカレンダーが開くのは今までどおり） */}
               {itinerary.startDate ? periodLabel : "期間を設定"}
             </button>
           ) : (
-            <p className="text-[12px] text-ink" data-period>
+            <p className="text-[0.75rem] text-ink" data-period>
               {periodLabel}
             </p>
           )}
-          <p className="text-[12px] text-muted">
+          <p className="text-[0.75rem] text-muted">
             {itinerary.spots.length} スポット
             {itinerary.members.length > 1 && ` ・ メンバー ${itinerary.members.length} 人`}
           </p>
@@ -412,14 +412,14 @@ export function ItineraryDetailScreen({
 
         {/* loading-feedback Task 3: 押した直後に必ず画面が変わるようにする（要件 4.5.11） */}
         {pending && (
-          <p role="status" className="mt-2 rounded-[10px] border border-line bg-surface px-3 py-2 text-[12px] text-muted">
+          <p role="status" className="mt-2 rounded-[10px] border border-line bg-surface px-3 py-2 text-[0.75rem] text-muted">
             {PENDING_LABELS[pending.kind]}
           </p>
         )}
         {error && <ErrorNotice className="mt-2" message={error} />}
 
         {visibleCount === 0 ? (
-          <p className="py-12 text-center text-[13px] text-muted">{day === ALL_TAB ? "スポットはまだありません" : "この日のスポットはまだありません"}</p>
+          <p className="py-12 text-center text-[0.8125rem] text-muted">{day === ALL_TAB ? "スポットはまだありません" : "この日のスポットはまだありません"}</p>
         ) : (
           groups.map((group) => (
             <DayGroup
@@ -447,12 +447,12 @@ export function ItineraryDetailScreen({
               day === ALL_TAB ? null : day,
               itinerary.spots.map((spot) => spot.prefecture)
             )}
-            className="inline-flex h-11 items-center gap-1.5 rounded-full bg-accent px-5 text-[13px] font-bold text-white"
+            className="inline-flex h-11 items-center gap-1.5 rounded-full bg-accent px-5 text-[0.8125rem] font-bold text-white"
           >
             ＋ スポットを追加
           </Link>
           {isOwner && (
-            <button type="button" onClick={() => void deleteItinerary()} className="text-[12px] font-medium text-saved underline underline-offset-2">
+            <button type="button" onClick={() => void deleteItinerary()} className="text-[0.75rem] font-medium text-saved underline underline-offset-2">
               しおりを削除
             </button>
           )}
@@ -494,7 +494,7 @@ export function ItineraryDetailScreen({
   // v3.1: 「地図で見る」中は上 1/3 に地図（開いている Day の番号ピン）、下 2/3 に一覧。押していなければ一覧だけ
   // map-sheet Task2: 地図を広くした段階でシートに出す 1 行（4.5.6）。しおり名・Day
   const mapSummary = (
-    <p className="flex items-center gap-x-2 px-4 pb-3 text-[13px] font-semibold text-ink" data-sheet-summary-line>
+    <p className="flex items-center gap-x-2 px-4 pb-3 text-[0.8125rem] font-semibold text-ink" data-sheet-summary-line>
       <span className="truncate">{itinerary.title}</span>
       <span className="shrink-0 font-normal text-muted">{day === "all" ? "ALL" : `Day ${day}`}</span>
     </p>
@@ -551,7 +551,7 @@ function DayGroup({
   }, []);
   return (
     <section aria-label={dayLabel(day)} data-day-group={String(day ?? "none")} className="mt-2">
-      {showHeading && <h2 className="mb-1.5 text-[12px] font-bold text-muted">{dayLabel(day)}</h2>}
+      {showHeading && <h2 className="mb-1.5 text-[0.75rem] font-bold text-muted">{dayLabel(day)}</h2>}
       <ul className="flex flex-col gap-2">
         {spots.map((spot, index) => {
           const untimed = spot.arrivalTime === null;
@@ -583,7 +583,7 @@ function DayGroup({
 function MenuItem({ label, onClick, danger = false }: { label: string; onClick: () => void; danger?: boolean }) {
   return (
     <li role="presentation">
-      <button type="button" role="menuitem" onClick={onClick} className={`flex w-full px-3 py-2 text-left text-[13px] hover:bg-tint ${danger ? "text-saved" : "text-ink"}`}>
+      <button type="button" role="menuitem" onClick={onClick} className={`flex w-full px-3 py-2 text-left text-[0.8125rem] hover:bg-tint ${danger ? "text-saved" : "text-ink"}`}>
         {label}
       </button>
     </li>

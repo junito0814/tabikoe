@@ -46,7 +46,7 @@ export function AdminDashboardScreen({ data }: { data: AdminDashboardData }) {
           {data.recentPosts.length === 0 ? (
             <Empty />
           ) : (
-            <table className="w-full text-[12px]">
+            <table className="w-full text-[0.75rem]">
               <tbody>
                 {data.recentPosts.map((post) => (
                   <tr key={post.id} className="border-b border-line last:border-b-0">
@@ -57,7 +57,7 @@ export function AdminDashboardScreen({ data }: { data: AdminDashboardData }) {
                     </td>
                     <td className="whitespace-nowrap py-2 pr-3 text-muted">{post.category}</td>
                     <td className="whitespace-nowrap py-2 pr-3">
-                      <span className={`rounded-full px-1.5 py-0.5 text-[10px] ${post.isPublic ? "bg-tint text-accent" : "border border-line text-muted"}`}>
+                      <span className={`rounded-full px-1.5 py-0.5 text-[0.625rem] ${post.isPublic ? "bg-tint text-accent" : "border border-line text-muted"}`}>
                         {post.isPublic ? "公開" : "非公開"}
                       </span>
                     </td>
@@ -76,7 +76,7 @@ export function AdminDashboardScreen({ data }: { data: AdminDashboardData }) {
             {data.concentratedTargets.length === 0 ? (
               <Empty />
             ) : (
-              <table className="w-full text-[12px]">
+              <table className="w-full text-[0.75rem]">
                 <tbody>
                   {data.concentratedTargets.map((t) => (
                     <tr key={`${t.targetType}:${t.targetId}`} className="border-b border-line last:border-b-0">
@@ -84,7 +84,7 @@ export function AdminDashboardScreen({ data }: { data: AdminDashboardData }) {
                       <td className="whitespace-nowrap py-2 pr-3 tabular-nums text-ink">{t.reporterCount} 人</td>
                       <td className="whitespace-nowrap py-2 pr-3 text-muted">{relativeTime(t.latestAt)}</td>
                       <td className="py-2 text-right">
-                        <Link href={t.href} className="text-[12px] text-accent underline underline-offset-2">
+                        <Link href={t.href} className="text-[0.75rem] text-accent underline underline-offset-2">
                           開く
                         </Link>
                       </td>
@@ -98,7 +98,7 @@ export function AdminDashboardScreen({ data }: { data: AdminDashboardData }) {
             {data.recentSpots.length === 0 ? (
               <Empty />
             ) : (
-              <table className="w-full text-[12px]">
+              <table className="w-full text-[0.75rem]">
                 <tbody>
                   {data.recentSpots.map((spot) => (
                     <tr key={spot.id} className="border-b border-line last:border-b-0">
@@ -106,7 +106,7 @@ export function AdminDashboardScreen({ data }: { data: AdminDashboardData }) {
                       <td className="py-2 pr-3 font-semibold text-ink">{spot.name}</td>
                       <td className="whitespace-nowrap py-2 pr-3 text-muted">{spot.prefecture ?? "—"}</td>
                       <td className="whitespace-nowrap py-2 pr-3">
-                        {spot.isManual && <span className="rounded-full border border-line px-1.5 py-0.5 text-[10px] text-muted">だけ</span>}
+                        {spot.isManual && <span className="rounded-full border border-line px-1.5 py-0.5 text-[0.625rem] text-muted">だけ</span>}
                       </td>
                       <td className="py-2 text-right">
                         <ExternalLink href={`/spots/${spot.id}`} />
@@ -133,14 +133,14 @@ function AlertCard({ count, unit, label, sub, href, action }: { count: number; u
       }`}
     >
       <div className="min-w-0">
-        <p className="text-[12px] text-muted">{label}</p>
-        <p className={`text-[20px] font-bold ${none ? "text-done" : "text-saved"}`}>
+        <p className="text-[0.75rem] text-muted">{label}</p>
+        <p className={`text-[1.25rem] font-bold ${none ? "text-done" : "text-saved"}`}>
           {none ? "ありません" : `${count} ${unit}`}
         </p>
-        {!none && sub && <p className="text-[11px] text-muted">{sub}</p>}
+        {!none && sub && <p className="text-[0.6875rem] text-muted">{sub}</p>}
       </div>
       {!none && (
-        <Link href={href} className="shrink-0 rounded-[8px] bg-ink px-3 py-2 text-[12px] font-semibold text-on-ink">
+        <Link href={href} className="shrink-0 rounded-[8px] bg-ink px-3 py-2 text-[0.75rem] font-semibold text-on-ink">
           {action} →
         </Link>
       )}
@@ -151,9 +151,9 @@ function AlertCard({ count, unit, label, sub, href, action }: { count: number; u
 function StatCard({ label, value, sub }: { label: string; value: string; sub: string }) {
   return (
     <div className="rounded-[12px] border border-line bg-surface p-4">
-      <p className="text-[12px] text-muted">{label}</p>
-      <p className="text-[20px] font-bold tabular-nums text-ink">{value}</p>
-      <p className="text-[11px] text-muted">{sub}</p>
+      <p className="text-[0.75rem] text-muted">{label}</p>
+      <p className="text-[1.25rem] font-bold tabular-nums text-ink">{value}</p>
+      <p className="text-[0.6875rem] text-muted">{sub}</p>
     </div>
   );
 }
@@ -161,20 +161,20 @@ function StatCard({ label, value, sub }: { label: string; value: string; sub: st
 function Panel({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <section className="rounded-[12px] border border-line bg-surface p-4">
-      <h2 className="mb-2 text-[13px] font-bold text-ink">{title}</h2>
+      <h2 className="mb-2 text-[0.8125rem] font-bold text-ink">{title}</h2>
       {children}
     </section>
   );
 }
 
 function Empty() {
-  return <p className="py-4 text-center text-[12px] text-muted">ありません</p>;
+  return <p className="py-4 text-center text-[0.75rem] text-muted">ありません</p>;
 }
 
 /** 利用者向けの画面を新しいタブで開く */
 function ExternalLink({ href }: { href: string }) {
   return (
-    <a href={href} target="_blank" rel="noreferrer" className="text-[12px] text-accent underline underline-offset-2">
+    <a href={href} target="_blank" rel="noreferrer" className="text-[0.75rem] text-accent underline underline-offset-2">
       見る ↗
     </a>
   );

@@ -27,7 +27,7 @@ export function Toast({ toast, onClose }: { toast: ToastMessage | null; onClose:
   if (!toast) return null;
   return (
     <div className="pointer-events-none fixed inset-x-0 bottom-[calc(60px+16px)] z-50 flex justify-center px-4 md:bottom-6">
-      <div role="status" className="pointer-events-auto flex max-w-[420px] items-center gap-3 rounded-full bg-ink px-4 py-2.5 text-[13px] text-on-ink shadow-card">
+      <div role="status" className="pointer-events-auto flex max-w-[420px] items-center gap-3 rounded-full bg-ink px-4 py-2.5 text-[0.8125rem] text-on-ink shadow-card">
         <span className="min-w-0 truncate">{toast.text}</span>
         {toast.action &&
           (toast.action.href ? (

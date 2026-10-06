@@ -44,7 +44,7 @@ export function TimePicker10({
     <div role="group" aria-label={label} data-time-picker className="flex flex-col gap-3 rounded-[12px] border border-line bg-surface p-3 shadow-card">
       <div className="flex justify-center gap-4">
         <Column id={`${id}-hour`} label="時" options={HOURS} value={hour} onChange={setHour} format={(v) => String(v)} />
-        <span aria-hidden className="self-center text-[18px] font-bold text-ink">
+        <span aria-hidden className="self-center text-[1.125rem] font-bold text-ink">
           :
         </span>
         <Column id={`${id}-minute`} label="分" options={[...MINUTES]} value={minute} onChange={setMinute} format={(v) => String(v).padStart(2, "0")} />
@@ -56,7 +56,7 @@ export function TimePicker10({
             onChange(null);
             onClose?.();
           }}
-          className="text-[12px] font-medium text-muted underline underline-offset-2"
+          className="text-[0.75rem] font-medium text-muted underline underline-offset-2"
         >
           クリア
         </button>
@@ -66,7 +66,7 @@ export function TimePicker10({
             onChange(joinTime(hour, minute));
             onClose?.();
           }}
-          className="h-9 rounded-[8px] bg-ink px-4 text-[12px] font-semibold text-on-ink"
+          className="h-9 rounded-[8px] bg-ink px-4 text-[0.75rem] font-semibold text-on-ink"
         >
           {joinTime(hour, minute)} にする
         </button>
@@ -117,7 +117,7 @@ function Column({
 
   return (
     <div className="flex flex-col items-center gap-1">
-      <span id={`${id}-label`} className="text-[10px] text-muted">
+      <span id={`${id}-label`} className="text-[0.625rem] text-muted">
         {label}
       </span>
       <ul
@@ -138,7 +138,7 @@ function Column({
               role="option"
               aria-selected={selected}
               onClick={() => onChange(option)}
-              className={`flex h-11 snap-center cursor-pointer items-center justify-center text-[16px] ${selected ? "bg-accent font-bold text-white" : "text-ink"}`}
+              className={`flex h-11 snap-center cursor-pointer items-center justify-center text-[1rem] ${selected ? "bg-accent font-bold text-white" : "text-ink"}`}
             >
               {format(option)}
             </li>

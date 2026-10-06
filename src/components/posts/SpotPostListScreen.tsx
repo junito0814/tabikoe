@@ -79,7 +79,7 @@ export function SpotPostListScreen({
 
   const header = (
     <div className="flex flex-col gap-2">
-      <p className="flex flex-wrap items-center gap-x-1.5 text-[12px] text-muted">
+      <p className="flex flex-wrap items-center gap-x-1.5 text-[0.75rem] text-muted">
         <span>{spot.prefecture ?? "都道府県未設定"}</span>
         <span aria-hidden>・</span>
         <span>投稿 {spot.postCount} 件</span>
@@ -99,7 +99,7 @@ export function SpotPostListScreen({
         />
         <Link
           href={composeHref({ kind: "spot", spotId: spot.id })}
-          className="inline-flex h-9 items-center rounded-full bg-accent px-4 text-[12px] font-bold text-white"
+          className="inline-flex h-9 items-center rounded-full bg-accent px-4 text-[0.75rem] font-bold text-white"
         >
           投稿する
         </Link>
@@ -114,12 +114,12 @@ export function SpotPostListScreen({
     spot.lat !== null && spot.lng !== null ? (
       <StaticSpotMap spot={{ id: spot.id, name: spot.name, lat: spot.lat, lng: spot.lng }} href={mapHref} className="h-full w-full" />
     ) : (
-      <div className="flex h-full w-full items-center justify-center bg-line text-[12px] text-muted">位置情報のないスポット</div>
+      <div className="flex h-full w-full items-center justify-center bg-line text-[0.75rem] text-muted">位置情報のないスポット</div>
     );
 
   // map-sheet Task2: 地図を広くした段階でシートに出す 1 行（4.5.6）
   const summary = (
-    <p className="flex items-center gap-x-2 px-4 pb-3 text-[13px] font-semibold text-ink" data-sheet-summary-line>
+    <p className="flex items-center gap-x-2 px-4 pb-3 text-[0.8125rem] font-semibold text-ink" data-sheet-summary-line>
       <span className="truncate">{spot.name}</span>
       {spot.ratingAverage !== null && (
         <span className="flex shrink-0 items-center gap-1 font-normal text-muted" aria-label={`星${spot.ratingAverage}`}>

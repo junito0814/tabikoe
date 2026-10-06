@@ -52,7 +52,7 @@ export function SpotStatusButtons({
 
   return (
     <div className={`flex flex-col gap-2 ${className ?? ""}`} data-spot-status-buttons>
-      <p className="text-[13px] font-semibold text-ink">この場所、まだありますか？</p>
+      <p className="text-[0.8125rem] font-semibold text-ink">この場所、まだありますか？</p>
       <div className="flex flex-wrap gap-2">
         {(["still_there", "gone"] as const).map((status) => {
           const selected = summary.mine?.status === status;
@@ -63,7 +63,7 @@ export function SpotStatusButtons({
               onClick={() => void report(status)}
               disabled={isPending}
               aria-pressed={selected}
-              className={`inline-flex h-9 items-center gap-1.5 rounded-full border px-3 text-[12px] font-semibold disabled:opacity-60 ${
+              className={`inline-flex h-9 items-center gap-1.5 rounded-full border px-3 text-[0.75rem] font-semibold disabled:opacity-60 ${
                 selected
                   ? status === "still_there"
                     ? "border-done bg-done text-white"
@@ -78,12 +78,12 @@ export function SpotStatusButtons({
         })}
       </div>
       {latestLabel && (
-        <p className="text-[12px] text-done" data-spot-status>
+        <p className="text-[0.75rem] text-done" data-spot-status>
           {latestLabel}
         </p>
       )}
       {error && (
-        <p role="alert" className="text-[12px] text-saved">
+        <p role="alert" className="text-[0.75rem] text-saved">
           {error}
         </p>
       )}

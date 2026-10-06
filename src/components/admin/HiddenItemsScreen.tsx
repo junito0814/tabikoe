@@ -93,7 +93,7 @@ export function HiddenItemsScreen({
 
   return (
     <div className="flex w-full flex-col gap-4">
-      <div role="tablist" className="flex flex-wrap gap-1 text-[12px]">
+      <div role="tablist" className="flex flex-wrap gap-1 text-[0.75rem]">
         {HIDDEN_TABS.map((key) => (
           <Link
             key={key}
@@ -104,7 +104,7 @@ export function HiddenItemsScreen({
           >
             {HIDDEN_TAB_LABELS[key]}
             {counts[key] !== undefined && (
-              <span className={`rounded-full px-1.5 text-[10px] ${key === "auto" && (counts[key] ?? 0) > 0 ? "bg-accent text-white" : "border border-line"}`}>{counts[key]}</span>
+              <span className={`rounded-full px-1.5 text-[0.625rem] ${key === "auto" && (counts[key] ?? 0) > 0 ? "bg-accent text-white" : "border border-line"}`}>{counts[key]}</span>
             )}
           </Link>
         ))}
@@ -112,14 +112,14 @@ export function HiddenItemsScreen({
 
       {errorMessage && <ErrorNotice message={errorMessage} />}
       {result && (
-        <p role="status" className="text-[12px] text-done">
+        <p role="status" className="text-[0.75rem] text-done">
           {result}
         </p>
       )}
 
       <div className="overflow-x-auto rounded-[12px] border border-line bg-surface">
-        <table className="w-full min-w-[820px] text-left text-[12px] text-ink">
-          <thead className="border-b border-line text-[11px] text-muted">
+        <table className="w-full min-w-[820px] text-left text-[0.75rem] text-ink">
+          <thead className="border-b border-line text-[0.6875rem] text-muted">
             <tr>
               <th className="px-3 py-2 font-medium">非公開になった</th>
               <th className="px-3 py-2 font-medium">対象</th>
@@ -174,7 +174,7 @@ export function HiddenItemsScreen({
       </div>
 
       {nextOffset !== null && (
-        <button type="button" onClick={() => void loadMore()} disabled={isLoading} className="h-10 rounded-[8px] border border-line bg-surface text-[13px] font-medium text-ink disabled:opacity-45">
+        <button type="button" onClick={() => void loadMore()} disabled={isLoading} className="h-10 rounded-[8px] border border-line bg-surface text-[0.8125rem] font-medium text-ink disabled:opacity-45">
           {isLoading ? "読み込み中..." : "もっと見る"}
         </button>
       )}
@@ -182,21 +182,21 @@ export function HiddenItemsScreen({
       {confirming && (
         <div role="dialog" aria-modal="true" aria-labelledby="restore-dialog-title" className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-6">
           <div className="w-full max-w-[380px] rounded-[14px] bg-surface p-6 shadow-xl">
-            <h2 id="restore-dialog-title" className="mb-2 text-[16px] font-bold text-ink">
+            <h2 id="restore-dialog-title" className="mb-2 text-[1rem] font-bold text-ink">
               {confirming.label}を復元しますか
             </h2>
-            <p className="mb-3 text-[12px] leading-[1.7] text-muted">
+            <p className="mb-3 text-[0.75rem] leading-[1.7] text-muted">
               {tab === "auto" ? "公開に戻し、この対象への未処理の通報を「問題なし」にします。" : "公開に戻します。"}操作の記録に残ります。
             </p>
-            <label className="block text-[11px] text-muted">
+            <label className="block text-[0.6875rem] text-muted">
               理由（必須）
-              <textarea value={note} onChange={(e) => setNote(e.target.value)} rows={2} className="mt-0.5 block w-full rounded-[8px] border border-line bg-surface px-2 py-1 text-[12px] text-ink" />
+              <textarea value={note} onChange={(e) => setNote(e.target.value)} rows={2} className="mt-0.5 block w-full rounded-[8px] border border-line bg-surface px-2 py-1 text-[0.75rem] text-ink" />
             </label>
             <div className="mt-4 flex gap-2">
-              <button type="button" onClick={() => setConfirming(null)} disabled={isSubmitting} className="h-11 flex-1 rounded-[10px] border border-line text-[14px] font-medium text-ink">
+              <button type="button" onClick={() => setConfirming(null)} disabled={isSubmitting} className="h-11 flex-1 rounded-[10px] border border-line text-[0.875rem] font-medium text-ink">
                 キャンセル
               </button>
-              <button type="button" onClick={() => void runRestore()} disabled={isSubmitting} className="h-11 flex-1 rounded-[10px] bg-ink text-[14px] font-semibold text-on-ink disabled:opacity-45">
+              <button type="button" onClick={() => void runRestore()} disabled={isSubmitting} className="h-11 flex-1 rounded-[10px] bg-ink text-[0.875rem] font-semibold text-on-ink disabled:opacity-45">
                 {isSubmitting ? "復元中…" : "復元する"}
               </button>
             </div>

@@ -18,9 +18,9 @@ import type { ReactNode } from "react";
  * `appearance: none` でブラウザ既定の矢印を消し、同じ位置に自分の `⌄` を置きます
  * （`pointer-events-none` なので、矢印を押しても `<select>` が開きます）。
  *
- * **文字は 16px です。** `globals.css` が `select` を一律 16px にしているため
+ * **文字は 1rem（既定で 16px）です。** `globals.css` が `select` を一律 `max(1rem, 16px)` にしているため
  * （iOS は 16px 未満の入力欄に触ると勝手に画面を拡大し、戻らない。要件 4.5.12 の 1）。
- * ここに `text-[12px]` と書いても効きません。アプリに前からある `<select>`
+ * ここに `text-[0.75rem]` と書いても効きません。アプリに前からある `<select>`
  * （アルバムの並び順・移動手段）も同じ 16px なので、これで見た目がそろいます。
  */
 export function Select<T extends string>({
@@ -49,7 +49,7 @@ export function Select<T extends string>({
         onChange={(event) => onChange(event.target.value as T)}
         aria-label={ariaLabel}
         disabled={disabled}
-        className="h-8 max-w-full appearance-none truncate rounded-full border border-line bg-surface pl-3 pr-7 text-[16px] font-semibold text-ink disabled:opacity-45"
+        className="h-8 max-w-full appearance-none truncate rounded-full border border-line bg-surface pl-3 pr-7 text-[1rem] font-semibold text-ink disabled:opacity-45"
       >
         {options.map((option) => (
           <option key={option} value={option}>

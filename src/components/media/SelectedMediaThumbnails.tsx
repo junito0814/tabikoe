@@ -63,7 +63,7 @@ export function SelectedMediaThumbnails({
             onClick={() => onRemove(item.key)}
             disabled={removingKey !== null}
             aria-label={removingKey === item.key ? `${item.alt}を外しています` : `${item.alt}を外す`}
-            className="absolute right-1 top-1 flex h-6 w-6 items-center justify-center rounded-full bg-black/55 text-[13px] leading-none text-white disabled:opacity-60"
+            className="absolute right-1 top-1 flex h-6 w-6 items-center justify-center rounded-full bg-black/55 text-[0.8125rem] leading-none text-white disabled:opacity-60"
           >
             ×
           </button>
@@ -75,7 +75,7 @@ export function SelectedMediaThumbnails({
             type="button"
             onClick={onAdd}
             aria-label={addLabel}
-            className="flex h-20 w-20 items-center justify-center rounded-[8px] border border-dashed border-line text-[22px] text-muted"
+            className="flex h-20 w-20 items-center justify-center rounded-[8px] border border-dashed border-line text-[1.375rem] text-muted"
           >
             ＋
           </button>

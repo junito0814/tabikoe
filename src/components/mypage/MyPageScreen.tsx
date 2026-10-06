@@ -52,13 +52,13 @@ export function MyPageScreen({
             <Link href="/account" className="flex items-center gap-3 p-4" aria-label={`${profile.displayName}（プロフィールを編集）`}>
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src={profile.avatarUrl} alt={`${profile.displayName}のアイコン画像`} className="h-16 w-16 rounded-full object-cover" />
-              <h1 className="min-w-0 flex-1 truncate text-[16px] font-bold text-ink">{profile.displayName}</h1>
+              <h1 className="min-w-0 flex-1 truncate text-[1rem] font-bold text-ink">{profile.displayName}</h1>
               <span aria-hidden className="shrink-0 text-muted">
                 ›
               </span>
             </Link>
             {profile.isAdmin && (
-              <div className="border-t border-line px-4 py-2 text-[12px]">
+              <div className="border-t border-line px-4 py-2 text-[0.75rem]">
                 <Link href="/admin" className="font-medium text-muted underline underline-offset-2">
                   管理者ダッシュボード
                 </Link>
@@ -72,7 +72,7 @@ export function MyPageScreen({
             */}
           <Link
             href="/badges"
-            className="flex items-center gap-2 rounded-[12px] border border-line bg-surface px-4 py-3 text-[13px] font-semibold text-ink"
+            className="flex items-center gap-2 rounded-[12px] border border-line bg-surface px-4 py-3 text-[0.8125rem] font-semibold text-ink"
             data-badge-line
           >
             <span aria-hidden>🏅</span>
@@ -90,12 +90,12 @@ export function MyPageScreen({
           {/* 2. サマリー */}
           <section aria-label="サマリー" className="grid grid-cols-2 gap-2">
             <div className="rounded-[12px] border border-line bg-surface p-3 text-center">
-              <p className="text-[11px] text-muted">投稿数</p>
-              <p className="text-[20px] font-bold text-ink" data-summary="postCount">{summary.postCount}</p>
+              <p className="text-[0.6875rem] text-muted">投稿数</p>
+              <p className="text-[1.25rem] font-bold text-ink" data-summary="postCount">{summary.postCount}</p>
             </div>
             <div className="rounded-[12px] border border-line bg-surface p-3 text-center">
-              <p className="text-[11px] text-muted">獲得いいね</p>
-              <p className="text-[20px] font-bold text-ink" data-summary="receivedLikeCount">{summary.receivedLikeCount}</p>
+              <p className="text-[0.6875rem] text-muted">獲得いいね</p>
+              <p className="text-[1.25rem] font-bold text-ink" data-summary="receivedLikeCount">{summary.receivedLikeCount}</p>
             </div>
           </section>
 

@@ -102,11 +102,11 @@ function SpotCard({ card, selected, onClick }: { card: NumberedSpot; selected: b
     >
       <span className="flex items-center gap-1.5">
         {/* 地図のピンに出ている数字と同じ（spotsInTab が決める） */}
-        <span className="inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-ink text-[11px] font-bold text-on-ink">{number}</span>
-        <span className="truncate text-[13px] font-bold text-ink">{spot.name}</span>
+        <span className="inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-ink text-[0.6875rem] font-bold text-on-ink">{number}</span>
+        <span className="truncate text-[0.8125rem] font-bold text-ink">{spot.name}</span>
       </span>
-      {spot.memo && <span className="line-clamp-2 text-[11px] leading-[1.5] text-muted">{spot.memo}</span>}
-      <span className="mt-auto flex items-center gap-2 text-[11px] text-muted">
+      {spot.memo && <span className="line-clamp-2 text-[0.6875rem] leading-[1.5] text-muted">{spot.memo}</span>}
+      <span className="mt-auto flex items-center gap-2 text-[0.6875rem] text-muted">
         {/* 時刻は決まっている行だけ。空の行で「──」を出すと、カードが増えるほど意味の無い記号が並ぶ */}
         {spot.arrivalTime && <span className="font-bold text-ink">{spot.arrivalTime}</span>}
         <span>{dayLabel(day)}</span>

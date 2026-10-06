@@ -45,14 +45,14 @@ export function DayTabs({
             aria-selected={selected}
             data-day={String(tab)}
             onClick={() => onChange(tab)}
-            className={`flex h-9 shrink-0 items-center gap-1.5 rounded-full px-3 text-[12px] font-semibold ${
+            className={`flex h-9 shrink-0 items-center gap-1.5 rounded-full px-3 text-[0.75rem] font-semibold ${
               selected ? "bg-ink text-on-ink" : "border border-line bg-surface text-muted"
             }`}
           >
             {dayTabLabel(tab)}
-            {date && <span className={`text-[10px] ${selected ? "text-white/80" : "text-muted"}`}>{date}</span>}
+            {date && <span className={`text-[0.625rem] ${selected ? "text-white/80" : "text-muted"}`}>{date}</span>}
             {count.total > 0 && (
-              <span className={`rounded-full px-1.5 text-[10px] ${selected ? "bg-white/20" : "bg-tint"}`}>
+              <span className={`rounded-full px-1.5 text-[0.625rem] ${selected ? "bg-white/20" : "bg-tint"}`}>
                 {count.checked}/{count.total}
               </span>
             )}

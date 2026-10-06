@@ -18,17 +18,17 @@ export function AreaPicker({ selected, onChange, onBack }: { selected: readonly 
       <div className="flex items-center gap-2">
         {/* #813: 戻るは共通部品から描く（自前で ‹ を描かない）。行き先はシートの中なので onClick */}
         <BackLink label="絞り込み" onClick={onBack} />
-        <h3 className="flex-1 text-center text-[15px] font-bold text-ink">エリア</h3>
+        <h3 className="flex-1 text-center text-[0.9375rem] font-bold text-ink">エリア</h3>
         <span className="w-[72px]" />
       </div>
-      <p className="text-[11px] text-muted">地方の □ でその地方を全部、都道府県で 1 つずつ。選ばなければ全部</p>
+      <p className="text-[0.6875rem] text-muted">地方の □ でその地方を全部、都道府県で 1 つずつ。選ばなければ全部</p>
 
       {REGIONS.map((region) => {
         const state = regionState(region, selected);
         return (
           <fieldset key={region.name} data-region={region.name}>
             <legend className="sr-only">{region.name}</legend>
-            <label className="mb-1.5 flex items-center gap-2 text-[13px] font-bold text-ink">
+            <label className="mb-1.5 flex items-center gap-2 text-[0.8125rem] font-bold text-ink">
               <input
                 type="checkbox"
                 checked={state === "all"}
@@ -41,7 +41,7 @@ export function AreaPicker({ selected, onChange, onBack }: { selected: readonly 
                 className="h-[18px] w-[18px] accent-[var(--accent)]"
               />
               {region.name}
-              {state !== "none" && <span className="text-[11px] font-medium text-muted">{state === "all" ? "全部" : "一部"}</span>}
+              {state !== "none" && <span className="text-[0.6875rem] font-medium text-muted">{state === "all" ? "全部" : "一部"}</span>}
             </label>
             <div className="flex flex-wrap gap-1.5">
               {region.prefectures.map((name) => {
@@ -49,7 +49,7 @@ export function AreaPicker({ selected, onChange, onBack }: { selected: readonly 
                 return (
                   <label
                     key={name}
-                    className={`cursor-pointer rounded-full border px-3 py-1.5 text-[12px] font-medium ${
+                    className={`cursor-pointer rounded-full border px-3 py-1.5 text-[0.75rem] font-medium ${
                       checked ? "border-accent bg-accent text-white" : "border-line text-ink"
                     }`}
                   >

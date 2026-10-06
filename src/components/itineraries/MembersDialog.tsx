@@ -99,13 +99,13 @@ export function MembersDialog({
             <li key={member.userId} className="flex items-center gap-2 rounded-[8px] border border-line px-3 py-2">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src={member.avatarUrl} alt="" className="h-7 w-7 rounded-full object-cover" />
-              <span className="min-w-0 flex-1 truncate text-[13px] text-ink">
+              <span className="min-w-0 flex-1 truncate text-[0.8125rem] text-ink">
                 {member.displayName}
-                {member.userId === viewerId && <span className="ml-1 text-[11px] text-muted">（自分）</span>}
+                {member.userId === viewerId && <span className="ml-1 text-[0.6875rem] text-muted">（自分）</span>}
               </span>
-              <span className="text-[11px] text-muted">{ITINERARY_ROLE_LABELS[member.role]}</span>
+              <span className="text-[0.6875rem] text-muted">{ITINERARY_ROLE_LABELS[member.role]}</span>
               {role === "owner" && member.role !== "owner" && (
-                <button type="button" onClick={() => void remove(member.userId)} disabled={busy} className="text-[12px] font-medium text-saved underline underline-offset-2 disabled:opacity-45">
+                <button type="button" onClick={() => void remove(member.userId)} disabled={busy} className="text-[0.75rem] font-medium text-saved underline underline-offset-2 disabled:opacity-45">
                   {busyKey === `remove:${member.userId}` ? "削除中…" : "削除"}
                 </button>
               )}
@@ -114,7 +114,7 @@ export function MembersDialog({
         </ul>
         {error && <ErrorNotice message={error} />}
         {role === "member" && (
-          <button type="button" onClick={() => void leave()} disabled={busy} className="h-10 rounded-[10px] border border-line bg-surface text-[13px] font-semibold text-saved disabled:opacity-45">
+          <button type="button" onClick={() => void leave()} disabled={busy} className="h-10 rounded-[10px] border border-line bg-surface text-[0.8125rem] font-semibold text-saved disabled:opacity-45">
             {busyKey === "leave" ? "退出しています…" : "このしおりから退出"}
           </button>
         )}

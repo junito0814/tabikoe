@@ -40,26 +40,26 @@ export default function DisplayNameForm({ initialDisplayName }: { initialDisplay
 
   return (
     <div className="w-full max-w-[360px]">
-      <label className="mb-1.5 block text-[12px] font-medium text-muted">ユーザー名</label>
+      <label className="mb-1.5 block text-[0.75rem] font-medium text-muted">ユーザー名</label>
       <input
         value={value}
         onChange={(e) => setValue(e.target.value)}
-        className="h-11 w-full rounded-[10px] border border-line bg-surface px-3 text-[14px] text-ink focus:outline-none focus:ring-1 focus:ring-accent"
+        className="h-11 w-full rounded-[10px] border border-line bg-surface px-3 text-[0.875rem] text-ink focus:outline-none focus:ring-1 focus:ring-accent"
       />
       <div className="mt-1.5 flex items-center justify-between">
-        <span className={`text-[11px] ${isTooLong ? "text-accent" : "text-muted"}`}>
+        <span className={`text-[0.6875rem] ${isTooLong ? "text-accent" : "text-muted"}`}>
           {length} / {MAX_LENGTH}
         </span>
         <button
           type="button"
           onClick={handleSave}
           disabled={isTooLong || isSaving}
-          className="h-8 rounded-[8px] bg-accent px-4 text-[12px] font-semibold text-white disabled:cursor-not-allowed disabled:opacity-45"
+          className="h-8 rounded-[8px] bg-accent px-4 text-[0.75rem] font-semibold text-white disabled:cursor-not-allowed disabled:opacity-45"
         >
           {isSaving ? "保存中..." : "保存"}
         </button>
       </div>
-      {message && <p className="mt-1.5 text-[11px] text-muted">{message}</p>}
+      {message && <p className="mt-1.5 text-[0.6875rem] text-muted">{message}</p>}
     </div>
   );
 }

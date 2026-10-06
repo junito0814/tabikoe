@@ -43,10 +43,10 @@ export async function OfficialInfo({ spotId }: { spotId: string }) {
     >
       <div className="flex items-center gap-2">
         <GoogleMapsAttribution />
-        <span className="text-[10.5px] text-muted">の情報</span>
+        <span className="text-[0.65625rem] text-muted">の情報</span>
       </div>
       {info.openNow !== null && (
-        <p className="text-[12.5px]">
+        <p className="text-[0.78125rem]">
           <span className="text-muted">いま</span>{" "}
           <span className={`font-bold ${info.openNow ? "text-done" : "text-muted"}`}>
             {info.openNow ? "営業中" : "営業時間外"}
@@ -54,7 +54,7 @@ export async function OfficialInfo({ spotId }: { spotId: string }) {
         </p>
       )}
       {info.weekdayDescriptions.length > 0 && (
-        <details className="text-[12px]">
+        <details className="text-[0.75rem]">
           <summary className="cursor-pointer text-muted">営業時間</summary>
           <ul className="mt-1 flex flex-col gap-0.5 text-ink">
             {info.weekdayDescriptions.map((line) => (
@@ -68,7 +68,7 @@ export async function OfficialInfo({ spotId }: { spotId: string }) {
           href={info.websiteUri}
           target="_blank"
           rel="noopener noreferrer"
-          className="tap-target text-[12.5px] font-semibold text-accent underline underline-offset-2"
+          className="tap-target text-[0.78125rem] font-semibold text-accent underline underline-offset-2"
         >
           公式サイトを開く
         </a>

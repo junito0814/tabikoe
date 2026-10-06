@@ -63,7 +63,7 @@ export function SpotFixScreen({
     }
   };
 
-  const field = "mt-0.5 block h-11 w-full rounded-[10px] border border-line bg-surface px-3 text-[14px] text-ink";
+  const field = "mt-0.5 block h-11 w-full rounded-[10px] border border-line bg-surface px-3 text-[0.875rem] text-ink";
 
   return (
     <div className="flex min-h-screen flex-col items-center bg-app px-4 py-6">
@@ -71,23 +71,23 @@ export function SpotFixScreen({
         <header className="flex items-center gap-3">
           {/* #813: 記号だけの ‹ をやめ、戻り先の画面名を出す共通部品に揃えた */}
           <BackLink href="/notifications" label="通知" />
-          <h1 className="text-[18px] font-bold text-ink">スポットの修正</h1>
+          <h1 className="text-[1.125rem] font-bold text-ink">スポットの修正</h1>
         </header>
 
         {requestNote && (
-          <p role="note" className="rounded-[12px] border border-accent/40 bg-tint p-3 text-[13px] leading-[1.7] text-ink">
+          <p role="note" className="rounded-[12px] border border-accent/40 bg-tint p-3 text-[0.8125rem] leading-[1.7] text-ink">
             「{spot.name}」の情報に指摘があります：{requestNote}
           </p>
         )}
 
-        <label className="text-[12px] font-medium text-muted">
+        <label className="text-[0.75rem] font-medium text-muted">
           スポット名
           <input value={name} onChange={(e) => setName(e.target.value)} maxLength={MAX_SPOT_NAME_LENGTH * 2} className={field} />
-          <span className="text-[11px]">
+          <span className="text-[0.6875rem]">
             {nameLength}/{MAX_SPOT_NAME_LENGTH}
           </span>
         </label>
-        <label className="text-[12px] font-medium text-muted">
+        <label className="text-[0.75rem] font-medium text-muted">
           都道府県
           <select value={prefecture} onChange={(e) => setPrefecture(e.target.value)} className={field}>
             <option value="">未設定</option>
@@ -99,16 +99,16 @@ export function SpotFixScreen({
           </select>
         </label>
         <div>
-          <p className="text-[12px] font-medium text-muted">位置（地図を動かしてピンを合わせる）</p>
+          <p className="text-[0.75rem] font-medium text-muted">位置（地図を動かしてピンを合わせる）</p>
           <PostLocationMap initialCenter={{ lat: spot.lat, lng: spot.lng }} lockedPosition={null} onCenterChange={setPosition} resolveCenter={resolveCenter} className="mt-1 h-[260px] overflow-hidden rounded-[12px]" />
         </div>
 
         {errorMessage && <ErrorNotice message={errorMessage} />}
 
-        <button type="submit" disabled={!canSubmit} className="h-12 rounded-[10px] bg-accent text-[15px] font-semibold text-white disabled:cursor-not-allowed disabled:opacity-45">
+        <button type="submit" disabled={!canSubmit} className="h-12 rounded-[10px] bg-accent text-[0.9375rem] font-semibold text-white disabled:cursor-not-allowed disabled:opacity-45">
           {isSubmitting ? "保存中..." : "直した内容を保存する"}
         </button>
-        <p className="text-[11px] text-muted">自分が登録した場所だけ直せます。保存すると、このスポットへの「情報の誤り」の通報は対応済みになります</p>
+        <p className="text-[0.6875rem] text-muted">自分が登録した場所だけ直せます。保存すると、このスポットへの「情報の誤り」の通報は対応済みになります</p>
       </form>
     </div>
   );

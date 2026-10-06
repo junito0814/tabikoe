@@ -92,7 +92,7 @@ export function PhotoGrid({
       <div ref={containerRef} data-columns={columns}>
         {items.length === 0 ? (
           // 1 ページ目が未取得（nextOffset が 0）のときは番兵が見えて自動で読み込む
-          <p className="py-16 text-center text-[13px] text-muted">{nextOffset !== null ? "読み込んでいます…" : "まだ写真・動画がありません"}</p>
+          <p className="py-16 text-center text-[0.8125rem] text-muted">{nextOffset !== null ? "読み込んでいます…" : "まだ写真・動画がありません"}</p>
         ) : (
           <ul className="grid gap-0.5" style={{ gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))` }}>
             {items.map((item, index) => (
@@ -131,7 +131,7 @@ export function PhotoGrid({
           type="button"
           onClick={() => void loadMore()}
           disabled={isLoading}
-          className="mt-3 h-10 w-full rounded-[10px] border border-line bg-surface text-[13px] font-semibold text-ink disabled:opacity-45"
+          className="mt-3 h-10 w-full rounded-[10px] border border-line bg-surface text-[0.8125rem] font-semibold text-ink disabled:opacity-45"
         >
           {isLoading ? "読み込み中…" : "もっと見る"}
         </button>
@@ -154,10 +154,10 @@ function PhotoInfoBar({ info }: { info: SpotMediaItem["info"] }) {
   const cost = formatCost(info.cost);
   return (
     <div className="flex flex-col gap-1" data-photo-info>
-      <p className="flex flex-wrap items-center gap-x-2 text-[14px] font-bold text-ink">
+      <p className="flex flex-wrap items-center gap-x-2 text-[0.875rem] font-bold text-ink">
         <span className="min-w-0 truncate">{info.spotName}</span>
       </p>
-      <p className="flex flex-wrap items-center gap-x-2 text-[12px] text-muted">
+      <p className="flex flex-wrap items-center gap-x-2 text-[0.75rem] text-muted">
         {info.rating !== null && (
           <span className="flex items-center gap-1" aria-label={`星${info.rating}`}>
             <span className="text-star" aria-hidden>
@@ -169,7 +169,7 @@ function PhotoInfoBar({ info }: { info: SpotMediaItem["info"] }) {
         {info.duration && <span>滞在 {info.duration}</span>}
         {cost && <span>{cost === "無料" ? cost : `${cost}/人`}</span>}
       </p>
-      <p className="text-[12px] text-muted">
+      <p className="text-[0.75rem] text-muted">
         <span className="font-medium text-ink">{info.authorName}</span>
         {info.visitDate && <span>　訪問 {info.visitDate.replace(/-/g, "/")}</span>}
       </p>

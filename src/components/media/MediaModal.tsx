@@ -95,7 +95,7 @@ export function MediaModal({
         else if (delta < -40) goNext();
       }}
     >
-      <div className="flex items-center justify-between px-4 py-3 text-[12px]" onClick={(event) => event.stopPropagation()}>
+      <div className="flex items-center justify-between px-4 py-3 text-[0.75rem]" onClick={(event) => event.stopPropagation()}>
         <span aria-live="polite">
           {index + 1} / {items.length}
         </span>
@@ -116,7 +116,7 @@ export function MediaModal({
             type="button"
             onClick={goPrev}
             aria-label="前へ"
-            className="absolute left-2 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-white/15 text-[20px]"
+            className="absolute left-2 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-white/15 text-[1.25rem]"
           >
             ‹
           </button>
@@ -126,7 +126,7 @@ export function MediaModal({
             type="button"
             onClick={goNext}
             aria-label="次へ"
-            className="absolute right-2 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-white/15 text-[20px]"
+            className="absolute right-2 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-white/15 text-[1.25rem]"
           >
             ›
           </button>
@@ -138,7 +138,7 @@ export function MediaModal({
           {renderInfo(item)}
           {href && (
             <div className="mt-2 flex justify-end">
-              <Link href={href} className="h-9 rounded-full bg-accent px-4 text-[12px] font-bold leading-9 text-white">
+              <Link href={href} className="h-9 rounded-full bg-accent px-4 text-[0.75rem] font-bold leading-9 text-white">
                 {postHrefLabel} →
               </Link>
             </div>
@@ -147,7 +147,7 @@ export function MediaModal({
       ) : (
         href && (
           <div className="flex justify-center px-4 py-3" onClick={(event) => event.stopPropagation()}>
-            <Link href={href} className="h-10 rounded-full bg-white px-4 text-[13px] font-semibold leading-10 text-black">
+            <Link href={href} className="h-10 rounded-full bg-white px-4 text-[0.8125rem] font-semibold leading-10 text-black">
               {postHrefLabel}
             </Link>
           </div>

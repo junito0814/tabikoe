@@ -10,7 +10,7 @@ import Link from "next/link";
  *   - `onClick` を渡すとボタン（PostFab。押してから位置情報を取る）
  */
 export function PostHereButton({ href, onClick, disabled = false, className }: { href?: string; onClick?: () => void; disabled?: boolean; className?: string }) {
-  const base = `flex h-11 items-center gap-1.5 rounded-full bg-accent px-4 text-[13px] font-bold text-white shadow-[0_4px_20px_rgba(47,127,216,0.30)] ${className ?? ""}`;
+  const base = `flex h-11 items-center gap-1.5 rounded-full bg-accent px-4 text-[0.8125rem] font-bold text-white shadow-[0_4px_20px_rgba(47,127,216,0.30)] ${className ?? ""}`;
   const inner = (
     <>
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden>

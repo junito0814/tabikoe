@@ -169,7 +169,7 @@ export function PostSearchScreen({
           <div className="flex items-center gap-2">
             {/* #813: 戻るは共通部品（自前で ‹ を描かない） */}
             <BackLink href={backHref} label={backLabel} />
-            <h1 className="min-w-0 flex-1 truncate text-center text-[16px] font-bold text-ink">{title}</h1>
+            <h1 className="min-w-0 flex-1 truncate text-center text-[1rem] font-bold text-ink">{title}</h1>
             {/*
               * #692: スポット別の一覧では絞り込みを出さない（並び替えは残す）。
               * 1 つの場所の中で予算や評価で絞る場面が無く、押す場所だけが増えていた。
@@ -179,7 +179,7 @@ export function PostSearchScreen({
                 type="button"
                 onClick={() => setIsSheetOpen(true)}
                 aria-haspopup="dialog"
-                className="h-8 shrink-0 rounded-full border border-line bg-surface px-3 text-[12px] font-semibold text-ink"
+                className="h-8 shrink-0 rounded-full border border-line bg-surface px-3 text-[0.75rem] font-semibold text-ink"
               >
                 絞り込み{activeCount > 0 && `（${activeCount}）`}
               </button>
@@ -203,7 +203,7 @@ export function PostSearchScreen({
         ) : posts.length === 0 && isLoading ? (
           <CardListSkeleton />
         ) : posts.length === 0 && !errorMessage ? (
-          <p className="py-16 text-center text-[13px] text-muted">{emptyMessage}</p>
+          <p className="py-16 text-center text-[0.8125rem] text-muted">{emptyMessage}</p>
         ) : (
           <ul className="flex flex-col gap-3">
             {posts.map((post) => (
@@ -235,7 +235,7 @@ export function PostSearchScreen({
             type="button"
             onClick={loadMore}
             disabled={isLoading}
-            className="mt-3 h-10 w-full rounded-[10px] border border-line bg-surface text-[13px] font-semibold text-ink disabled:opacity-45"
+            className="mt-3 h-10 w-full rounded-[10px] border border-line bg-surface text-[0.8125rem] font-semibold text-ink disabled:opacity-45"
           >
             {isLoading ? "読み込み中…" : "もっと見る"}
           </button>

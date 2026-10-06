@@ -99,13 +99,13 @@ export function SearchTopScreen({
   return (
     <div className={`${outfit.className} bg-sky flex min-h-[calc(100dvh-60px)] flex-col items-center justify-center gap-7 px-6 md:min-h-dvh`} data-search-top data-home-fixed>
       {addMode && (
-        <p className="w-full max-w-[360px] rounded-[10px] bg-accent/10 px-3 py-2 text-center text-[12px] font-medium text-accent">
+        <p className="w-full max-w-[360px] rounded-[10px] bg-accent/10 px-3 py-2 text-center text-[0.75rem] font-medium text-accent">
           しおりに追加するスポットの行き先を入力してください
         </p>
       )}
       <div className="flex flex-col items-center gap-3">
         <AppLogo size={64} />
-        <h1 className={`${lora.className} text-[24px] font-bold tracking-[2px] text-ink`}>タビコエ</h1>
+        <h1 className={`${lora.className} text-[1.5rem] font-bold tracking-[2px] text-ink`}>タビコエ</h1>
       </div>
 
       <div className="flex w-full max-w-[360px] flex-col gap-3">
@@ -124,12 +124,12 @@ export function SearchTopScreen({
           * 何を待っているのかを言葉で出す。
           */}
         {isSubmitting && (
-          <p role="status" className="text-center text-[12px] text-muted">
+          <p role="status" className="text-center text-[0.75rem] text-muted">
             探しています…
           </p>
         )}
         {notice && (
-          <p role="status" className="text-center text-[12px] text-accent">
+          <p role="status" className="text-center text-[0.75rem] text-accent">
             {notice}
           </p>
         )}
@@ -139,7 +139,7 @@ export function SearchTopScreen({
           type="button"
           onClick={() => void exploreNearby()}
           disabled={isLocating}
-          className="flex h-[52px] w-full items-center justify-center gap-2 rounded-full border border-line bg-surface text-[15px] font-semibold text-ink disabled:opacity-60"
+          className="flex h-[52px] w-full items-center justify-center gap-2 rounded-full border border-line bg-surface text-[0.9375rem] font-semibold text-ink disabled:opacity-60"
         >
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden>
             <circle cx="12" cy="12" r="6" stroke="currentColor" strokeWidth="1.8" />
@@ -154,7 +154,7 @@ export function SearchTopScreen({
           */}
         <Link
           href="/search"
-          className="flex h-[52px] w-full items-center justify-center gap-2 rounded-full bg-accent text-[15px] font-bold text-white shadow-[0_4px_20px_rgba(47,127,216,0.30)]"
+          className="flex h-[52px] w-full items-center justify-center gap-2 rounded-full bg-accent text-[0.9375rem] font-bold text-white shadow-[0_4px_20px_rgba(47,127,216,0.30)]"
           data-see-all-posts
         >
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden>

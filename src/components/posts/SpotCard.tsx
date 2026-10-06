@@ -28,11 +28,11 @@ export function SpotCard({ spot, addMode = null, backHref = null }: { spot: Spot
     <article className="relative flex flex-col gap-2 rounded-[12px] border border-line bg-surface p-3 shadow-card" data-spot-card={spot.id}>
 {/* performance Task1: 一覧のカードは先読みしない（1 画面で何十本も裏で走り、関所と Supabase を叩くため） */}
       <Link href={href} prefetch={false} className="flex flex-col gap-2">
-        <h3 className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-0.5 pr-10 text-[15px] font-bold leading-tight text-ink">
+        <h3 className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-0.5 pr-10 text-[0.9375rem] font-bold leading-tight text-ink">
           <span className="min-w-0 truncate">{spot.name}</span>
         </h3>
         {/* #692: 「徒歩 N 分」は外した（位置情報の許可と取得を待つぶん、一覧が遅れていた） */}
-        <p className="flex flex-wrap items-center gap-x-2 text-[11px] text-muted">
+        <p className="flex flex-wrap items-center gap-x-2 text-[0.6875rem] text-muted">
           {spot.prefecture && <span>{spot.prefecture}</span>}
         </p>
 
@@ -49,10 +49,10 @@ export function SpotCard({ spot, addMode = null, backHref = null }: { spot: Spot
             )}
           </span>
           <div className="flex min-w-0 flex-1 flex-col gap-1">
-            <p className="flex flex-wrap items-center gap-x-2.5 text-[12px] text-muted">
+            <p className="flex flex-wrap items-center gap-x-2.5 text-[0.75rem] text-muted">
               {spot.averageRating !== null ? (
                 <span className="flex items-center gap-1" aria-label={`星${spot.averageRating}`}>
-                  <span className="text-[13px] text-star" aria-hidden>
+                  <span className="text-[0.8125rem] text-star" aria-hidden>
                     ★
                   </span>
                   <span>{spot.averageRating.toFixed(1)}</span>
@@ -62,9 +62,9 @@ export function SpotCard({ spot, addMode = null, backHref = null }: { spot: Spot
               )}
               <span data-post-count>投稿 {spot.postCount} 件</span>
             </p>
-            {spot.latestComment && <p className="line-clamp-2 text-[13px] leading-[1.6] text-ink">{spot.latestComment}</p>}
+            {spot.latestComment && <p className="line-clamp-2 text-[0.8125rem] leading-[1.6] text-ink">{spot.latestComment}</p>}
             {statusLabel && (
-              <p className="text-[12px] font-medium text-done" data-spot-status>
+              <p className="text-[0.75rem] font-medium text-done" data-spot-status>
                 {statusLabel}
               </p>
             )}

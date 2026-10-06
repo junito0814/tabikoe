@@ -90,8 +90,8 @@ export function WishlistScreen({
         <div className="justify-self-start">
           <BackLink href={back?.href ?? "/mypage"} label={back?.label ?? "マイページ"} />
         </div>
-        <h1 className="truncate text-center text-[16px] font-bold text-ink">行きたい</h1>
-        <span className="justify-self-end text-[12px] text-muted">{items.length}件</span>
+        <h1 className="truncate text-center text-[1rem] font-bold text-ink">行きたい</h1>
+        <span className="justify-self-end text-[0.75rem] text-muted">{items.length}件</span>
       </div>
       <div role="radiogroup" aria-label="表示" className="inline-flex w-fit rounded-full border border-line bg-surface p-0.5">
         {(["list", "map"] as const).map((option) => (
@@ -101,7 +101,7 @@ export function WishlistScreen({
             role="radio"
             aria-checked={view === option}
             onClick={() => view !== option && changeView(option)}
-            className={`tap-target h-7 rounded-full px-3 text-[12px] font-semibold ${view === option ? "bg-ink text-on-ink" : "text-muted"}`}
+            className={`tap-target h-7 rounded-full px-3 text-[0.75rem] font-semibold ${view === option ? "bg-ink text-on-ink" : "text-muted"}`}
           >
             {option === "list" ? "一覧" : "地図"}
           </button>
@@ -125,7 +125,7 @@ export function WishlistScreen({
         <div className="w-full max-w-[520px]">
           {header}
           {items.length === 0 ? (
-            <p className="py-16 text-center text-[13px] text-muted">まだ「行きたい」スポットはありません</p>
+            <p className="py-16 text-center text-[0.8125rem] text-muted">まだ「行きたい」スポットはありません</p>
           ) : (
             <ul className="mt-3 flex flex-col gap-2.5">
               {items.map((item) => (
@@ -139,8 +139,8 @@ export function WishlistScreen({
                       className="h-16 w-16 shrink-0 rounded-[8px] object-cover"
                     />
                     <span className="min-w-0 flex-1">
-                      <span className="block truncate text-[14px] font-semibold text-ink">{item.name}</span>
-                      <span className="mt-0.5 block text-[11px] text-muted">
+                      <span className="block truncate text-[0.875rem] font-semibold text-ink">{item.name}</span>
+                      <span className="mt-0.5 block text-[0.6875rem] text-muted">
                         {item.prefecture ?? "都道府県未設定"} ・ {item.postCount > 0 ? `投稿 ${item.postCount} 件` : "投稿なし"}
                         {item.itineraries.map((it) => (
                           <span key={it.id} className="ml-1 text-accent">
@@ -188,7 +188,7 @@ export function WishlistScreen({
                     className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-muted hover:text-saved disabled:opacity-45"
                   >
                     {pendingId === item.spotId ? (
-                      <span className="text-[11px]">…</span>
+                      <span className="text-[0.6875rem]">…</span>
                     ) : (
                       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
                         <path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3" />

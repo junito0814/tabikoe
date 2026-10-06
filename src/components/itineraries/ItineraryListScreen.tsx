@@ -45,31 +45,31 @@ export function ItineraryListScreen({
         <div className="w-full max-w-[520px]">
           {/* #693: 画面名は「計画」。中の区切りの見出しが「しおり」になる（決定事項 75） */}
           <header className="mb-4">
-            <h1 className="text-[18px] font-bold text-ink">計画</h1>
+            <h1 className="text-[1.125rem] font-bold text-ink">計画</h1>
           </header>
 
           {/* v3.1: 先頭に「行きたいスポット」への入口 */}
           <Link href="/wishlist?back=%2Fitineraries" className="mb-3 flex items-center justify-between rounded-[12px] border border-line bg-surface p-3 shadow-card" data-wishlist-entry>
-            <span className="flex items-center gap-2 text-[14px] font-bold text-ink">
+            <span className="flex items-center gap-2 text-[0.875rem] font-bold text-ink">
               {/* #713: 絵文字をやめ、線のハートにした（色は「保存」の色のまま） */}
               <span className="text-saved">
                 <HeartIcon />
               </span>
               行きたいスポット
-              {wishlistCount !== null && <span className="rounded-full bg-tint px-2 py-0.5 text-[11px] font-semibold text-muted">{wishlistCount}</span>}
+              {wishlistCount !== null && <span className="rounded-full bg-tint px-2 py-0.5 text-[0.6875rem] font-semibold text-muted">{wishlistCount}</span>}
             </span>
           </Link>
 
           {/* #693: 「しおり」の見出しで区切り、「＋ 新規」は作るものの見出しの横に置く（決定事項 75） */}
           <div className="mb-2 mt-5 flex items-center justify-between">
-            <h2 className="text-[14px] font-bold text-ink">しおり</h2>
-            <button type="button" onClick={() => setIsCreating(true)} className="h-9 rounded-full bg-accent px-4 text-[12px] font-bold text-white">
+            <h2 className="text-[0.875rem] font-bold text-ink">しおり</h2>
+            <button type="button" onClick={() => setIsCreating(true)} className="h-9 rounded-full bg-accent px-4 text-[0.75rem] font-bold text-white">
               ＋ 新規
             </button>
           </div>
 
           {sorted.length === 0 ? (
-            <div className="py-16 text-center text-[13px] leading-[1.8] text-muted">
+            <div className="py-16 text-center text-[0.8125rem] leading-[1.8] text-muted">
               しおりがありません
               <br />
               「＋ 新規」か、投稿一覧の「＋」から作れます
@@ -84,24 +84,24 @@ export function ItineraryListScreen({
                     <article className="rounded-[12px] border border-line bg-surface p-3 shadow-card">
                       <Link href={`/itineraries/${item.id}`} prefetch={false} className="flex flex-col gap-1">
                         <span className="flex items-center justify-between gap-2">
-                          <span className="min-w-0 truncate text-[15px] font-bold text-ink">{item.title}</span>
-                          <span className="flex shrink-0 items-center gap-1 text-[11px] text-muted">
+                          <span className="min-w-0 truncate text-[0.9375rem] font-bold text-ink">{item.title}</span>
+                          <span className="flex shrink-0 items-center gap-1 text-[0.6875rem] text-muted">
                             {period}
                             {group === "past" && (
-                              <span className="rounded-full bg-done/10 px-1.5 py-0.5 text-[10px] font-bold text-done" data-past-mark>
+                              <span className="rounded-full bg-done/10 px-1.5 py-0.5 text-[0.625rem] font-bold text-done" data-past-mark>
                                 済
                               </span>
                             )}
                           </span>
                         </span>
-                        <span className="text-[12px] text-muted">
+                        <span className="text-[0.75rem] text-muted">
                           {item.spotCount} スポット
                           {item.dayCount > 0 && ` ・ ${item.dayCount} 日間`}
                           {item.spotCount > 0 && ` ・ ${item.checkedCount}/${item.spotCount} 済`}
                         </span>
                       </Link>
                       {group === "past" && item.hasAlbumPosts && (
-                        <Link href={`/albums/${item.tripId}`} className="mt-2 inline-flex h-8 items-center gap-1 rounded-full border border-line bg-surface px-3 text-[12px] font-semibold text-ink">
+                        <Link href={`/albums/${item.tripId}`} className="mt-2 inline-flex h-8 items-center gap-1 rounded-full border border-line bg-surface px-3 text-[0.75rem] font-semibold text-ink">
                           アルバムを見る
                         </Link>
                       )}

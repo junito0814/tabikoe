@@ -23,7 +23,7 @@ export function FlashNotice({ flashKey }: { flashKey: FlashKey }) {
   return (
     <p
       role="status"
-      className="rounded-lg border border-done/25 bg-done/[0.08] px-3.5 py-2.5 text-center text-[13px] text-done"
+      className="rounded-lg border border-done/25 bg-done/[0.08] px-3.5 py-2.5 text-center text-[0.8125rem] text-done"
     >
       {FLASH_MESSAGES[flashKey]}
     </p>

@@ -53,13 +53,13 @@ export function StepUpDialog({
   return (
     <div role="dialog" aria-modal="true" aria-labelledby="step-up-title" className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-6">
       <div className="w-full max-w-[390px] rounded-[14px] bg-surface p-6 shadow-xl">
-        <h2 id="step-up-title" className="mb-1 text-[16px] font-bold text-ink">
+        <h2 id="step-up-title" className="mb-1 text-[1rem] font-bold text-ink">
           この操作には確認が必要です
         </h2>
-        <p className="mb-4 text-[13px] leading-[1.7] text-muted">
+        <p className="mb-4 text-[0.8125rem] leading-[1.7] text-muted">
           取り消せない操作なので、認証アプリの 6 桁をもう一度入れてください。入力した内容はそのまま残ります。
         </p>
-        <label htmlFor="step-up-code" className="text-[12px] text-muted">
+        <label htmlFor="step-up-code" className="text-[0.75rem] text-muted">
           認証アプリの 6 桁
         </label>
         <input
@@ -77,7 +77,7 @@ export function StepUpDialog({
           onKeyDown={(event) => {
             if (event.key === "Enter") void handleSubmit();
           }}
-          className="mt-1 mb-3 h-[52px] w-full rounded-[10px] border border-line bg-app px-4 text-center text-[24px] font-bold tracking-[0.3em] tabular-nums text-ink"
+          className="mt-1 mb-3 h-[52px] w-full rounded-[10px] border border-line bg-app px-4 text-center text-[1.5rem] font-bold tracking-[0.3em] tabular-nums text-ink"
         />
         {errorMessage && <ErrorNotice message={errorMessage} className="mb-3" />}
         <div className="flex gap-2">
@@ -85,7 +85,7 @@ export function StepUpDialog({
             type="button"
             onClick={() => onDone(false)}
             disabled={isSubmitting}
-            className="h-11 flex-1 rounded-[10px] border border-line text-[14px] font-medium text-ink"
+            className="h-11 flex-1 rounded-[10px] border border-line text-[0.875rem] font-medium text-ink"
           >
             やめる
           </button>
@@ -93,7 +93,7 @@ export function StepUpDialog({
             type="button"
             onClick={() => void handleSubmit()}
             disabled={!canSubmit}
-            className="h-11 flex-1 rounded-[10px] bg-accent text-[14px] font-semibold text-white disabled:opacity-45"
+            className="h-11 flex-1 rounded-[10px] bg-accent text-[0.875rem] font-semibold text-white disabled:opacity-45"
           >
             {isSubmitting ? "確認中…" : "確認して続ける"}
           </button>

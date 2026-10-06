@@ -37,8 +37,8 @@ export function BadgeScreen({ badges }: { badges: BadgeStatus[] }) {
         <BackLink />
       </div>
       <div className="flex flex-col items-center gap-1">
-        <h1 className="text-[16px] font-bold text-ink">ステータスバッジ</h1>
-        <p className="text-[12px] text-muted">
+        <h1 className="text-[1rem] font-bold text-ink">ステータスバッジ</h1>
+        <p className="text-[0.75rem] text-muted">
           {acquiredCount} / {badges.length} 個を獲得
         </p>
       </div>
@@ -47,8 +47,8 @@ export function BadgeScreen({ badges }: { badges: BadgeStatus[] }) {
         const items = badges.filter((badge) => badge.category === section.category);
         return (
           <section key={section.category} className="w-full max-w-[420px]">
-            <h2 className="text-[13px] font-bold text-ink">{section.title}</h2>
-            <p className="mb-2.5 text-[11px] text-muted">{section.note}</p>
+            <h2 className="text-[0.8125rem] font-bold text-ink">{section.title}</h2>
+            <p className="mb-2.5 text-[0.6875rem] text-muted">{section.note}</p>
             <ul
               className={
                 section.category === "prefecture"
@@ -69,11 +69,11 @@ export function BadgeScreen({ badges }: { badges: BadgeStatus[] }) {
                         : "border-line bg-tint text-muted opacity-70"
                     }`}
                   >
-                    <span aria-hidden className={`text-[16px] ${acquired ? "" : "grayscale opacity-50"}`}>
+                    <span aria-hidden className={`text-[1rem] ${acquired ? "" : "grayscale opacity-50"}`}>
                       🏅
                     </span>
-                    <span className="text-[12px] font-semibold leading-tight">{badge.label}</span>
-                    <span className="text-[10px] leading-tight">
+                    <span className="text-[0.75rem] font-semibold leading-tight">{badge.label}</span>
+                    <span className="text-[0.625rem] leading-tight">
                       {acquired ? formatAcquiredAt(badge.acquiredAt!) : "未獲得"}
                     </span>
                   </li>

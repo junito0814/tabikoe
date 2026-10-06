@@ -50,7 +50,7 @@ export function AlbumListControls({
   return (
     <>
       <div className="flex items-center justify-between gap-2">
-        <label className="flex items-center gap-1.5 text-[12px] text-muted">
+        <label className="flex items-center gap-1.5 text-[0.75rem] text-muted">
           <span className="sr-only">並び順</span>
           {/* #812: 見た目は共通部品（Select）に */}
           <Select
@@ -64,7 +64,7 @@ export function AlbumListControls({
         <button
           type="button"
           onClick={() => setIsOpen(true)}
-          className="h-9 rounded-full bg-accent px-4 text-[12px] font-bold text-white"
+          className="h-9 rounded-full bg-accent px-4 text-[0.75rem] font-bold text-white"
         >
           ＋ 新規
         </button>
@@ -80,7 +80,7 @@ export function AlbumListControls({
         >
           <div className="w-full max-w-[360px] rounded-[14px] bg-surface p-4 shadow-xl" onClick={(event) => event.stopPropagation()}>
             <div className="mb-2 flex items-center gap-2">
-              <h2 id="album-create-title" className="flex-1 text-[14px] font-bold text-ink">
+              <h2 id="album-create-title" className="flex-1 text-[0.875rem] font-bold text-ink">
                 アルバムを作る
               </h2>
               {/* 要件 4.5.13: 重ねて出したものを閉じる × は右上 */}
@@ -92,15 +92,15 @@ export function AlbumListControls({
               placeholder="例: 沖縄 2026 夏"
               aria-label="アルバムの名前"
               autoFocus
-              className="mb-2 h-10 w-full rounded-[10px] border border-line bg-app px-3 text-[13px] text-ink focus:outline-none focus:ring-1 focus:ring-accent"
+              className="mb-2 h-10 w-full rounded-[10px] border border-line bg-app px-3 text-[0.8125rem] text-ink focus:outline-none focus:ring-1 focus:ring-accent"
             />
-            <p className="mb-3 text-[11px] leading-[1.7] text-muted">しおり（旅の計画）は作られません。あとから作れます。</p>
-            {error && <p role="alert" className="mb-2 text-[11px] text-saved">{error}</p>}
+            <p className="mb-3 text-[0.6875rem] leading-[1.7] text-muted">しおり（旅の計画）は作られません。あとから作れます。</p>
+            {error && <p role="alert" className="mb-2 text-[0.6875rem] text-saved">{error}</p>}
             <button
               type="button"
               onClick={() => void submit()}
               disabled={title.trim().length === 0 || busy}
-              className="h-10 w-full rounded-[10px] bg-accent text-[13px] font-bold text-white disabled:opacity-45"
+              className="h-10 w-full rounded-[10px] bg-accent text-[0.8125rem] font-bold text-white disabled:opacity-45"
             >
               {busy ? "作っています…" : "作る"}
             </button>

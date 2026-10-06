@@ -36,13 +36,13 @@ export function AddModeBanner({ info }: { info: AddModeInfo }) {
     <div
       role="status"
       data-add-mode-banner
-      className="sticky top-0 z-30 flex items-center justify-between gap-3 bg-accent px-4 py-2 text-[13px] font-semibold text-white"
+      className="sticky top-0 z-30 flex items-center justify-between gap-3 bg-accent px-4 py-2 text-[0.8125rem] font-semibold text-white"
     >
       <span className="min-w-0 truncate">
         {info.title ?? "しおり"}
         <span className="ml-1.5 font-medium">{info.day === null ? "日付なし" : `Day ${info.day}`} に追加中</span>
       </span>
-      <Link href={addModeDoneHref(info)} className="shrink-0 rounded-full bg-white/20 px-3 py-1 text-[12px] font-bold text-white">
+      <Link href={addModeDoneHref(info)} className="shrink-0 rounded-full bg-white/20 px-3 py-1 text-[0.75rem] font-bold text-white">
         完了
       </Link>
     </div>

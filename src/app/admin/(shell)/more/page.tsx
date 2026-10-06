@@ -13,14 +13,14 @@ export default function AdminMorePage() {
         const item = adminMenuItem(key);
         return (
           <li key={key} className="border-b border-line last:border-b-0">
-            <Link href={item.href} className="flex h-12 items-center px-4 text-[14px] font-medium text-ink">
+            <Link href={item.href} className="flex h-12 items-center px-4 text-[0.875rem] font-medium text-ink">
               {item.label}
             </Link>
           </li>
         );
       })}
       <li className="border-t border-line">
-        <Link href="/" className="flex h-12 items-center px-4 text-[14px] text-muted">
+        <Link href="/" className="flex h-12 items-center px-4 text-[0.875rem] text-muted">
           ← サイトへ戻る
         </Link>
       </li>

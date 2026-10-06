@@ -114,8 +114,8 @@ export function SearchMapView({
             }`}
           >
             <button type="button" onClick={() => select(spot)} className="block w-full text-left">
-              <span className="block truncate text-[14px] font-bold text-ink">{spot.name}</span>
-              <span className="mt-0.5 flex items-center gap-2 text-[11px] text-muted">
+              <span className="block truncate text-[0.875rem] font-bold text-ink">{spot.name}</span>
+              <span className="mt-0.5 flex items-center gap-2 text-[0.6875rem] text-muted">
                 {spot.averageRating !== null && (
                   <span className="flex items-center gap-0.5" aria-label={`星${spot.averageRating}`}>
                     <span aria-hidden className="text-star">
@@ -130,13 +130,13 @@ export function SearchMapView({
             <Link
               href={appendBackHref(`/spots/${spot.id}`, backHref)}
               prefetch={false}
-              className="mt-1.5 inline-block text-[12px] font-semibold text-accent"
+              className="mt-1.5 inline-block text-[0.75rem] font-semibold text-accent"
             >
               投稿を見る
             </Link>
           </article>
         ))}
-        {isLoading && <p className="self-center px-3 text-[12px] text-muted">読み込み中…</p>}
+        {isLoading && <p className="self-center px-3 text-[0.75rem] text-muted">読み込み中…</p>}
       </div>
     </div>
   );

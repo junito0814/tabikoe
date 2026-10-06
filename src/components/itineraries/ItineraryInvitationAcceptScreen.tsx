@@ -56,22 +56,22 @@ export function ItineraryInvitationAcceptScreen({
       <div className="flex w-full max-w-[380px] flex-col gap-3 rounded-[14px] border border-line bg-surface p-5">
         {invitation.status === "valid" ? (
           <>
-            <h1 className="text-[16px] font-bold text-ink">しおりへの招待</h1>
-            <p className="text-[13px] leading-[1.7] text-ink">「{invitation.title}」のしおりに招待されています。参加するとスポットの追加・Day・時刻・メモ・チェックができます。</p>
+            <h1 className="text-[1rem] font-bold text-ink">しおりへの招待</h1>
+            <p className="text-[0.8125rem] leading-[1.7] text-ink">「{invitation.title}」のしおりに招待されています。参加するとスポットの追加・Day・時刻・メモ・チェックができます。</p>
             {invitation.alreadyMember ? (
-              <Link href={`/itineraries/${invitation.itineraryId}`} className="text-center text-[13px] font-semibold text-accent underline underline-offset-2">
+              <Link href={`/itineraries/${invitation.itineraryId}`} className="text-center text-[0.8125rem] font-semibold text-accent underline underline-offset-2">
                 すでにメンバーです。しおりを開く
               </Link>
             ) : (
-              <button type="button" onClick={() => void handleAccept()} disabled={isSubmitting} className="h-11 rounded-[10px] bg-accent text-[14px] font-semibold text-white disabled:opacity-45">
+              <button type="button" onClick={() => void handleAccept()} disabled={isSubmitting} className="h-11 rounded-[10px] bg-accent text-[0.875rem] font-semibold text-white disabled:opacity-45">
                 {isSubmitting ? "参加中…" : "しおりに参加する"}
               </button>
             )}
           </>
         ) : (
           <>
-            <h1 className="text-[16px] font-bold text-ink">招待リンクが無効です</h1>
-            <p className="text-[13px] leading-[1.7] text-muted">
+            <h1 className="text-[1rem] font-bold text-ink">招待リンクが無効です</h1>
+            <p className="text-[0.8125rem] leading-[1.7] text-muted">
               {invitation.status === "expired"
                 ? "有効期限（7日間）が切れています。オーナーに新しいリンクの発行を依頼してください。"
                 : invitation.status === "revoked"
@@ -81,7 +81,7 @@ export function ItineraryInvitationAcceptScreen({
           </>
         )}
         {errorMessage && <ErrorNotice message={errorMessage} />}
-        <Link href="/itineraries" className="text-center text-[12px] text-muted underline underline-offset-2">
+        <Link href="/itineraries" className="text-center text-[0.75rem] text-muted underline underline-offset-2">
           計画へ
         </Link>
       </div>

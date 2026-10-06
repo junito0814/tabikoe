@@ -29,13 +29,13 @@ export default function GoogleMapPreview() {
         onBoundsChange={(b) => setBounds(`${b.south.toFixed(3)}〜${b.north.toFixed(3)}`)}
         className="h-[320px] w-full overflow-hidden rounded-lg"
       />
-      <p className="text-[11px] text-muted">
+      <p className="text-[0.6875rem] text-muted">
         クリック: {clicked ?? "—"} / 緯度範囲: {bounds || "—"}
       </p>
       <button
         type="button"
         onClick={() => ref.current?.panTo({ lat: 34.7024, lng: 135.4959 }, 14)}
-        className="h-9 rounded-[8px] border border-line bg-surface text-[12px] font-medium text-ink"
+        className="h-9 rounded-[8px] border border-line bg-surface text-[0.75rem] font-medium text-ink"
       >
         大阪駅へ panTo
       </button>

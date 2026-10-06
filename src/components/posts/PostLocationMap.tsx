@@ -131,7 +131,7 @@ export function PostLocationMap({
         />
       ) : (
         <div role="region" aria-label="地図" className="flex h-full items-center justify-center">
-          <span className="text-[12px] text-muted">現在地を確認しています…</span>
+          <span className="text-[0.75rem] text-muted">現在地を確認しています…</span>
         </div>
       )}
 
@@ -163,10 +163,10 @@ export function PostLocationMap({
 
       {showHint && !lockedPosition && (
         <div className="pointer-events-none absolute left-1/2 top-3 flex -translate-x-1/2 flex-col items-center gap-1" data-map-hint>
-          <span className="rounded-full bg-ink/85 px-3 py-1 text-[11px] text-surface">
+          <span className="rounded-full bg-ink/85 px-3 py-1 text-[0.6875rem] text-surface">
             {isFallback ? "現在地が取れないため東京駅周辺を表示しています。地図を動かして場所を合わせてください" : "地図を動かしてピンを合わせる"}
           </span>
-          <span className="rounded-full bg-surface/90 px-3 py-1 text-[11px] text-ink">現地でなければ「変更」から場所を探せます</span>
+          <span className="rounded-full bg-surface/90 px-3 py-1 text-[0.6875rem] text-ink">現地でなければ「変更」から場所を探せます</span>
         </div>
       )}
     </div>
