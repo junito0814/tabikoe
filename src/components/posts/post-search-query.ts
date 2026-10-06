@@ -1,5 +1,6 @@
 import { POST_CATEGORIES, POST_DURATIONS, type PostCategory, type PostDuration } from "@/lib/posts/constants";
 import { parsePostSort, type PostSort } from "@/lib/posts/post-cards";
+import { normalizeAreas } from "@/lib/search/regions";
 import { parseSpotSort, type SpotSort } from "@/lib/spots/search-spots";
 import {
   COST_RANGES,
@@ -42,9 +43,23 @@ export interface PostSearchState {
   /** v3.0（photo-view）: 投稿一覧か写真グリッドか */
   view: ListView;
   /** post-timeline Task 6（2026-10-03）: 「タビコエだけの場所」だけを出すか（検索結果のときだけ使う） */
+  /**
+   * #809（2026-10-06）: エリア（都道府県の並び）。**行き先の無い「みんなの投稿」のときだけ使う**。
+   * 検索結果（都道府県・駅）は行き先が決まっているので、ここは常に空になる。
+   * 地方でまとめて選んでも、持つのは都道府県の並び（地方へのまとめ方は札の見せ方だけ。regions.ts）
+   */
+  areas: string[];
 }
 
 export type ListSort = PostSort | SpotSort;
+
+/**
+ * #809: エリアの絞り込みを出すのは「みんなの投稿」（行き先なし）のときだけ。
+ * 検索結果は行き先が決まっており、スポット別は 1 スポットなので要らない。
+ */
+export function canFilterByArea(context: SearchContext): boolean {
+  return context.destination === null;
+}
 
 /** v3.1: 行き先がスポット別なら投稿の並び、それ以外（都道府県・駅）はスポットの並び */
 export function isSpotResultContext(context: SearchContext): boolean {
@@ -54,6 +69,7 @@ export function isSpotResultContext(context: SearchContext): boolean {
 export const EMPTY_SEARCH_STATE: PostSearchState = {
   keyword: "",
   categories: [],
+  areas: [],
   distance: null,
   cost: null,
   duration: null,
@@ -84,6 +100,7 @@ export function countActiveFilters(state: PostSearchState, context: SearchContex
   return (
     (state.keyword.trim() ? 1 : 0) +
     (state.categories.length > 0 ? 1 : 0) +
+    (canFilterByArea(context) && state.areas.length > 0 ? 1 : 0) +
     (state.distance !== null && distanceCenter(context) ? 1 : 0) +
     (state.cost !== null ? 1 : 0) +
     (state.duration !== null ? 1 : 0) +
@@ -96,6 +113,8 @@ function appendStateParams(params: URLSearchParams, state: PostSearchState, cont
   const keyword = state.keyword.trim();
   if (keyword) params.set("q", keyword);
   if (state.categories.length > 0) params.set("categories", state.categories.join(","));
+  // #809: エリアは都道府県の並びで持つ（地方は URL に出さない）
+  if (canFilterByArea(context) && state.areas.length > 0) params.set("areas", state.areas.join(","));
   // 距離は基準点が分かっている時だけ意味を持つ
   if (state.distance !== null && distanceCenter(context)) params.set("distance", String(state.distance));
   if (state.cost !== null) params.set("cost", state.cost);
@@ -178,6 +197,8 @@ export function parseSearchState(params: URLSearchParams, context: SearchContext
     // 座標付きの q は行き先のラベルなのでキーワードにしない
     keyword: context.destination?.kind === "nearby" ? "" : (params.get("q") ?? "").trim(),
     categories: Array.from(new Set(categories)),
+    // #809: 知らない名前は落とす（URL から来た値をそのまま信じない）
+    areas: canFilterByArea(context) ? normalizeAreas((params.get("areas") ?? "").split(",").map((item) => item.trim())) : [],
     distance: distanceCenter(context) ? distance : null,
     cost: includes(COST_RANGES, cost) ? cost : null,
     duration: includes(POST_DURATIONS, duration) ? duration : null,

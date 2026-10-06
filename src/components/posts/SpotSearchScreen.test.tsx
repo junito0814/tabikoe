@@ -111,3 +111,47 @@ describe("地図タブ（#681）", () => {
     expect(within(toggle).getAllByRole("radio").map((radio) => radio.textContent)).toEqual(["投稿", "写真", "地図"]);
   });
 });
+
+/**
+ * #809（2026-10-06）: 絞り込みの「エリア」は「みんなの投稿」（行き先なし）のときだけ
+ * 出典: 要件定義書 3.4.2、ワイヤーフレーム決定事項 83
+ */
+const allPosts: SearchContext = { destination: null };
+
+describe("エリアの絞り込み（#809）", () => {
+  it("みんなの投稿では、絞り込みに「エリア」の行が出る", () => {
+    render(<SpotSearchScreen context={allPosts} initialState={EMPTY_SEARCH_STATE} initialPage={{ spots: [spot("s1")], nextOffset: null }} title="みんなの投稿" backHref="/" backLabel="ホーム" />);
+    fireEvent.click(screen.getByRole("button", { name: "絞り込み" }));
+    expect(document.querySelector("[data-area-row]")).not.toBeNull();
+  });
+
+  it("検索結果（行き先あり）では「エリア」の行を出さない（行き先が決まっているため）", () => {
+    render(<SpotSearchScreen context={pref} initialState={EMPTY_SEARCH_STATE} initialPage={{ spots: [spot("s1")], nextOffset: null }} title="東京都" backHref="/" backLabel="ホーム" />);
+    fireEvent.click(screen.getByRole("button", { name: "絞り込み" }));
+    expect(document.querySelector("[data-area-row]")).toBeNull();
+  });
+
+  it("「エリア」を押すと都道府県を選ぶ画面になり、地方の □ でまとめて選べる", () => {
+    render(<SpotSearchScreen context={allPosts} initialState={EMPTY_SEARCH_STATE} initialPage={{ spots: [spot("s1")], nextOffset: null }} title="みんなの投稿" backHref="/" backLabel="ホーム" />);
+    fireEvent.click(screen.getByRole("button", { name: "絞り込み" }));
+    fireEvent.click(document.querySelector("[data-area-row]") as HTMLElement);
+    expect(document.querySelector("[data-area-picker]")).not.toBeNull();
+    expect(screen.getByRole("checkbox", { name: "関東をすべて選ぶ" })).toBeInTheDocument();
+    expect(screen.getByLabelText("東京都")).toBeInTheDocument();
+  });
+
+  it("全部選んだ地方の札は 1 枚にまとまり、× でその地方ごと外れる", () => {
+    const kanto = ["茨城県", "栃木県", "群馬県", "埼玉県", "千葉県", "東京都", "神奈川県"];
+    render(<SpotSearchScreen context={allPosts} initialState={{ ...EMPTY_SEARCH_STATE, areas: kanto }} initialPage={{ spots: [spot("s1")], nextOffset: null }} title="みんなの投稿" backHref="/" backLabel="ホーム" />);
+    const chips = document.querySelector("[data-area-chips]");
+    expect(chips?.querySelectorAll("button")).toHaveLength(1);
+    expect(chips).toHaveTextContent("関東");
+    fireEvent.click(chips?.querySelector("button") as HTMLElement);
+    expect(replace).toHaveBeenCalledWith(expect.not.stringContaining("areas="), { scroll: false });
+  });
+
+  it("一部だけの地方は都道府県ごとの札", () => {
+    render(<SpotSearchScreen context={allPosts} initialState={{ ...EMPTY_SEARCH_STATE, areas: ["東京都", "神奈川県"] }} initialPage={{ spots: [spot("s1")], nextOffset: null }} title="みんなの投稿" backHref="/" backLabel="ホーム" />);
+    expect(document.querySelector("[data-area-chips]")?.querySelectorAll("button")).toHaveLength(2);
+  });
+});

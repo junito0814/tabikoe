@@ -19,7 +19,8 @@ import { SortDropdown } from "./SortDropdown";
 import { SpotCard } from "./SpotCard";
 import { ViewToggle } from "./ViewToggle";
 import { SearchMapView } from "./SearchMapView";
-import { buildPostSearchParams, buildSearchPageHref, countActiveFilters, type PostSearchState, type SearchContext } from "./post-search-query";
+import { areaChips, removeAreaChip } from "@/lib/search/regions";
+import { buildPostSearchParams, buildSearchPageHref, canFilterByArea, countActiveFilters, type PostSearchState, type SearchContext } from "./post-search-query";
 import { useInfiniteScroll } from "./use-infinite-scroll";
 import { useListRestore } from "./use-search-list";
 
@@ -128,6 +129,9 @@ export function SpotSearchScreen({
   const isPhotos = state.view === "photos";
   // #681: 地図タブ（検索結果のときだけ）
   const isMap = state.view === "map";
+  // #809: エリアの絞り込みは「みんなの投稿」（行き先なし）のときだけ
+  const showArea = canFilterByArea(context);
+  const chips = showArea ? areaChips(state.areas) : [];
 
   /*
    * #673（2026-10-03）: 引っ張って更新。
@@ -158,6 +162,27 @@ export function SpotSearchScreen({
               <ViewToggle value={state.view} onChange={onViewChange} showMap />
               <SortDropdown<SpotSort> value={state.sort as SpotSort} onChange={onSortChange} options={SPOT_SORTS} labels={SPOT_SORT_LABELS} />
             </div>
+            {/*
+              * #809: 絞っているエリアの札。**全部選んだ地方は 1 枚にまとめる**（areaChips）。
+              * 都道府県ごとに出すと 2 地方で 14 枚になり、一覧が下に押し出されるため。
+              * × を押すとその塊ごと外れる。1 つずつ直したいときは「絞り込み → エリア」で。
+              */}
+            {showArea && chips.length > 0 && (
+              <div className="flex flex-wrap gap-1.5" data-area-chips>
+                {chips.map((chip) => (
+                  <button
+                    key={chip.label}
+                    type="button"
+                    onClick={() => applyState({ ...state, areas: removeAreaChip(chip, state.areas) })}
+                    className="inline-flex h-7 items-center gap-1 rounded-full bg-ink px-2.5 text-[11px] font-semibold text-on-ink"
+                  >
+                    {chip.label}
+                    <span aria-hidden>×</span>
+                    <span className="sr-only">を外す</span>
+                  </button>
+                ))}
+              </div>
+            )}
           </header>
 
           {isMap ? (
@@ -210,6 +235,7 @@ export function SpotSearchScreen({
         <FilterSheet
           open={isSheetOpen}
           value={state}
+            showArea={showArea}
             onApply={applyState}
             onClose={() => setIsSheetOpen(false)}
           />
