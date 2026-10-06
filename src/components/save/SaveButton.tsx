@@ -4,6 +4,7 @@ import { useState } from "react";
 import { fetchWithAuthRedirect, UnauthorizedError } from "@/lib/api/fetch-with-auth-redirect";
 import { Toast, type ToastMessage } from "@/components/ui/Toast";
 import { SaveSheet, type SaveSheetApi } from "./SaveSheet";
+import { isSpotSaved } from "@/lib/save/is-spot-saved";
 
 /**
  * wishlist-v3 Task1 / add-spots Task2: 「＋」（保存ボタン）
@@ -112,7 +113,11 @@ export function SaveButton({
           api={api}
           onClose={(result) => {
             setIsSheetOpen(false);
-            setSaved(result.wishlisted || result.savedItinerary !== null || saved);
+            /*
+             * #758（2026-10-06）: ここは `|| saved` で終わっていて、**一度 ✓ になると二度と ＋ に戻らなかった**。
+             * 判断は `isSpotSaved`（純粋関数）に切り出した。
+             */
+            setSaved(isSpotSaved(result.wishlisted, result.inAnyItinerary));
             if (result.savedItinerary) {
               setToast({ text: `${result.savedItinerary.title} に保存しました`, action: { label: "しおりを見る", href: `/itineraries/${result.savedItinerary.id}` } });
             }
