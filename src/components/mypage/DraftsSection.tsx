@@ -64,7 +64,7 @@ export function DraftsSection({
   return (
     <section aria-label="下書き" data-drafts-section className="flex flex-col gap-2 rounded-[12px] border border-dashed border-line bg-surface p-3">
       {confirmSheet}
-      <h2 className="flex items-center gap-1.5 text-[13px] font-bold text-ink">
+      <h2 className="flex items-center gap-1.5 text-[0.8125rem] font-bold text-ink">
         <PencilIcon size={12} />
         下書き {total} 件
       </h2>
@@ -78,15 +78,15 @@ export function DraftsSection({
               )}
             </span>
             <span className="min-w-0 flex-1">
-              <span className="block truncate text-[13px] font-semibold text-ink">
+              <span className="block truncate text-[0.8125rem] font-semibold text-ink">
                 <span className="mr-1 text-muted" aria-hidden>
                   ◌
                 </span>
                 {draft.spotName}
               </span>
-              <span className="block text-[11px] text-muted">{formatDateTime(draft.updatedAt)}</span>
+              <span className="block text-[0.6875rem] text-muted">{formatDateTime(draft.updatedAt)}</span>
             </span>
-            <Link href={composeHref({ kind: "draft", draftId: draft.id })} className="shrink-0 rounded-full bg-accent px-3 py-1.5 text-[11px] font-bold text-white">
+            <Link href={composeHref({ kind: "draft", draftId: draft.id })} className="shrink-0 rounded-full bg-accent px-3 py-1.5 text-[0.6875rem] font-bold text-white">
               続きを書く
             </Link>
             <TrashButton
@@ -101,12 +101,12 @@ export function DraftsSection({
       </ul>
       {/* v3.1（mentoring-7 Task1）: 4 件以上あるときだけ「すべて見る」→ /mypage/drafts（下書き一覧） */}
       {!showAll && total > DRAFTS_PREVIEW_COUNT && (
-        <Link href="/mypage/drafts" className="self-end text-[12px] font-medium text-accent underline underline-offset-2">
+        <Link href="/mypage/drafts" className="self-end text-[0.75rem] font-medium text-accent underline underline-offset-2">
           すべて見る（{total} 件）
         </Link>
       )}
       {error && (
-        <p role="alert" className="text-[12px] text-saved">
+        <p role="alert" className="text-[0.75rem] text-saved">
           {error}
         </p>
       )}

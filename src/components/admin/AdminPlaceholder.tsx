@@ -7,8 +7,8 @@
  */
 export function AdminPlaceholder({ issue, description }: { issue: number; description: string }) {
   return (
-    <div className="flex w-full flex-col gap-2 rounded-[12px] border border-dashed border-line bg-surface p-6 text-[13px] text-muted">
-      <p className="text-[15px] font-bold text-ink">準備中</p>
+    <div className="flex w-full flex-col gap-2 rounded-[12px] border border-dashed border-line bg-surface p-6 text-[0.8125rem] text-muted">
+      <p className="text-[0.9375rem] font-bold text-ink">準備中</p>
       <p>{description}</p>
       <p>この画面は Issue #{issue} で作ります。</p>
     </div>

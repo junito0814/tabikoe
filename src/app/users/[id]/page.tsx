@@ -70,7 +70,7 @@ export default async function UserProfilePage({
         alt={`${displayName}のアイコン画像`}
         className="h-24 w-24 rounded-full object-cover"
       />
-      <p className="text-[15px] font-semibold text-ink">{displayName}</p>
+      <p className="text-[0.9375rem] font-semibold text-ink">{displayName}</p>
 
       {!isSelf && (
         <div className="mt-4 flex w-full max-w-[360px] items-center justify-center gap-4">

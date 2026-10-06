@@ -138,7 +138,7 @@ export function MyMapScreen({
                   role="radio"
                   aria-checked={selected}
                   onClick={() => setMode(item.mode)}
-                  className={`h-8 flex-1 rounded-full text-[12px] font-semibold transition-colors ${
+                  className={`h-8 flex-1 rounded-full text-[0.75rem] font-semibold transition-colors ${
                     selected ? "bg-ink text-on-ink" : "text-muted"
                   }`}
                 >
@@ -169,13 +169,13 @@ export function MyMapScreen({
         />
       ) : (
         <div role="region" aria-label="地図" className="flex flex-1 items-center justify-center bg-line">
-          <span className="text-[12px] text-muted">現在地を確認しています…</span>
+          <span className="text-[0.75rem] text-muted">現在地を確認しています…</span>
         </div>
       )}
 
       {/* 取得が終わるまでは「ありません」と言わない（要件 4.5.11 の共通の決まり） */}
       {bounds && !fetchFailed && (isFetching || pins.length === 0) && (
-        <p className="pointer-events-none absolute inset-x-0 bottom-6 z-10 text-center text-[12px] text-ink">
+        <p className="pointer-events-none absolute inset-x-0 bottom-6 z-10 text-center text-[0.75rem] text-ink">
           {isFetching ? "読み込んでいます…" : "この範囲に表示できるスポットはありません"}
         </p>
       )}

@@ -55,11 +55,11 @@ function SpotBody({ pin, backHref }: { pin: MapPinData; backHref: string | null 
     <div className="flex flex-col gap-1.5 pr-5">
       {/* v3.1（mentoring-7 Task6）: 「一覧」ボタンは無く、本体（スポット名〜件数）のタップでスポット別の投稿一覧へ */}
       <Link href={listHref} className="flex flex-col gap-1" data-callout-body>
-      <p className="flex items-center gap-1 truncate text-[14px] font-bold">
+      <p className="flex items-center gap-1 truncate text-[0.875rem] font-bold">
         <span className="min-w-0 truncate">{pin.name}</span>
         <span aria-hidden className="text-muted">›</span>
       </p>
-      <p className="flex flex-wrap items-center gap-x-1.5 text-[11px] text-muted">
+      <p className="flex flex-wrap items-center gap-x-1.5 text-[0.6875rem] text-muted">
         {/* pin-categories Task1: 凡例にカテゴリの色を並べない代わりに、ここで名前を確かめられるようにする（4.5.3） */}
         {pin.category && (
           <>
@@ -93,7 +93,7 @@ function SpotBody({ pin, backHref }: { pin: MapPinData; backHref: string | null 
         {/* map-restore Task2（2026-09-25）: 「投稿する」→「投稿を見る」。本体タップだけでは一覧へ行けると
             分からないため、文言のあるボタンに置き換えた。投稿は右下の「ここに投稿」と長押しから（要件 3.4.4） */}
         {pin.spotId && (
-          <Link href={listHref} className="inline-flex h-8 flex-1 items-center justify-center rounded-full bg-accent text-[12px] font-bold text-white">
+          <Link href={listHref} className="inline-flex h-8 flex-1 items-center justify-center rounded-full bg-accent text-[0.75rem] font-bold text-white">
             投稿を見る
           </Link>
         )}
@@ -105,13 +105,13 @@ function SpotBody({ pin, backHref }: { pin: MapPinData; backHref: string | null 
 function DraftBody({ pin }: { pin: MapPinData }) {
   return (
     <div className="flex flex-col gap-1.5 pr-5">
-      <p className="truncate text-[13px]">
-        <span className="mr-1 rounded-full bg-tint px-2 py-0.5 text-[10px] font-semibold text-muted">下書き</span>
+      <p className="truncate text-[0.8125rem]">
+        <span className="mr-1 rounded-full bg-tint px-2 py-0.5 text-[0.625rem] font-semibold text-muted">下書き</span>
         <span className="font-bold">{pin.name}</span>
       </p>
       <Link
         href={composeHref({ kind: "draft", draftId: pin.draftId ?? "" })}
-        className="inline-flex h-8 items-center justify-center rounded-full bg-accent text-[12px] font-bold text-white"
+        className="inline-flex h-8 items-center justify-center rounded-full bg-accent text-[0.75rem] font-bold text-white"
       >
         続きを書く
       </Link>
@@ -122,10 +122,10 @@ function DraftBody({ pin }: { pin: MapPinData }) {
 function TempBody({ lat, lng }: { lat: number; lng: number }) {
   return (
     <div className="flex flex-col gap-1.5 pr-5">
-      <p className="text-[13px] font-bold">この地点</p>
+      <p className="text-[0.8125rem] font-bold">この地点</p>
       <Link
         href={composeHref({ kind: "location", lat, lng })}
-        className="inline-flex h-8 items-center justify-center rounded-full bg-accent text-[12px] font-bold text-white"
+        className="inline-flex h-8 items-center justify-center rounded-full bg-accent text-[0.75rem] font-bold text-white"
       >
         ここに投稿
       </Link>

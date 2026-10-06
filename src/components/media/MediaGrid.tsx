@@ -51,7 +51,7 @@ function MediaCell({
       <MediaThumbnail item={item} />
 
       {typeof overflowCount === "number" && (
-        <span className="absolute inset-0 flex items-center justify-center bg-black/50 text-[20px] font-semibold text-white">
+        <span className="absolute inset-0 flex items-center justify-center bg-black/50 text-[1.25rem] font-semibold text-white">
           +{overflowCount}
         </span>
       )}

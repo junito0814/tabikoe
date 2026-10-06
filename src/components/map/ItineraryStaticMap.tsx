@@ -96,12 +96,12 @@ export function ItineraryStaticMap({
           <button
             type="button"
             onClick={reset}
-            className="tap-target rounded-full bg-surface/90 px-2.5 py-1 text-[11px] font-medium text-ink shadow-[0_1px_4px_rgba(30,42,56,0.25)]"
+            className="tap-target rounded-full bg-surface/90 px-2.5 py-1 text-[0.6875rem] font-medium text-ink shadow-[0_1px_4px_rgba(30,42,56,0.25)]"
           >
             戻す
           </button>
         )}
-        <Link href={href} className="tap-target rounded-full bg-ink/80 px-2.5 py-1 text-[11px] font-medium text-on-ink">
+        <Link href={href} className="tap-target rounded-full bg-ink/80 px-2.5 py-1 text-[0.6875rem] font-medium text-on-ink">
           地図を全画面に
         </Link>
       </div>

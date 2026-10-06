@@ -83,12 +83,12 @@ export function MyPostsList({
   return (
     <section aria-labelledby="my-posts-heading" className="flex flex-col gap-3">
       <div className="flex items-center justify-between gap-3">
-        <h2 id="my-posts-heading" className="text-[14px] font-bold text-ink">自分の投稿</h2>
+        <h2 id="my-posts-heading" className="text-[0.875rem] font-bold text-ink">自分の投稿</h2>
         <select
           value={tripId ?? ""}
           onChange={(event) => setTripId(event.target.value || null)}
           aria-label="旅行で絞り込み"
-          className="h-9 max-w-[200px] rounded-[8px] border border-line bg-surface px-2 text-[12px] text-ink"
+          className="h-9 max-w-[200px] rounded-[8px] border border-line bg-surface px-2 text-[0.75rem] text-ink"
         >
           <option value="">すべての旅行</option>
           {tripOptions.map((trip) => (
@@ -102,7 +102,7 @@ export function MyPostsList({
       {posts.length === 0 && isLoading ? (
         <CardListSkeleton count={2} />
       ) : posts.length === 0 ? (
-        <p className="py-10 text-center text-[13px] text-muted">まだ投稿がありません</p>
+        <p className="py-10 text-center text-[0.8125rem] text-muted">まだ投稿がありません</p>
       ) : (
         <ul className="flex flex-col gap-2">
           {posts.map((post) => (
@@ -119,16 +119,16 @@ export function MyPostsList({
                   )}
                 </span>
                 <span className="flex min-w-0 flex-1 flex-col gap-0.5">
-                  <span className="truncate text-[11px] font-medium text-accent" data-trip-title>
+                  <span className="truncate text-[0.6875rem] font-medium text-accent" data-trip-title>
                     {post.tripTitle}
                   </span>
-                  <span className="flex items-center gap-1.5 truncate text-[13px] font-semibold text-ink">
+                  <span className="flex items-center gap-1.5 truncate text-[0.8125rem] font-semibold text-ink">
                     {post.spotName}
                     {post.visibility === "private" && (
-                      <span className="rounded-full bg-line px-1.5 py-0.5 text-[10px] font-medium">非公開</span>
+                      <span className="rounded-full bg-line px-1.5 py-0.5 text-[0.625rem] font-medium">非公開</span>
                     )}
                   </span>
-                  <span className="text-[11px] text-muted">
+                  <span className="text-[0.6875rem] text-muted">
                     {post.category} ・ {formatDateTime(post.createdAt)} ・{" "}
           <span className="inline-flex items-center gap-1 align-[-2px]">
             <HeartIcon size={13} />
@@ -150,7 +150,7 @@ export function MyPostsList({
           type="button"
           onClick={loadMore}
           disabled={isLoading}
-          className="h-10 w-full rounded-[10px] border border-line bg-surface text-[13px] font-semibold text-ink disabled:opacity-45"
+          className="h-10 w-full rounded-[10px] border border-line bg-surface text-[0.8125rem] font-semibold text-ink disabled:opacity-45"
         >
           {isLoading ? "読み込み中…" : "もっと見る"}
         </button>

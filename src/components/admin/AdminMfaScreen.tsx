@@ -94,17 +94,17 @@ export function AdminMfaScreen({
   return (
     <div className="flex min-h-screen flex-col items-center bg-app px-6 py-10">
       <div className="flex w-full max-w-[430px] flex-col gap-5">
-        <p className="text-[12px] font-semibold tracking-[0.08em] text-muted">タビコエ 管理</p>
+        <p className="text-[0.75rem] font-semibold tracking-[0.08em] text-muted">タビコエ 管理</p>
 
         {mode === "enroll" ? (
           <>
-            <h1 className="text-[18px] font-bold text-ink">管理画面に入るには認証アプリの登録が必要です</h1>
-            <p className="text-[13px] leading-[1.7] text-muted">
+            <h1 className="text-[1.125rem] font-bold text-ink">管理画面に入るには認証アプリの登録が必要です</h1>
+            <p className="text-[0.8125rem] leading-[1.7] text-muted">
               この端末だけで終わります。登録を終えるとそのまま管理画面へ進みます。
             </p>
             <section className="flex flex-col gap-3 rounded-[12px] border border-line bg-surface p-4">
               <Step num={1} title="認証アプリで読み取る" note="Google Authenticator・1Password・Authy など" />
-              {isPreparing && <p className="text-[13px] text-muted">QR コードを準備しています…</p>}
+              {isPreparing && <p className="text-[0.8125rem] text-muted">QR コードを準備しています…</p>}
               {enrollment?.qrImageSrc && (
                 <Image
                   src={enrollment.qrImageSrc}
@@ -117,8 +117,8 @@ export function AdminMfaScreen({
               )}
               {enrollment && (
                 <div className="flex flex-col gap-1">
-                  <p className="text-[12px] text-muted">読み取れないときは、この文字列を手で入れてください</p>
-                  <code className="rounded-[6px] bg-app px-2 py-1.5 font-mono text-[12px] tracking-[0.14em] break-all text-ink">
+                  <p className="text-[0.75rem] text-muted">読み取れないときは、この文字列を手で入れてください</p>
+                  <code className="rounded-[6px] bg-app px-2 py-1.5 font-mono text-[0.75rem] tracking-[0.14em] break-all text-ink">
                     {enrollment.secret}
                   </code>
                 </div>
@@ -126,12 +126,12 @@ export function AdminMfaScreen({
             </section>
           </>
         ) : (
-          <h1 className="text-[18px] font-bold text-ink">認証アプリの 6 桁を入れてください</h1>
+          <h1 className="text-[1.125rem] font-bold text-ink">認証アプリの 6 桁を入れてください</h1>
         )}
 
         <section className="flex flex-col gap-3 rounded-[12px] border border-line bg-surface p-4">
           {mode === "enroll" && <Step num={2} title="表示された 6 桁を入れる" note="30 秒ごとに変わります" />}
-          <label htmlFor="admin-mfa-code" className="text-[12px] text-muted">
+          <label htmlFor="admin-mfa-code" className="text-[0.75rem] text-muted">
             認証アプリの 6 桁
           </label>
           <input
@@ -148,26 +148,26 @@ export function AdminMfaScreen({
             onKeyDown={(event) => {
               if (event.key === "Enter") void handleSubmit();
             }}
-            className="h-[52px] rounded-[10px] border border-line bg-app px-4 text-center text-[24px] font-bold tracking-[0.3em] tabular-nums text-ink"
+            className="h-[52px] rounded-[10px] border border-line bg-app px-4 text-center text-[1.5rem] font-bold tracking-[0.3em] tabular-nums text-ink"
           />
           {errorMessage && <ErrorNotice message={errorMessage} />}
           <button
             type="button"
             onClick={() => void handleSubmit()}
             disabled={!canSubmit}
-            className="h-12 rounded-[10px] bg-accent text-[15px] font-semibold text-white disabled:cursor-not-allowed disabled:opacity-45"
+            className="h-12 rounded-[10px] bg-accent text-[0.9375rem] font-semibold text-white disabled:cursor-not-allowed disabled:opacity-45"
           >
             {isSubmitting ? "確認中..." : mode === "enroll" ? "登録して管理画面へ" : "管理画面へ"}
           </button>
         </section>
 
         {mode === "enroll" && (
-          <p className="text-[11.5px] leading-[1.7] text-muted">
+          <p className="text-[0.71875rem] leading-[1.7] text-muted">
             <span className="font-bold text-ink">端末を失うと自分では戻せません。</span>
             認証アプリは 2 か所（別の端末かパスワード管理アプリ）に登録してください。画面に「認証アプリを解除する」は置いていません（そこが二段階確認の抜け道になるため）。
           </p>
         )}
-        <Link href="/" className="text-right text-[11.5px] text-muted underline underline-offset-2">
+        <Link href="/" className="text-right text-[0.71875rem] text-muted underline underline-offset-2">
           ← サイトへ戻る
         </Link>
       </div>
@@ -178,11 +178,11 @@ export function AdminMfaScreen({
 function Step({ num, title, note }: { num: number; title: string; note: string }) {
   return (
     <div className="flex gap-3">
-      <span className="mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-full bg-ink text-[11px] font-bold text-app">
+      <span className="mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-full bg-ink text-[0.6875rem] font-bold text-app">
         {num}
       </span>
-      <span className="text-[12.5px]">
-        <span className="block text-[13px] font-bold text-ink">{title}</span>
+      <span className="text-[0.78125rem]">
+        <span className="block text-[0.8125rem] font-bold text-ink">{title}</span>
         <span className="text-muted">{note}</span>
       </span>
     </div>

@@ -76,7 +76,7 @@ export function Sheet({
           <SheetHandleBar />
         </button>
         <div className="flex items-center justify-between px-4 pb-2 pt-1 md:pt-4">
-          <h2 id={titleId} className="text-[15px] font-bold text-ink">
+          <h2 id={titleId} className="text-[0.9375rem] font-bold text-ink">
             {title}
           </h2>
           {/* #712: 文字の「閉じる」をやめ、右上の × に揃えた（要件 4.5.13） */}

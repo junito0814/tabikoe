@@ -57,7 +57,7 @@ export function WishlistButton({
       disabled={isPending}
       aria-pressed={saved}
       aria-label={saved ? "行きたいを解除" : "行きたいに保存"}
-      className={`inline-flex h-9 items-center gap-1.5 rounded-full border px-3 text-[12px] font-semibold transition-colors disabled:opacity-60 ${
+      className={`inline-flex h-9 items-center gap-1.5 rounded-full border px-3 text-[0.75rem] font-semibold transition-colors disabled:opacity-60 ${
         saved
           ? "border-accent bg-accent text-white"
           : "border-line bg-surface text-ink"

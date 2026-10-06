@@ -112,11 +112,11 @@ export default function AuthScreen({ sky = false }: { /** Task12（2026-09-25）
                 </div>
 
                 <h1
-                    className={`${lora.className} mb-2.5 text-[26px] font-bold tracking-[2px] text-ink`}
+                    className={`${lora.className} mb-2.5 text-[1.625rem] font-bold tracking-[2px] text-ink`}
                 >
                     タビコエ
                 </h1>
-                <p className="mb-10 text-center text-[13px] leading-[1.7] tracking-[0.3px] text-muted">
+                <p className="mb-10 text-center text-[0.8125rem] leading-[1.7] tracking-[0.3px] text-muted">
                     {isAdminLogin ? (
                         <>管理者ログイン</>
                     ) : (
@@ -133,7 +133,7 @@ export default function AuthScreen({ sky = false }: { /** Task12（2026-09-25）
                     className="flex h-[52px] w-full items-center justify-center gap-3 rounded-[10px] border border-line bg-surface transition-opacity disabled:cursor-not-allowed disabled:opacity-45 enabled:cursor-pointer enabled:shadow-card"
                 >
                     <GoogleIcon />
-                    <span className="text-[15px] font-semibold tracking-[0.2px] text-ink">
+                    <span className="text-[0.9375rem] font-semibold tracking-[0.2px] text-ink">
                         {isLoading ? "リダイレクト中..." : "Google で続ける"}
                     </span>
                 </button>

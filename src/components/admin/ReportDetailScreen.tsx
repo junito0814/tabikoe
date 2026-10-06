@@ -105,18 +105,18 @@ export function ReportDetailScreen({
     }
   };
 
-  const actionButton = "h-10 rounded-[8px] px-4 text-[13px] font-semibold disabled:opacity-45";
+  const actionButton = "h-10 rounded-[8px] px-4 text-[0.8125rem] font-semibold disabled:opacity-45";
 
   return (
     <div className="flex w-full flex-col">
       <div className="flex w-full flex-col gap-4">
         <header className="flex items-center justify-end">
-          <Link href="/admin/reports" className="text-[12px] text-muted underline underline-offset-2">
+          <Link href="/admin/reports" className="text-[0.75rem] text-muted underline underline-offset-2">
             一覧へ
           </Link>
         </header>
 
-        <section className="rounded-[12px] border border-line bg-surface p-4 text-[13px] text-ink">
+        <section className="rounded-[12px] border border-line bg-surface p-4 text-[0.8125rem] text-ink">
           <dl className="grid grid-cols-[6em_1fr] gap-y-1.5">
             <dt className="text-muted">対応状態</dt>
             <dd className="font-semibold text-accent">{REPORT_STATUS_LABELS[report.status]}</dd>
@@ -149,7 +149,7 @@ export function ReportDetailScreen({
                 <dt className="text-muted">この通報者</dt>
                 <dd className="text-muted">
                   直近90日 問題なし {context.reporter.noIssueIn90Days}／全 {context.reporter.total} 件
-                  {context.reporter.noIssueIn90Days >= 3 && <span className="ml-1 rounded-full bg-line px-2 py-0.5 text-[11px]">自動非公開の人数に数えない</span>}
+                  {context.reporter.noIssueIn90Days >= 3 && <span className="ml-1 rounded-full bg-line px-2 py-0.5 text-[0.6875rem]">自動非公開の人数に数えない</span>}
                 </dd>
               </>
             )}
@@ -157,13 +157,13 @@ export function ReportDetailScreen({
         </section>
 
         <section aria-labelledby="target-heading" className="rounded-[12px] border border-line bg-surface p-4">
-          <h2 id="target-heading" className="mb-2 text-[13px] font-bold text-ink">通報された対象</h2>
-          <p className="text-[13px] text-ink">
+          <h2 id="target-heading" className="mb-2 text-[0.8125rem] font-bold text-ink">通報された対象</h2>
+          <p className="text-[0.8125rem] text-ink">
             {report.target.summary}
-            {report.target.hidden && <span className="ml-2 rounded-full bg-line px-2 py-0.5 text-[11px]">非公開化／停止済み</span>}
+            {report.target.hidden && <span className="ml-2 rounded-full bg-line px-2 py-0.5 text-[0.6875rem]">非公開化／停止済み</span>}
           </p>
           {report.target.text && (
-            <p className="mt-2 whitespace-pre-wrap rounded-[8px] bg-tint p-3 text-[13px] leading-[1.7] text-ink">{report.target.text}</p>
+            <p className="mt-2 whitespace-pre-wrap rounded-[8px] bg-tint p-3 text-[0.8125rem] leading-[1.7] text-ink">{report.target.text}</p>
           )}
           {report.target.imageUrls.length > 0 && (
             <ul className="mt-2 grid grid-cols-3 gap-1">
@@ -176,12 +176,12 @@ export function ReportDetailScreen({
             </ul>
           )}
           {report.target.href && report.target.exists && (
-            <Link href={report.target.href} className="mt-2 inline-block text-[12px] text-muted underline underline-offset-2">
+            <Link href={report.target.href} className="mt-2 inline-block text-[0.75rem] text-muted underline underline-offset-2">
               アプリ内で開く
             </Link>
           )}
           {context && (
-            <p className="mt-2 text-[12px] text-muted">
+            <p className="mt-2 text-[0.75rem] text-muted">
               {context.posterId && (
                 <>
                   投稿者 {context.posterName ?? "（名前なし）"}（有効ストライク {context.posterActiveStrikes}）
@@ -197,15 +197,15 @@ export function ReportDetailScreen({
         </section>
 
         <section aria-labelledby="action-heading" className="rounded-[12px] border border-line bg-surface p-4">
-          <h2 id="action-heading" className="mb-2 text-[13px] font-bold text-ink">対応操作</h2>
+          <h2 id="action-heading" className="mb-2 text-[0.8125rem] font-bold text-ink">対応操作</h2>
           {report.targetType === "user" && (
-            <p className="mb-2 text-[12px] text-muted">ユーザーへの対応はアカウントの一時停止として扱います</p>
+            <p className="mb-2 text-[0.75rem] text-muted">ユーザーへの対応はアカウントの一時停止として扱います</p>
           )}
           {(report.targetType === "spot" || report.targetType === "trip") && (
-            <p className="mb-2 text-[12px] text-muted">{targetLabel}への対応は{targetLabel}の非公開化として扱います（削除でも同じ）</p>
+            <p className="mb-2 text-[0.75rem] text-muted">{targetLabel}への対応は{targetLabel}の非公開化として扱います（削除でも同じ）</p>
           )}
           {context && !isResolved && (
-            <ul className="mb-2 list-disc pl-4 text-[12px] text-muted">
+            <ul className="mb-2 list-disc pl-4 text-[0.75rem] text-muted">
               {context.posterId ? (
                 <li>
                   確定（非公開化・削除）で本人に 1 ストライク（有効 {context.posterActiveStrikes} → {context.posterActiveStrikes + 1}：{context.nextMeasure}）
@@ -217,21 +217,21 @@ export function ReportDetailScreen({
               <li>本人に理由が通知されます（通報者は伝えません）</li>
             </ul>
           )}
-          <label className="block text-[12px] font-medium text-muted">
+          <label className="block text-[0.75rem] font-medium text-muted">
             対応理由（メモ・非公開化と削除では必須）
             <textarea
               value={note}
               onChange={(event) => setNote(event.target.value)}
               rows={3}
-              className="mt-1 w-full rounded-[8px] border border-line px-3 py-2 text-[13px] text-ink"
+              className="mt-1 w-full rounded-[8px] border border-line px-3 py-2 text-[0.8125rem] text-ink"
             />
           </label>
 
           {errorMessage && <ErrorNotice className="mt-2" message={errorMessage} />}
-          {result && <p role="status" className="mt-2 text-[12px] text-done">{result}</p>}
+          {result && <p role="status" className="mt-2 text-[0.75rem] text-done">{result}</p>}
 
           {spotFix && !isResolved && (
-            <p className="mb-2 text-[12px] text-muted">
+            <p className="mb-2 text-[0.75rem] text-muted">
               「タビコエだけの場所」の情報の誤りは、登録者に直してもらいます（依頼はストライクになりません。直されると通報は自動で対応済み）
             </p>
           )}
@@ -253,22 +253,22 @@ export function ReportDetailScreen({
               問題なし
             </button>
           </div>
-          {isResolved && <p className="mt-2 text-[11px] text-muted">この通報は対応済みです</p>}
-          {!isResolved && noteMissing && <p className="mt-2 text-[11px] text-muted">非公開化・削除には理由が必要です</p>}
+          {isResolved && <p className="mt-2 text-[0.6875rem] text-muted">この通報は対応済みです</p>}
+          {!isResolved && noteMissing && <p className="mt-2 text-[0.6875rem] text-muted">非公開化・削除には理由が必要です</p>}
         </section>
 
         {confirmingDelete && (
           <div role="dialog" aria-modal="true" aria-labelledby="delete-dialog-title" className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-6">
             <div className="w-full max-w-[380px] rounded-[14px] bg-surface p-6 shadow-xl">
-              <h2 id="delete-dialog-title" className="mb-3 text-[16px] font-bold text-ink">削除しますか</h2>
-              <p className="mb-4 text-[13px] leading-[1.7] text-ink">
+              <h2 id="delete-dialog-title" className="mb-3 text-[1rem] font-bold text-ink">削除しますか</h2>
+              <p className="mb-4 text-[0.8125rem] leading-[1.7] text-ink">
                 この操作は<strong>復元できません</strong>。対象を削除し、通報者に対応完了の通知を送ります。
               </p>
               <div className="flex gap-2">
-                <button type="button" onClick={() => setConfirmingDelete(false)} disabled={isSubmitting} className="h-11 flex-1 rounded-[10px] border border-line text-[14px] font-medium text-ink">
+                <button type="button" onClick={() => setConfirmingDelete(false)} disabled={isSubmitting} className="h-11 flex-1 rounded-[10px] border border-line text-[0.875rem] font-medium text-ink">
                   キャンセル
                 </button>
-                <button type="button" onClick={() => void run("delete")} disabled={isSubmitting} className="h-11 flex-1 rounded-[10px] bg-accent text-[14px] font-semibold text-white disabled:opacity-45">
+                <button type="button" onClick={() => void run("delete")} disabled={isSubmitting} className="h-11 flex-1 rounded-[10px] bg-accent text-[0.875rem] font-semibold text-white disabled:opacity-45">
                   {isSubmitting ? "削除中…" : "削除する"}
                 </button>
               </div>

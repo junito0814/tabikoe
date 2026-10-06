@@ -61,7 +61,7 @@ export function LikeButton({
       disabled={isPending}
       aria-pressed={liked}
       aria-label={liked ? "いいねを取り消す" : "いいねする"}
-      className={`inline-flex h-9 items-center gap-1.5 rounded-full border px-3 text-[12px] font-semibold transition-colors disabled:opacity-60 ${
+      className={`inline-flex h-9 items-center gap-1.5 rounded-full border px-3 text-[0.75rem] font-semibold transition-colors disabled:opacity-60 ${
         liked ? "border-accent bg-accent text-white" : "border-line bg-surface text-ink"
       } ${className ?? ""}`}
     >

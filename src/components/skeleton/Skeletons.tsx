@@ -26,7 +26,7 @@ export function TopBarSkeleton({ backLabel, title, right = true }: { backLabel?:
   return (
     <div className="flex items-center gap-2">
       {backLabel ? (
-        <span className="inline-flex h-8 shrink-0 items-center gap-1 text-[12px] font-medium text-muted">
+        <span className="inline-flex h-8 shrink-0 items-center gap-1 text-[0.75rem] font-medium text-muted">
           {/* #813: 形は BackLink と同じものを使う（骨組みなのでリンクにはしない） */}
           <BackChevron />
           {backLabel}
@@ -34,7 +34,7 @@ export function TopBarSkeleton({ backLabel, title, right = true }: { backLabel?:
       ) : (
         <SkeletonBlock className="h-8 w-16" />
       )}
-      {title ? <h1 className="min-w-0 flex-1 truncate text-center text-[16px] font-bold text-ink">{title}</h1> : <SkeletonBlock className="mx-auto h-5 w-32" />}
+      {title ? <h1 className="min-w-0 flex-1 truncate text-center text-[1rem] font-bold text-ink">{title}</h1> : <SkeletonBlock className="mx-auto h-5 w-32" />}
       {right ? <SkeletonBlock className="h-8 w-16 rounded-full" /> : <span className="w-16" />}
     </div>
   );
@@ -156,7 +156,7 @@ export function HeadingScreenSkeleton({
     <SkeletonExit>
       <div className="flex min-h-screen flex-col items-center bg-app px-6 py-10">
         <div className={`flex w-full flex-col gap-5 ${maxWidth}`}>
-          <h1 className="text-[18px] font-bold text-ink">{title}</h1>
+          <h1 className="text-[1.125rem] font-bold text-ink">{title}</h1>
           <div role="status" aria-busy aria-label="読み込んでいます" className="flex flex-col gap-4">
             {children}
           </div>
@@ -302,7 +302,7 @@ function ScreenFrame({ gap, children }: { gap: string; children: ReactNode }) {
 function HeadingLeft({ title, right }: { title: string; right?: ReactNode }) {
   return (
     <div className="flex items-center justify-between gap-2">
-      <h1 className="text-[18px] font-bold text-ink">{title}</h1>
+      <h1 className="text-[1.125rem] font-bold text-ink">{title}</h1>
       {right}
     </div>
   );
@@ -432,7 +432,7 @@ export function MyPageSkeleton() {
 /** 戻る（‹ ラベル）。本物と同じ 12px・高さ 32px */
 function BackSkeleton() {
   return (
-    <span className="inline-flex h-8 shrink-0 items-center gap-1 text-[12px] font-medium text-muted">
+    <span className="inline-flex h-8 shrink-0 items-center gap-1 text-[0.75rem] font-medium text-muted">
       <BackChevron />
       <SkeletonBlock className="h-3 w-14" />
     </span>
@@ -449,7 +449,7 @@ export function AlbumListSkeleton() {
     <div className="flex min-h-screen flex-col items-center bg-app px-4 py-6">
       <div className="w-full max-w-[560px]">
         <header className="mb-4 flex items-center justify-between">
-          <h1 className="text-[18px] font-bold text-ink">アルバム</h1>
+          <h1 className="text-[1.125rem] font-bold text-ink">アルバム</h1>
           <SkeletonBlock className="h-3 w-20" />
         </header>
         <ul role="status" aria-busy aria-label="読み込んでいます" className="grid grid-cols-2 gap-3 sm:grid-cols-3">
@@ -480,7 +480,7 @@ export function WishlistSkeleton() {
         <header className="flex flex-col gap-2.5">
           <div className="flex items-center gap-2">
             <BackSkeleton />
-            <h1 className="min-w-0 flex-1 truncate text-center text-[16px] font-bold text-ink">行きたい</h1>
+            <h1 className="min-w-0 flex-1 truncate text-center text-[1rem] font-bold text-ink">行きたい</h1>
             <SkeletonBlock className="h-3 w-8 shrink-0" />
           </div>
           {/* 一覧・地図の切替（本物と同じ丸い入れ物） */}

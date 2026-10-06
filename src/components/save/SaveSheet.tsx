@@ -217,7 +217,7 @@ function SaveSheetBody({
       title={title}
       onClose={close}
       footer={
-        <button type="button" onClick={close} className="h-11 w-full rounded-[10px] bg-ink text-[14px] font-semibold text-on-ink">
+        <button type="button" onClick={close} className="h-11 w-full rounded-[10px] bg-ink text-[0.875rem] font-semibold text-on-ink">
           完了
         </button>
       }
@@ -226,23 +226,23 @@ function SaveSheetBody({
         {showWishlist && (
           <label className="flex cursor-pointer items-center gap-3 rounded-[10px] border border-line px-3 py-2.5">
             <input type="checkbox" checked={wishlisted} onChange={() => void toggleWishlist()} disabled={busy} className="h-5 w-5 accent-[var(--accent)]" />
-            <span className="flex-1 text-[14px] font-semibold text-ink">行きたいスポット</span>
-            {wishlistCount !== null && <span className="text-[12px] text-muted">{wishlistCount} 件</span>}
+            <span className="flex-1 text-[0.875rem] font-semibold text-ink">行きたいスポット</span>
+            {wishlistCount !== null && <span className="text-[0.75rem] text-muted">{wishlistCount} 件</span>}
           </label>
         )}
 
         <div>
-          <h3 className="mb-1.5 text-[12px] font-semibold text-muted">しおり</h3>
+          <h3 className="mb-1.5 text-[0.75rem] font-semibold text-muted">しおり</h3>
           {items === null ? (
-            <p className="py-3 text-[12px] text-muted">読み込んでいます…</p>
+            <p className="py-3 text-[0.75rem] text-muted">読み込んでいます…</p>
           ) : (
             <ul className="flex flex-col gap-1.5">
               {items.map((item) => (
                 <li key={item.id} className="rounded-[10px] border border-line px-3 py-2.5" data-save-itinerary={item.id}>
                   <label className="flex cursor-pointer items-center gap-3">
                     <input type="checkbox" checked={item.containsSpot === true} onChange={() => void toggleItinerary(item)} disabled={busy} className="h-5 w-5 accent-[var(--accent)]" />
-                    <span className="min-w-0 flex-1 truncate text-[14px] font-semibold text-ink">{item.title}</span>
-                    <span className="shrink-0 text-[11px] text-muted">{item.spotCount} スポット</span>
+                    <span className="min-w-0 flex-1 truncate text-[0.875rem] font-semibold text-ink">{item.title}</span>
+                    <span className="shrink-0 text-[0.6875rem] text-muted">{item.spotCount} スポット</span>
                   </label>
                   {item.containsSpot && item.dayCount > 0 && (
                     <div role="radiogroup" aria-label={`${item.title} の Day`} className="mt-2 flex flex-wrap gap-1.5 pl-8">
@@ -256,7 +256,7 @@ function SaveSheetBody({
                             aria-checked={selected}
                             onClick={() => !selected && void changeDay(item, day)}
                             disabled={busy}
-                            className={`h-7 rounded-full px-2.5 text-[11px] font-semibold ${selected ? "bg-accent text-white" : "border border-line text-ink"}`}
+                            className={`h-7 rounded-full px-2.5 text-[0.6875rem] font-semibold ${selected ? "bg-accent text-white" : "border border-line text-ink"}`}
                           >
                             {dayLabel(day)}
                           </button>
@@ -278,15 +278,15 @@ function SaveSheetBody({
                 placeholder="アルバム名（例: 大阪旅行）"
                 aria-label="アルバム名"
                 autoFocus
-                className="h-10 min-w-0 flex-1 rounded-[10px] border border-line bg-surface px-3 text-[13px] text-ink focus:outline-none focus:ring-1 focus:ring-accent"
+                className="h-10 min-w-0 flex-1 rounded-[10px] border border-line bg-surface px-3 text-[0.8125rem] text-ink focus:outline-none focus:ring-1 focus:ring-accent"
               />
               {/* loading-feedback Task 3: しおりを作る → スポットを入れる の 2 往復があるので文言を変える（要件 4.5.11） */}
-              <button type="submit" disabled={busy || !newTitle.trim()} className="h-10 shrink-0 rounded-[10px] bg-accent px-3 text-[12px] font-semibold text-white disabled:opacity-45">
+              <button type="submit" disabled={busy || !newTitle.trim()} className="h-10 shrink-0 rounded-[10px] bg-accent px-3 text-[0.75rem] font-semibold text-white disabled:opacity-45">
                 {busy ? "作成中…" : "作る"}
               </button>
             </form>
           ) : (
-            <button type="button" onClick={() => setIsCreating(true)} className="mt-2 text-[13px] font-semibold text-accent">
+            <button type="button" onClick={() => setIsCreating(true)} className="mt-2 text-[0.8125rem] font-semibold text-accent">
               ＋ 新しいしおりを作る
             </button>
           )}

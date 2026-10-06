@@ -35,8 +35,8 @@ export function BackChevron({ size = 16, strokeWidth = 2 }: { size?: number; str
 export type BackLinkVariant = "default" | "floating";
 
 const STYLES: Record<BackLinkVariant, string> = {
-  default: "inline-flex h-8 shrink-0 items-center gap-1 text-[12px] font-medium text-muted",
-  floating: "inline-flex h-9 shrink-0 items-center gap-1 rounded-full bg-surface px-3 text-[12px] font-semibold text-ink shadow-card",
+  default: "inline-flex h-8 shrink-0 items-center gap-1 text-[0.75rem] font-medium text-muted",
+  floating: "inline-flex h-9 shrink-0 items-center gap-1 rounded-full bg-surface px-3 text-[0.75rem] font-semibold text-ink shadow-card",
 };
 
 export function BackLink({

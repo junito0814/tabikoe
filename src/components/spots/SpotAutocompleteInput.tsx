@@ -225,16 +225,16 @@ export function SpotAutocompleteInput({
   if (selectedSpot) {
     return (
       <div className="w-full">
-        <span className="mb-1.5 block text-[12px] font-medium text-muted">スポット</span>
+        <span className="mb-1.5 block text-[0.75rem] font-medium text-muted">スポット</span>
         <div className="flex items-center justify-between rounded-[10px] border border-line bg-surface px-3 py-2.5">
-          <span className="text-[14px] text-ink">{selectedSpot.name}</span>
+          <span className="text-[0.875rem] text-ink">{selectedSpot.name}</span>
           <button
             type="button"
             onClick={() => {
               onSelect(null);
               setQuery("");
             }}
-            className="text-[12px] font-medium text-accent underline underline-offset-2"
+            className="text-[0.75rem] font-medium text-accent underline underline-offset-2"
           >
             変更
           </button>
@@ -245,7 +245,7 @@ export function SpotAutocompleteInput({
 
   return (
     <div className="w-full">
-      <label htmlFor={inputId} className="mb-1.5 block text-[12px] font-medium text-muted">
+      <label htmlFor={inputId} className="mb-1.5 block text-[0.75rem] font-medium text-muted">
         スポット
       </label>
       <input
@@ -258,12 +258,12 @@ export function SpotAutocompleteInput({
         role="combobox"
         aria-expanded={visibleCandidates.length > 0}
         aria-controls={`${inputId}-candidates`}
-        className="h-11 w-full rounded-[10px] border border-line bg-surface px-3 text-[14px] text-ink focus:outline-none focus:ring-1 focus:ring-accent"
+        className="h-11 w-full rounded-[10px] border border-line bg-surface px-3 text-[0.875rem] text-ink focus:outline-none focus:ring-1 focus:ring-accent"
       />
 
       {/* Task 4-9: 探している間は「探しています…」。探し終わるまで「見つかりません」と言わない */}
       {isSearching && (
-        <p role="status" className="mt-2 text-[12px] text-muted">
+        <p role="status" className="mt-2 text-[0.75rem] text-muted">
           探しています…
         </p>
       )}
@@ -281,7 +281,7 @@ export function SpotAutocompleteInput({
         >
           {groupBySource(visibleCandidates, spotCandidateSource).map((group, groupIndex) => (
             <section key={group.source} className={groupIndex > 0 ? "border-t border-line" : undefined}>
-              <h3 className="px-3 pb-0.5 pt-2 text-[10.5px] font-bold text-muted">
+              <h3 className="px-3 pb-0.5 pt-2 text-[0.65625rem] font-bold text-muted">
                 {ATTRIBUTION_SOURCE_LABELS[group.source]}
               </h3>
               <ul role="listbox" aria-label={ATTRIBUTION_SOURCE_LABELS[group.source]}>
@@ -295,7 +295,7 @@ export function SpotAutocompleteInput({
                         onClick={() => handleSelectCandidate(candidate)}
                         /* Task 4-1: どれか 1 つを登録している間は、一覧の**どの候補も**押せない */
                         disabled={registeringKey !== null}
-                        className="block w-full px-3 py-2.5 text-left text-[14px] text-ink hover:bg-tint disabled:cursor-not-allowed disabled:opacity-45"
+                        className="block w-full px-3 py-2.5 text-left text-[0.875rem] text-ink hover:bg-tint disabled:cursor-not-allowed disabled:opacity-45"
                       >
                         {isRegistering ? "登録しています…" : candidate.name}
                       </button>
@@ -319,12 +319,12 @@ export function SpotAutocompleteInput({
       {errorMessage && <ErrorNotice className="mt-2" message={errorMessage} />}
 
       {hasSearched && visibleCandidates.length === 0 && (
-        <p className="mt-2 text-[12px] leading-[1.6] text-muted">
+        <p className="mt-2 text-[0.75rem] leading-[1.6] text-muted">
           候補が見つかりません。地図でピンを合わせて「新しい場所」として投稿できます
         </p>
       )}
       {onCancel && (
-        <button type="button" onClick={onCancel} className="mt-2 text-[12px] font-medium text-muted underline underline-offset-2">
+        <button type="button" onClick={onCancel} className="mt-2 text-[0.75rem] font-medium text-muted underline underline-offset-2">
           検索をやめる
         </button>
       )}

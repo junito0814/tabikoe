@@ -60,16 +60,16 @@ export function PeriodDialog({
     <Sheet open={open} title="期間を変更" onClose={onClose}>
       <form onSubmit={(event) => void handleSubmit(event)} className="flex flex-col gap-3" data-period-dialog>
         <div className="grid grid-cols-2 gap-2">
-          <label className="flex flex-col gap-1 text-[12px] font-medium text-muted">
+          <label className="flex flex-col gap-1 text-[0.75rem] font-medium text-muted">
             開始日
-            <input type="date" value={start} onChange={(event) => setStart(event.target.value)} className="h-11 rounded-[10px] border border-line bg-surface px-2 text-[13px] text-ink" />
+            <input type="date" value={start} onChange={(event) => setStart(event.target.value)} className="h-11 rounded-[10px] border border-line bg-surface px-2 text-[0.8125rem] text-ink" />
           </label>
-          <label className="flex flex-col gap-1 text-[12px] font-medium text-muted">
+          <label className="flex flex-col gap-1 text-[0.75rem] font-medium text-muted">
             終了日
-            <input type="date" value={end} onChange={(event) => setEnd(event.target.value)} className="h-11 rounded-[10px] border border-line bg-surface px-2 text-[13px] text-ink" />
+            <input type="date" value={end} onChange={(event) => setEnd(event.target.value)} className="h-11 rounded-[10px] border border-line bg-surface px-2 text-[0.8125rem] text-ink" />
           </label>
         </div>
-        <p className="text-[11px] leading-[1.6] text-muted">期間を短くすると、消える日のスポットは「日付なし」に移ります（消えません）。両方空にすると期間を解除します。</p>
+        <p className="text-[0.6875rem] leading-[1.6] text-muted">期間を短くすると、消える日のスポットは「日付なし」に移ります（消えません）。両方空にすると期間を解除します。</p>
         {error && <ErrorNotice message={error} />}
         <div className="flex justify-between">
           <button
@@ -78,12 +78,12 @@ export function PeriodDialog({
               setStart("");
               setEnd("");
             }}
-            className="text-[12px] font-medium text-muted underline underline-offset-2"
+            className="text-[0.75rem] font-medium text-muted underline underline-offset-2"
           >
             期間を解除
           </button>
           {/* loading-feedback Task 4-7（2026-10-02）: 押せなくなるだけでなく、何をしているか言う */}
-          <button type="submit" disabled={isSubmitting} className="h-10 rounded-[10px] bg-ink px-4 text-[13px] font-semibold text-on-ink disabled:opacity-45">
+          <button type="submit" disabled={isSubmitting} className="h-10 rounded-[10px] bg-ink px-4 text-[0.8125rem] font-semibold text-on-ink disabled:opacity-45">
             {isSubmitting ? "保存しています…" : "保存"}
           </button>
         </div>

@@ -53,13 +53,13 @@ export default async function AlbumsPage({ searchParams }: { searchParams: Promi
               */}
             <header className="mb-4 flex flex-col gap-2">
               <BackLink />
-              <h1 className="text-[18px] font-bold text-ink">アルバム</h1>
+              <h1 className="text-[1.125rem] font-bold text-ink">アルバム</h1>
               {/* #715: 名前ひとつで作れる（しおりは作らない）。並び順も選べる */}
               <AlbumListControls sort={sort} />
             </header>
 
             {albums.length === 0 ? (
-              <p className="py-16 text-center text-[13px] leading-[1.8] text-muted">
+              <p className="py-16 text-center text-[0.8125rem] leading-[1.8] text-muted">
                 まだアルバムがありません
                 <br />
                 「＋ 新規」で作るか、投稿するとアルバムごとにまとまります
@@ -76,11 +76,11 @@ export default async function AlbumsPage({ searchParams }: { searchParams: Promi
                         className="aspect-square w-full object-cover"
                       />
                       <span className="block p-2.5">
-                        <span className="block truncate text-[13px] font-semibold text-ink">
+                        <span className="block truncate text-[0.8125rem] font-semibold text-ink">
                           {album.title}
-                          {album.isDaily && <span className="ml-1.5 rounded-full bg-tint px-1.5 py-0.5 text-[10px] font-medium text-muted">旅行ではない投稿</span>}
+                          {album.isDaily && <span className="ml-1.5 rounded-full bg-tint px-1.5 py-0.5 text-[0.625rem] font-medium text-muted">旅行ではない投稿</span>}
                         </span>
-                        <span className="block text-[11px] text-muted">
+                        <span className="block text-[0.6875rem] text-muted">
                           {album.postCount}件 ・ {album.memberCount}人 ・ {ALBUM_ROLE_LABELS[album.role]}
                         </span>
                       </span>

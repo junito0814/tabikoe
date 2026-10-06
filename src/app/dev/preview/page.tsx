@@ -28,7 +28,7 @@ function makeItems(count: number, withVideo = false): MediaItem[] {
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <section className="w-full max-w-[420px]">
-      <h2 className="mb-3 text-[14px] font-bold text-ink">{title}</h2>
+      <h2 className="mb-3 text-[0.875rem] font-bold text-ink">{title}</h2>
       {children}
     </section>
   );
@@ -37,7 +37,7 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 export default function ComponentPreviewPage() {
   return (
     <div className="flex min-h-screen flex-col items-center gap-10 bg-app px-6 py-12">
-      <p className="w-full max-w-[420px] rounded-lg bg-ink px-3 py-2 text-[11px] text-on-ink">
+      <p className="w-full max-w-[420px] rounded-lg bg-ink px-3 py-2 text-[0.6875rem] text-on-ink">
         開発用プレビューページ（本番画面には組み込まれていません）
       </p>
 
@@ -57,12 +57,12 @@ export default function ComponentPreviewPage() {
         <div className="flex flex-col gap-4">
           {[1, 2, 3, 4, 6].map((count) => (
             <div key={count}>
-              <p className="mb-1 text-[11px] text-muted">{count}点</p>
+              <p className="mb-1 text-[0.6875rem] text-muted">{count}点</p>
               <MediaGrid items={makeItems(count)} />
             </div>
           ))}
           <div>
-            <p className="mb-1 text-[11px] text-muted">動画を含む3点</p>
+            <p className="mb-1 text-[0.6875rem] text-muted">動画を含む3点</p>
             <MediaGrid items={makeItems(3, true)} />
           </div>
         </div>

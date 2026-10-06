@@ -182,14 +182,21 @@ body {
  * しかも拡大したまま戻らない。このアプリの入力欄は 11〜14px だったので、
  * 行き先の入力・コメント・メモのどれでも起きていた。
  *
- * ここは Tailwind の層の外に書いてあるので、`text-[12px]` のような指定より強い。
+ * ここは Tailwind の層の外に書いてあるので、`text-[0.75rem]` のような指定より強い。
  * わざと 16px より大きくしている入力欄（管理者の 6 桁など）は `data-keep-size` で外す。
  * チェックボックスとラジオは文字を持たないので対象外。
  */
 input:not([type="checkbox"]):not([type="radio"]):not([type="file"]):not([data-keep-size]),
 textarea:not([data-keep-size]),
 select:not([data-keep-size]) {
-  font-size: 16px;
+  /*
+   * #805（2026-10-06）: `16px` を `max(1rem, 16px)` にした。
+   *
+   * 【初心者向け】`1rem` は「端末の文字サイズ設定で決まる大きさ」。
+   * 「文字を大きく」にしている人には入力欄も一緒に大きくなり、**周りの文字と揃います**。
+   * 小さくしている人には **16px を下回らない**ので、iOS の勝手な拡大も起きません。
+   */
+  font-size: max(1rem, 16px);
 }
 
 /*

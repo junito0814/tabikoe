@@ -224,7 +224,7 @@ export function DestinationInput({
           aria-expanded={isOpen && visibleSuggestions.length > 0}
           aria-controls={`${inputId}-suggestions`}
           disabled={disabled}
-          className="h-full min-w-0 flex-1 bg-transparent text-[15px] text-ink placeholder:text-muted focus:outline-none"
+          className="h-full min-w-0 flex-1 bg-transparent text-[0.9375rem] text-ink placeholder:text-muted focus:outline-none"
         />
       </form>
 
@@ -235,7 +235,7 @@ export function DestinationInput({
         * 「見つからない」と言い切ると**進める道があるのに行き止まりに見える**。
         */}
       {isSearching && (
-        <p role="status" className="mt-1 px-4 text-[12px] text-muted">
+        <p role="status" className="mt-1 px-4 text-[0.75rem] text-muted">
           探しています…
         </p>
       )}
@@ -260,7 +260,7 @@ export function DestinationInput({
           {groupBySource(visibleSuggestions, (suggestion) => destinationSuggestionSource(suggestion.kind)).map(
             (group, groupIndex) => (
               <section key={group.source} className={groupIndex > 0 ? "border-t border-line" : undefined}>
-                <h3 className="px-4 pb-0.5 pt-2 text-[10.5px] font-bold text-muted">
+                <h3 className="px-4 pb-0.5 pt-2 text-[0.65625rem] font-bold text-muted">
                   {ATTRIBUTION_SOURCE_LABELS[group.source]}
                 </h3>
                 <ul
@@ -274,7 +274,7 @@ export function DestinationInput({
                         type="button"
                         onMouseDown={(event) => event.preventDefault()}
                         onClick={() => select(suggestion)}
-                        className="flex w-full items-center gap-2 px-4 py-2.5 text-left text-[14px] text-ink hover:bg-tint"
+                        className="flex w-full items-center gap-2 px-4 py-2.5 text-left text-[0.875rem] text-ink hover:bg-tint"
                       >
                         <span className="text-muted" aria-hidden>
                           {suggestion.kind === "spot" ? "🏷" : "📍"}
@@ -282,10 +282,10 @@ export function DestinationInput({
                         <span className="min-w-0 flex-1 truncate">
                           {suggestion.name}
                           {"secondaryText" in suggestion && suggestion.secondaryText && (
-                            <span className="ml-1.5 text-[11px] text-muted">{suggestion.secondaryText}</span>
+                            <span className="ml-1.5 text-[0.6875rem] text-muted">{suggestion.secondaryText}</span>
                           )}
                         </span>
-                        <span className="shrink-0 text-[11px] text-muted">{SUGGESTION_KIND_LABELS[suggestion.kind]}</span>
+                        <span className="shrink-0 text-[0.6875rem] text-muted">{SUGGESTION_KIND_LABELS[suggestion.kind]}</span>
                       </button>
                     </li>
                   ))}

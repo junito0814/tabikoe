@@ -68,12 +68,12 @@ export function UserListScreen({
     void load(draft, 0, true);
   };
 
-  const field = "h-9 rounded-[8px] border border-line bg-surface px-2 text-[12px] text-ink";
+  const field = "h-9 rounded-[8px] border border-line bg-surface px-2 text-[0.75rem] text-ink";
 
   return (
     <div className="flex w-full flex-col gap-4">
       <form onSubmit={handleSubmit} className="flex flex-wrap items-end gap-2 rounded-[12px] border border-line bg-surface p-3">
-        <label className="text-[11px] text-muted">
+        <label className="text-[0.6875rem] text-muted">
           検索
           <input
             type="search"
@@ -83,7 +83,7 @@ export function UserListScreen({
             className={`${field} block w-[220px]`}
           />
         </label>
-        <label className="text-[11px] text-muted">
+        <label className="text-[0.6875rem] text-muted">
           状態
           <select value={draft.status ?? ""} onChange={(e) => setDraft({ ...draft, status: (e.target.value || null) as UserStatus | null })} className={`${field} block`}>
             <option value="">すべて</option>
@@ -94,7 +94,7 @@ export function UserListScreen({
             ))}
           </select>
         </label>
-        <label className="text-[11px] text-muted">
+        <label className="text-[0.6875rem] text-muted">
           並び
           <select value={draft.sort} onChange={(e) => setDraft({ ...draft, sort: e.target.value as UserSort })} className={`${field} block`}>
             {USER_SORTS.map((s) => (
@@ -104,7 +104,7 @@ export function UserListScreen({
             ))}
           </select>
         </label>
-        <button type="submit" disabled={isLoading} className="h-9 rounded-[8px] bg-ink px-4 text-[12px] font-semibold text-on-ink disabled:opacity-45">
+        <button type="submit" disabled={isLoading} className="h-9 rounded-[8px] bg-ink px-4 text-[0.75rem] font-semibold text-on-ink disabled:opacity-45">
           表示
         </button>
       </form>
@@ -112,8 +112,8 @@ export function UserListScreen({
       {errorMessage && <ErrorNotice message={errorMessage} />}
 
       <div className="overflow-x-auto rounded-[12px] border border-line bg-surface">
-        <table className="w-full min-w-[820px] text-left text-[12px] text-ink">
-          <thead className="border-b border-line text-[11px] text-muted">
+        <table className="w-full min-w-[820px] text-left text-[0.75rem] text-ink">
+          <thead className="border-b border-line text-[0.6875rem] text-muted">
             <tr>
               <th className="px-3 py-2 font-medium">利用者</th>
               <th className="px-3 py-2 font-medium">登録日</th>
@@ -137,7 +137,7 @@ export function UserListScreen({
               <tr key={u.id} className="border-b border-line last:border-b-0" data-user={u.id}>
                 <td className="px-3 py-2">
                   <span className="font-semibold">{u.displayName}</span>
-                  <span className="block text-[11px] text-muted">{u.email}</span>
+                  <span className="block text-[0.6875rem] text-muted">{u.email}</span>
                 </td>
                 <td className="whitespace-nowrap px-3 py-2 tabular-nums text-muted">{shortDate(u.createdAt)}</td>
                 <td className="whitespace-nowrap px-3 py-2 text-muted">{u.lastActiveAt ? relativeTime(u.lastActiveAt) : "—"}</td>
@@ -165,7 +165,7 @@ export function UserListScreen({
           type="button"
           onClick={() => void load(applied, nextOffset, false)}
           disabled={isLoading}
-          className="h-10 rounded-[8px] border border-line bg-surface text-[13px] font-medium text-ink disabled:opacity-45"
+          className="h-10 rounded-[8px] border border-line bg-surface text-[0.8125rem] font-medium text-ink disabled:opacity-45"
         >
           {isLoading ? "読み込み中..." : "もっと見る"}
         </button>
@@ -179,7 +179,7 @@ export function StatusChip({ status, until }: { status: UserStatus; until?: stri
   const tone =
     status === "normal" ? "border border-line text-muted" : status === "restricted" ? "bg-tint text-accent" : "bg-saved/10 text-saved";
   const label = status === "restricted" && until ? `投稿禁止（〜${shortDate(until)}）` : USER_STATUS_LABELS[status];
-  return <span className={`rounded-full px-2 py-0.5 text-[11px] font-medium ${tone}`}>{label}</span>;
+  return <span className={`rounded-full px-2 py-0.5 text-[0.6875rem] font-medium ${tone}`}>{label}</span>;
 }
 
 function shortDate(iso: string): string {

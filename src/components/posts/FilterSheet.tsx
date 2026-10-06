@@ -141,7 +141,7 @@ function FilterSheetBody<T extends SheetFilters>({
   };
 
   const chip = (selected: boolean, disabled = false) =>
-    `cursor-pointer rounded-full border px-3 py-1.5 text-[12px] font-medium ${
+    `cursor-pointer rounded-full border px-3 py-1.5 text-[0.75rem] font-medium ${
       selected ? "border-accent bg-accent text-white" : "border-line text-ink"
     } ${disabled ? "opacity-45" : ""}`;
 
@@ -177,7 +177,7 @@ function FilterSheetBody<T extends SheetFilters>({
     extra?: ReactNode
   ) => (
     <fieldset key={key}>
-      <legend className="mb-1.5 text-[12px] font-medium text-muted">{legend}</legend>
+      <legend className="mb-1.5 text-[0.75rem] font-medium text-muted">{legend}</legend>
       <div className="flex flex-wrap gap-1.5">
         {options.map((option) => {
           const checked = selected === option;
@@ -210,7 +210,7 @@ function FilterSheetBody<T extends SheetFilters>({
     (next) => patch({ cost: next }),
     (range) => COST_RANGE_LABELS[range],
     // 地図は文字を増やさない（見出しの「（平均）」で意味が通る）。2026-10-02 の決定
-    isSpots ? undefined : <p className="mt-1 text-[11px] text-muted">費用が未入力の投稿は、予算で絞り込むと表示されません</p>
+    isSpots ? undefined : <p className="mt-1 text-[0.6875rem] text-muted">費用が未入力の投稿は、予算で絞り込むと表示されません</p>
   );
 
   const periodSection = singleChoice(
@@ -221,13 +221,13 @@ function FilterSheetBody<T extends SheetFilters>({
     (next) => patch({ period: next }),
     (option) => PERIOD_LABELS[option],
     draft.period === "custom" ? (
-      <div className="mt-2 flex items-center gap-2 text-[12px] text-ink">
+      <div className="mt-2 flex items-center gap-2 text-[0.75rem] text-ink">
         <input
           type="date"
           aria-label="開始日"
           value={draft.from ?? ""}
           onChange={(event) => patch({ from: event.target.value })}
-          className="h-9 min-w-0 flex-1 rounded-[8px] border border-line bg-surface px-2 text-[12px] text-ink"
+          className="h-9 min-w-0 flex-1 rounded-[8px] border border-line bg-surface px-2 text-[0.75rem] text-ink"
         />
         <span aria-hidden>〜</span>
         <input
@@ -235,7 +235,7 @@ function FilterSheetBody<T extends SheetFilters>({
           aria-label="終了日"
           value={draft.to ?? ""}
           onChange={(event) => patch({ to: event.target.value })}
-          className="h-9 min-w-0 flex-1 rounded-[8px] border border-line bg-surface px-2 text-[12px] text-ink"
+          className="h-9 min-w-0 flex-1 rounded-[8px] border border-line bg-surface px-2 text-[0.75rem] text-ink"
         />
       </div>
     ) : undefined
@@ -243,7 +243,7 @@ function FilterSheetBody<T extends SheetFilters>({
 
   const categorySection = (
     <fieldset key="categories">
-      <legend className="mb-1.5 text-[12px] font-medium text-muted">カテゴリ（複数選択可）</legend>
+      <legend className="mb-1.5 text-[0.75rem] font-medium text-muted">カテゴリ（複数選択可）</legend>
       <div className="flex flex-wrap gap-1.5">
         {POST_CATEGORIES.map((category) => {
           const checked = draft.categories.includes(category);
@@ -298,7 +298,7 @@ function FilterSheetBody<T extends SheetFilters>({
         className="relative flex max-h-[85dvh] w-full max-w-[520px] flex-col gap-4 overflow-y-auto rounded-t-[16px] bg-surface p-4 pb-[max(16px,env(safe-area-inset-bottom))] shadow-card md:rounded-[16px]"
       >
         <div className="flex items-center justify-between">
-          <h2 id="filter-sheet-title" className="text-[15px] font-bold text-ink">
+          <h2 id="filter-sheet-title" className="text-[0.9375rem] font-bold text-ink">
             絞り込み
           </h2>
           {/* #712: 文字の「閉じる」をやめ、右上の × に揃えた（要件 4.5.13） */}
@@ -318,10 +318,10 @@ function FilterSheetBody<T extends SheetFilters>({
             type="button"
             onClick={() => setIsPickingArea(true)}
             data-area-row
-            className="flex items-center gap-2 rounded-[10px] border border-line px-3 py-2.5 text-[13px] text-ink"
+            className="flex items-center gap-2 rounded-[10px] border border-line px-3 py-2.5 text-[0.8125rem] text-ink"
           >
             エリア
-            <span className="ml-auto text-[12px] text-muted">{areas.length === 0 ? "指定なし" : `${areas.length} 都道府県`}</span>
+            <span className="ml-auto text-[0.75rem] text-muted">{areas.length === 0 ? "指定なし" : `${areas.length} 都道府県`}</span>
             <span className="text-muted" aria-hidden>›</span>
           </button>
         )}
@@ -335,11 +335,11 @@ function FilterSheetBody<T extends SheetFilters>({
           <button
             type="button"
             onClick={() => patch(CLEARED_FILTERS)}
-            className="text-[12px] font-medium text-muted underline underline-offset-2"
+            className="text-[0.75rem] font-medium text-muted underline underline-offset-2"
           >
             条件をクリア
           </button>
-          <button type="submit" className="h-10 rounded-[10px] bg-ink px-4 text-[13px] font-semibold text-on-ink">
+          <button type="submit" className="h-10 rounded-[10px] bg-ink px-4 text-[0.8125rem] font-semibold text-on-ink">
             この条件で表示
           </button>
         </div>

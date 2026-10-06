@@ -54,10 +54,10 @@ export function BlockedUsersList({
 
   return (
     <section className="w-full max-w-[360px]">
-      <h2 className="mb-2 text-[12px] font-medium text-muted">ブロック中のユーザー</h2>
+      <h2 className="mb-2 text-[0.75rem] font-medium text-muted">ブロック中のユーザー</h2>
 
       {blockedUsers.length === 0 ? (
-        <p className="text-[12px] text-muted">ブロック中のユーザーはいません</p>
+        <p className="text-[0.75rem] text-muted">ブロック中のユーザーはいません</p>
       ) : (
         <ul className="flex flex-col gap-2">
           {blockedUsers.map((user) => (
@@ -72,13 +72,13 @@ export function BlockedUsersList({
                   alt={`${user.displayName}のアイコン画像`}
                   className="h-8 w-8 rounded-full object-cover"
                 />
-                <span className="text-[13px] text-ink">{user.displayName}</span>
+                <span className="text-[0.8125rem] text-ink">{user.displayName}</span>
               </span>
               <button
                 type="button"
                 onClick={() => handleUnblock(user.id)}
                 disabled={pendingId !== null}
-                className="text-[12px] font-medium text-accent underline underline-offset-2 disabled:opacity-45"
+                className="text-[0.75rem] font-medium text-accent underline underline-offset-2 disabled:opacity-45"
               >
                 {pendingId === user.id ? "解除中..." : "解除"}
               </button>

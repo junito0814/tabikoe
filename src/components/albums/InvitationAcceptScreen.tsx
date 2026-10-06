@@ -60,18 +60,18 @@ export function InvitationAcceptScreen({
       <div className="flex w-full max-w-[380px] flex-col gap-3 rounded-[14px] border border-line bg-surface p-5">
         {invitation.status === "valid" ? (
           <>
-            <h1 className="text-[16px] font-bold text-ink">アルバムへの招待</h1>
-            <p className="text-[13px] leading-[1.7] text-ink">
+            <h1 className="text-[1rem] font-bold text-ink">アルバムへの招待</h1>
+            <p className="text-[0.8125rem] leading-[1.7] text-ink">
               「{invitation.tripTitle}」に<strong>{ALBUM_ROLE_LABELS[invitation.role]}</strong>として招待されています。
             </p>
             {invitation.alreadyMember ? (
-              <p className="text-[12px] text-muted">すでにこのアルバムのメンバーです</p>
+              <p className="text-[0.75rem] text-muted">すでにこのアルバムのメンバーです</p>
             ) : (
               <button
                 type="button"
                 onClick={() => void handleAccept()}
                 disabled={isSubmitting}
-                className="h-11 rounded-[10px] bg-accent text-[14px] font-semibold text-white disabled:opacity-45"
+                className="h-11 rounded-[10px] bg-accent text-[0.875rem] font-semibold text-white disabled:opacity-45"
               >
                 {isSubmitting ? "参加中…" : "アルバムに参加する"}
               </button>
@@ -79,8 +79,8 @@ export function InvitationAcceptScreen({
           </>
         ) : (
           <>
-            <h1 className="text-[16px] font-bold text-ink">招待リンクが無効です</h1>
-            <p className="text-[13px] leading-[1.7] text-muted">
+            <h1 className="text-[1rem] font-bold text-ink">招待リンクが無効です</h1>
+            <p className="text-[0.8125rem] leading-[1.7] text-muted">
               {invitation.status === "expired"
                 ? "有効期限（7日間）が切れています。オーナーに新しいリンクの発行を依頼してください。"
                 : invitation.status === "revoked"
@@ -90,7 +90,7 @@ export function InvitationAcceptScreen({
           </>
         )}
         {errorMessage && <ErrorNotice message={errorMessage} />}
-        <Link href="/albums" className="text-center text-[12px] text-muted underline underline-offset-2">
+        <Link href="/albums" className="text-center text-[0.75rem] text-muted underline underline-offset-2">
           アルバム一覧へ
         </Link>
       </div>

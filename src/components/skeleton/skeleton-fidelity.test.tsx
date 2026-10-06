@@ -52,12 +52,12 @@ describe("外枠が本物と同じ（#650 の「幅が 40px 広がる」）", ()
 describe("見出しが本物と同じ（#650 の「中央から左へ飛ぶ」）", () => {
   it("骨組みの見出しは左寄せ 18px（中央寄せではない）", () => {
     const heading = skeletons.slice(skeletons.indexOf("function HeadingLeft("), skeletons.indexOf("function HeadingLeft(") + 600);
-    expect(heading).toContain('text-[18px] font-bold text-ink');
+    expect(heading).toContain('text-[1.125rem] font-bold text-ink');
     expect(heading).not.toContain("text-center");
   });
 
   it.each(["通知", "しおり"])("%s の本物も左寄せ 18px", (name) => {
-    expect(real[name as keyof typeof real]).toContain('<h1 className="text-[18px] font-bold text-ink">');
+    expect(real[name as keyof typeof real]).toContain('<h1 className="text-[1.125rem] font-bold text-ink">');
   });
 });
 
@@ -168,7 +168,7 @@ describe("#653: アルバム詳細の形（いちばんずれていた）", () =
   it("本物は戻るが独立した 1 行で、その下に 20px のタイトル", () => {
     // #813: 下線付きの「← 一覧」をやめ、共通部品（BackLink）に揃えた
     expect(real5.アルバム詳細).toContain("<BackLink");
-    expect(real5.アルバム詳細).toContain("text-[20px] font-bold text-ink");
+    expect(real5.アルバム詳細).toContain("text-[1.25rem] font-bold text-ink");
   });
 
   it("骨組みも 2 段（戻る → タイトル）になっている", () => {

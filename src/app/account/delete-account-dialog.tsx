@@ -62,7 +62,7 @@ export default function DeleteAccountDialog({ isAdmin }: { isAdmin: boolean }) {
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="tap-target text-[13px] font-medium text-accent underline underline-offset-2"
+        className="tap-target text-[0.8125rem] font-medium text-accent underline underline-offset-2"
       >
         退会する
       </button>
@@ -70,15 +70,15 @@ export default function DeleteAccountDialog({ isAdmin }: { isAdmin: boolean }) {
       {open && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-6">
           <div className="w-full max-w-[380px] rounded-[14px] bg-surface p-6 shadow-xl">
-            <h2 className="mb-3 text-[16px] font-bold text-ink">
+            <h2 className="mb-3 text-[1rem] font-bold text-ink">
               退会前にご確認ください
             </h2>
-            <ul className="mb-4 list-disc space-y-1.5 pl-4 text-[13px] leading-[1.6] text-ink">
+            <ul className="mb-4 list-disc space-y-1.5 pl-4 text-[0.8125rem] leading-[1.6] text-ink">
               <li>投稿・コメントは残りますが、ユーザー名は「退会済みユーザー」として匿名化されます</li>
               <li>オーナーを務めているアルバムがある場合、オーナー権限は自動的に他のメンバーへ移譲されます</li>
             </ul>
 
-            <label className="mb-3 flex cursor-pointer items-start gap-2 text-[13px] text-ink">
+            <label className="mb-3 flex cursor-pointer items-start gap-2 text-[0.8125rem] text-ink">
               <input
                 type="checkbox"
                 checked={acknowledged}
@@ -89,7 +89,7 @@ export default function DeleteAccountDialog({ isAdmin }: { isAdmin: boolean }) {
             </label>
 
             {isAdmin && (
-              <label className="mb-3 flex cursor-pointer items-start gap-2 text-[13px] text-ink">
+              <label className="mb-3 flex cursor-pointer items-start gap-2 text-[0.8125rem] text-ink">
                 <input
                   type="checkbox"
                   checked={handoverConfirmed}
@@ -101,7 +101,7 @@ export default function DeleteAccountDialog({ isAdmin }: { isAdmin: boolean }) {
             )}
 
             {errorMessage && (
-              <p className="mb-3 text-[12px] text-accent">{errorMessage}</p>
+              <p className="mb-3 text-[0.75rem] text-accent">{errorMessage}</p>
             )}
 
             <div className="flex gap-2">
@@ -109,7 +109,7 @@ export default function DeleteAccountDialog({ isAdmin }: { isAdmin: boolean }) {
                 type="button"
                 onClick={closeDialog}
                 disabled={isSubmitting}
-                className="h-11 flex-1 rounded-[10px] border border-line text-[14px] font-medium text-ink"
+                className="h-11 flex-1 rounded-[10px] border border-line text-[0.875rem] font-medium text-ink"
               >
                 キャンセル
               </button>
@@ -117,7 +117,7 @@ export default function DeleteAccountDialog({ isAdmin }: { isAdmin: boolean }) {
                 type="button"
                 onClick={handleDeactivate}
                 disabled={!canSubmit}
-                className="h-11 flex-1 rounded-[10px] text-[14px] font-semibold text-white disabled:cursor-not-allowed disabled:opacity-45"
+                className="h-11 flex-1 rounded-[10px] text-[0.875rem] font-semibold text-white disabled:cursor-not-allowed disabled:opacity-45"
                 style={{ backgroundColor: MAIN }}
               >
                 {isSubmitting ? "処理中..." : "退会する"}

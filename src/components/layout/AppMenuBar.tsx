@@ -83,7 +83,7 @@ export function UnreadBadge({ count }: { count: number }) {
   return (
     <span
       aria-label={`未読${count}件`}
-      className="absolute -right-2 -top-1 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-accent px-1 text-[10px] font-bold leading-none text-white"
+      className="absolute -right-2 -top-1 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-accent px-1 text-[0.625rem] font-bold leading-none text-white"
     >
       {count > 99 ? "99+" : count}
     </span>
@@ -178,7 +178,7 @@ export function AppMenuBar({
               <Link
                 href={item.href}
                 aria-current={active ? "page" : undefined}
-                className={`relative flex h-full flex-col items-center justify-center gap-0.5 text-[10px] font-medium md:h-11 md:flex-row md:justify-start md:gap-3 md:rounded-[10px] md:px-3 md:text-[13px] ${
+                className={`relative flex h-full flex-col items-center justify-center gap-0.5 text-[0.625rem] font-medium md:h-11 md:flex-row md:justify-start md:gap-3 md:rounded-[10px] md:px-3 md:text-[0.8125rem] ${
                   active ? "text-accent md:bg-tint" : "text-muted hover:text-ink"
                 }`}
               >

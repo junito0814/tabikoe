@@ -112,7 +112,7 @@ export function ItinerarySpotRow({
             type="button"
             onClick={() => setIsPickingTime((open) => !open)}
             aria-label={hasTime ? `到着予定時刻 ${spot.arrivalTime}（変更）` : "到着予定時刻を設定"}
-            className={`h-8 min-w-[52px] rounded-[8px] border px-1 text-[13px] font-bold ${hasTime ? "border-line text-ink" : "border-dashed border-line text-muted"}`}
+            className={`h-8 min-w-[52px] rounded-[8px] border px-1 text-[0.8125rem] font-bold ${hasTime ? "border-line text-ink" : "border-dashed border-line text-muted"}`}
           >
             {hasTime ? spot.arrivalTime : "──"}
           </button>
@@ -143,7 +143,7 @@ export function ItinerarySpotRow({
             {...dragHandleProps}
             aria-label={`${spot.name} を並べ替え`}
             data-drag-handle
-            className="h-7 w-6 cursor-grab touch-none text-[13px] text-muted active:cursor-grabbing"
+            className="h-7 w-6 cursor-grab touch-none text-[0.8125rem] text-muted active:cursor-grabbing"
           >
             ≡
           </button>
@@ -153,17 +153,17 @@ export function ItinerarySpotRow({
       {/* 右：中（名前・メモ・Day）と、その右の縦 1 列（★ の下に ⋯） */}
       <div className="flex min-w-0 flex-1 gap-2">
       <div className="flex min-w-0 flex-1 flex-col gap-1.5">
-        <p className={`min-w-0 text-[14px] font-bold ${checked ? "text-muted line-through" : "text-ink"}`} data-spot-name>
+        <p className={`min-w-0 text-[0.875rem] font-bold ${checked ? "text-muted line-through" : "text-ink"}`} data-spot-name>
           {/*
             * #793: 「日付なし」には番号を付けない（順番がまだ無いものに番号を振ると
             * 「1 番目に行く」という意味が付いてしまう）。代わりに小さな印を置く。
             */}
           {spot.dayIndex === null ? (
-            <span className="mr-1.5 inline-flex h-5 w-5 items-center justify-center rounded-full bg-line text-[11px] text-muted no-underline" aria-hidden>
+            <span className="mr-1.5 inline-flex h-5 w-5 items-center justify-center rounded-full bg-line text-[0.6875rem] text-muted no-underline" aria-hidden>
               ・
             </span>
           ) : (
-            <span className="mr-1.5 inline-flex h-5 w-5 items-center justify-center rounded-full bg-ink text-[11px] text-on-ink no-underline">{index}</span>
+            <span className="mr-1.5 inline-flex h-5 w-5 items-center justify-center rounded-full bg-ink text-[0.6875rem] text-on-ink no-underline">{index}</span>
           )}
           {spot.name}
         </p>
@@ -178,7 +178,7 @@ export function ItinerarySpotRow({
             rows={3}
             autoFocus
             aria-label="メモ"
-            className="w-full rounded-[8px] border border-line bg-surface px-2 py-1 text-[12px] text-ink focus:outline-none focus:ring-1 focus:ring-accent"
+            className="w-full rounded-[8px] border border-line bg-surface px-2 py-1 text-[0.75rem] text-ink focus:outline-none focus:ring-1 focus:ring-accent"
           />
         ) : (
           <button
@@ -191,7 +191,7 @@ export function ItinerarySpotRow({
              * `whitespace-pre-wrap` で「改行はそのまま、幅が足りなければ折り返す」になる。
              * 長い語で枠を突き抜けないように `break-words` も付けている。
              */
-            className="whitespace-pre-wrap break-words text-left text-[12px] text-muted"
+            className="whitespace-pre-wrap break-words text-left text-[0.75rem] text-muted"
           >
             {spot.memo ? `メモ: ${spot.memo}` : "＋ メモを追加"}
           </button>
@@ -204,7 +204,7 @@ export function ItinerarySpotRow({
         <div className="flex flex-wrap items-center gap-1.5">
           <DayMoveDropdown value={spot.dayIndex} dayCount={dayCount} onChange={(day) => onMoveDay(spot.spotId, day)} disabled={pending !== null} />
           {spot.hasPosted && (
-            <span className="inline-flex h-6 items-center rounded-full bg-done/10 px-2 text-[10.5px] font-bold text-done">投稿済み ✓</span>
+            <span className="inline-flex h-6 items-center rounded-full bg-done/10 px-2 text-[0.65625rem] font-bold text-done">投稿済み ✓</span>
           )}
         </div>
       </div>
@@ -214,7 +214,7 @@ export function ItinerarySpotRow({
         * **★ が無い行でも場所を空ける**（`invisible`）ので、⋯ の位置が行ごとに上下しない。
         */}
       <div className="flex shrink-0 flex-col items-end gap-1">
-        <span className={`flex h-[17px] items-center gap-0.5 text-[11px] text-muted ${spot.ratingAverage === null ? "invisible" : ""}`} aria-hidden={spot.ratingAverage === null}>
+        <span className={`flex h-[17px] items-center gap-0.5 text-[0.6875rem] text-muted ${spot.ratingAverage === null ? "invisible" : ""}`} aria-hidden={spot.ratingAverage === null}>
           <span className="text-star">★</span>
           {spot.ratingAverage ?? "0.0"}
         </span>
@@ -226,7 +226,7 @@ export function ItinerarySpotRow({
             aria-expanded={isMenuOpen}
             aria-label={`${spot.name} のその他`}
             disabled={pending !== null}
-            className="flex h-7 w-7 items-center justify-center rounded-full border border-line bg-surface text-[13px] font-bold text-ink disabled:opacity-45"
+            className="flex h-7 w-7 items-center justify-center rounded-full border border-line bg-surface text-[0.8125rem] font-bold text-ink disabled:opacity-45"
           >
             ⋯
           </button>
@@ -238,7 +238,7 @@ export function ItinerarySpotRow({
                   role="menuitem"
                   href={`/spots/${spot.spotId}?back=${encodeURIComponent(`/itineraries/${itineraryId}`)}`}
                   prefetch={false}
-                  className="flex w-full px-3 py-2 text-left text-[13px] text-ink hover:bg-tint"
+                  className="flex w-full px-3 py-2 text-left text-[0.8125rem] text-ink hover:bg-tint"
                 >
                   投稿を見る
                 </Link>
@@ -248,7 +248,7 @@ export function ItinerarySpotRow({
                   <Link
                     role="menuitem"
                     href={composeHref({ kind: "itinerary", itineraryId, spotId: spot.spotId, dayIndex: spot.dayIndex })}
-                    className="flex w-full px-3 py-2 text-left text-[13px] text-ink hover:bg-tint"
+                    className="flex w-full px-3 py-2 text-left text-[0.8125rem] text-ink hover:bg-tint"
                   >
                     投稿する
                   </Link>
@@ -263,7 +263,7 @@ export function ItinerarySpotRow({
                     onRemove(spot.spotId);
                   }}
                   disabled={pending !== null}
-                  className="flex w-full px-3 py-2 text-left text-[13px] text-saved hover:bg-tint disabled:opacity-45"
+                  className="flex w-full px-3 py-2 text-left text-[0.8125rem] text-saved hover:bg-tint disabled:opacity-45"
                 >
                   しおりから外す
                 </button>

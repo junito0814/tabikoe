@@ -360,7 +360,7 @@ export function PostComposeScreen({
         </button>
         <div className="min-h-0 flex-1 overflow-y-auto px-4 pb-4 pt-1 md:px-6 md:pt-4">
           <div className="mx-auto w-full max-w-[520px]">
-            <h1 className="mb-3 text-[15px] font-bold text-ink">{isEditingPublished ? "投稿を編集" : postId ? "下書きの続き" : "投稿する"}</h1>
+            <h1 className="mb-3 text-[0.9375rem] font-bold text-ink">{isEditingPublished ? "投稿を編集" : postId ? "下書きの続き" : "投稿する"}</h1>
             <PostFormFields
               values={values}
               onChange={updateValues}
@@ -407,13 +407,13 @@ export function PostComposeScreen({
               fetchTripSuggestions={fetchTripSuggestions}
             />
             {isPostingRestricted && postingRestrictedUntil && (
-              <p role="note" className="mt-3 rounded-[8px] bg-tint px-3 py-2 text-[12px] leading-[1.7] text-ink">
+              <p role="note" className="mt-3 rounded-[8px] bg-tint px-3 py-2 text-[0.75rem] leading-[1.7] text-ink">
                 {postingRestrictedMessage(postingRestrictedUntil)}（下書きの保存はできます）
               </p>
             )}
             {errorMessage && <ErrorNotice className="mt-3" message={errorMessage} />}
             {isEditingPublished && (
-              <p className="mt-4 text-center text-[12px] text-muted">
+              <p className="mt-4 text-center text-[0.75rem] text-muted">
                 <Link href={`/posts/${existing?.postId}`} className="underline underline-offset-2">
                   編集をやめて投稿に戻る
                 </Link>
@@ -428,7 +428,7 @@ export function PostComposeScreen({
             type="button"
             onClick={handlePublish}
             disabled={!canPublish}
-            className="h-12 flex-1 rounded-[10px] bg-accent text-[15px] font-semibold text-white disabled:cursor-not-allowed disabled:opacity-45"
+            className="h-12 flex-1 rounded-[10px] bg-accent text-[0.9375rem] font-semibold text-white disabled:cursor-not-allowed disabled:opacity-45"
           >
             {submittingStatus === "published" ? "送信中..." : isEditingPublished ? "更新する" : "投稿する"}
           </button>
@@ -437,7 +437,7 @@ export function PostComposeScreen({
               type="button"
               onClick={() => void save("draft")}
               disabled={isSubmitting || position === null}
-              className="h-12 flex-1 rounded-[10px] border border-line bg-surface text-[14px] font-semibold text-ink disabled:opacity-45"
+              className="h-12 flex-1 rounded-[10px] border border-line bg-surface text-[0.875rem] font-semibold text-ink disabled:opacity-45"
             >
               {submittingStatus === "draft" ? "保存中…" : "下書きに保存"}
             </button>
@@ -448,17 +448,17 @@ export function PostComposeScreen({
       {confirmingHome && (
         <div role="dialog" aria-modal="true" aria-labelledby="home-guard-title" className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-6">
           <div className="w-full max-w-[380px] rounded-[14px] bg-surface p-6 shadow-xl">
-            <h2 id="home-guard-title" className="mb-3 text-[16px] font-bold text-ink">
+            <h2 id="home-guard-title" className="mb-3 text-[1rem] font-bold text-ink">
               この位置を公開しますか？
             </h2>
-            <p className="mb-4 text-[13px] leading-[1.7] text-ink">
+            <p className="mb-4 text-[0.8125rem] leading-[1.7] text-ink">
               この位置に新しいスポットを登録して公開します。自宅など公開したくない場所ではありませんか？
             </p>
             <div className="flex gap-2">
               <button
                 type="button"
                 onClick={() => setConfirmingHome(false)}
-                className="h-11 flex-1 rounded-[10px] border border-line text-[14px] font-medium text-ink"
+                className="h-11 flex-1 rounded-[10px] border border-line text-[0.875rem] font-medium text-ink"
               >
                 場所を変える
               </button>
@@ -468,7 +468,7 @@ export function PostComposeScreen({
                   setConfirmingHome(false);
                   void save("published");
                 }}
-                className="h-11 flex-1 rounded-[10px] bg-accent text-[14px] font-semibold text-white"
+                className="h-11 flex-1 rounded-[10px] bg-accent text-[0.875rem] font-semibold text-white"
               >
                 投稿する
               </button>

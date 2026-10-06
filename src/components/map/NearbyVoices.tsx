@@ -204,7 +204,7 @@ export function NearbyVoices({
         * 絞り込みは**絵だけ**のボタンにし、効いているときだけ色と数を変える（文字を増やさない）。
         */}
       <div className="flex items-center justify-between gap-2">
-        <h2 className="text-[14px] font-bold text-ink">近くのスポット</h2>
+        <h2 className="text-[0.875rem] font-bold text-ink">近くのスポット</h2>
         <div className="flex items-center gap-1.5">
           {/* #812: 見た目は共通部品（Select）に。中身は今までどおりブラウザ標準の <select> */}
           <Select<TravelMode>
@@ -242,14 +242,14 @@ export function NearbyVoices({
 
       {/* Task 4-2: 取得中を先に見る。移動手段を変えた直後もここに入り、古いカードは出ない */}
       {isFetching ? (
-        <p role="status" className="py-6 text-center text-[12px] text-muted">読み込んでいます…</p>
+        <p role="status" className="py-6 text-center text-[0.75rem] text-muted">読み込んでいます…</p>
       ) : failed ? (
-        <p className="py-6 text-center text-[12px] text-muted">近くの投稿を読み込めませんでした</p>
+        <p className="py-6 text-center text-[0.75rem] text-muted">近くの投稿を読み込めませんでした</p>
       ) : visiblePosts === null ? (
-        <p role="status" className="py-6 text-center text-[12px] text-muted">読み込んでいます…</p>
+        <p role="status" className="py-6 text-center text-[0.75rem] text-muted">読み込んでいます…</p>
       ) : visiblePosts.length === 0 ? (
         /* explore-mode Task 4: 絞り込みが効いているときは、範囲ではなく条件のせいだと分かる文言にする */
-        <p className="py-6 text-center text-[12px] text-muted">
+        <p className="py-6 text-center text-[0.75rem] text-muted">
           {isActive ? "条件に合う場所がありません" : "この範囲に投稿はありません。移動手段を変えて範囲を広げてみてください"}
         </p>
       ) : (
@@ -270,9 +270,9 @@ export function NearbyVoices({
                 index === activeIndex ? "border-accent" : "border-line"
               } bg-surface`}
             >
-              <span className="truncate text-[13px] font-bold text-ink">{post.spotName}</span>
-              {post.commentExcerpt && <span className="line-clamp-2 text-[11px] leading-[1.5] text-muted">{post.commentExcerpt}</span>}
-              <span className="mt-auto flex items-center gap-2 text-[11px] text-muted">
+              <span className="truncate text-[0.8125rem] font-bold text-ink">{post.spotName}</span>
+              {post.commentExcerpt && <span className="line-clamp-2 text-[0.6875rem] leading-[1.5] text-muted">{post.commentExcerpt}</span>}
+              <span className="mt-auto flex items-center gap-2 text-[0.6875rem] text-muted">
                 <span className="block h-10 w-10 shrink-0 overflow-hidden rounded-[6px] bg-line">
                   {post.thumbnailUrl && (
                     // eslint-disable-next-line @next/next/no-img-element

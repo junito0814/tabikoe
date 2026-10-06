@@ -56,9 +56,9 @@ export const EMPTY_POST_FORM_VALUES: PostFormValues = {
 };
 
 const inputClass =
-  "h-11 w-full rounded-[10px] border border-line bg-surface px-3 text-[14px] text-ink focus:outline-none focus:ring-1 focus:ring-accent";
+  "h-11 w-full rounded-[10px] border border-line bg-surface px-3 text-[0.875rem] text-ink focus:outline-none focus:ring-1 focus:ring-accent";
 const smallInputClass =
-  "h-10 w-full rounded-[10px] border border-line bg-surface px-3 text-[13px] text-ink focus:outline-none focus:ring-1 focus:ring-accent";
+  "h-10 w-full rounded-[10px] border border-line bg-surface px-3 text-[0.8125rem] text-ink focus:outline-none focus:ring-1 focus:ring-accent";
 
 /** 星評価（1〜5）。5 個のボタンを並べ、押した番号を onChange で親へ返す。role="radio" は読み上げ用 */
 function StarRating({
@@ -83,7 +83,7 @@ function StarRating({
             aria-checked={value === star}
             aria-label={`${star}`}
             onClick={() => onChange(star)}
-            className="text-[24px] leading-none"
+            className="text-[1.5rem] leading-none"
             style={{ color: star <= value ? "var(--star)" : "var(--line)" }}
           >
             ★
@@ -146,7 +146,7 @@ export function PostFormFields({
       <div className="flex items-center gap-2">
         <label
           htmlFor="post-category"
-          className="w-[84px] shrink-0 text-[12px] font-medium text-muted"
+          className="w-[84px] shrink-0 text-[0.75rem] font-medium text-muted"
         >
           カテゴリ *
         </label>
@@ -172,7 +172,7 @@ export function PostFormFields({
 
       {/* 日付 ／ 滞在時間: 2 列 */}
       <div className="grid grid-cols-2 gap-2">
-        <label className="flex flex-col gap-1 text-[11px] text-muted">
+        <label className="flex flex-col gap-1 text-[0.6875rem] text-muted">
           日付 *
           <input
             type="date"
@@ -182,7 +182,7 @@ export function PostFormFields({
             className={smallInputClass}
           />
         </label>
-        <label className="flex flex-col gap-1 text-[11px] text-muted">
+        <label className="flex flex-col gap-1 text-[0.6875rem] text-muted">
           滞在時間 *
           <select
             value={values.duration}
@@ -203,10 +203,10 @@ export function PostFormFields({
 
       {/* 費用 ／ 星評価: 2 列 */}
       <div className="grid grid-cols-2 gap-2">
-        <label className="flex flex-col gap-1 text-[11px] text-muted">
+        <label className="flex flex-col gap-1 text-[0.6875rem] text-muted">
           費用（任意・1人あたり）
           <span className="relative block">
-            <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[13px] text-muted">
+            <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[0.8125rem] text-muted">
               ¥
             </span>
             <input
@@ -222,12 +222,12 @@ export function PostFormFields({
             />
           </span>
           {isCostInvalid && (
-            <span className="text-[11px] text-saved">
+            <span className="text-[0.6875rem] text-saved">
               0〜{MAX_POST_COST.toLocaleString()}の整数で入力してください
             </span>
           )}
         </label>
-        <div className="flex flex-col gap-1 text-[11px] text-muted">
+        <div className="flex flex-col gap-1 text-[0.6875rem] text-muted">
           星評価 *
           <StarRating
             value={values.rating}
@@ -238,7 +238,7 @@ export function PostFormFields({
 
       {/* 写真・動画: 選んだその場にサムネイル */}
       <div className="flex flex-col gap-1.5">
-        <span className="text-[12px] font-medium text-muted">写真・動画 *</span>
+        <span className="text-[0.75rem] font-medium text-muted">写真・動画 *</span>
         <SelectedMediaThumbnails
           items={mediaItems}
           onRemove={onRemoveMedia}
@@ -263,7 +263,7 @@ export function PostFormFields({
         <div className="flex items-center">
           <label
             htmlFor="post-comment"
-            className="flex-1 text-[12px] font-medium text-muted"
+            className="flex-1 text-[0.75rem] font-medium text-muted"
           >
             感想（任意）
           </label>
@@ -273,7 +273,7 @@ export function PostFormFields({
               onChange({ visibility: event.target.value as PostVisibility })
             }
             aria-label="公開設定"
-            className="h-8 rounded-[8px] border border-line bg-surface px-2 text-[12px] text-ink"
+            className="h-8 rounded-[8px] border border-line bg-surface px-2 text-[0.75rem] text-ink"
           >
             <option value="public">公開</option>
             <option value="private">非公開</option>
@@ -289,10 +289,10 @@ export function PostFormFields({
             element.style.height = "auto";
             element.style.height = `${element.scrollHeight}px`;
           }}
-          className="w-full resize-none rounded-[10px] border border-line bg-surface px-3 py-2.5 text-[14px] leading-[1.7] text-ink focus:outline-none focus:ring-1 focus:ring-accent"
+          className="w-full resize-none rounded-[10px] border border-line bg-surface px-3 py-2.5 text-[0.875rem] leading-[1.7] text-ink focus:outline-none focus:ring-1 focus:ring-accent"
         />
         <p
-          className={`text-right text-[11px] ${isCommentTooLong ? "text-saved" : "text-muted"}`}
+          className={`text-right text-[0.6875rem] ${isCommentTooLong ? "text-saved" : "text-muted"}`}
         >
           {commentLength} / {MAX_POST_COMMENT_LENGTH}
         </p>

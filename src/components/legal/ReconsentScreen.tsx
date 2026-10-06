@@ -61,30 +61,30 @@ export function ReconsentScreen({
   return (
     <div className="flex min-h-screen flex-col items-center bg-app px-6 py-10">
       <div className="flex w-full max-w-[420px] flex-col gap-5">
-        <h1 className="text-[18px] font-bold text-ink">{title}</h1>
+        <h1 className="text-[1.125rem] font-bold text-ink">{title}</h1>
         {items.map((item) => (
-          <section key={item.kind} className="flex flex-col gap-2 rounded-[12px] border border-line bg-surface p-4 text-[13px] leading-[1.7] text-ink">
+          <section key={item.kind} className="flex flex-col gap-2 rounded-[12px] border border-line bg-surface p-4 text-[0.8125rem] leading-[1.7] text-ink">
             <p className="font-bold">
               {LEGAL_KIND_LABELS[item.kind]}（版 {item.version}）
             </p>
             {item.summary && (
               <div>
-                <p className="text-[12px] font-medium text-muted">変更の要点</p>
+                <p className="text-[0.75rem] font-medium text-muted">変更の要点</p>
                 <p className="whitespace-pre-line">{item.summary}</p>
               </div>
             )}
             {/* #792: 別のタブで開くので戻るは要らないが、同じ画面に着いたときのために来た画面を渡す */}
-            <a href={`${LEGAL_KIND_PATHS[item.kind]}?back=%2Fconsent%2Frenew`} target="_blank" rel="noreferrer" className="tap-target text-[12px] text-accent underline underline-offset-2">
+            <a href={`${LEGAL_KIND_PATHS[item.kind]}?back=%2Fconsent%2Frenew`} target="_blank" rel="noreferrer" className="tap-target text-[0.75rem] text-accent underline underline-offset-2">
               全文を読む →
             </a>
             <ConsentCheckbox checked={!!agreed[item.kind]} onChange={(next) => setAgreed((current) => ({ ...current, [item.kind]: next }))} label={LEGAL_KIND_LABELS[item.kind]} />
           </section>
         ))}
         {errorMessage && <ErrorNotice message={errorMessage} />}
-        <button type="button" onClick={() => void handleSubmit()} disabled={!canSubmit} className="h-12 rounded-[10px] bg-accent text-[15px] font-semibold text-white disabled:cursor-not-allowed disabled:opacity-45">
+        <button type="button" onClick={() => void handleSubmit()} disabled={!canSubmit} className="h-12 rounded-[10px] bg-accent text-[0.9375rem] font-semibold text-white disabled:cursor-not-allowed disabled:opacity-45">
           {isSubmitting ? "記録中..." : "同意して続ける"}
         </button>
-        <p className="text-center text-[11px] text-muted">同意するまで他の画面には進めません</p>
+        <p className="text-center text-[0.6875rem] text-muted">同意するまで他の画面には進めません</p>
       </div>
     </div>
   );

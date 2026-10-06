@@ -24,9 +24,9 @@ export function MyPageMenu({ wishlistCount }: { wishlistCount?: number }) {
       <ul className="grid grid-cols-3 gap-2">
         {MY_PAGE_MENU.map((item) => (
           <li key={item.key}>
-            <Link href={item.href} className="flex h-12 items-center justify-center gap-1.5 rounded-[10px] border border-line bg-surface text-[13px] font-semibold text-ink">
+            <Link href={item.href} className="flex h-12 items-center justify-center gap-1.5 rounded-[10px] border border-line bg-surface text-[0.8125rem] font-semibold text-ink">
               {item.label}
-              {item.key === "wishlist" && typeof wishlistCount === "number" && <span className="text-[11px] text-muted">{wishlistCount}</span>}
+              {item.key === "wishlist" && typeof wishlistCount === "number" && <span className="text-[0.6875rem] text-muted">{wishlistCount}</span>}
             </Link>
           </li>
         ))}

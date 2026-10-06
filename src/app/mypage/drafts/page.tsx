@@ -31,11 +31,11 @@ export default async function MyDraftsPage() {
       <header className="flex items-center gap-2">
         {/* #813: 枠付きの丸いボタンをやめ、他の画面と同じ共通部品に揃えた */}
         <BackLink href="/mypage" label="マイページ" />
-        <h1 className="text-[17px] font-bold text-ink">下書き</h1>
+        <h1 className="text-[1.0625rem] font-bold text-ink">下書き</h1>
       </header>
       {drafts ? (
         drafts.total === 0 ? (
-          <p className="py-12 text-center text-[13px] text-muted">下書きはありません</p>
+          <p className="py-12 text-center text-[0.8125rem] text-muted">下書きはありません</p>
         ) : (
           <DraftsSection initial={drafts} showAll />
         )

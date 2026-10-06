@@ -89,7 +89,7 @@ export function ItineraryMapOverlay({ itinerary, day, onChange }: { itinerary: I
             role="tab"
             aria-selected={selected}
             onClick={() => onChange(tab.key)}
-            className={`h-8 shrink-0 rounded-full px-3 text-[12px] font-semibold shadow-card ${selected ? "bg-ink text-on-ink" : "bg-surface text-muted"}`}
+            className={`h-8 shrink-0 rounded-full px-3 text-[0.75rem] font-semibold shadow-card ${selected ? "bg-ink text-on-ink" : "bg-surface text-muted"}`}
           >
             {tab.label}
           </button>

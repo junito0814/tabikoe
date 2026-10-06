@@ -79,7 +79,7 @@ export function UserDetailScreen({ user, submitAction = defaultSubmit }: { user:
     setConfirming({ kind, targetId, title, description, noteValue: noteValue.trim() });
   };
 
-  const button = "h-10 rounded-[8px] px-4 text-[13px] font-semibold disabled:opacity-45";
+  const button = "h-10 rounded-[8px] px-4 text-[0.8125rem] font-semibold disabled:opacity-45";
 
   return (
     <div className="grid w-full grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_320px]">
@@ -88,14 +88,14 @@ export function UserDetailScreen({ user, submitAction = defaultSubmit }: { user:
         <section className="rounded-[12px] border border-line bg-surface p-4">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div>
-              <h2 className="text-[16px] font-bold text-ink">{user.displayName}</h2>
-              <p className="text-[12px] text-muted">
+              <h2 className="text-[1rem] font-bold text-ink">{user.displayName}</h2>
+              <p className="text-[0.75rem] text-muted">
                 {user.email} ・ 登録 {shortDate(user.createdAt)} ・ 最終利用 {user.lastActiveAt ? relativeTime(user.lastActiveAt) : "—"}
               </p>
             </div>
             <StatusChip status={user.status} until={user.postingRestrictedUntil} />
           </div>
-          <p className="mt-3 text-[12px] text-muted">
+          <p className="mt-3 text-[0.75rem] text-muted">
             投稿 {user.counts.posts} ｜ コメント {user.counts.comments} ｜ 通報された {user.counts.reported} ｜ 有効なストライク{" "}
             <span className="font-semibold text-ink">
               {user.activeStrikeCount}/{user.strikesToSuspend}
@@ -106,11 +106,11 @@ export function UserDetailScreen({ user, submitAction = defaultSubmit }: { user:
 
         {/* ストライクの履歴 */}
         <section className="rounded-[12px] border border-line bg-surface p-4">
-          <h3 className="mb-2 text-[13px] font-bold text-ink">ストライクの履歴</h3>
+          <h3 className="mb-2 text-[0.8125rem] font-bold text-ink">ストライクの履歴</h3>
           {user.strikes.length === 0 ? (
-            <p className="py-3 text-center text-[12px] text-muted">ありません</p>
+            <p className="py-3 text-center text-[0.75rem] text-muted">ありません</p>
           ) : (
-            <ul className="flex flex-col divide-y divide-line text-[12px]">
+            <ul className="flex flex-col divide-y divide-line text-[0.75rem]">
               {user.strikes.map((s) => (
                 <li key={s.id} className="flex flex-wrap items-center gap-x-3 gap-y-1 py-2" data-strike={s.state}>
                   <span className="tabular-nums text-muted">{shortDate(s.createdAt)}</span>
@@ -128,12 +128,12 @@ export function UserDetailScreen({ user, submitAction = defaultSubmit }: { user:
                         placeholder="理由"
                         value={revokeNotes[s.id] ?? ""}
                         onChange={(e) => setRevokeNotes({ ...revokeNotes, [s.id]: e.target.value })}
-                        className="h-8 w-[140px] rounded-[8px] border border-line bg-surface px-2 text-[12px] text-ink"
+                        className="h-8 w-[140px] rounded-[8px] border border-line bg-surface px-2 text-[0.75rem] text-ink"
                       />
                       <button
                         type="button"
                         onClick={() => openConfirm("revoke", s.id, "ストライクの取り消し", "このストライクを取り消し、投稿禁止の期間を決め直します。記録には残ります。", revokeNotes[s.id] ?? "")}
-                        className="h-8 rounded-[8px] border border-line px-2 text-[12px] text-ink"
+                        className="h-8 rounded-[8px] border border-line px-2 text-[0.75rem] text-ink"
                       >
                         取り消す
                       </button>
@@ -147,7 +147,7 @@ export function UserDetailScreen({ user, submitAction = defaultSubmit }: { user:
 
         {/* タブ */}
         <section className="rounded-[12px] border border-line bg-surface p-4">
-          <div role="tablist" className="mb-3 flex flex-wrap gap-1 text-[12px]">
+          <div role="tablist" className="mb-3 flex flex-wrap gap-1 text-[0.75rem]">
             {(
               [
                 ["posts", `投稿 ${user.counts.posts}`],
@@ -201,26 +201,26 @@ export function UserDetailScreen({ user, submitAction = defaultSubmit }: { user:
       {/* 右: 操作 */}
       <div className="flex flex-col gap-4">
         <section className="rounded-[12px] border border-line bg-surface p-4">
-          <h3 className="mb-2 text-[13px] font-bold text-ink">アカウントへの操作</h3>
-          <label className="text-[11px] text-muted">
+          <h3 className="mb-2 text-[0.8125rem] font-bold text-ink">アカウントへの操作</h3>
+          <label className="text-[0.6875rem] text-muted">
             理由（メモ・必須）
-            <textarea value={note} onChange={(e) => setNote(e.target.value)} rows={3} className="mt-0.5 block w-full rounded-[8px] border border-line bg-surface px-2 py-1 text-[12px] text-ink" />
+            <textarea value={note} onChange={(e) => setNote(e.target.value)} rows={3} className="mt-0.5 block w-full rounded-[8px] border border-line bg-surface px-2 py-1 text-[0.75rem] text-ink" />
           </label>
           {!isSuspended && (
-            <label className="mt-2 flex items-center gap-2 text-[12px] text-ink">
+            <label className="mt-2 flex items-center gap-2 text-[0.75rem] text-ink">
               <input type="checkbox" checked={hidePosts} onChange={(e) => setHidePosts(e.target.checked)} />
               この人の公開投稿をすべて非公開にする
             </label>
           )}
           {isSuspended && (
-            <label className="mt-2 flex items-center gap-2 text-[12px] text-ink">
+            <label className="mt-2 flex items-center gap-2 text-[0.75rem] text-ink">
               <input type="checkbox" checked={restorePosts} onChange={(e) => setRestorePosts(e.target.checked)} />
               停止で非公開にした投稿を元に戻す
             </label>
           )}
           {errorMessage && <ErrorNotice className="mt-2" message={errorMessage} />}
           {result && (
-            <p role="status" className="mt-2 text-[12px] text-done">
+            <p role="status" className="mt-2 text-[0.75rem] text-done">
               {result}
             </p>
           )}
@@ -254,8 +254,8 @@ export function UserDetailScreen({ user, submitAction = defaultSubmit }: { user:
           </div>
         </section>
 
-        <section className="rounded-[12px] border border-line bg-surface p-4 text-[12px]">
-          <h3 className="mb-2 text-[13px] font-bold text-ink">この人が受ける制限（今）</h3>
+        <section className="rounded-[12px] border border-line bg-surface p-4 text-[0.75rem]">
+          <h3 className="mb-2 text-[0.8125rem] font-bold text-ink">この人が受ける制限（今）</h3>
           {isSuspended ? (
             <p className="text-ink">ログイン不可（{user.status === "provisional" ? "仮停止" : "停止"}）</p>
           ) : user.postingRestrictedUntil && new Date(user.postingRestrictedUntil).getTime() > openedAt ? (
@@ -270,16 +270,16 @@ export function UserDetailScreen({ user, submitAction = defaultSubmit }: { user:
       {confirming && (
         <div role="dialog" aria-modal="true" aria-labelledby="user-action-dialog-title" className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-6">
           <div className="w-full max-w-[380px] rounded-[14px] bg-surface p-6 shadow-xl">
-            <h2 id="user-action-dialog-title" className="mb-3 text-[16px] font-bold text-ink">
+            <h2 id="user-action-dialog-title" className="mb-3 text-[1rem] font-bold text-ink">
               {confirming.title}
             </h2>
-            <p className="mb-2 text-[13px] leading-[1.7] text-ink">{confirming.description}</p>
-            <p className="mb-4 text-[12px] text-muted">理由: {confirming.noteValue}</p>
+            <p className="mb-2 text-[0.8125rem] leading-[1.7] text-ink">{confirming.description}</p>
+            <p className="mb-4 text-[0.75rem] text-muted">理由: {confirming.noteValue}</p>
             <div className="flex gap-2">
-              <button type="button" onClick={() => setConfirming(null)} disabled={isSubmitting} className="h-11 flex-1 rounded-[10px] border border-line text-[14px] font-medium text-ink">
+              <button type="button" onClick={() => setConfirming(null)} disabled={isSubmitting} className="h-11 flex-1 rounded-[10px] border border-line text-[0.875rem] font-medium text-ink">
                 キャンセル
               </button>
-              <button type="button" onClick={() => void run()} disabled={isSubmitting} className="h-11 flex-1 rounded-[10px] bg-ink text-[14px] font-semibold text-on-ink disabled:opacity-45">
+              <button type="button" onClick={() => void run()} disabled={isSubmitting} className="h-11 flex-1 rounded-[10px] bg-ink text-[0.875rem] font-semibold text-on-ink disabled:opacity-45">
                 {isSubmitting ? "記録中…" : "実行する"}
               </button>
             </div>
@@ -293,9 +293,9 @@ export function UserDetailScreen({ user, submitAction = defaultSubmit }: { user:
 }
 
 function List({ rows, empty }: { rows: { key: string; cells: string[]; href?: string; internal?: boolean }[]; empty: string }) {
-  if (rows.length === 0) return <p className="py-3 text-center text-[12px] text-muted">{empty}</p>;
+  if (rows.length === 0) return <p className="py-3 text-center text-[0.75rem] text-muted">{empty}</p>;
   return (
-    <ul className="flex flex-col divide-y divide-line text-[12px]">
+    <ul className="flex flex-col divide-y divide-line text-[0.75rem]">
       {rows.map((row) => (
         <li key={row.key} className="flex flex-wrap items-center gap-x-3 py-2">
           {row.cells.map((cell, i) => (

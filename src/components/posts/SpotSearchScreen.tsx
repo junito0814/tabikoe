@@ -150,7 +150,7 @@ export function SpotSearchScreen({
             <div className="flex items-center gap-2">
               {/* #813: 戻るは共通部品（自前で ‹ を描かない） */}
               <BackLink href={backHref} label={backLabel} />
-              <h1 className="min-w-0 flex-1 truncate text-center text-[16px] font-bold text-ink">{title}</h1>
+              <h1 className="min-w-0 flex-1 truncate text-center text-[1rem] font-bold text-ink">{title}</h1>
               {/* #811: 文字の「絞り込み（2）」をやめ、探すモードと同じ 3 本線の記号＋数にした（要件 4.5.15） */}
               <FilterButton count={activeCount} expanded={isSheetOpen} onClick={() => setIsSheetOpen(true)} />
             </div>
@@ -171,7 +171,7 @@ export function SpotSearchScreen({
                     key={chip.label}
                     type="button"
                     onClick={() => applyState({ ...state, areas: removeAreaChip(chip, state.areas) })}
-                    className="inline-flex h-7 items-center gap-1 rounded-full bg-ink px-2.5 text-[11px] font-semibold text-on-ink"
+                    className="inline-flex h-7 items-center gap-1 rounded-full bg-ink px-2.5 text-[0.6875rem] font-semibold text-on-ink"
                   >
                     {chip.label}
                     <span aria-hidden>×</span>
@@ -200,7 +200,7 @@ export function SpotSearchScreen({
           ) : spots.length === 0 && isLoading ? (
             <CardListSkeleton />
           ) : spots.length === 0 && !errorMessage ? (
-            <p className="py-16 text-center text-[13px] text-muted">{emptyMessage}</p>
+            <p className="py-16 text-center text-[0.8125rem] text-muted">{emptyMessage}</p>
           ) : (
             <ul className="flex flex-col gap-3" data-spot-list>
               {spots.map((spot) => (
@@ -221,7 +221,7 @@ export function SpotSearchScreen({
               type="button"
               onClick={loadMore}
               disabled={isLoading}
-              className="mt-3 h-10 w-full rounded-[10px] border border-line bg-surface text-[13px] font-semibold text-ink disabled:opacity-45"
+              className="mt-3 h-10 w-full rounded-[10px] border border-line bg-surface text-[0.8125rem] font-semibold text-ink disabled:opacity-45"
             >
               {isLoading ? "読み込み中…" : "もっと見る"}
             </button>

@@ -81,7 +81,7 @@ export function CreateItineraryDialog({
           * **何を入れる欄なのか分からなかった**（タイトルと欄の名前が食い違っていた）。
           * 入れるものの名前をそのまま書く。アルバムとつながる説明は下の一文に任せる。
           */}
-        <label className="flex flex-col gap-1 text-[12px] font-medium text-muted">
+        <label className="flex flex-col gap-1 text-[0.75rem] font-medium text-muted">
           しおりの名前
           <input
             value={title}
@@ -89,22 +89,22 @@ export function CreateItineraryDialog({
             maxLength={MAX_TRIP_TITLE_LENGTH}
             placeholder="例: 大阪旅行"
             required
-            className="h-11 rounded-[10px] border border-line bg-surface px-3 text-[14px] text-ink focus:outline-none focus:ring-1 focus:ring-accent"
+            className="h-11 rounded-[10px] border border-line bg-surface px-3 text-[0.875rem] text-ink focus:outline-none focus:ring-1 focus:ring-accent"
           />
         </label>
-        <p className="text-[11px] text-muted">同じ名前のアルバム（投稿のまとまり）とつながります</p>
+        <p className="text-[0.6875rem] text-muted">同じ名前のアルバム（投稿のまとまり）とつながります</p>
         <div className="grid grid-cols-2 gap-2">
-          <label className="flex flex-col gap-1 text-[12px] font-medium text-muted">
+          <label className="flex flex-col gap-1 text-[0.75rem] font-medium text-muted">
             開始日（任意）
-            <input type="date" value={startDate} onChange={(event) => setStartDate(event.target.value)} className="h-11 rounded-[10px] border border-line bg-surface px-2 text-[13px] text-ink" />
+            <input type="date" value={startDate} onChange={(event) => setStartDate(event.target.value)} className="h-11 rounded-[10px] border border-line bg-surface px-2 text-[0.8125rem] text-ink" />
           </label>
-          <label className="flex flex-col gap-1 text-[12px] font-medium text-muted">
+          <label className="flex flex-col gap-1 text-[0.75rem] font-medium text-muted">
             終了日（任意）
-            <input type="date" value={endDate} onChange={(event) => setEndDate(event.target.value)} className="h-11 rounded-[10px] border border-line bg-surface px-2 text-[13px] text-ink" />
+            <input type="date" value={endDate} onChange={(event) => setEndDate(event.target.value)} className="h-11 rounded-[10px] border border-line bg-surface px-2 text-[0.8125rem] text-ink" />
           </label>
         </div>
         {error && <ErrorNotice message={error} />}
-        <button type="submit" disabled={isSubmitting} className="h-11 rounded-[10px] bg-accent text-[14px] font-semibold text-white disabled:opacity-45">
+        <button type="submit" disabled={isSubmitting} className="h-11 rounded-[10px] bg-accent text-[0.875rem] font-semibold text-white disabled:opacity-45">
           {isSubmitting ? "作成中…" : "作成する"}
         </button>
       </form>

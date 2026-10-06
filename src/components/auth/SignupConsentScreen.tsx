@@ -67,8 +67,8 @@ export function SignupConsentScreen({ email, redirectTo = null, api = defaultApi
           <div className="absolute h-[120px] w-[120px] rounded-full border border-line opacity-60" />
           <AppLogo />
         </div>
-        <h1 className={`${lora.className} mb-2.5 text-[22px] font-bold tracking-[2px] text-ink`}>タビコエ</h1>
-        <p className="mb-8 text-center text-[13px] leading-[1.7] text-muted">
+        <h1 className={`${lora.className} mb-2.5 text-[1.375rem] font-bold tracking-[2px] text-ink`}>タビコエ</h1>
+        <p className="mb-8 text-center text-[0.8125rem] leading-[1.7] text-muted">
           <span className="font-semibold text-ink" data-signup-email>
             {email}
           </span>
@@ -86,7 +86,7 @@ export function SignupConsentScreen({ email, redirectTo = null, api = defaultApi
           type="button"
           onClick={() => void submit()}
           disabled={!canSubmit}
-          className="flex h-[52px] w-full items-center justify-center rounded-[10px] bg-accent text-[15px] font-semibold text-white transition-opacity disabled:cursor-not-allowed disabled:opacity-45"
+          className="flex h-[52px] w-full items-center justify-center rounded-[10px] bg-accent text-[0.9375rem] font-semibold text-white transition-opacity disabled:cursor-not-allowed disabled:opacity-45"
         >
           {busy === "signup" ? "登録しています…" : "同意してはじめる"}
         </button>
@@ -98,7 +98,7 @@ export function SignupConsentScreen({ email, redirectTo = null, api = defaultApi
           * 同じ画面の「登録しています…」と扱いが揃っていなかった（押せなくなるだけで、
           * 何も起きていないように見えた）。
           */}
-        <button type="button" onClick={() => void cancel()} disabled={busy !== null} className="tap-target mt-6 text-[13px] font-medium text-muted underline underline-offset-2 disabled:opacity-45">
+        <button type="button" onClick={() => void cancel()} disabled={busy !== null} className="tap-target mt-6 text-[0.8125rem] font-medium text-muted underline underline-offset-2 disabled:opacity-45">
           {busy === "cancel" ? "やめています…" : "やめる"}
         </button>
       </div>

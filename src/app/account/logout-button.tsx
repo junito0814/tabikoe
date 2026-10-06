@@ -27,7 +27,7 @@ export default function LogoutButton() {
       type="button"
       onClick={handleLogout}
       disabled={isLoading}
-      className="tap-target text-[13px] font-medium text-muted underline underline-offset-2 disabled:opacity-45"
+      className="tap-target text-[0.8125rem] font-medium text-muted underline underline-offset-2 disabled:opacity-45"
     >
       {isLoading ? "ログアウト中..." : "ログアウト"}
     </button>

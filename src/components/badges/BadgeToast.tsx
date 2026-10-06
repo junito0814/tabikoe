@@ -44,18 +44,18 @@ export function BadgeToast({
       className="fixed inset-x-0 top-4 z-50 flex justify-center px-4"
     >
       <div className="flex w-full max-w-[360px] items-start gap-3 rounded-[12px] border border-accent/30 bg-surface px-4 py-3 shadow-card">
-        <span aria-hidden className="mt-0.5 text-[18px]">
+        <span aria-hidden className="mt-0.5 text-[1.125rem]">
           🏅
         </span>
         <div className="min-w-0 flex-1">
-          <p className="text-[13px] font-bold text-ink">
+          <p className="text-[0.8125rem] font-bold text-ink">
             {badges.length === 1 ? "バッジを獲得しました" : `${badges.length}個のバッジを獲得しました`}
           </p>
           <ul className="mt-1 flex flex-wrap gap-1.5">
             {badges.map((badge) => (
               <li
                 key={badge.type}
-                className="rounded-full bg-accent/[0.1] px-2.5 py-0.5 text-[12px] font-medium text-accent"
+                className="rounded-full bg-accent/[0.1] px-2.5 py-0.5 text-[0.75rem] font-medium text-accent"
               >
                 {badge.label}
               </li>
@@ -63,7 +63,7 @@ export function BadgeToast({
           </ul>
           <Link
             href="/badges"
-            className="tap-target mt-1.5 inline-block text-[11px] font-medium text-muted underline underline-offset-2"
+            className="tap-target mt-1.5 inline-block text-[0.6875rem] font-medium text-muted underline underline-offset-2"
           >
             バッジ一覧を見る
           </Link>

@@ -78,14 +78,14 @@ export function PostDetailScreen({
         className="h-full w-full"
       />
     ) : (
-      <div className="flex h-full w-full items-center justify-center bg-line text-[12px] text-muted">
+      <div className="flex h-full w-full items-center justify-center bg-line text-[0.75rem] text-muted">
         位置情報のないスポット
       </div>
     );
 
   // map-sheet Task2: 地図を広くした段階でシートに出す 1 行（4.5.6）。スポット名・★・訪問日
   const summary = (
-    <p className="flex items-center gap-x-2 px-4 pb-3 text-[13px] font-semibold text-ink" data-sheet-summary-line>
+    <p className="flex items-center gap-x-2 px-4 pb-3 text-[0.8125rem] font-semibold text-ink" data-sheet-summary-line>
       <span className="truncate">{post.spot.name}</span>
       {post.rating !== null && (
         <span className="flex shrink-0 items-center gap-1 font-normal text-muted" aria-label={`星${post.rating}`}>
@@ -117,7 +117,7 @@ export function PostDetailScreen({
                     aria-haspopup="menu"
                     aria-expanded={isMenuOpen}
                     aria-label="その他"
-                    className="h-8 w-8 rounded-full border border-line bg-surface text-[14px] font-bold text-ink"
+                    className="h-8 w-8 rounded-full border border-line bg-surface text-[0.875rem] font-bold text-ink"
                   >
                     ⋯
                   </button>
@@ -129,7 +129,7 @@ export function PostDetailScreen({
                       <Link
                         href={`/posts/${post.id}/edit`}
                         role="menuitem"
-                        className="px-3 py-2 text-[13px] text-ink hover:bg-tint"
+                        className="px-3 py-2 text-[0.8125rem] text-ink hover:bg-tint"
                       >
                         編集
                       </Link>
@@ -148,7 +148,7 @@ export function PostDetailScreen({
               )}
             </div>
 
-            <h1 className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[18px] font-bold leading-tight text-ink">
+            <h1 className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[1.125rem] font-bold leading-tight text-ink">
               <Link
                 href={appendBackHref(`/spots/${post.spot.id}`, selfHref)}
                 className="tap-target min-w-0 break-words"
@@ -156,14 +156,14 @@ export function PostDetailScreen({
                 {post.spot.name}
               </Link>
               {post.visibility === "private" && (
-                <span className="rounded-full bg-line px-2 py-0.5 text-[10px] font-semibold text-ink">
+                <span className="rounded-full bg-line px-2 py-0.5 text-[0.625rem] font-semibold text-ink">
                   非公開
                 </span>
               )}
             </h1>
             {/* strike-system Task 3: 本人にだけ、隠れている理由を出す（他人にはこの画面自体が出ない） */}
             {post.hiddenReason && (
-              <p role="note" className="mb-2 rounded-[8px] bg-tint px-3 py-2 text-[12px] leading-[1.7] text-ink">
+              <p role="note" className="mb-2 rounded-[8px] bg-tint px-3 py-2 text-[0.75rem] leading-[1.7] text-ink">
                 {post.hiddenReason === "auto"
                   ? "この投稿は通報が重なったため、運営が確認するまで他の人には表示されません（確認中）"
                   : post.hiddenReason === "suspension"
@@ -171,7 +171,7 @@ export function PostDetailScreen({
                     : "この投稿は運営の判断で非公開になっています。理由はマイページの「アカウントの状態」で確認できます"}
               </p>
             )}
-            <p className="flex flex-wrap items-center gap-x-1.5 text-[12px] text-muted">
+            <p className="flex flex-wrap items-center gap-x-1.5 text-[0.75rem] text-muted">
               <span>{post.spot.prefecture ?? "都道府県未設定"}</span>
               <span aria-hidden>・</span>
               <span className="rounded-full bg-tint px-2 py-0.5 text-accent">
@@ -179,7 +179,7 @@ export function PostDetailScreen({
               </span>
             </p>
             <p
-              className="text-[14px]"
+              className="text-[0.875rem]"
               aria-label={post.rating !== null ? `星${post.rating}` : "未評価"}
             >
               {post.rating !== null ? (
@@ -188,15 +188,15 @@ export function PostDetailScreen({
                   <span className="text-line">
                     {"★".repeat(5 - post.rating)}
                   </span>
-                  <span className="ml-1.5 text-[12px] text-muted">
+                  <span className="ml-1.5 text-[0.75rem] text-muted">
                     星{post.rating}
                   </span>
                 </>
               ) : (
-                <span className="text-[12px] text-muted">未評価</span>
+                <span className="text-[0.75rem] text-muted">未評価</span>
               )}
             </p>
-            <dl className="flex flex-wrap gap-x-3 gap-y-1 text-[12px] text-ink">
+            <dl className="flex flex-wrap gap-x-3 gap-y-1 text-[0.75rem] text-ink">
               <div className="flex gap-1">
                 <dt className="text-muted">訪問日</dt>
                 <dd>
@@ -225,14 +225,14 @@ export function PostDetailScreen({
           )}
 
           {post.comment && (
-            <p className="whitespace-pre-wrap break-words text-[14px] leading-[1.8] text-ink">
+            <p className="whitespace-pre-wrap break-words text-[0.875rem] leading-[1.8] text-ink">
               {post.comment}
             </p>
           )}
 
           <div className="flex items-center justify-between gap-3 border-t border-line pt-3">
             {post.author.isDeleted ? (
-              <span className="flex items-center gap-2 text-[12px] text-muted">
+              <span className="flex items-center gap-2 text-[0.75rem] text-muted">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={post.author.avatarUrl}
@@ -244,7 +244,7 @@ export function PostDetailScreen({
             ) : (
               <Link
                 href={`/users/${post.author.id}`}
-                className="tap-target flex items-center gap-2 text-[12px] text-ink"
+                className="tap-target flex items-center gap-2 text-[0.75rem] text-ink"
               >
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
@@ -255,7 +255,7 @@ export function PostDetailScreen({
                 <span className="font-medium">{post.author.displayName}</span>
               </Link>
             )}
-            <time dateTime={post.createdAt} className="text-[11px] text-muted">
+            <time dateTime={post.createdAt} className="text-[0.6875rem] text-muted">
               {formatDateTime(post.createdAt)} 投稿
             </time>
           </div>
@@ -286,7 +286,7 @@ export function PostDetailScreen({
           {!post.isOwner && (
             <Link
               href={composeHref({ kind: "spot", spotId: post.spot.id })}
-              className="inline-flex h-11 w-fit items-center gap-1.5 rounded-full bg-accent px-5 text-[13px] font-bold text-white"
+              className="inline-flex h-11 w-fit items-center gap-1.5 rounded-full bg-accent px-5 text-[0.8125rem] font-bold text-white"
             >
               自分も投稿する
             </Link>

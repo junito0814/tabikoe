@@ -50,8 +50,8 @@ export function AdminShell({
         className="fixed inset-y-0 left-0 z-40 hidden w-[220px] flex-col border-r border-line bg-surface md:flex"
       >
         <div className="px-5 pb-3 pt-5">
-          <p className="text-[15px] font-bold text-ink">タビコエ</p>
-          <p className="text-[11px] font-medium tracking-wide text-muted">管理</p>
+          <p className="text-[0.9375rem] font-bold text-ink">タビコエ</p>
+          <p className="text-[0.6875rem] font-medium tracking-wide text-muted">管理</p>
         </div>
         <ul className="flex flex-col gap-0.5 px-3">
           {ADMIN_MENU_ITEMS.map((item) => (
@@ -61,7 +61,7 @@ export function AdminShell({
           ))}
         </ul>
         <div className="mt-auto px-3 pb-5">
-          <Link href="/" className="flex h-10 items-center gap-2 rounded-[10px] px-3 text-[13px] text-muted hover:text-ink">
+          <Link href="/" className="flex h-10 items-center gap-2 rounded-[10px] px-3 text-[0.8125rem] text-muted hover:text-ink">
             ← サイトへ戻る
           </Link>
         </div>
@@ -70,11 +70,11 @@ export function AdminShell({
       {/* 本体（上のバー＋各ページ） */}
       <div className="flex min-w-0 flex-1 flex-col pb-[60px] md:pb-0 md:pl-[220px]">
         <header className="sticky top-0 z-30 flex h-14 items-center justify-between border-b border-line bg-surface/95 px-4 backdrop-blur md:px-6">
-          <h1 className="truncate text-[16px] font-bold text-ink">{title}</h1>
-          <div className="flex shrink-0 items-center gap-3 text-[12px] text-muted">
+          <h1 className="truncate text-[1rem] font-bold text-ink">{title}</h1>
+          <div className="flex shrink-0 items-center gap-3 text-[0.75rem] text-muted">
             <span className="hidden sm:inline">
               {adminName}
-              <span className="ml-1 rounded-full border border-line px-1.5 py-0.5 text-[10px]">管理者</span>
+              <span className="ml-1 rounded-full border border-line px-1.5 py-0.5 text-[0.625rem]">管理者</span>
             </span>
             <LogoutButton />
           </div>
@@ -119,7 +119,7 @@ function CountBadge({ count, inline = false }: { count: number; inline?: boolean
   return (
     <span
       aria-label={`${count}件`}
-      className={`flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-accent px-1 text-[10px] font-bold leading-none text-white ${
+      className={`flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-accent px-1 text-[0.625rem] font-bold leading-none text-white ${
         inline ? "" : "absolute -right-2 -top-1"
       }`}
     >
@@ -134,7 +134,7 @@ function SideLink({ item, pathname, badges }: { item: AdminMenuItem; pathname: s
     <Link
       href={item.href}
       aria-current={active ? "page" : undefined}
-      className={`flex h-10 items-center justify-between gap-3 rounded-[10px] px-3 text-[13px] font-medium ${
+      className={`flex h-10 items-center justify-between gap-3 rounded-[10px] px-3 text-[0.8125rem] font-medium ${
         active ? "bg-tint text-accent" : "text-muted hover:text-ink"
       }`}
     >
@@ -164,7 +164,7 @@ function BottomLink({
     <Link
       href={item.href}
       aria-current={active ? "page" : undefined}
-      className={`relative flex h-full flex-col items-center justify-center gap-0.5 text-[10px] font-medium ${
+      className={`relative flex h-full flex-col items-center justify-center gap-0.5 text-[0.625rem] font-medium ${
         active ? "text-accent" : "text-muted hover:text-ink"
       }`}
     >

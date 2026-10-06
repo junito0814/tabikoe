@@ -25,7 +25,7 @@ export function AlbumPhotoGalleryScreen({ tripId, title, initialPage }: { tripId
         <header className="flex flex-col gap-1">
           {/* #813: 下線付きの「← 題名」をやめ、他の画面と同じ共通部品に揃えた */}
           <BackLink href={`/albums/${tripId}`} label={title} />
-          <h1 className="text-[18px] font-bold text-ink">写真・動画</h1>
+          <h1 className="text-[1.125rem] font-bold text-ink">写真・動画</h1>
         </header>
         <PhotoGrid params={params} initialPage={initialPage} fetchPage={fetchPage} backHref={`/albums/${tripId}/photos`} />
       </div>

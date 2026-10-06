@@ -48,7 +48,7 @@ export function DeletePostButton({ postId }: { postId: string }) {
       <button
         type="button"
         onClick={() => setIsConfirming(true)}
-        className="tap-target text-[13px] font-medium text-accent underline underline-offset-2"
+        className="tap-target text-[0.8125rem] font-medium text-accent underline underline-offset-2"
       >
         この投稿を削除
       </button>
@@ -58,8 +58,8 @@ export function DeletePostButton({ postId }: { postId: string }) {
       {isConfirming && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-6">
           <div className="w-full max-w-[380px] rounded-[14px] bg-surface p-6 shadow-xl">
-            <h2 className="mb-3 text-[16px] font-bold text-ink">投稿を削除しますか</h2>
-            <p className="mb-4 text-[13px] leading-[1.7] text-ink">
+            <h2 className="mb-3 text-[1rem] font-bold text-ink">投稿を削除しますか</h2>
+            <p className="mb-4 text-[0.8125rem] leading-[1.7] text-ink">
               この投稿に付いた写真・コメント・いいねも同時に削除されます。元に戻すことはできません。
             </p>
 
@@ -68,7 +68,7 @@ export function DeletePostButton({ postId }: { postId: string }) {
                 type="button"
                 onClick={() => setIsConfirming(false)}
                 disabled={isDeleting}
-                className="h-11 flex-1 rounded-[10px] border border-line text-[14px] font-medium text-ink"
+                className="h-11 flex-1 rounded-[10px] border border-line text-[0.875rem] font-medium text-ink"
               >
                 キャンセル
               </button>
@@ -76,7 +76,7 @@ export function DeletePostButton({ postId }: { postId: string }) {
                 type="button"
                 onClick={handleDelete}
                 disabled={isDeleting}
-                className="h-11 flex-1 rounded-[10px] bg-accent text-[14px] font-semibold text-white disabled:cursor-not-allowed disabled:opacity-45"
+                className="h-11 flex-1 rounded-[10px] bg-accent text-[0.875rem] font-semibold text-white disabled:cursor-not-allowed disabled:opacity-45"
               >
                 {isDeleting ? "削除中..." : "削除する"}
               </button>

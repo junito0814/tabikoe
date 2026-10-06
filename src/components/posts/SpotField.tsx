@@ -184,30 +184,30 @@ export function SpotField({
   if (pending) {
     return (
       <div className="flex w-full flex-col gap-2" data-spot-confirm>
-        <p className="text-[12px] font-bold text-ink">この場所でよいか確かめてください</p>
-        <p className="text-[11px] leading-[1.7] text-muted">
+        <p className="text-[0.75rem] font-bold text-ink">この場所でよいか確かめてください</p>
+        <p className="text-[0.6875rem] leading-[1.7] text-muted">
           地図を動かすとピンの位置が変わります。<b className="text-ink">確定した位置と名前が、タビコエのスポットになります。</b>
         </p>
         <div className="flex items-center gap-2">
-          <label htmlFor="spot-confirm-name" className="w-[84px] shrink-0 text-[11px] text-muted">
+          <label htmlFor="spot-confirm-name" className="w-[84px] shrink-0 text-[0.6875rem] text-muted">
             場所の名前
           </label>
           <input
             id="spot-confirm-name"
             value={pendingName}
             onChange={(event) => setPendingName(event.target.value)}
-            className="h-9 min-w-0 flex-1 rounded-[8px] border border-line bg-surface px-3 text-[13px] text-ink focus:outline-none focus:ring-1 focus:ring-accent"
+            className="h-9 min-w-0 flex-1 rounded-[8px] border border-line bg-surface px-3 text-[0.8125rem] text-ink focus:outline-none focus:ring-1 focus:ring-accent"
           />
         </div>
         <div className="flex items-center gap-2">
-          <label htmlFor="spot-confirm-prefecture" className="w-[84px] shrink-0 text-[11px] text-muted">
+          <label htmlFor="spot-confirm-prefecture" className="w-[84px] shrink-0 text-[0.6875rem] text-muted">
             都道府県
           </label>
           <select
             id="spot-confirm-prefecture"
             value={pendingPrefecture}
             onChange={(event) => setPendingPrefecture(event.target.value)}
-            className="h-9 min-w-0 flex-1 rounded-[8px] border border-line bg-surface px-2 text-[13px] text-ink focus:outline-none focus:ring-1 focus:ring-accent"
+            className="h-9 min-w-0 flex-1 rounded-[8px] border border-line bg-surface px-2 text-[0.8125rem] text-ink focus:outline-none focus:ring-1 focus:ring-accent"
           >
             <option value="">選ばない</option>
             {PREFECTURES.map((prefecture) => (
@@ -217,13 +217,13 @@ export function SpotField({
             ))}
           </select>
         </div>
-        {confirmError && <p role="alert" className="text-[11px] text-saved">{confirmError}</p>}
+        {confirmError && <p role="alert" className="text-[0.6875rem] text-saved">{confirmError}</p>}
         <div className="flex gap-2">
           <button
             type="button"
             onClick={() => setPending(null)}
             disabled={isConfirming}
-            className="h-10 flex-1 rounded-[10px] border border-line text-[13px] font-semibold text-ink disabled:opacity-45"
+            className="h-10 flex-1 rounded-[10px] border border-line text-[0.8125rem] font-semibold text-ink disabled:opacity-45"
           >
             やめる
           </button>
@@ -231,7 +231,7 @@ export function SpotField({
             type="button"
             onClick={() => void confirm()}
             disabled={isConfirming}
-            className="h-10 flex-1 rounded-[10px] bg-accent text-[13px] font-bold text-white disabled:opacity-45"
+            className="h-10 flex-1 rounded-[10px] bg-accent text-[0.8125rem] font-bold text-white disabled:opacity-45"
           >
             {isConfirming ? "登録しています…" : "この位置で確定"}
           </button>
@@ -247,7 +247,7 @@ export function SpotField({
   if (isSearching) {
     return (
       <div className="flex w-full items-start gap-2">
-        <span className="w-[84px] shrink-0 pt-3 text-[12px] font-medium text-muted">スポット名 *</span>
+        <span className="w-[84px] shrink-0 pt-3 text-[0.75rem] font-medium text-muted">スポット名 *</span>
         <div className="min-w-0 flex-1">
           <SpotAutocompleteInput
             selectedSpot={null}
@@ -267,7 +267,7 @@ export function SpotField({
               onUnlock(null);
               setIsSearching(false);
             }}
-            className="mt-2 text-[12px] font-medium text-accent underline underline-offset-2"
+            className="mt-2 text-[0.75rem] font-medium text-accent underline underline-offset-2"
           >
             新しい場所（ピンの位置）にする
           </button>
@@ -284,12 +284,12 @@ export function SpotField({
   return (
     <div className="flex w-full flex-col gap-1.5">
       <div className="flex items-center gap-2">
-        <label htmlFor="spot-field-name" className="w-[84px] shrink-0 text-[12px] font-medium text-muted">
+        <label htmlFor="spot-field-name" className="w-[84px] shrink-0 text-[0.75rem] font-medium text-muted">
           スポット名 *
         </label>
         <div
           id="spot-field-name"
-          className={`flex h-11 min-w-0 flex-1 items-center gap-2 rounded-[10px] border bg-surface px-3 text-[14px] text-ink ${
+          className={`flex h-11 min-w-0 flex-1 items-center gap-2 rounded-[10px] border bg-surface px-3 text-[0.875rem] text-ink ${
             lockedSpot ? "border-accent" : "border-line"
           }`}
           data-spot-field={lockedSpot ? "locked" : resolvedSpot ? "resolved" : "new"}
@@ -301,7 +301,7 @@ export function SpotField({
           <span className="min-w-0 flex-1 truncate" role={isResolving ? "status" : undefined}>
             {name}
           </span>
-          <button type="button" onClick={() => setIsSearching(true)} className="shrink-0 text-[12px] font-medium text-accent underline underline-offset-2">
+          <button type="button" onClick={() => setIsSearching(true)} className="shrink-0 text-[0.75rem] font-medium text-accent underline underline-offset-2">
             変更
           </button>
         </div>
@@ -310,20 +310,20 @@ export function SpotField({
         <button
           type="button"
           onClick={() => onUnlock({ lat: lockedSpot.lat, lng: lockedSpot.lng })}
-          className="tap-target self-end text-[11px] font-medium text-muted underline underline-offset-2"
+          className="tap-target self-end text-[0.6875rem] font-medium text-muted underline underline-offset-2"
         >
           この付近の新しい場所
         </button>
       )}
       {isNewPlace && (
         <div className="flex items-center gap-2">
-          <span className="w-[84px] shrink-0 text-[11px] text-muted">場所の名前</span>
+          <span className="w-[84px] shrink-0 text-[0.6875rem] text-muted">場所の名前</span>
           <input
             value={newPlaceName}
             onChange={(event) => onNewPlaceNameChange(event.target.value)}
             placeholder="任意（例: 〇〇展望台）"
             aria-label="新しい場所の名前（任意）"
-            className="h-9 min-w-0 flex-1 rounded-[8px] border border-line bg-surface px-3 text-[13px] text-ink focus:outline-none focus:ring-1 focus:ring-accent"
+            className="h-9 min-w-0 flex-1 rounded-[8px] border border-line bg-surface px-3 text-[0.8125rem] text-ink focus:outline-none focus:ring-1 focus:ring-accent"
           />
         </div>
       )}

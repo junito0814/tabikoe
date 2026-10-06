@@ -179,13 +179,13 @@ export function NotificationListScreen({
       <div className="flex min-h-screen flex-col items-center bg-app px-4 py-6">
         <div className="flex w-full max-w-[520px] flex-col gap-3">
           <div className="flex items-center justify-between gap-2">
-            <h1 className="text-[18px] font-bold text-ink">通知</h1>
+            <h1 className="text-[1.125rem] font-bold text-ink">通知</h1>
             {/* #711: 自動既読をやめたので、まとめて消す道を右上に置く（決定事項 79） */}
             <button
               type="button"
               onClick={() => void markAllRead()}
               disabled={isMarkingAll}
-              className="h-8 shrink-0 rounded-full border border-line bg-surface px-3 text-[12px] font-semibold text-ink disabled:opacity-45"
+              className="h-8 shrink-0 rounded-full border border-line bg-surface px-3 text-[0.75rem] font-semibold text-ink disabled:opacity-45"
             >
               {isMarkingAll ? "既読にしています…" : "すべて既読にする"}
             </button>
@@ -193,7 +193,7 @@ export function NotificationListScreen({
 
 
           {items.length === 0 ? (
-            <p className="py-16 text-center text-[13px] text-muted">通知はありません</p>
+            <p className="py-16 text-center text-[0.8125rem] text-muted">通知はありません</p>
           ) : (
             <ul className="flex flex-col gap-2">
               {items.map((item, index) =>
@@ -215,7 +215,7 @@ export function NotificationListScreen({
                         </svg>
                       </span>
                       <span className="min-w-0 flex-1">
-                        <span className="flex items-center gap-1.5 text-[11px]">
+                        <span className="flex items-center gap-1.5 text-[0.6875rem]">
                           <span className="rounded-full bg-accent px-2 py-0.5 font-semibold text-white">お知らせ</span>
                           {item.isNew && (
                             <span className="inline-flex items-center gap-0.5 font-bold text-accent" data-new-badge>
@@ -227,8 +227,8 @@ export function NotificationListScreen({
                           )}
                           <span className="ml-auto text-muted">{formatDateTime(item.publishedAt)}</span>
                         </span>
-                        <span className="mt-1 block truncate text-[13px] font-semibold text-ink">{item.title}</span>
-                        <span className="mt-0.5 line-clamp-2 block text-[12px] leading-[1.6] text-muted">{item.body}</span>
+                        <span className="mt-1 block truncate text-[0.8125rem] font-semibold text-ink">{item.title}</span>
+                        <span className="mt-0.5 line-clamp-2 block text-[0.75rem] leading-[1.6] text-muted">{item.body}</span>
                       </span>
                     </button>
                   </li>
@@ -245,7 +245,7 @@ export function NotificationListScreen({
                             type="button"
                             onClick={() => void respond(item, "accept")}
                             disabled={respondingId !== null}
-                            className="h-9 rounded-full bg-accent px-4 text-[12px] font-bold text-white disabled:opacity-45"
+                            className="h-9 rounded-full bg-accent px-4 text-[0.75rem] font-bold text-white disabled:opacity-45"
                           >
                             {respondingId === item.id ? "処理中…" : "参加する"}
                           </button>
@@ -253,7 +253,7 @@ export function NotificationListScreen({
                             type="button"
                             onClick={() => void respond(item, "decline")}
                             disabled={respondingId !== null}
-                            className="h-9 rounded-full border border-line bg-surface px-4 text-[12px] font-semibold text-ink disabled:opacity-45"
+                            className="h-9 rounded-full border border-line bg-surface px-4 text-[0.75rem] font-semibold text-ink disabled:opacity-45"
                           >
                             辞退
                           </button>
@@ -289,7 +289,7 @@ export function NotificationListScreen({
               type="button"
               onClick={() => void loadMore()}
               disabled={isLoading}
-              className="h-10 w-full rounded-[10px] border border-line bg-surface text-[13px] font-semibold text-ink disabled:opacity-45"
+              className="h-10 w-full rounded-[10px] border border-line bg-surface text-[0.8125rem] font-semibold text-ink disabled:opacity-45"
             >
               {isLoading ? "読み込み中…" : "もっと見る"}
             </button>
@@ -314,21 +314,21 @@ export function NotificationListScreen({
               onClick={(event) => event.stopPropagation()}
             >
               <div className="mb-1 flex items-start gap-2">
-                <p className="flex-1 text-[11px] text-muted">
+                <p className="flex-1 text-[0.6875rem] text-muted">
                   {open.kind === "announcement"
                     ? `お知らせ ・ ${formatDateTime(open.publishedAt)}`
                     : `通知 ・ ${formatDateTime(open.createdAt)}`}
                 </p>
                 <CloseButton onClick={() => setOpenIndex(null)} />
               </div>
-              <h2 id="notification-modal-title" className="mb-2 text-[15px] font-bold text-ink">
+              <h2 id="notification-modal-title" className="mb-2 text-[0.9375rem] font-bold text-ink">
                 {open.kind === "announcement" ? open.title : open.message}
               </h2>
               {open.kind === "announcement" && (
-                <p className="whitespace-pre-wrap text-[13px] leading-[1.8] text-ink">{open.body}</p>
+                <p className="whitespace-pre-wrap text-[0.8125rem] leading-[1.8] text-ink">{open.body}</p>
               )}
               {open.kind === "notification" && open.fallbackMessage && (
-                <p className="text-[12px] leading-[1.7] text-muted">{open.fallbackMessage}</p>
+                <p className="text-[0.75rem] leading-[1.7] text-muted">{open.fallbackMessage}</p>
               )}
 
               <div className="mt-3 flex flex-col gap-2">
@@ -336,7 +336,7 @@ export function NotificationListScreen({
                   <Link
                     href={appendBackHref(open.href, "/notifications")}
                     prefetch={false}
-                    className="h-10 rounded-[10px] bg-accent text-center text-[13px] font-bold leading-10 text-white"
+                    className="h-10 rounded-[10px] bg-accent text-center text-[0.8125rem] font-bold leading-10 text-white"
                   >
                     {open.invitation ? "招待を見る" : "この投稿を見る"}
                   </Link>
@@ -345,7 +345,7 @@ export function NotificationListScreen({
                   <button
                     type="button"
                     onClick={() => void markUnread(open)}
-                    className="h-10 rounded-[10px] border border-line text-[13px] font-semibold text-ink"
+                    className="h-10 rounded-[10px] border border-line text-[0.8125rem] font-semibold text-ink"
                   >
                     未読に戻す
                   </button>
@@ -353,7 +353,7 @@ export function NotificationListScreen({
               </div>
 
               {/* #711: 閉じずに読み進められる（写真の拡大と同じ考え方） */}
-              <div className="mt-3 flex items-center justify-between border-t border-line pt-2 text-[12px]">
+              <div className="mt-3 flex items-center justify-between border-t border-line pt-2 text-[0.75rem]">
                 <button
                   type="button"
                   onClick={() => openAt(openIndex! - 1)}
@@ -389,11 +389,11 @@ function NotificationBody({ item }: { item: Extract<FeedItem, { kind: "notificat
         <span className={`block h-2.5 w-2.5 rounded-full ${item.isRead ? "bg-line" : "bg-accent"}`} />
       </span>
       <span className="min-w-0 flex-1">
-        <span className={`block text-[13px] ${item.isRead ? "text-ink" : "font-semibold text-ink"}`}>
+        <span className={`block text-[0.8125rem] ${item.isRead ? "text-ink" : "font-semibold text-ink"}`}>
           {item.message}
           {!item.isRead && <span className="sr-only">（未読）</span>}
         </span>
-        <span className="mt-0.5 block text-[11px] text-muted">
+        <span className="mt-0.5 block text-[0.6875rem] text-muted">
           {formatDateTime(item.createdAt)}
           {item.fallbackMessage && ` ・ ${item.fallbackMessage}`}
           {item.invitation && item.invitation.status !== "pending" && ` ・ ${INVITATION_STATUS_LABELS[item.invitation.status]}`}

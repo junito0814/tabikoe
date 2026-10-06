@@ -29,10 +29,10 @@ export function LegalDocumentScreen({
   const path = LEGAL_KIND_PATHS[document.kind as LegalKind];
   return (
     <div className="flex min-h-screen flex-col items-center bg-app px-4 py-6">
-      <article className="flex w-full max-w-[640px] flex-col gap-3 text-[14px] leading-[1.8] text-ink">
+      <article className="flex w-full max-w-[640px] flex-col gap-3 text-[0.875rem] leading-[1.8] text-ink">
         {/* #792: 左上に戻る。来た画面が分からなければホーム（未ログインならログイン画面） */}
         <BackLink href={back?.href ?? "/"} label={back?.label ?? "ホーム"} className="self-start" />
-        <p className="flex flex-wrap items-center gap-x-3 text-[12px] text-muted">
+        <p className="flex flex-wrap items-center gap-x-3 text-[0.75rem] text-muted">
           <span>
             {LEGAL_KIND_LABELS[document.kind as LegalKind]} 版 {document.version}
             {document.status === "archived" && "（過去の版）"}
@@ -47,7 +47,7 @@ export function LegalDocumentScreen({
         {blocks.map((block, i) => {
           if (block.type === "heading") {
             const Tag = block.level === 1 ? "h1" : block.level === 2 ? "h2" : "h3";
-            const cls = block.level === 1 ? "mt-2 text-[20px] font-bold" : block.level === 2 ? "mt-4 text-[15px] font-bold" : "mt-2 text-[14px] font-bold";
+            const cls = block.level === 1 ? "mt-2 text-[1.25rem] font-bold" : block.level === 2 ? "mt-4 text-[0.9375rem] font-bold" : "mt-2 text-[0.875rem] font-bold";
             return (
               <Tag key={i} id={block.id} className={cls}>
                 {block.text}
@@ -71,7 +71,7 @@ export function LegalDocumentScreen({
           );
         })}
         {versions.length > 1 && (
-          <section className="mt-6 border-t border-line pt-3 text-[12px] text-muted">
+          <section className="mt-6 border-t border-line pt-3 text-[0.75rem] text-muted">
             <p className="font-medium">版の一覧</p>
             <ul className="mt-1 flex flex-col gap-0.5">
               {versions.map((v) => (

@@ -110,7 +110,7 @@ export function TripTitleInput({
   const isInline = layout === "inline";
   return (
     <div ref={containerRef} className={`relative w-full ${isInline ? "flex flex-wrap items-center gap-x-2 gap-y-1" : ""}`}>
-      <label htmlFor={inputId} className={isInline ? "w-[84px] shrink-0 text-[12px] font-medium text-muted" : "mb-1.5 block text-[12px] font-medium text-muted"}>
+      <label htmlFor={inputId} className={isInline ? "w-[84px] shrink-0 text-[0.75rem] font-medium text-muted" : "mb-1.5 block text-[0.75rem] font-medium text-muted"}>
         アルバム{isInline ? " *" : ""}
       </label>
       <input
@@ -126,7 +126,7 @@ export function TripTitleInput({
         aria-expanded={isOpen && visibleSuggestions.length > 0}
         aria-controls={`${inputId}-suggestions`}
         placeholder={isInline ? "空なら「日常」に入ります" : undefined}
-        className={`h-11 rounded-[10px] border border-line bg-surface px-3 text-[14px] text-ink focus:outline-none focus:ring-1 focus:ring-accent ${isInline ? "min-w-0 flex-1" : "w-full"}`}
+        className={`h-11 rounded-[10px] border border-line bg-surface px-3 text-[0.875rem] text-ink focus:outline-none focus:ring-1 focus:ring-accent ${isInline ? "min-w-0 flex-1" : "w-full"}`}
       />
 
       {/*
@@ -134,7 +134,7 @@ export function TripTitleInput({
         * （閉じている入力欄の下に出すと、関係のない文字がちらつく）
         */}
       {isOpen && isSearching && (
-        <p role="status" className="mt-1 text-[12px] text-muted">
+        <p role="status" className="mt-1 text-[0.75rem] text-muted">
           探しています…
         </p>
       )}
@@ -153,11 +153,11 @@ export function TripTitleInput({
                   onChange(suggestion.title);
                   setIsOpen(false);
                 }}
-                className="flex w-full items-center justify-between gap-2 px-3 py-2.5 text-left text-[14px] text-ink hover:bg-tint"
+                className="flex w-full items-center justify-between gap-2 px-3 py-2.5 text-left text-[0.875rem] text-ink hover:bg-tint"
               >
                 <span className="min-w-0 truncate">{suggestion.title}</span>
                 {suggestion.source && SOURCE_LABELS[suggestion.source] && (
-                  <span className="shrink-0 rounded-full bg-tint px-2 py-0.5 text-[10px] text-muted">{SOURCE_LABELS[suggestion.source]}</span>
+                  <span className="shrink-0 rounded-full bg-tint px-2 py-0.5 text-[0.625rem] text-muted">{SOURCE_LABELS[suggestion.source]}</span>
                 )}
               </button>
             </li>
@@ -166,11 +166,11 @@ export function TripTitleInput({
       )}
 
       <div className={`mt-1 flex items-center justify-between ${isInline ? "w-full pl-[92px]" : ""}`}>
-        <span className={`text-[11px] ${isTooLong ? "text-saved" : "text-muted"}`}>
+        <span className={`text-[0.6875rem] ${isTooLong ? "text-saved" : "text-muted"}`}>
           {length} / {MAX_TRIP_TITLE_LENGTH}
         </span>
         {isTooLong && (
-          <span className="text-[11px] text-saved">
+          <span className="text-[0.6875rem] text-saved">
             {MAX_TRIP_TITLE_LENGTH}文字以内で入力してください
           </span>
         )}
