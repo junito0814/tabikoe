@@ -11,6 +11,7 @@ import { REPORT_STATUS_LABELS } from "@/lib/admin/report-filters";
 import { MODERATION_ACTION_LABELS, type ModerationAction } from "@/lib/admin/moderation";
 import type { ReportDetail } from "@/lib/admin/report-detail";
 import type { ReportModerationContext } from "@/lib/admin/report-context";
+import { formatDateTime } from "@/lib/format/date-time";
 
 export type SubmitReportAction = (reportId: string, action: ModerationAction, note: string) => Promise<Response>;
 /** strike-system Task 6: 登録者に修正を依頼する */
@@ -124,7 +125,7 @@ export function ReportDetailScreen({
             <dt className="text-muted">通報理由</dt>
             <dd>{REPORT_REASON_LABELS[report.reason]}</dd>
             <dt className="text-muted">通報日時</dt>
-            <dd>{new Date(report.createdAt).toLocaleString("ja-JP")}</dd>
+            <dd>{formatDateTime(report.createdAt)}</dd>
             {report.detail && (
               <>
                 <dt className="text-muted">詳細</dt>
@@ -134,7 +135,7 @@ export function ReportDetailScreen({
             {report.resolvedAt && (
               <>
                 <dt className="text-muted">対応日時</dt>
-                <dd>{new Date(report.resolvedAt).toLocaleString("ja-JP")}</dd>
+                <dd>{formatDateTime(report.resolvedAt)}</dd>
               </>
             )}
             {report.resolutionNote && (
