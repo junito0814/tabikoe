@@ -19,6 +19,7 @@ import { SpotField } from "./SpotField";
 import { buildComposePayload, type UploadedMedia } from "./compose-payload";
 import { POSTING_RESTRICTED_ERROR, postingRestrictedMessage } from "@/lib/moderation/posting-restriction";
 import { BackLink } from "@/components/layout/BackLink";
+import { suggestedCategory } from "@/lib/posts/suggested-category";
 
 const MAX_PHOTO_SIZE_BYTES = 10 * 1024 * 1024;
 const MAX_VIDEO_SIZE_BYTES = 100 * 1024 * 1024;
@@ -68,8 +69,14 @@ export function PostComposeScreen({
   fetchTripSuggestions,
   searchSpots,
   postingRestrictedUntil = null,
+  spotCategory = null,
 }: {
   initial: ComposeInitialState;
+  /**
+   * #794（2026-10-06）: このスポットの代表カテゴリ（サーバーが `resolveSpotCategory` で出す）。
+   * カテゴリの欄の下に「おすすめ」として 1 つ出す。投稿の無いスポット・新しい場所では null。
+   */
+  spotCategory?: PostCategory | null;
   existing?: ExistingPostValues | null;
   /** strike-system Task 2: 投稿禁止中なら解除日時（ISO）。理由を出して「投稿する」を無効にする */
   postingRestrictedUntil?: string | null;
@@ -364,6 +371,8 @@ export function PostComposeScreen({
             <PostFormFields
               values={values}
               onChange={updateValues}
+              // #794: 既存のスポットに投稿するときだけ「おすすめ」を 1 つ出す
+              suggestedCategory={suggestedCategory({ spotCategory, current: values.category, source: initial.source })}
               spotField={
                 <SpotField
                   lockedSpot={lockedSpot}

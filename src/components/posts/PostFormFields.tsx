@@ -105,9 +105,15 @@ export function PostFormFields({
   fileInputRef,
   onFilesSelected,
   fetchTripSuggestions,
+  suggestedCategory = null,
 }: {
   values: PostFormValues;
   onChange: (patch: Partial<PostFormValues>) => void;
+  /**
+   * #794（2026-10-06）: カテゴリの「おすすめ」。出すかどうかの判断は
+   * `lib/posts/suggested-category.ts` が済ませてあるので、ここは**あれば出す**だけ。
+   */
+  suggestedCategory?: PostCategory | null;
   /** スポット名欄（SpotField）。親が地図の状態と合わせて渡す */
   spotField: React.ReactNode;
   mediaItems: SelectedMedia[];
@@ -168,6 +174,25 @@ export function PostFormFields({
             </option>
           ))}
         </select>
+        {/*
+          * #794: 既存のスポットに投稿するとき、そのスポットの代表カテゴリを 1 つ勧める。
+          * **勝手には入れない**（外れたまま投稿されるのを防ぐ）。押した人が入れる。
+          * 押すと欄に入り、この行は消える（`suggestedCategory` が null になるため）。
+          */}
+        {suggestedCategory && (
+          <button
+            type="button"
+            onClick={() => {
+              const auto = autoDurationForCategory(suggestedCategory, values.duration);
+              onChange(auto ? { category: suggestedCategory, duration: auto } : { category: suggestedCategory });
+            }}
+            data-suggested-category
+            className="tap-target flex w-fit items-center gap-1.5 text-[0.6875rem] text-muted"
+          >
+            <span className="rounded-full bg-tint px-2 py-0.5 font-bold text-accent">おすすめ</span>
+            <span className="font-medium text-ink underline underline-offset-2">{suggestedCategory}</span>
+          </button>
+        )}
       </div>
 
       {/* 日付 ／ 滞在時間: 2 列 */}

@@ -3,6 +3,7 @@ import type { ExistingPostValues } from "@/components/posts/PostComposeScreen";
 import { POST_DURATIONS, type PostCategory, type PostDuration, type PostVisibility } from "./constants";
 import { createPostPhotoUrls } from "./signed-url";
 import type { RegisteredSpot } from "@/lib/spots/types";
+import { resolveSpotCategory } from "@/lib/map/spot-category";
 
 /**
  * post-entry-points Task1: 投稿画面の初期値をサーバーで読む
@@ -103,6 +104,23 @@ export async function loadSpotForCompose(
     .eq("id", spotId)
     .maybeSingle();
   return (data as RegisteredSpot | null) ?? null;
+}
+
+/**
+ * #794（2026-10-06）: そのスポットの代表カテゴリ（「おすすめ」に出す）。
+ *
+ * 【初心者向け】**地図のピンの色を決めているのと同じ関数**（`resolveSpotCategory`）を使うので、
+ * ピンの色とおすすめが食い違いません。公開投稿が 1 件も無ければ null。
+ */
+export async function loadSpotCategoryForCompose(admin: SupabaseClient, spotId: string): Promise<PostCategory | null> {
+  const { data } = await admin
+    .from("posts")
+    .select("category, created_at")
+    .eq("spot_id", spotId)
+    .eq("visibility", "public")
+    .eq("status", "published")
+    .is("hidden_at", null);
+  return resolveSpotCategory((data ?? []).map((row) => ({ category: row.category, createdAt: row.created_at })));
 }
 
 export async function loadItineraryForCompose(
