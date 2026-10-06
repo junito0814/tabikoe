@@ -91,3 +91,39 @@ describe("Place ID の記録（#703・#700）", () => {
     expect(resolved.length).toBeGreaterThan(20);
   });
 });
+
+/**
+ * 2026-10-06: seed のスポットが二重になった後始末の道具。
+ *
+ * 【初心者向け】`clean-seed.mjs` は**投稿が残っているスポットを消せない**（消すと投稿も一緒に
+ * 消えるため、わざとそうしている）。止まったまま `seed-tokyo.mjs` を動かすと同じ名前が 2 つ並ぶ。
+ * 直す道具の**安全の決まり**が緩まないよう、ここで見張る。
+ */
+describe("二重になったスポットを消す道具", () => {
+  const source = readFileSync("scripts/seed/clean-duplicate-spots.mjs", "utf8");
+
+  it("既定では消さない（--apply を付けたときだけ消す）", () => {
+    expect(source).toContain('const apply = process.argv.includes("--apply")');
+    expect(source).toContain("if (!apply)");
+  });
+
+  it("seed のスポットだけを見る", () => {
+    expect(source).toContain("const SEED_SPOT_SUFFIX = \"（seed）\"");
+    expect(source).toContain("like(\"name\"");
+  });
+
+  it("同じ名前が 2 つ以上あるときだけ動く", () => {
+    expect(source).toContain("rows.length > 1");
+  });
+
+  it("投稿が 1 件でもあるスポットは消さない", () => {
+    expect(source).toContain("hasPost");
+    expect(source).toContain("candidates.filter((spot) => !hasPost.has(spot.id))");
+  });
+
+  it("スポットを指している行を先に消す（外部キーで止まらないように）", () => {
+    for (const table of ["wishlist", "spot_status_reports", "itinerary_spots"]) {
+      expect(source, table).toContain(table);
+    }
+  });
+});
