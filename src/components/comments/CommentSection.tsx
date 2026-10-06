@@ -13,6 +13,7 @@ import { graphemeLength } from "@/lib/text/grapheme-length";
 import { POSTING_RESTRICTED_ERROR, postingRestrictedMessage } from "@/lib/moderation/posting-restriction";
 import { useConfirm } from "@/components/ui/ConfirmSheet";
 import { formatDateTime } from "@/lib/format/date-time";
+import { useKeyboardInset } from "@/lib/ui/use-keyboard-inset";
 
 export interface CommentApi {
   fetchPage: (postId: string, offset: number) => Promise<CommentPage>;
@@ -68,6 +69,8 @@ export function CommentSection({
   const [expandedRoots, setExpandedRoots] = useState<Set<string>>(new Set());
 
   const remaining = MAX_COMMENT_LENGTH - graphemeLength(draft);
+  // #803: キーボードが出ている間は、その高さぶん入力欄を持ち上げる
+  const keyboardInset = useKeyboardInset();
   const canSubmit = draft.trim().length > 0 && remaining >= 0 && !isSubmitting;
 
   const handleSubmit = async (event: FormEvent) => {
@@ -173,14 +176,28 @@ export function CommentSection({
   };
 
   return (
-    <section aria-labelledby="comments-heading" className="flex flex-col gap-3">
+    /* #803: 下に固定した入力欄のぶん、いちばん下のコメントが隠れないよう余白を取る */
+    <section aria-labelledby="comments-heading" className="flex flex-col gap-3 pb-24">
       {confirmSheet}
       <h2 id="comments-heading" className="text-[0.875rem] font-bold text-ink">
         コメント <span className="text-[0.75rem] font-medium text-muted">{totalCount}件</span>
       </h2>
 
       {canComment ? (
-        <form onSubmit={handleSubmit} className="flex flex-col gap-2">
+        /*
+          * #803（2026-10-06）: 入力欄を**画面の下に固定**した。
+          *
+          * 【初心者向け】以前は一覧の**上**にあったので、読んでから書こうとすると
+          * 上まで戻る必要がありました。LINE・Instagram はどれも下に固定です（読んでから書く）。
+          * キーボードが出たときは、その高さぶん持ち上げます（`use-keyboard-inset`）。
+          * メニューバーがある画面では、その上（60px）に置きます。
+          */
+        <form
+          onSubmit={handleSubmit}
+          style={keyboardInset > 0 ? { bottom: keyboardInset } : undefined}
+          data-comment-form
+          className="fixed inset-x-0 bottom-0 z-30 flex flex-col gap-1.5 border-t border-line bg-surface px-4 pb-[max(10px,env(safe-area-inset-bottom))] pt-2.5 [body:has([data-menu-bar])_&]:bottom-[60px] md:[body:has([data-menu-bar])_&]:bottom-0 md:[body:has([data-menu-bar])_&]:left-[200px]"
+        >
           {replyTo && (
             <div className="flex items-center gap-2 text-[0.75rem]" data-reply-to={replyTo.id}>
               <span className="inline-flex items-center gap-1 rounded-full bg-tint px-2 py-0.5 font-semibold text-accent">
@@ -192,27 +209,38 @@ export function CommentSection({
               <span className="text-muted">への返信</span>
             </div>
           )}
-          <textarea
-            value={draft}
-            onChange={(event) => setDraft(event.target.value)}
-            rows={3}
-            placeholder={replyTo ? "返信を書く" : "コメントを書く"}
-            aria-label="コメント本文"
-            className="w-full rounded-[10px] border border-line bg-surface px-3 py-2 text-[0.875rem] text-ink focus:outline-none focus:ring-1 focus:ring-accent"
-          />
-          <div className="flex items-center justify-between">
-            <span
-              className={`text-[0.6875rem] ${remaining < 0 ? "text-accent" : "text-muted"}`}
-              aria-live="polite"
-            >
-              残り{remaining.toLocaleString("ja-JP")}文字（{MAX_COMMENT_LENGTH.toLocaleString("ja-JP")}文字まで）
+          {/*
+            * #772（2026-10-06）: 残りの文字数は**打ち始めてから**出す。
+            * 以前は空のときから「残り4,000文字（4,000文字まで）」と**同じ数字が 2 回**出ていた。
+            */}
+          {draft.length > 0 && (
+            <span className={`text-[0.6875rem] ${remaining < 0 ? "text-accent" : "text-muted"}`} aria-live="polite" data-remaining>
+              残り {remaining.toLocaleString("ja-JP")} 文字
             </span>
+          )}
+          <div className="flex items-end gap-2">
+            <textarea
+              value={draft}
+              onChange={(event) => setDraft(event.target.value)}
+              rows={1}
+              placeholder={replyTo ? "返信を書く" : "コメントを書く"}
+              aria-label="コメント本文"
+              className="max-h-28 min-h-11 w-full flex-1 resize-none rounded-[18px] border border-line bg-surface px-3 py-2.5 text-[0.875rem] text-ink focus:outline-none focus:ring-1 focus:ring-accent"
+            />
             <button
               type="submit"
               disabled={!canSubmit}
-              className="h-9 rounded-[8px] bg-accent px-4 text-[0.75rem] font-semibold text-white disabled:cursor-not-allowed disabled:opacity-45"
+              aria-label={replyTo ? "返信する" : "コメントする"}
+              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-accent text-white disabled:cursor-not-allowed disabled:opacity-45"
             >
-              {isSubmitting ? "投稿中…" : replyTo ? "返信する" : "コメントする"}
+              {isSubmitting ? (
+                <span className="text-[0.625rem] font-semibold">送信中</span>
+              ) : (
+                /* 紙飛行機（送る） */
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden>
+                  <path d="M4 12 20 4l-8 16-2-6-6-2z" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round" />
+                </svg>
+              )}
             </button>
           </div>
         </form>
