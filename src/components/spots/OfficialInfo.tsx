@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { fetchPlaceOfficialInfo, hasOfficialInfo } from "@/lib/google/place-details";
 import { GoogleMapsAttribution } from "@/components/google/GoogleMapsAttribution";
@@ -73,5 +74,22 @@ export async function OfficialInfo({ spotId }: { spotId: string }) {
         </a>
       )}
     </section>
+  );
+}
+
+/**
+ * #739: スポット別の一覧に差し込む要素を作る。
+ *
+ * 【初心者向け】スポット別の一覧には**入口が 2 つ**ある（`/spots/[id]` と `/search?spot=`）。
+ * #701 では前者にしか差し込んでいなかったので、普段の導線（検索結果のカード）では何も出ていなかった。
+ * 同じものを 2 か所に書かないよう、ここにまとめて両方から呼ぶ。
+ *
+ * **一覧より遅くてよい**ので Suspense に入れる。出せないときは黙って何も出さないので、骨組みも出さない。
+ */
+export function officialInfoSlot(spotId: string) {
+  return (
+    <Suspense fallback={null}>
+      <OfficialInfo spotId={spotId} />
+    </Suspense>
   );
 }

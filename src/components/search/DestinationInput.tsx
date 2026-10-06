@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useId, useRef, useState } from "react";
+import { useEffect, useId, useLayoutEffect, useRef, useState } from "react";
 import { UnauthorizedError } from "@/lib/api/fetch-with-auth-redirect";
 import { SUGGESTION_KIND_LABELS, type DestinationSuggestion } from "@/lib/search/suggest-destinations";
 import { GoogleMapsAttribution } from "@/components/google/GoogleMapsAttribution";
@@ -36,6 +36,16 @@ export function DestinationInput({
   disabled?: boolean;
 }) {
   const inputId = useId();
+  /*
+   * #740: 候補の高さは「入力欄の下に実際に残っている余白」で決める。
+   *
+   * 【初心者向け】決め打ちの上限（420px）だと、入力欄が画面の真ん中にある
+   * ホーム画面では下がメニューバーに隠れてしまい、**Google のロゴまで見えなくなっていた**
+   * （規約が求める表記なので、見えないのは出していないのと同じ）。
+   * 測れないとき（サーバーでの描画・テスト）は CSS の上限のままにする。
+   */
+  const panelRef = useRef<HTMLDivElement>(null);
+  const [maxHeight, setMaxHeight] = useState<number | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const [query, setQuery] = useState("");
   const [suggestions, setSuggestions] = useState<DestinationSuggestion[]>([]);
@@ -109,9 +119,32 @@ export function DestinationInput({
     return () => clearTimeout(timer);
   }, [query, sessionToken, isComposing]);
 
+  /** #740: メニューバーの高さ（スマホのとき。パソコンは左の縦並びなので引かない） */
+  const MENU_BAR_PX = 60;
+  const PANEL_GAP_PX = 8;
+  /** これより狭ければ測った値を使わない（CSS の上限に任せる） */
+  const MIN_PANEL_PX = 160;
+
+
   const trimmedQuery = query.trim();
   /** 探し終えた言葉がいまの入力と一致するときだけ候補を使う（前の言葉の候補を残さない） */
   const visibleSuggestions = searchedQuery === trimmedQuery ? suggestions : [];
+
+  /*
+   * #740: 候補の高さは「入力欄の下に実際に残っている余白」で決める。
+   * 開いたとき・候補の数が変わったときだけ測る（毎回測ると描き直しが止まらなくなる）。
+   */
+  useLayoutEffect(() => {
+    const panel = panelRef.current;
+    if (!panel) {
+      setMaxHeight(null);
+      return;
+    }
+    const top = panel.getBoundingClientRect().top;
+    const bar = window.innerWidth < 768 ? MENU_BAR_PX : 0;
+    const space = Math.floor(window.innerHeight - top - bar - PANEL_GAP_PX);
+    setMaxHeight(space >= MIN_PANEL_PX ? space : null);
+  }, [isOpen, visibleSuggestions.length]);
   /** 探している最中か。300ms 待っている間も含む（#665: 変換中は探していないので出さない） */
   const isSearching = !isComposing && trimmedQuery.length > 0 && searchedQuery !== trimmedQuery;
 
@@ -181,7 +214,17 @@ export function DestinationInput({
         * 「どれが Google 由来か分かるようにする」と求めている（要件 6.2）。
         */}
       {isOpen && visibleSuggestions.length > 0 && (
-        <div className="absolute z-20 mt-1 w-full overflow-hidden rounded-[12px] border border-line bg-surface shadow-card">
+        /*
+         * #740: メニューバー（z-40）より上に出し、高さに上限を付けて中をスクロールさせる。
+         * 候補が増えると下がメニューバーに隠れ、**Google のロゴまで見えなくなっていた**
+         * （規約が求める表記なので、見えないのは出していないのと同じ）。
+         */
+        <div
+          ref={panelRef}
+          style={maxHeight === null ? undefined : { maxHeight }}
+          className="absolute z-50 mt-1 flex max-h-[min(420px,50dvh)] w-full flex-col overflow-hidden rounded-[12px] border border-line bg-surface shadow-card"
+        >
+          <div className="min-h-0 flex-1 overflow-y-auto">
           {groupBySource(visibleSuggestions, (suggestion) => destinationSuggestionSource(suggestion.kind)).map(
             (group, groupIndex) => (
               <section key={group.source} className={groupIndex > 0 ? "border-t border-line" : undefined}>
@@ -215,13 +258,18 @@ export function DestinationInput({
                     </li>
                   ))}
                 </ul>
-                {group.source === "google" && (
-                  <div className="px-4 pb-2 pt-0.5">
-                    <GoogleMapsAttribution />
-                  </div>
-                )}
               </section>
             )
+          )}
+          </div>
+          {/*
+            * #740: ロゴはスクロールの外に固定する。中に入れると「スクロールしないと見えない」ことがあり、
+            * 規約の「見える位置に出す」を満たさない。
+            */}
+          {visibleSuggestions.some((suggestion) => destinationSuggestionSource(suggestion.kind) === "google") && (
+            <div className="shrink-0 border-t border-line bg-surface px-4 py-2">
+              <GoogleMapsAttribution />
+            </div>
           )}
         </div>
       )}

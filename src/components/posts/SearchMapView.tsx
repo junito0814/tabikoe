@@ -86,6 +86,8 @@ export function SearchMapView({
           // 選んでいるものだけ見た目を変える（探すモードと同じ "focus"）
           type: spot.id === selectedId ? "focus" : "post",
           title: spot.name,
+          // #741: カテゴリで色と記号が決まる（渡していなかったので全部同じ色になっていた）
+          category: spot.category,
         }))}
         onPinClick={(pinId) => {
           const spot = spots.find((item) => item.id === pinId);

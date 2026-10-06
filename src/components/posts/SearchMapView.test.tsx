@@ -12,10 +12,10 @@ import type { SpotCardData } from "@/lib/spots/search-spots";
  */
 const fitBounds = vi.fn();
 const panTo = vi.fn();
-let lastPins: { id: string; type: string }[] = [];
+let lastPins: { id: string; type: string; category?: string | null }[] = [];
 
 vi.mock("@/components/map/GoogleMap", () => ({
-  GoogleMap: ({ pins, ref, onPinClick }: { pins: { id: string; type: string }[]; ref?: { current: unknown }; onPinClick?: (id: string) => void }) => {
+  GoogleMap: ({ pins, ref, onPinClick }: { pins: { id: string; type: string; category?: string | null }[]; ref?: { current: unknown }; onPinClick?: (id: string) => void }) => {
     lastPins = pins;
     if (ref) ref.current = { fitBounds, panTo, getCenter: () => null, getZoom: () => null };
     return (
@@ -36,6 +36,7 @@ const spot = (id: string, lat: number, lng: number): SpotCardData => ({
   lat,
   lng,
   prefecture: "東京都",
+  category: "観光スポット",
   isManualSpot: false,
   postCount: 3,
   averageRating: 4.2,
@@ -117,5 +118,31 @@ describe("SearchMapView（#681）", () => {
     Object.defineProperty(strip, "scrollLeft", { value: 600, configurable: true });
     fireEvent.scroll(strip);
     expect(onLoadMore).not.toHaveBeenCalled();
+  });
+});
+
+/**
+ * #741（2026-10-06）: ピンがカテゴリごとの色に分かれていなかった。
+ * ピンの色と記号は `category` で決まるのに、渡していなかった。
+ */
+describe("ピンの色（#741）", () => {
+  it("カテゴリをピンに渡す", () => {
+    render(
+      <SearchMapView
+        spots={[{ ...spot("a", 35, 139), category: "グルメ" }, { ...spot("b", 36, 140), category: "自然・景勝地" }]}
+        backHref="/search"
+        hasMore={false}
+        isLoading={false}
+        onLoadMore={vi.fn()}
+      />
+    );
+    expect(lastPins.map((pin) => pin.category)).toEqual(["グルメ", "自然・景勝地"]);
+  });
+
+  it("カテゴリが決まらないスポットでも落ちない", () => {
+    render(
+      <SearchMapView spots={[{ ...spot("a", 35, 139), category: null }]} backHref="/search" hasMore={false} isLoading={false} onLoadMore={vi.fn()} />
+    );
+    expect(lastPins[0]!.category).toBeNull();
   });
 });

@@ -21,6 +21,7 @@ const spot = (id: string, overrides: Partial<SpotCardData> = {}): SpotCardData =
   lat: 35.7,
   lng: 139.7,
   prefecture: "東京都",
+  category: "観光スポット",
   isManualSpot: id === "s2",
   postCount: 3,
   averageRating: 4.5,
