@@ -180,3 +180,43 @@ describe("投稿を書く画面の形（#768・#798・#786）", () => {
     expect(newPlace.parentElement).toBe(cancel.parentElement);
   });
 });
+
+/**
+ * #794（2026-10-06）: カテゴリの「おすすめ」
+ * 出典: Issue #794「投稿作成のカテゴリに「おすすめ」を 1 つ出す（既存スポットの代表カテゴリ）」
+ */
+describe("カテゴリのおすすめ（#794）", () => {
+  const withSpot = { ...currentLocation, source: "spot" as const };
+
+  it("既存のスポット（投稿あり）では、カテゴリの下に「おすすめ: 〈代表カテゴリ〉」が 1 つ出る", () => {
+    render(<PostComposeScreen initial={withSpot} api={makeApi()} spotCategory="観光スポット" />);
+    const suggestion = document.querySelector("[data-suggested-category]") as HTMLElement;
+    expect(suggestion).toBeInTheDocument();
+    expect(suggestion.textContent).toContain("おすすめ");
+    expect(suggestion.textContent).toContain("観光スポット");
+  });
+
+  it("押すとカテゴリの欄に入り、おすすめの行は消える", () => {
+    render(<PostComposeScreen initial={withSpot} api={makeApi()} spotCategory="観光スポット" />);
+    expect(screen.getByLabelText("カテゴリ *")).toHaveValue("");
+    fireEvent.click(document.querySelector("[data-suggested-category]") as HTMLElement);
+    expect(screen.getByLabelText("カテゴリ *")).toHaveValue("観光スポット");
+    expect(document.querySelector("[data-suggested-category]")).toBeNull();
+  });
+
+  it("押さなければ欄は空のまま（勝手には入れない）", () => {
+    render(<PostComposeScreen initial={withSpot} api={makeApi()} spotCategory="観光スポット" />);
+    expect(screen.getByLabelText("カテゴリ *")).toHaveValue("");
+  });
+
+  it("投稿の無いスポット・新しい場所では出さない", () => {
+    render(<PostComposeScreen initial={withSpot} api={makeApi()} spotCategory={null} />);
+    expect(document.querySelector("[data-suggested-category]")).toBeNull();
+  });
+
+  it("「宿泊施設」を勧めて押したときは、滞在時間も今までどおり補う", () => {
+    render(<PostComposeScreen initial={withSpot} api={makeApi()} spotCategory="宿泊施設" />);
+    fireEvent.click(document.querySelector("[data-suggested-category]") as HTMLElement);
+    expect(screen.getByLabelText("滞在時間 *")).toHaveValue("宿泊");
+  });
+});

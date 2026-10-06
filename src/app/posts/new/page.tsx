@@ -3,7 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireUserOrRedirect } from "@/lib/auth/require-user-or-redirect";
 import { buildComposeInitialState, type ComposeQuery } from "@/lib/posts/compose-initial-state";
-import { loadExistingPostForCompose, loadSpotForCompose, loadItineraryForCompose } from "@/lib/posts/load-compose-data";
+import { loadExistingPostForCompose, loadSpotForCompose, loadItineraryForCompose, loadSpotCategoryForCompose } from "@/lib/posts/load-compose-data";
 import { PostComposeScreen } from "@/components/posts/PostComposeScreen";
 import { getPostingRestrictionUntil } from "@/lib/moderation/posting-restriction";
 import { ContentEnter } from "@/components/transitions/Reveal";
@@ -43,15 +43,17 @@ export default async function NewPostPage({
     return <PostComposeScreen initial={buildComposeInitialState(query)} existing={existing} postingRestrictedUntil={postingRestrictedUntil} />;
   }
 
-  const [spot, itinerary, postingRestrictedUntil] = await Promise.all([
+  const [spot, itinerary, spotCategory, postingRestrictedUntil] = await Promise.all([
     query.spot ? loadSpotForCompose(admin, query.spot) : Promise.resolve(null),
     query.itinerary ? loadItineraryForCompose(admin, query.itinerary, user.id, query.day) : Promise.resolve(null),
+    // #794: 既存のスポットに投稿するときだけ「おすすめ」を出す
+    query.spot ? loadSpotCategoryForCompose(admin, query.spot) : Promise.resolve(null),
     restrictedUntilPromise,
   ]);
   const initial = buildComposeInitialState(query, { spot, itinerary });
   return (
     <ContentEnter>
-      <PostComposeScreen initial={initial} postingRestrictedUntil={postingRestrictedUntil} />
+      <PostComposeScreen initial={initial} spotCategory={spotCategory} postingRestrictedUntil={postingRestrictedUntil} />
     </ContentEnter>
   );
 }
