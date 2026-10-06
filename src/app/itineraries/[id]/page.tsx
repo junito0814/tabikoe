@@ -9,6 +9,7 @@ import { resolveListBack } from "@/lib/search/list-state";
 import { parseDayTab } from "@/lib/itineraries/day-tabs";
 import { getItinerary, type ItineraryDetail } from "@/lib/itineraries/get-itinerary";
 import { ContentEnter } from "@/components/transitions/Reveal";
+import { itineraryTitle } from "@/lib/metadata/page-title";
 
 /**
  * SC-23 しおり詳細
@@ -17,6 +18,13 @@ import { ContentEnter } from "@/components/transitions/Reveal";
  * 【初心者向け】メンバーでなければ 404（存在も知らせない。3.11.7）。
  * `?day=<n>&spot=<id>` は地図の番号ピンから来たとき（その Day を開き、該当行を強調）。
  */
+/** #785: タブ名はしおりの題名 */
+export async function generateMetadata({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  const title = await itineraryTitle(id);
+  return title ? { title } : {};
+}
+
 export default async function ItineraryPage({
   params,
   searchParams,

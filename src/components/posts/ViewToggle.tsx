@@ -40,7 +40,7 @@ export function ViewToggle({
             role="radio"
             aria-checked={selected}
             onClick={() => !selected && onChange(option.view)}
-            className={`h-7 rounded-full px-3 text-[12px] font-semibold ${selected ? "bg-ink text-on-ink" : "text-muted"}`}
+            className={`tap-target h-7 rounded-full px-3 text-[12px] font-semibold ${selected ? "bg-ink text-on-ink" : "text-muted"}`}
           >
             {option.label}
           </button>

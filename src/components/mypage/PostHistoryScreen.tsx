@@ -54,7 +54,7 @@ export function PostHistoryScreen({
             role="radio"
             aria-checked={view === option}
             onClick={() => view !== option && router.replace(option === "map" ? "/mymap?view=map" : "/mymap")}
-            className={`h-7 rounded-full px-3 text-[12px] font-semibold ${view === option ? "bg-ink text-on-ink" : "text-muted"}`}
+            className={`tap-target h-7 rounded-full px-3 text-[12px] font-semibold ${view === option ? "bg-ink text-on-ink" : "text-muted"}`}
           >
             {option === "list" ? "一覧" : "地図"}
           </button>

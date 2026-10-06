@@ -9,6 +9,7 @@ import { getAlbumDetail, type AlbumDetail } from "@/lib/albums/get-album";
 import { evaluateInvitation } from "@/lib/albums/invitations";
 import { resolveListBack } from "@/lib/search/list-state";
 import { ContentEnter } from "@/components/transitions/Reveal";
+import { tripTitle } from "@/lib/metadata/page-title";
 
 /**
  * SC-09 アルバム画面
@@ -16,6 +17,13 @@ import { ContentEnter } from "@/components/transitions/Reveal";
  *
  * メンバー（オーナー・編集者・閲覧者）のみ。メンバーでなければ404（存在自体を伏せる）。
  */
+/** #785: タブ名はアルバムの題名（旅行の題名） */
+export async function generateMetadata({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  const title = await tripTitle(id);
+  return title ? { title } : {};
+}
+
 export default async function AlbumPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ back?: string }> }) {
   const { id } = await params;
   const { back } = await searchParams;

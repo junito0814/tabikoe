@@ -9,6 +9,9 @@ import { BadgeToast } from "@/components/badges/BadgeToast";
 import { parseBadgeToastParam } from "@/components/badges/badge-toast-params";
 import { FlashNotice, resolveFlashKey } from "@/components/notices/FlashNotice";
 
+// #785: ブラウザのタブ名（「地図 | タビコエ」）
+export const metadata = { title: "地図" };
+
 /**
  * SC-02 地図
  * 出典: docs/tasks/map-search/map-display-v3/02-map-screen-rebuild.md

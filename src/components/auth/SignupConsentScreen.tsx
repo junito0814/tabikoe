@@ -98,7 +98,7 @@ export function SignupConsentScreen({ email, redirectTo = null, api = defaultApi
           * 同じ画面の「登録しています…」と扱いが揃っていなかった（押せなくなるだけで、
           * 何も起きていないように見えた）。
           */}
-        <button type="button" onClick={() => void cancel()} disabled={busy !== null} className="mt-6 text-[13px] font-medium text-muted underline underline-offset-2 disabled:opacity-45">
+        <button type="button" onClick={() => void cancel()} disabled={busy !== null} className="tap-target mt-6 text-[13px] font-medium text-muted underline underline-offset-2 disabled:opacity-45">
           {busy === "cancel" ? "やめています…" : "やめる"}
         </button>
       </div>

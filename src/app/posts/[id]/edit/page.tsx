@@ -6,6 +6,9 @@ import { buildComposeInitialState } from "@/lib/posts/compose-initial-state";
 import { loadExistingPostForCompose } from "@/lib/posts/load-compose-data";
 import { PostComposeScreen } from "@/components/posts/PostComposeScreen";
 
+// #785: ブラウザのタブ名（「投稿を編集 | タビコエ」）
+export const metadata = { title: "投稿を編集" };
+
 /**
  * SC-03 投稿編集画面（編集モード）
  * 出典: docs/tasks/posts/post-edit/03-post-edit-ui.md

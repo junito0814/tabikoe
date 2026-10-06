@@ -23,7 +23,7 @@ export function ReportLink({
   return (
     <Link
       href={buildReportHref({ targetType, targetId, returnTo })}
-      className={`text-[13px] font-medium text-muted underline underline-offset-2 ${className ?? ""}`}
+      className={`tap-target text-[13px] font-medium text-muted underline underline-offset-2 ${className ?? ""}`}
     >
       通報する
     </Link>

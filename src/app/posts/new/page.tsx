@@ -8,6 +8,9 @@ import { PostComposeScreen } from "@/components/posts/PostComposeScreen";
 import { getPostingRestrictionUntil } from "@/lib/moderation/posting-restriction";
 import { ContentEnter } from "@/components/transitions/Reveal";
 
+// #785: ブラウザのタブ名（「投稿を書く | タビコエ」）
+export const metadata = { title: "投稿を書く" };
+
 /**
  * SC-03 投稿画面（新規作成・下書きの続き）
  * 出典: docs/tasks/posts/post-creation-v3/03-split-screen-layout.md

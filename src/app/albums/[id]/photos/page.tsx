@@ -8,6 +8,9 @@ import { AlbumPhotoGalleryScreen } from "@/components/albums/AlbumPhotoGallerySc
 import { getAlbumMediaPage } from "@/lib/albums/album-photos";
 import type { SpotMediaPage } from "@/lib/posts/search-photos";
 
+// #785: ブラウザのタブ名（「写真・動画 | タビコエ」）
+export const metadata = { title: "写真・動画" };
+
 /**
  * SC-21 アルバム写真一覧
  * 出典: docs/tasks/records/album-photos/02-album-photos-screen.md

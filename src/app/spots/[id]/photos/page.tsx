@@ -1,5 +1,8 @@
 import { redirect } from "next/navigation";
 
+// #785: ブラウザのタブ名（「写真・動画 | タビコエ」）
+export const metadata = { title: "写真・動画" };
+
 /**
  * 旧 SC-13 スポット写真一覧（v1）
  * 出典: docs/tasks/map-search/photo-view/01-photos-api-search-params.md

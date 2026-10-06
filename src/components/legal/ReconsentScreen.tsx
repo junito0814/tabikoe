@@ -74,7 +74,7 @@ export function ReconsentScreen({
               </div>
             )}
             {/* #792: 別のタブで開くので戻るは要らないが、同じ画面に着いたときのために来た画面を渡す */}
-            <a href={`${LEGAL_KIND_PATHS[item.kind]}?back=%2Fconsent%2Frenew`} target="_blank" rel="noreferrer" className="text-[12px] text-accent underline underline-offset-2">
+            <a href={`${LEGAL_KIND_PATHS[item.kind]}?back=%2Fconsent%2Frenew`} target="_blank" rel="noreferrer" className="tap-target text-[12px] text-accent underline underline-offset-2">
               全文を読む →
             </a>
             <ConsentCheckbox checked={!!agreed[item.kind]} onChange={(next) => setAgreed((current) => ({ ...current, [item.kind]: next }))} label={LEGAL_KIND_LABELS[item.kind]} />

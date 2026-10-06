@@ -93,7 +93,7 @@ export function ReportForm({
         </p>
         <Link
           href={returnTo}
-          className="mt-2 text-[13px] font-medium text-accent underline underline-offset-2"
+          className="tap-target mt-2 text-[13px] font-medium text-accent underline underline-offset-2"
         >
           元の画面に戻る
         </Link>
@@ -168,7 +168,7 @@ export function ReportForm({
 
         <Link
           href={returnTo}
-          className="text-center text-[13px] font-medium text-muted underline underline-offset-2"
+          className="tap-target text-center text-[13px] font-medium text-muted underline underline-offset-2"
         >
           キャンセル
         </Link>

@@ -7,6 +7,9 @@ import { NotificationListScreen } from "@/components/notifications/NotificationL
 import { getNotificationFeed, type FeedPage } from "@/lib/notifications/feed";
 import { ContentEnter } from "@/components/transitions/Reveal";
 
+// #785: ブラウザのタブ名（「通知 | タビコエ」）
+export const metadata = { title: "通知" };
+
 /**
  * SC-14 通知一覧画面
  * 出典: docs/tasks/notifications/notification-list/02-notification-list-ui.md

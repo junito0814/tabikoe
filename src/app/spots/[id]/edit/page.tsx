@@ -5,6 +5,9 @@ import { requireUserOrRedirect } from "@/lib/auth/require-user-or-redirect";
 import { SpotFixScreen } from "@/components/spots/SpotFixScreen";
 import { loadSpotFixTarget } from "@/lib/moderation/spot-fix";
 
+// #785: ブラウザのタブ名（「スポットの修正 | タビコエ」）
+export const metadata = { title: "スポットの修正" };
+
 export const dynamic = "force-dynamic";
 
 /**

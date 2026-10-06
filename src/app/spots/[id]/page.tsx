@@ -11,6 +11,7 @@ import { loadSearchFirstPage, loadSearchShell, retryableEmptyFirstPage, type Sea
 import { resolveListBack } from "@/lib/search/list-state";
 import { ContentEnter } from "@/components/transitions/Reveal";
 import { officialInfoSlot } from "@/components/spots/OfficialInfo";
+import { spotTitle } from "@/lib/metadata/page-title";
 
 /**
  * SC-04 投稿一覧（スポット別）
@@ -20,6 +21,15 @@ import { officialInfoSlot } from "@/components/spots/OfficialInfo";
  * 中身は `/search?spot=<id>` と同じ（lib/search/load-search-page.ts を共用）。
  * v1 からのリンク（/spots/[id]?sort=）もそのまま動く。
  */
+/**
+ * #785: タブ名はスポット名。見つからない・見られないときは名前を出さない（存在が漏れるため）
+ */
+export async function generateMetadata({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  const name = await spotTitle(id);
+  return name ? { title: name } : {};
+}
+
 export default async function SpotPostsPage({
   params,
   searchParams,
