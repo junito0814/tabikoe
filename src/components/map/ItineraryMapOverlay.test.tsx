@@ -62,11 +62,12 @@ describe("buildItineraryPins", () => {
 
   it("ALL では全日を Day ごとの色（dayIndex）で。日付なしは ALL にだけ出る（v3.1）", () => {
     const pins = buildItineraryPins(itinerary, ALL_DAYS);
+    // #759: ALL の並びは「日付なし」が先頭（一覧と同じ `daysInTab` を見ているので、ピンの番号も一覧と揃う）
     expect(pins.map((pin) => [pin.id, pin.dayIndex])).toEqual([
+      ["d", 0],
       ["b", 1],
       ["a", 1],
       ["c", 2],
-      ["d", 0],
     ]);
   });
 });

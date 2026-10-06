@@ -545,3 +545,29 @@ describe("名前の変更と重なり（#779・#789）", () => {
     expect(document.querySelector("[data-time-picker]")).toBeNull();
   });
 });
+
+describe("ALL の並び（#759）", () => {
+  it("ALL では「日付なし」の塊が Day 1 より上に出る", () => {
+    const data = detail({ spots: [spot("a", { dayIndex: 1 }), spot("z", { dayIndex: null, sortOrder: 9 })] });
+    render(<ItineraryDetailScreen initial={data} viewerId="me" api={makeApi(data)} />);
+    const headings = [...document.querySelectorAll("[data-itinerary-detail] h2")].map((h) => h.textContent);
+    expect(headings).toEqual(["日付なし", "Day 1"]);
+    // 行そのものの順番も「日付なし」が先
+    const rows = [...document.querySelectorAll("[data-itinerary-spot]")].map((row) => row.getAttribute("data-itinerary-spot"));
+    expect(rows).toEqual(["z", "a"]);
+  });
+
+  it("Day 1 などの個別タブは今までどおり（その Day だけ）", () => {
+    const data = detail({ spots: [spot("a", { dayIndex: 1 }), spot("z", { dayIndex: null, sortOrder: 9 })] });
+    render(<ItineraryDetailScreen initial={data} viewerId="me" api={makeApi(data)} initialDay={1} />);
+    const rows = [...document.querySelectorAll("[data-itinerary-spot]")].map((row) => row.getAttribute("data-itinerary-spot"));
+    expect(rows).toEqual(["a"]);
+  });
+
+  it("Day を移す選択肢の並びは変わらない（Day 1〜n → 日付なし）", () => {
+    const data = detail({ spots: [spot("a", { dayIndex: 1 })] });
+    render(<ItineraryDetailScreen initial={data} viewerId="me" api={makeApi(data)} />);
+    fireEvent.click(screen.getByRole("button", { name: /Day を移動/ }));
+    expect(screen.getAllByRole("option").map((option) => option.textContent)).toEqual(["Day 1", "Day 2", "Day 3", "日付なし"]);
+  });
+});

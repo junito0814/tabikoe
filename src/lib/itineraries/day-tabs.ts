@@ -28,9 +28,21 @@ export function dayKeys(dayCount: number): DayKey[] {
   return [...Array.from({ length: dayCount }, (_, i) => i + 1), null];
 }
 
-/** タブに含まれる Day の一覧（ALL は Day の順 → 日付なし）。地図のピンや ALL の一覧の並びに使う */
+/**
+ * タブに含まれる Day の一覧（ALL は **日付なし → Day 1〜n**）。地図のピンや ALL の一覧の並びに使う
+ *
+ * #759（2026-10-06）: ALL のとき「日付なし」を先頭に移した。
+ *
+ * 【初心者向け】スポットは**必ず「日付なし」でしおりに入る**（`SaveSheet` が `addSpot(…, null)`）。
+ * つまり ALL を開いたとき、いちばん手を入れたいのは「まだ Day が決まっていないもの」です。
+ * それが下にあると、スポットが増えるほど下へ流れていきました。先頭に出すと、
+ * しおりを組む作業（日付なし → どこかの Day へ割り振る）がそのまま上から下への流れになります。
+ *
+ * **`dayKeys` は変えていません。** あちらは「どこへ移すか」を選ぶ一覧（Day 移動・保存先シート）なので、
+ * Day が順に並んでいる方が選びやすい。並びを変えるのは**見るための並び**だけです。
+ */
 export function daysInTab(tab: DayTab, dayCount: number): DayKey[] {
-  return tab === ALL_TAB ? [...Array.from({ length: dayCount }, (_, i) => i + 1), null] : [tab];
+  return tab === ALL_TAB ? [null, ...Array.from({ length: dayCount }, (_, i) => i + 1)] : [tab];
 }
 
 /** URL の ?day=（"all"／数字／旧 "undecided"）→ タブ。不正なら ALL */
