@@ -15,6 +15,7 @@ import { resolveInitialCenter, TOKYO_STATION, type InitialCenter, type LatLng } 
 import { MapLegend } from "./MapLegend";
 import type { MapOpenOptions } from "./map-navigation";
 import { NearbyVoices, type FetchNearbyPosts } from "./NearbyVoices";
+import { ItinerarySpotCards } from "./ItinerarySpotCards";
 import { loadMapState, mapEntryFor, saveMapState, shouldRestoreMapState, type MapState } from "@/lib/map/map-state";
 import {
   EMPTY_SPOT_FILTERS,
@@ -225,7 +226,15 @@ export function MapScreen({
     []
   );
   const { itinerary, failed: itineraryFailed, isLoading: itineraryLoading } = useItineraryForMap(isItinerary ? open.itineraryId : null, itineraryApi, onItineraryLoaded);
-  const itineraryPins = useMemo(() => (itinerary ? buildItineraryPins(itinerary, itineraryDay) : []), [itinerary, itineraryDay]);
+  /*
+   * #763（2026-10-06）: 全画面の地図でピンを押したとき、下に出すカードの対象。
+   * 以前はピンを押すと**しおり詳細へ戻って**いたので、見比べたいときは地図を開き直すことになっていた。
+   */
+  const [activeItinerarySpotId, setActiveItinerarySpotId] = useState<string | null>(null);
+  const itineraryPins = useMemo(
+    () => (itinerary ? buildItineraryPins(itinerary, itineraryDay).map((pin) => (pin.id === activeItinerarySpotId ? { ...pin, selected: true } : pin)) : []),
+    [itinerary, itineraryDay, activeItinerarySpotId]
+  );
   // Day を切り替えるたび、そのピンが全部収まる範囲にする。地図がまだ無ければ最初の idle で行う（pendingFitRef）
   const fitKey = itineraryPins.map((pin) => pin.id).join(",");
   const pendingFitRef = useRef(false);
@@ -356,11 +365,12 @@ export function MapScreen({
   const handlePinClick = useCallback(
     (pinId: string) => {
       if (pinId === TEMP_PIN_ID) return;
-      // しおりの番号ピン → しおり詳細のその行へ
+      // #763: しおりの番号ピン → 地図から出ずに、下にそのスポットのカードを出す
       if (isItinerary && open.itineraryId) {
+        setActiveItinerarySpotId(pinId);
         const spot = itinerary?.spots.find((item) => item.spotId === pinId);
-        const dayParam = spot ? (spot.dayIndex === null ? "undecided" : String(spot.dayIndex)) : null;
-        router.push(`/itineraries/${open.itineraryId}?${dayParam ? `day=${dayParam}&` : ""}spot=${pinId}`);
+        // カードに隠れないよう、ピンを画面の上寄りに持ってくる（探すモードと同じ考え方）
+        if (spot) mapRef.current?.panTo({ lat: spot.lat - CALLOUT_OFFSET_DEGREES, lng: spot.lng });
         return;
       }
       const pin = pins.find((item) => item.id === pinId);
@@ -369,7 +379,34 @@ export function MapScreen({
       mapRef.current?.panTo({ lat: pin.lat, lng: pin.lng });
       setCallout({ kind: "pin", pin });
     },
-    [pins, isItinerary, open.itineraryId, itinerary, router]
+    [pins, isItinerary, open.itineraryId, itinerary]
+  );
+
+  /** #763: カードを押したとき。行き先は今までと同じ（しおり詳細のその行） */
+  const openItinerarySpot = useCallback(
+    (spotId: string) => {
+      if (!open.itineraryId) return;
+      const spot = itinerary?.spots.find((item) => item.spotId === spotId);
+      const dayParam = spot ? (spot.dayIndex === null ? "undecided" : String(spot.dayIndex)) : null;
+      router.push(`/itineraries/${open.itineraryId}?${dayParam ? `day=${dayParam}&` : ""}spot=${spotId}`);
+    },
+    [open.itineraryId, itinerary, router]
+  );
+
+  /** #763: Day を切り替えたら、前の Day で選んでいたカードは外す（その Day に無いことがある） */
+  const changeItineraryDay = useCallback((next: ItineraryMapDay) => {
+    setItineraryDay(next);
+    setActiveItinerarySpotId(null);
+  }, []);
+
+  /** #763: 横にはじいて別のカードが中央に来たら、そのピンへ地図を寄せる */
+  const handleActiveItinerarySpot = useCallback(
+    (spotId: string | null) => {
+      setActiveItinerarySpotId(spotId);
+      const spot = spotId ? itinerary?.spots.find((item) => item.spotId === spotId) : null;
+      if (spot) mapRef.current?.panTo({ lat: spot.lat - CALLOUT_OFFSET_DEGREES, lng: spot.lng });
+    },
+    [itinerary]
   );
 
   const handleLongPress = useCallback((position: LatLng) => {
@@ -478,15 +515,15 @@ export function MapScreen({
               </svg>
               {open.back.label}
             </Link>
-            {isItinerary && itinerary ? (
-              <span className="pointer-events-auto ml-auto max-w-[45%] truncate rounded-full bg-surface px-3 py-1.5 text-[12px] font-bold text-ink shadow-card">{itinerary.title}</span>
-            ) : (
-              <MapLegend className="pointer-events-auto ml-auto" />
-            )}
+            {/*
+              * #763: しおりのときは右上に出していたタイトルの帯を外した。
+              * しおりから開いているので、どのしおりかは分かっている。凡例もしおり用のものを下に出している。
+              */}
+            {!isItinerary && <MapLegend className="pointer-events-auto ml-auto" />}
           </div>
           {isItinerary && itinerary && (
             <div className="flex flex-col gap-2">
-              <ItineraryMapOverlay itinerary={itinerary} day={itineraryDay} onChange={setItineraryDay} />
+              <ItineraryMapOverlay itinerary={itinerary} day={itineraryDay} onChange={changeItineraryDay} />
               {itineraryDay === ALL_DAYS && <MapLegend mode="itinerary" dayCount={itinerary.dayCount} className="pointer-events-auto w-fit" />}
             </div>
           )}
@@ -546,8 +583,24 @@ export function MapScreen({
           </div>
         )}
 
-        {/* 右下：現在地・ここに投稿 */}
-        <div className="pointer-events-none absolute bottom-4 right-3 z-10 flex flex-col items-end gap-2">
+        {/*
+          * #763: しおりの全画面でピンを押したら、地図の下端にそのスポットのカードを出す。
+          * 地図の上に重ねる（高さを分け合わない）ので、押していない間は地図が今までどおり全部見える。
+          */}
+        {isItinerary && itinerary && activeItinerarySpotId && (
+          <div className="pointer-events-none absolute inset-x-0 bottom-0 z-20">
+            <ItinerarySpotCards
+              itinerary={itinerary}
+              day={itineraryDay}
+              activeSpotId={activeItinerarySpotId}
+              onActiveChange={handleActiveItinerarySpot}
+              onOpen={openItinerarySpot}
+            />
+          </div>
+        )}
+
+        {/* 右下：現在地・ここに投稿。#763: カードが出ている間はその上に逃がす */}
+        <div className={`pointer-events-none absolute right-3 z-10 flex flex-col items-end gap-2 ${isItinerary && activeItinerarySpotId ? "bottom-[132px]" : "bottom-4"}`}>
           <button
             type="button"
             onClick={() => void locateMe()}

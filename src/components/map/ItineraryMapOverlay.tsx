@@ -3,9 +3,9 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { UnauthorizedError } from "@/lib/api/fetch-with-auth-redirect";
 import type { ItineraryDetail } from "@/lib/itineraries/get-itinerary";
-import { orderSpots } from "@/lib/itineraries/order-spots";
+import { spotsInTab } from "@/lib/itineraries/spots-in-tab";
 import { defaultItineraryApi, type ItineraryApi } from "@/components/itineraries/itinerary-api";
-import { ALL_TAB, dayTabKeys, dayTabLabel, daysInTab, type DayKey, type DayTab } from "@/components/itineraries/DayTabs";
+import { ALL_TAB, dayTabKeys, dayTabLabel, type DayTab } from "@/components/itineraries/DayTabs";
 import type { GoogleMapPin } from "./GoogleMap";
 
 /** 「すべて」を表すタブの値 */
@@ -23,19 +23,17 @@ export type ItineraryMapDay = DayTab;
  * `buildItineraryPins` は純粋関数（単体テストの対象）。
  */
 export function buildItineraryPins(itinerary: ItineraryDetail, day: ItineraryMapDay): GoogleMapPin[] {
-  const days: DayKey[] = daysInTab(day, itinerary.dayCount);
-  return days.flatMap((key) =>
-    orderSpots(itinerary.spots.filter((spot) => spot.dayIndex === key)).map((spot, index) => ({
-      id: spot.spotId,
-      lat: spot.lat,
-      lng: spot.lng,
-      type: "numbered" as const,
-      label: index + 1,
-      dayIndex: key ?? 0,
-      done: spot.checkedAt !== null,
-      title: spot.name,
-    }))
-  );
+  // #763: 並べ方は spotsInTab 1 つに置いた。下のカードも同じものから作るので、ピンとカードがズレない
+  return spotsInTab(itinerary, day).map(({ spot, day: key, number }) => ({
+    id: spot.spotId,
+    lat: spot.lat,
+    lng: spot.lng,
+    type: "numbered" as const,
+    label: number,
+    dayIndex: key ?? 0,
+    done: spot.checkedAt !== null,
+    title: spot.name,
+  }));
 }
 
 export function useItineraryForMap(itineraryId: string | null, api: ItineraryApi = defaultItineraryApi, onLoaded?: (itinerary: ItineraryDetail) => void) {

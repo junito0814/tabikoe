@@ -207,7 +207,7 @@ describe("MapScreen（SC-02 v3.0）", () => {
     const scroller = screen.getByRole("button", { name: /展望台/ }).parentElement as HTMLElement;
     const rect = (left: number, width: number) => () => ({ left, width, right: left + width, top: 0, bottom: 0, height: 0, x: left, y: 0, toJSON: () => ({}) }) as DOMRect;
     scroller.getBoundingClientRect = rect(0, 390);
-    Array.from(scroller.querySelectorAll<HTMLElement>("[data-nearby-card]")).forEach((card, index) => {
+    Array.from(scroller.querySelectorAll<HTMLElement>("[data-map-card]")).forEach((card, index) => {
       card.getBoundingClientRect = rect(index === 1 ? 107 : -79, 176);
     });
     fireEvent.scroll(scroller);
@@ -298,7 +298,7 @@ describe("v3.1（mentoring-7 Task7）: 地図の状態の復元", () => {
     await waitFor(() => expect(fetchNearby).toHaveBeenLastCalledWith(relocated, "walk", EMPTY_SPOT_FILTERS));
     expect(fetchNearby.mock.calls.every((call) => call[0].lat !== 35.652)).toBe(true);
     // 選んでいたカードはそのまま
-    await waitFor(() => expect(document.querySelector("[data-nearby-card=\"p2\"]")).toHaveAttribute("aria-current", "true"));
+    await waitFor(() => expect(document.querySelector("[data-map-card=\"p2\"]")).toHaveAttribute("aria-current", "true"));
     window.sessionStorage.clear();
   });
   /**
