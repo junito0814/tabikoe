@@ -90,7 +90,6 @@ export type MapGesture = "none" | "cooperative" | "greedy";
  * 指で触れる端末（スマホ・タブレット）かどうか。
  *
  * 【初心者向け】画面の幅ではなく「指で触れるか」で見ている（`(pointer: coarse)`）。
- * 幅で判断すると、小さな窓で開いたパソコンからも拡大縮小ボタンが消えてしまうため。
  * サーバー側の描画とテストでは false（＝ボタンを出す側）に倒す。
  */
 export function isCoarsePointer(): boolean {
@@ -98,19 +97,39 @@ export function isCoarsePointer(): boolean {
   return window.matchMedia("(pointer: coarse)").matches;
 }
 
+/** スマホ幅の境目（Tailwind の `md` と同じ） */
+export const PHONE_MAX_WIDTH_PX = 767;
+
+/**
+ * #801（2026-10-06）: スマホ幅かどうか。
+ *
+ * 【初心者向け】拡大縮小ボタンを隠す条件を「指で触れるか」だけで見ていたところ、
+ * **投稿を書く画面の地図にだけ ＋/− が出ていました**。Google マップのアプリにボタンは無く、
+ * 指でつまんで広げるだけです。幅でも見るようにして、スマホ幅ではどの地図にも出しません。
+ * パソコン（768px 以上・指で触れない）では今までどおり出します。
+ */
+export function isPhoneWidth(): boolean {
+  if (typeof window === "undefined" || typeof window.matchMedia !== "function") return false;
+  return window.matchMedia(`(max-width: ${PHONE_MAX_WIDTH_PX}px)`).matches;
+}
+
 /**
  * map-display-v3 Task3 / map-sheet Task1: `new google.maps.Map(...)` に渡すオプション一式（単体テストの対象）
  * 3D・建物・ストリートビュー・地図タイプ切替を無効化し、テーマとズームに応じたスタイルを付ける。
  *
- * 拡大縮小ボタン（＋ −）を出すのは「全画面の地図（greedy）」で「指で触れない端末」のときだけ（4.5.8）。
+ * 拡大縮小ボタン（＋ −）を出すのは「全画面の地図（greedy）」で「指で触れず、スマホ幅でもない」ときだけ（4.5.8・#801）。
  * 上部の地図（cooperative）では、領域が狭いので端末を問わず出さない。
+ *
+ * #787（2026-10-06）: キーボード ショートカットの印（⌨）は**どの地図でも出さない**。
+ * スマホにキーボードは無く、右下の場所を取るだけだった。
+ * 「地図データ ©2026」「利用規約」の表記は Google が別に出すので、これで消えることはない。
  */
 export function buildMapOptions(theme: MapTheme, zoom: number, gesture: MapGesture = "greedy") {
   return {
     ...MAP_UI_OPTIONS,
-    zoomControl: gesture === "greedy" && !isCoarsePointer(),
+    zoomControl: gesture === "greedy" && !isCoarsePointer() && !isPhoneWidth(),
     gestureHandling: gesture,
-    keyboardShortcuts: gesture !== "none",
+    keyboardShortcuts: false,
     styles: buildMapStyles(theme, zoom),
   };
 }

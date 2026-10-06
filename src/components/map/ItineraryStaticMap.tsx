@@ -1,7 +1,6 @@
 "use client";
 
 import { useCallback, useRef, useState } from "react";
-import Link from "next/link";
 import type { ItineraryDetail } from "@/lib/itineraries/get-itinerary";
 import type { DayTab } from "@/components/itineraries/DayTabs";
 import { GoogleMap, type GoogleMapHandle } from "./GoogleMap";
@@ -9,6 +8,7 @@ import { buildItineraryPins } from "./ItineraryMapOverlay";
 import { TOKYO_STATION } from "./initial-center";
 import { isSameView, type MapView } from "./static-map-view";
 import type { LatLng } from "./initial-center";
+import { LOGO_SAFE_CLASS, MapOverlayControls } from "./MapOverlayControls";
 
 /**
  * mentoring-7 Task8（v3.1）: しおり詳細の上 1/3 の地図（開いている Day の番号ピン）
@@ -78,7 +78,8 @@ export function ItineraryStaticMap({
   const href = `/map?itinerary=${itinerary.id}&day=${day}`;
 
   return (
-    <div className={`relative overflow-hidden ${className ?? ""}`} data-itinerary-static-map>
+    /* #764: 地図の中身を 16px 上げて、左下の Google のロゴがシートに隠れないようにする（高さは変えない） */
+    <div className={`relative overflow-hidden ${LOGO_SAFE_CLASS} ${className ?? ""}`} data-itinerary-static-map>
       <GoogleMap
         ref={mapRef}
         initialCenter={first ? { lat: first.lat, lng: first.lng } : TOKYO_STATION}
@@ -90,21 +91,8 @@ export function ItineraryStaticMap({
         onBoundsChange={onBoundsChange}
         className="h-full w-full"
       />
-      {/* シート（MapSheetLayout）が地図の下端に 16px かぶさるので、その分（12 + 16 = 28px）上げて隠れないようにする */}
-      <div className="absolute right-3 bottom-7 z-10 flex items-center gap-2">
-        {moved && (
-          <button
-            type="button"
-            onClick={reset}
-            className="tap-target rounded-full bg-surface/90 px-2.5 py-1 text-[0.6875rem] font-medium text-ink shadow-[0_1px_4px_rgba(30,42,56,0.25)]"
-          >
-            戻す
-          </button>
-        )}
-        <Link href={href} className="tap-target rounded-full bg-ink/80 px-2.5 py-1 text-[0.6875rem] font-medium text-on-ink">
-          地図を全画面に
-        </Link>
-      </div>
+      {/* #760: 「戻す」＋「全画面に」は共通部品（2 か所に同じものを書かない） */}
+      <MapOverlayControls fullscreenHref={href} moved={moved} onReset={reset} />
     </div>
   );
 }
