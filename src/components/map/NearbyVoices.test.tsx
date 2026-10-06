@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { centeredCardIndex, NearbyVoices } from "./NearbyVoices";
-import type { NearbyPost } from "@/lib/posts/nearby-posts";
+import type { NearbySpot } from "@/lib/posts/nearby-spots";
 import { EMPTY_SPOT_FILTERS } from "@/lib/map/spot-aggregate";
 
 const push = vi.fn();
@@ -12,11 +12,11 @@ vi.mock("next/navigation", () => ({ useRouter: () => ({ push, replace: vi.fn(), 
  * - 中央にいちばん近いカードを選ぶ。右端まで送ったら最後のカードが選ばれる
  * - 移動手段の選択肢が 5 つ（徒歩・自転車・車・電車・バス）
  */
-const post = (id: string): NearbyPost => ({
-  id,
-  spotId: `s-${id}`,
+const post = (id: string): NearbySpot => ({
+  // #769: カードはスポット単位になったので、鍵はスポットの id
+  spotId: id,
   spotName: `スポット ${id}`,
-  commentExcerpt: null,
+  latestComment: null, postCount: 1, averageRating: null,
   thumbnailUrl: null,
   lat: 35.68,
   lng: 139.76,
@@ -68,7 +68,7 @@ describe("NearbyVoices（近くのスポット）", () => {
     await waitFor(() => expect(document.querySelectorAll("[data-map-card]")).toHaveLength(3));
     const scroller = stubLayout(390, [-265, -79, 107]);
     scroller.dispatchEvent(new Event("scroll", { bubbles: true }));
-    await waitFor(() => expect(onActiveChange).toHaveBeenCalledWith(expect.objectContaining({ id: "c" })));
+    await waitFor(() => expect(onActiveChange).toHaveBeenCalledWith(expect.objectContaining({ spotId: "c" })));
   });
 
   it("map-restore: 詳細から戻ったときは前に選んでいたカードから始まる", async () => {
@@ -78,19 +78,19 @@ describe("NearbyVoices（近くのスポット）", () => {
         center={{ lat: 35.68, lng: 139.76 }}
         fetchPosts={async () => [post("a"), post("b"), post("c")]}
         onActiveChange={onActiveChange}
-        initialActiveSpotId="s-c"
+        initialActiveSpotId="c"
       />
     );
-    await waitFor(() => expect(onActiveChange).toHaveBeenCalledWith(expect.objectContaining({ id: "c" })));
+    await waitFor(() => expect(onActiveChange).toHaveBeenCalledWith(expect.objectContaining({ spotId: "c" })));
     expect(document.querySelector("[data-map-card='c']")).toHaveAttribute("aria-current", "true");
   });
 
   it("map-restore: 覚えていたカードが無くなっていたら先頭から始まる", async () => {
     const onActiveChange = vi.fn();
     render(
-      <NearbyVoices center={{ lat: 35.68, lng: 139.76 }} fetchPosts={async () => [post("a"), post("b")]} onActiveChange={onActiveChange} initialActiveSpotId="s-zzz" />
+      <NearbyVoices center={{ lat: 35.68, lng: 139.76 }} fetchPosts={async () => [post("a"), post("b")]} onActiveChange={onActiveChange} initialActiveSpotId="zzz" />
     );
-    await waitFor(() => expect(onActiveChange).toHaveBeenCalledWith(expect.objectContaining({ id: "a" })));
+    await waitFor(() => expect(onActiveChange).toHaveBeenCalledWith(expect.objectContaining({ spotId: "a" })));
   });
 
   it("Task3: 選ばれていないカードのタップは選ぶだけ（画面は移らない）、選ばれているカードのタップで投稿一覧へ", async () => {
@@ -101,11 +101,11 @@ describe("NearbyVoices（近くのスポット）", () => {
     // 2 枚目（選ばれていない）を押す → 選ばれるだけ
     fireEvent.click(document.querySelector("[data-map-card='b']") as HTMLElement);
     expect(push).not.toHaveBeenCalled();
-    expect(onActiveChange).toHaveBeenLastCalledWith(expect.objectContaining({ id: "b" }));
+    expect(onActiveChange).toHaveBeenLastCalledWith(expect.objectContaining({ spotId: "b" }));
     expect(document.querySelector("[data-map-card='b']")).toHaveAttribute("aria-current", "true");
     // もう一度押す → そのスポットの投稿一覧へ
     fireEvent.click(document.querySelector("[data-map-card='b']") as HTMLElement);
-    expect(push).toHaveBeenCalledWith("/spots/s-b?back=%2Fmap%3Fmode%3Dexplore");
+    expect(push).toHaveBeenCalledWith("/spots/b?back=%2Fmap%3Fmode%3Dexplore");
   });
 
   it("Task3: カードはリンクではなくボタン（キーボードでも押せる）", async () => {

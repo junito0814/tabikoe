@@ -8,7 +8,7 @@ import { fetchWithAuthRedirect, UnauthorizedError } from "@/lib/api/fetch-with-a
 import { requestCurrentPosition } from "@/lib/geo/use-current-position";
 import { isSameBounds, type MapBounds, type MapPinData } from "@/lib/map/get-map-pins";
 import { composeHref } from "@/lib/posts/compose-initial-state";
-import type { NearbyPost } from "@/lib/posts/nearby-posts";
+import type { NearbySpot } from "@/lib/posts/nearby-spots";
 import { GoogleMap, type GoogleMapHandle, type GoogleMapPin } from "./GoogleMap";
 import { resolveInitialCenter, TOKYO_STATION, type InitialCenter, type LatLng } from "./initial-center";
 import { MapLegend } from "./MapLegend";
@@ -68,16 +68,16 @@ const CALLOUT_OFFSET_DEGREES = 0.0007;
  * 分からないときは `null` にして、吹き出し側で**出さない**ようにした。
  * 単体テストの対象（情報あり／なし）。
  */
-export function nearbyPinFrom(post: NearbyPost, pins: MapPinData[]): MapPinData {
-  const known = pins.find((pin) => pin.spotId === post.spotId);
+export function nearbyPinFrom(spot: NearbySpot, pins: MapPinData[]): MapPinData {
+  const known = pins.find((pin) => pin.spotId === spot.spotId);
   if (known) return known;
   // 表示範囲の外などでピンがまだ取れていないときは、カードの情報だけで最低限の吹き出しを出す
   return {
-    id: post.spotId,
-    spotId: post.spotId,
-    name: post.spotName,
-    lat: post.lat,
-    lng: post.lng,
+    id: spot.spotId,
+    spotId: spot.spotId,
+    name: spot.spotName,
+    lat: spot.lat,
+    lng: spot.lng,
     kind: "post",
     category: null,
     prefecture: null,
@@ -227,7 +227,7 @@ export function MapScreen({
   );
   const [isLocating, setIsLocating] = useState(false);
   const [activeNearbySpotId, setActiveNearbySpotId] = useState<string | null>(null);
-  const [nearbyPosts, setNearbyPosts] = useState<NearbyPost[]>([]);
+  const [nearbySpots, setNearbySpots] = useState<NearbySpot[]>([]);
 
   // ── しおりの地図（itinerary-map-and-post Task1）──
   const isItinerary = open.mode === "itinerary";
@@ -448,13 +448,13 @@ export function MapScreen({
   // 探すモード: 中央のカードに対応するピンを強調し、そのカードも覚える（map-restore Task1）。
   // Task3（2026-09-25）: そのスポットの吹き出しも開く。吹き出しは下のカードに隠れないよう、
   // 地図の中心をピンより少し南（画面では下）に置いて、ピンと吹き出しを上半分に見せる
-  const handleActiveNearby = useCallback((post: NearbyPost | null) => {
-    setActiveNearbySpotId(post?.spotId ?? null);
-    activeSpotRef.current = post?.spotId ?? null;
-    if (post) {
-      mapRef.current?.panTo({ lat: post.lat - CALLOUT_OFFSET_DEGREES, lng: post.lng });
+  const handleActiveNearby = useCallback((spot: NearbySpot | null) => {
+    setActiveNearbySpotId(spot?.spotId ?? null);
+    activeSpotRef.current = spot?.spotId ?? null;
+    if (spot) {
+      mapRef.current?.panTo({ lat: spot.lat - CALLOUT_OFFSET_DEGREES, lng: spot.lng });
       setTempPin(null);
-      setCallout({ kind: "pin", pin: nearbyPinFrom(post, pinsRef.current) });
+      setCallout({ kind: "pin", pin: nearbyPinFrom(spot, pinsRef.current) });
     } else {
       setCallout(null);
     }
@@ -500,7 +500,7 @@ export function MapScreen({
     // 探すモードで「近くのスポット」にあるスポットが範囲内のピンに無ければ（100 件上限など）補う
     if (open.mode === "explore") {
       const known = new Set(result.map((pin) => pin.id));
-      for (const post of nearbyPosts) {
+      for (const post of nearbySpots) {
         if (known.has(post.spotId)) continue;
         known.add(post.spotId);
         result.push({ id: post.spotId, lat: post.lat, lng: post.lng, type: post.spotId === focusId ? "focus" : "post", title: post.spotName });
@@ -508,7 +508,7 @@ export function MapScreen({
     }
     if (tempPin) result.push({ id: TEMP_PIN_ID, lat: tempPin.lat, lng: tempPin.lng, type: "focus", title: "この地点" });
     return result;
-  }, [pins, tempPin, open.mode, open.focusSpotId, open.savedOnly, activeNearbySpotId, nearbyPosts, isItinerary, itineraryPins]);
+  }, [pins, tempPin, open.mode, open.focusSpotId, open.savedOnly, activeNearbySpotId, nearbySpots, isItinerary, itineraryPins]);
 
   const postHereHref = currentLocation
     ? composeHref({ kind: "current", lat: currentLocation.lat, lng: currentLocation.lng })
@@ -637,7 +637,7 @@ export function MapScreen({
             backHref={selfHref}
             fetchPosts={fetchNearby}
             onActiveChange={handleActiveNearby}
-            onPostsLoaded={setNearbyPosts}
+            onPostsLoaded={setNearbySpots}
             initialMode={restored?.travel ?? openProp.travel}
             initialActiveSpotId={restored?.activeSpotId ?? null}
             filters={filters}

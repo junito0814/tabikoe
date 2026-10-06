@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { appendBackHref } from "@/lib/search/list-state";
 import { fetchWithAuthRedirect, UnauthorizedError } from "@/lib/api/fetch-with-auth-redirect";
-import type { NearbyPost } from "@/lib/posts/nearby-posts";
+import type { NearbySpot } from "@/lib/posts/nearby-spots";
 import { DEFAULT_TRAVEL_MODE, formatTravelMinutes, TRAVEL_MODE_LABELS, TRAVEL_MODES, type TravelMode } from "@/lib/geo/travel-time";
 import {
   activeSpotFilterCount,
@@ -23,7 +23,7 @@ import { Select } from "@/components/ui/Select";
 // #763: 計算は card-strip.ts へ移した（しおりの全画面のカード帯と共通）。読む側の都合でここからも出しておく
 export { centeredCardIndex, scrollToCard };
 
-export type FetchNearbyPosts = (center: { lat: number; lng: number }, mode: TravelMode, filters: SpotFilters) => Promise<NearbyPost[]>;
+export type FetchNearbyPosts = (center: { lat: number; lng: number }, mode: TravelMode, filters: SpotFilters) => Promise<NearbySpot[]>;
 
 /**
  * explore-mode Task 4: 絞り込みシートに渡す形。
@@ -75,8 +75,8 @@ export function NearbyVoices({
   backHref?: string | null;
   fetchPosts?: FetchNearbyPosts;
   /** 中央に来たカードの投稿（ピンの強調用）。無ければ null */
-  onActiveChange?: (post: NearbyPost | null) => void;
-  onPostsLoaded?: (posts: NearbyPost[]) => void;
+  onActiveChange?: (spot: NearbySpot | null) => void;
+  onPostsLoaded?: (spots: NearbySpot[]) => void;
   initialMode?: TravelMode;
   /** v3.1: 移動手段を切り替えたとき（地図の状態の保存用） */
   onModeChange?: (mode: TravelMode) => void;
@@ -89,7 +89,7 @@ export function NearbyVoices({
 }) {
   const [mode, setMode] = useState<TravelMode>(initialMode);
   const [isSheetOpen, setIsSheetOpen] = useState(false);
-  const [posts, setPosts] = useState<NearbyPost[] | null>(null);
+  const [posts, setPosts] = useState<NearbySpot[] | null>(null);
   const [activeIndex, setActiveIndex] = useState(0);
   /*
    * loading-feedback Task 4-2（2026-10-02）: 移動手段を変えた直後に古い結果を残さない。
@@ -170,15 +170,15 @@ export function NearbyVoices({
    * 地図で場所を確かめてから開けるので、押し間違いで画面が変わらない。
    */
   const selectOrOpen = (index: number) => {
-    const post = posts?.[index];
-    if (!post) return;
+    const spot = posts?.[index];
+    if (!spot) return;
     restoreSpotRef.current = null; // 利用者が選んだら、復元の指定は忘れる
     if (index === activeIndex) {
-      router.push(appendBackHref(`/spots/${post.spotId}`, backHref));
+      router.push(appendBackHref(`/spots/${spot.spotId}`, backHref));
       return;
     }
     setActiveIndex(index);
-    onActiveChangeRef.current?.(post);
+    onActiveChangeRef.current?.(spot);
     scrollToCard(scrollerRef.current, index);
   };
 
@@ -259,27 +259,39 @@ export function NearbyVoices({
           className="-mx-4 flex snap-x snap-mandatory gap-[10px] overflow-x-auto px-4 pb-1"
           style={{ scrollbarWidth: "none" }}
         >
-          {visiblePosts.map((post, index) => (
+          {/* #769: カードはスポット単位。1 枚に ★平均・投稿件数・最新の感想・いちばん近い所要時間 */}
+          {visiblePosts.map((spot, index) => (
             <button
-              key={post.id}
+              key={spot.spotId}
               type="button"
               onClick={() => selectOrOpen(index)}
-              {...{ [CARD_ATTRIBUTE]: post.id }}
+              {...{ [CARD_ATTRIBUTE]: spot.spotId }}
               aria-current={index === activeIndex ? "true" : undefined}
               className={`flex w-[176px] shrink-0 snap-center flex-col gap-1 rounded-[12px] border p-2.5 text-left ${
                 index === activeIndex ? "border-accent" : "border-line"
               } bg-surface`}
             >
-              <span className="truncate text-[0.8125rem] font-bold text-ink">{post.spotName}</span>
-              {post.commentExcerpt && <span className="line-clamp-2 text-[0.6875rem] leading-[1.5] text-muted">{post.commentExcerpt}</span>}
+              <span className="truncate text-[0.8125rem] font-bold text-ink">{spot.spotName}</span>
+              <span className="flex items-center gap-1.5 text-[0.6875rem] text-muted">
+                {spot.averageRating !== null && (
+                  <span>
+                    <span className="text-star" aria-hidden>
+                      ★
+                    </span>
+                    {spot.averageRating}
+                  </span>
+                )}
+                <span data-spot-post-count>投稿 {spot.postCount} 件</span>
+              </span>
+              {spot.latestComment && <span className="line-clamp-2 text-[0.6875rem] leading-[1.5] text-muted">{spot.latestComment}</span>}
               <span className="mt-auto flex items-center gap-2 text-[0.6875rem] text-muted">
                 <span className="block h-10 w-10 shrink-0 overflow-hidden rounded-[6px] bg-line">
-                  {post.thumbnailUrl && (
+                  {spot.thumbnailUrl && (
                     // eslint-disable-next-line @next/next/no-img-element
-                    <img src={post.thumbnailUrl} alt="" className="h-full w-full object-cover" />
+                    <img src={spot.thumbnailUrl} alt="" className="h-full w-full object-cover" />
                   )}
                 </span>
-                <span data-travel-minutes>{formatTravelMinutes(post.minutes ?? post.walkMinutes, post.mode ?? mode)}</span>
+                <span data-travel-minutes>{formatTravelMinutes(spot.minutes ?? spot.walkMinutes, spot.mode ?? mode)}</span>
               </span>
             </button>
           ))}
@@ -289,12 +301,12 @@ export function NearbyVoices({
   );
 }
 
-async function defaultFetchNearbyPosts(center: { lat: number; lng: number }, mode: TravelMode, filters: SpotFilters = EMPTY_SPOT_FILTERS): Promise<NearbyPost[]> {
+async function defaultFetchNearbyPosts(center: { lat: number; lng: number }, mode: TravelMode, filters: SpotFilters = EMPTY_SPOT_FILTERS): Promise<NearbySpot[]> {
   const params = new URLSearchParams({ lat: String(center.lat), lng: String(center.lng), mode });
   // explore-mode Task 4: 条件は API にも渡す（サーバーが同じ判定で絞る）
   for (const [key, value] of spotFiltersToParams(filters)) params.set(key, value);
   const response = await fetchWithAuthRedirect(`/api/posts/nearby?${params.toString()}`);
   if (!response.ok) throw new Error(`Failed to fetch nearby posts: ${response.status}`);
-  const data = (await response.json()) as { posts: NearbyPost[] };
+  const data = (await response.json()) as { posts: NearbySpot[] };
   return data.posts;
 }

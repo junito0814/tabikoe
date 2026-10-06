@@ -5,6 +5,7 @@ import { getTravelMinutes } from "@/lib/google/routes-cache";
 import { travelMinutes, TRAVEL_RADIUS_METERS, type TravelMode } from "@/lib/geo/travel-time";
 import { createPostPhotoUrls } from "@/lib/posts/signed-url";
 import { boundsAround } from "@/lib/posts/search-posts";
+import { aggregateNearbySpots, type NearbySpot } from "./nearby-spots";
 
 /**
  * explore-mode Task1: 近くの投稿 API のロジック
@@ -58,6 +59,8 @@ export interface NearbyPostRow {
   id: string;
   spot_id: string;
   comment: string | null;
+  /** #769: スポット単位にまとめるとき、★の平均を出すのに使う */
+  rating: number | null;
   spots: { id: string; name: string; lat: number; lng: number } | { id: string; name: string; lat: number; lng: number }[] | null;
   post_photos: { storage_url: string | null; display_order: number; hidden_at?: string | null }[];
 }
@@ -79,7 +82,7 @@ export function selectNearbyPosts(
    * スポットの投稿を途中までしか取れないので、ここで計算すると**ピンとカードで判定が食い違う**。
    */
   allowedSpotIds: ReadonlySet<string> | null = null
-): (Omit<NearbyPost, "thumbnailUrl"> & { thumbnailPath: string | null })[] {
+): (Omit<NearbyPost, "thumbnailUrl"> & { thumbnailPath: string | null; rating: number | null })[] {
   return rows
     .flatMap((row) => {
       const spot = Array.isArray(row.spots) ? row.spots[0] : row.spots;
@@ -97,6 +100,8 @@ export function selectNearbyPosts(
             ? Array.from(row.comment).slice(0, EXCERPT_LENGTH).join("") + (Array.from(row.comment).length > EXCERPT_LENGTH ? "…" : "")
             : null,
           thumbnailPath: photo?.storage_url ?? null,
+          // #769: スポット単位にまとめるときの★の平均に使う
+          rating: typeof row.rating === "number" ? row.rating : null,
           lat: spot.lat,
           lng: spot.lng,
           distanceMeters: Math.round(distance),
@@ -122,13 +127,14 @@ export async function getNearbyPosts(
     /** 差し替え口（単体テスト用）。既定は Routes API＋10 分キャッシュ */
     travelMinutesFetcher?: (origin: { lat: number; lng: number }, destinations: { lat: number; lng: number }[], mode: TravelMode) => Promise<(number | null)[]>;
   } = {}
-): Promise<NearbyPost[]> {
+): Promise<NearbySpot[]> {
   const { allowedSpotIds = null, travelMinutesFetcher = getTravelMinutes } = options;
   const blockedIds = await getBlockedUserIds(admin, viewerId);
   const box = boundsAround(center, radiusMeters);
   let query = admin
     .from("posts")
-    .select("id, spot_id, comment, spots!inner(id, name, lat, lng), post_photos(storage_url, display_order, hidden_at)")
+    // #769: スポット単位にまとめるので rating も読む
+    .select("id, spot_id, comment, rating, spots!inner(id, name, lat, lng), post_photos(storage_url, display_order, hidden_at)")
     .eq("visibility", "public")
     .eq("status", "published")
     .is("hidden_at", null)
@@ -143,17 +149,25 @@ export async function getNearbyPosts(
   const { data, error } = await query;
   if (error) throw error;
 
-  const selected = selectNearbyPosts((data ?? []) as unknown as NearbyPostRow[], center, radiusMeters, NEARBY_POSTS_LIMIT, mode, allowedSpotIds);
+  /*
+   * #769（2026-10-06）: **件数を絞る前に**スポットごとにまとめる。
+   *
+   * 【初心者向け】以前は投稿を 20 件に絞ってから返していました。浅草寺に 3 件あると
+   * **その 3 件で 20 のうち 3 枠を使う**ので、カードが「浅草寺・浅草寺・浅草寺…」と並び、
+   * 近くに何か所あるのかが分かりませんでした。先にまとめてから**スポットを 20 件**に絞ります。
+   */
+  const posts = selectNearbyPosts((data ?? []) as unknown as NearbyPostRow[], center, radiusMeters, NEARBY_FETCH_CAP, mode, allowedSpotIds);
+  const selected = aggregateNearbySpots(posts, NEARBY_POSTS_LIMIT);
 
   // travel-time Task2（2026-09-25）: 車・電車・バスは Routes API の実測に差し替える。
   // 取れなかった分（経路なし・API 障害）は selectNearbyPosts が入れた直線距離の計算のまま残す
   const [signed, apiMinutes] = await Promise.all([
-    createPostPhotoUrls(admin, selected.flatMap((post) => (post.thumbnailPath ? [post.thumbnailPath] : []))),
-    travelMinutesFetcher(center, selected.map((post) => ({ lat: post.lat, lng: post.lng })), mode),
+    createPostPhotoUrls(admin, selected.flatMap((spot) => (spot.thumbnailPath ? [spot.thumbnailPath] : []))),
+    travelMinutesFetcher(center, selected.map((spot) => ({ lat: spot.lat, lng: spot.lng })), mode),
   ]);
-  return selected.map(({ thumbnailPath, ...post }, index) => ({
-    ...post,
-    minutes: apiMinutes[index] ?? post.minutes,
+  return selected.map(({ thumbnailPath, ...spot }, index) => ({
+    ...spot,
+    minutes: apiMinutes[index] ?? spot.minutes,
     thumbnailUrl: thumbnailPath ? (signed.get(thumbnailPath) ?? null) : null,
   }));
 }
