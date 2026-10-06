@@ -82,7 +82,8 @@ describe("CommentSection", () => {
     );
     fireEvent.change(screen.getByRole("textbox", { name: "コメント本文" }), { target: { value: "あ".repeat(4001) } });
     expect(screen.getByRole("button", { name: "コメントする" })).toBeDisabled();
-    expect(screen.getByText(/残り-1文字/)).toBeInTheDocument();
+    // #772: 数字の前後に半角空白（「投稿 3 件」と同じ書き方）
+    expect(screen.getByText(/残り -1 文字/)).toBeInTheDocument();
   });
 
   it("非公開投稿ではフォームを出さない", () => {
@@ -136,5 +137,59 @@ describe("CommentSection（v3.2: 返信）", () => {
     await waitFor(() => expect(remove).toHaveBeenCalledWith("root"));
     await waitFor(() => expect(document.querySelector("[data-comment='root'] [data-deleted-comment]")).toBeInTheDocument());
     expect(document.querySelector("[data-comment='r1']")).toBeInTheDocument();
+  });
+});
+
+/**
+ * 本5-4（2026-10-06）: コメント欄
+ * - #772: 空のときから「残り4,000文字（4,000文字まで）」と同じ数字が 2 回出ていた
+ * - #803: 入力欄が一覧の上にあり、読んでから書くには上まで戻る必要があった
+ */
+describe("コメント欄（#772・#803）", () => {
+  const show = () =>
+    render(<CommentSection postId="p1" canComment returnTo="/posts/p1" initialPage={{ comments: [], nextOffset: null, totalCount: 0 }} api={api()} />);
+
+  it("#772: 空のときは文字数を出さない", () => {
+    show();
+    expect(document.querySelector("[data-remaining]")).toBeNull();
+  });
+
+  it("#772: 打ち始めると「残り 3,999 文字」。「（4,000文字まで）」は出さない", () => {
+    show();
+    fireEvent.change(screen.getByRole("textbox", { name: "コメント本文" }), { target: { value: "あ" } });
+    expect(document.querySelector("[data-remaining]")?.textContent).toBe("残り 3,999 文字");
+    expect(document.body.textContent).not.toContain("文字まで");
+  });
+
+  it("#803: 入力欄は画面の下に固定（メニューバーがあるときはその上）", () => {
+    show();
+    const form = document.querySelector("[data-comment-form]") as HTMLElement;
+    expect(form.className).toContain("fixed");
+    expect(form.className).toContain("bottom-0");
+    expect(form.className).toContain("[body:has([data-menu-bar])_&]:bottom-[60px]");
+  });
+
+  it("#803: 返信の札は入力欄の中（上）に出て、× で外せる", () => {
+    render(
+      <CommentSection
+        postId="p1"
+        canComment
+        returnTo="/posts/p1"
+        initialPage={{ comments: [comment("c1", true)], nextOffset: null, totalCount: 1 }}
+        api={api()}
+      />
+    );
+    fireEvent.click(screen.getAllByRole("button", { name: "返信" })[0]);
+    const form = document.querySelector("[data-comment-form]") as HTMLElement;
+    expect(form.querySelector("[data-reply-to]")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "返信をやめる" }));
+    expect(document.querySelector("[data-reply-to]")).toBeNull();
+  });
+
+  it("#803: 送るボタンは丸い記号のボタン（読み上げには「コメントする」）", () => {
+    show();
+    const submit = screen.getByRole("button", { name: "コメントする" });
+    expect(submit.className).toContain("rounded-full");
+    expect(submit.querySelector("svg")).toBeInTheDocument();
   });
 });
