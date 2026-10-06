@@ -34,6 +34,17 @@ export interface SaveResult {
   /** 最後に保存したしおり（トースト用） */
   savedItinerary: { id: string; title: string } | null;
   wishlisted: boolean;
+  /**
+   * #758（2026-10-06）: **いま**どれかのしおりに入っているか。
+   *
+   * 【初心者向け】`savedItinerary` は「**今このシートで追加した**しおり」なので、
+   * 外したときは `null` のままです。それだけでは「どのしおりにも入っていない」のか
+   * 「元から入っている別のしおりがある」のかが区別できず、
+   * 「他のしおりに入っているのに ＋ に戻る」という逆の間違いが起きます。
+   * シートは一覧（`items`）を持ち、追加・削除のたびに `containsSpot` を更新しているので、
+   * **今の本当の状態**をここで返します。
+   */
+  inAnyItinerary: boolean;
 }
 
 export function SaveSheet({
@@ -208,7 +219,8 @@ function SaveSheetBody({
     }, "しおりを作成できませんでした");
   };
 
-  const close = () => onClose({ savedItinerary, wishlisted });
+  // #758: 閉じるときに「いまどれかのしおりに入っているか」も返す
+  const close = () => onClose({ savedItinerary, wishlisted, inAnyItinerary: (items ?? []).some((item) => item.containsSpot === true) });
   const title = showWishlist ? "保存先" : `${spotName ?? "このスポット"} をしおりへ`;
 
   return (

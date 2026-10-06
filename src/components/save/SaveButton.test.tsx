@@ -147,3 +147,49 @@ describe("loading-feedback Task 3: 保存シートは押した瞬間にチェッ
     expect(checkbox).not.toBeChecked();
   });
 });
+
+/**
+ * #758（2026-10-06）: 外しても「＋」に戻らなかった
+ * 出典: Issue #758「Bug 5: 行きたい・しおりから外しても「＋」に戻らず「✓」のまま」
+ *
+ * 【初心者向け】`items` は「しおり it-2 に入っている」状態（`containsSpot: true`）。
+ * シートを閉じたときの「✓ か ＋ か」が、**今の本当の状態**に合うかを見る。
+ */
+describe("外したら ＋ に戻る（#758）", () => {
+  const openSheet = () => fireEvent.click(screen.getByRole("button", { name: /保存/ }));
+  const closeSheet = () => fireEvent.click(document.querySelector("[data-close-button]") as HTMLElement);
+
+  it("行きたいを外し、どのしおりにも入っていなければ ＋ に戻る", async () => {
+    const api = makeApi();
+    api.itineraries.list = vi.fn(async () => ({ items: items.map((item) => ({ ...item, containsSpot: false })) }));
+    render(<SaveButton spotId="s1" initialSaved api={api} />);
+    openSheet();
+    await waitFor(() => expect(screen.getByRole("checkbox", { name: /行きたい/ })).toBeInTheDocument());
+    fireEvent.click(screen.getByRole("checkbox", { name: /行きたい/ })); // 外す
+    await waitFor(() => expect(api.toggleWishlist).toHaveBeenCalledWith("s1", false));
+    closeSheet();
+    expect(screen.getByRole("button", { name: "保存する" })).toBeInTheDocument();
+  });
+
+  it("行きたいを外しても、どれかのしおりに入っていれば ✓ のまま", async () => {
+    const api = makeApi(); // it-2 は containsSpot: true
+    render(<SaveButton spotId="s1" initialSaved api={api} />);
+    openSheet();
+    await waitFor(() => expect(screen.getByRole("checkbox", { name: /行きたい/ })).toBeInTheDocument());
+    fireEvent.click(screen.getByRole("checkbox", { name: /行きたい/ }));
+    await waitFor(() => expect(api.toggleWishlist).toHaveBeenCalledWith("s1", false));
+    closeSheet();
+    expect(screen.getByRole("button", { name: "保存済み" })).toBeInTheDocument();
+  });
+
+  it("しおりから外し、行きたいにも入っていなければ ＋ に戻る", async () => {
+    const api = makeApi();
+    render(<SaveButton spotId="s1" initialSaved={false} api={api} />);
+    openSheet();
+    await waitFor(() => expect(screen.getByRole("checkbox", { name: /北海道旅行/ })).toBeInTheDocument());
+    fireEvent.click(screen.getByRole("checkbox", { name: /北海道旅行/ })); // 入っていたので外れる
+    await waitFor(() => expect(api.itineraries.removeSpot).toHaveBeenCalled());
+    closeSheet();
+    expect(screen.getByRole("button", { name: "保存する" })).toBeInTheDocument();
+  });
+});
