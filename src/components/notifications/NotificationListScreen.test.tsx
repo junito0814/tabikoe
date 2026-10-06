@@ -24,11 +24,11 @@ vi.mock("next/navigation", () => ({
  * - 遷移先が無いケースのフォールバック表示
  */
 const items: FeedItem[] = [
-  { kind: "announcement", id: "a-new", title: "新しいお知らせ", body: "本文", publishedAt: "2026-09-14T00:00:00Z", isNew: true },
+  { kind: "announcement", isRead: false, id: "a-new", title: "新しいお知らせ", body: "本文", publishedAt: "2026-09-14T00:00:00Z", isNew: true },
   { kind: "notification", id: "n-unread", type: "like", relatedId: "p1", isRead: false, createdAt: "2026-09-13T00:00:00Z", message: "いいねが付きました", href: "/posts/p1", fallbackMessage: null },
   { kind: "notification", id: "n-read", type: "comment", relatedId: "c1", isRead: true, createdAt: "2026-09-12T00:00:00Z", message: "コメントが付きました", href: "/posts/p1", fallbackMessage: null },
   { kind: "notification", id: "n-gone", type: "report_resolved", relatedId: "r1", isRead: false, createdAt: "2026-09-11T00:00:00Z", message: "通報に対応しました", href: null, fallbackMessage: "対象は削除されました" },
-  { kind: "announcement", id: "a-old", title: "古いお知らせ", body: "本文", publishedAt: "2026-08-01T00:00:00Z", isNew: false },
+  { kind: "announcement", isRead: false, id: "a-old", title: "古いお知らせ", body: "本文", publishedAt: "2026-08-01T00:00:00Z", isNew: false },
 ];
 
 const api = (overrides: Partial<NotificationApi> = {}): NotificationApi => ({
@@ -75,7 +75,8 @@ describe("NotificationListScreen（SC-14）", () => {
     window.addEventListener(NOTIFICATIONS_READ_EVENT, listener);
     render(<NotificationListScreen initialPage={{ items, nextOffset: null }} api={api({ markRead })} />);
     openNotification("n-unread");
-    await waitFor(() => expect(markRead).toHaveBeenCalledWith(["n-unread"]));
+    await waitFor(() => // #754: どちらの表か（kind）も渡すようになった
+    expect(markRead).toHaveBeenCalledWith(["n-unread"], "notification"));
     await waitFor(() => expect(listener).toHaveBeenCalled());
     window.removeEventListener(NOTIFICATIONS_READ_EVENT, listener);
   });
@@ -98,7 +99,7 @@ describe("NotificationListScreen（SC-14）", () => {
     render(<NotificationListScreen initialPage={{ items, nextOffset: null }} api={api({ markUnread })} />);
     openNotification("n-read");
     fireEvent.click(screen.getByRole("button", { name: "未読に戻す" }));
-    await waitFor(() => expect(markUnread).toHaveBeenCalledWith(["n-read"]));
+    await waitFor(() => expect(markUnread).toHaveBeenCalledWith(["n-read"], "notification"));
     await waitFor(() => expect(document.querySelector("[data-notification='n-read']")!.className).toContain("bg-tint"));
   });
 
@@ -189,5 +190,57 @@ describe("NotificationListScreen（v3.2: アプリ内招待の通知）", () => 
     fireEvent.click(screen.getByRole("button", { name: "辞退" }));
     await waitFor(() => expect(a.respondInvitation).toHaveBeenCalledWith("inv-1", "itinerary", "decline"));
     await waitFor(() => expect(screen.getByText(/辞退しました/)).toBeInTheDocument());
+  });
+});
+
+/**
+ * 本7-1（2026-10-06）
+ * - #754: 運営からのお知らせに未読・既読が無かった
+ * - #775: 未読が 0 件でも「すべて既読にする」が出ていた
+ */
+describe("お知らせの未読（#754・#775）", () => {
+  const unreadAnnouncement = { kind: "announcement" as const, isRead: false, id: "a-unread", title: "お知らせ", body: "本文", publishedAt: "2026-10-06T00:00:00Z", isNew: true };
+  const readAnnouncement = { ...unreadAnnouncement, id: "a-read", isRead: true, isNew: false };
+
+  it("#754: 未読のお知らせには青い丸が付く。既読なら付かない", () => {
+    render(<NotificationListScreen initialPage={{ items: [unreadAnnouncement, readAnnouncement], nextOffset: null }} api={api()} />);
+    expect(document.querySelector("[data-announcement='a-unread']")).toHaveAttribute("data-unread", "true");
+    expect(document.querySelector("[data-announcement='a-read']")).not.toHaveAttribute("data-unread");
+  });
+
+  it("#754: 開くと既読にする（どちらの表かも渡す）", async () => {
+    const markRead = vi.fn(async () => Response.json({ updated: 1 }));
+    render(<NotificationListScreen initialPage={{ items: [unreadAnnouncement], nextOffset: null }} api={api({ markRead })} />);
+    fireEvent.click(document.querySelector("[data-announcement='a-unread']") as HTMLElement);
+    await waitFor(() => expect(markRead).toHaveBeenCalledWith(["a-unread"], "announcement"));
+  });
+
+  it("#754: お知らせでも「未読に戻す」が使える", async () => {
+    const markUnread = vi.fn(async () => Response.json({ updated: 1 }));
+    render(<NotificationListScreen initialPage={{ items: [readAnnouncement], nextOffset: null }} api={api({ markUnread })} />);
+    fireEvent.click(document.querySelector("[data-announcement='a-read']") as HTMLElement);
+    fireEvent.click(await screen.findByRole("button", { name: "未読に戻す" }));
+    await waitFor(() => expect(markUnread).toHaveBeenCalledWith(["a-read"], "announcement"));
+  });
+
+  it("#754: 「NEW」は未読のときだけ（既読のものに「新着」と言わない）", () => {
+    const readButNew = { ...unreadAnnouncement, id: "a-x", isRead: true, isNew: false };
+    render(<NotificationListScreen initialPage={{ items: [unreadAnnouncement, readButNew], nextOffset: null }} api={api()} />);
+    expect(document.querySelector("[data-announcement='a-unread'] [data-new-badge]")).toBeInTheDocument();
+    expect(document.querySelector("[data-announcement='a-x'] [data-new-badge]")).toBeNull();
+  });
+
+  it("#775: 未読が 1 件も無ければ「すべて既読にする」を出さない", () => {
+    const { unmount } = render(<NotificationListScreen initialPage={{ items: [readAnnouncement], nextOffset: null }} api={api()} />);
+    expect(document.querySelector("[data-mark-all-read]")).toBeNull();
+    unmount();
+    render(<NotificationListScreen initialPage={{ items: [unreadAnnouncement], nextOffset: null }} api={api()} />);
+    expect(document.querySelector("[data-mark-all-read]")).toBeInTheDocument();
+  });
+
+  it("#775: 押して全部既読になった直後に消える", async () => {
+    render(<NotificationListScreen initialPage={{ items: [unreadAnnouncement], nextOffset: null }} api={api()} />);
+    fireEvent.click(document.querySelector("[data-mark-all-read]") as HTMLElement);
+    await waitFor(() => expect(document.querySelector("[data-mark-all-read]")).toBeNull());
   });
 });
