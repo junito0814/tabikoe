@@ -40,15 +40,25 @@ describe("TrashButton", () => {
 describe("削除を出す画面は、この部品を使う", () => {
   const read = (p: string) => readFileSync(p, "utf8");
 
-  it("コメント・しおりの行・下書き・アルバムの 4 つ", () => {
+  it("コメント・しおりの行・下書きの 3 つ", () => {
     for (const path of [
       "src/components/comments/CommentSection.tsx",
       "src/components/itineraries/ItinerarySpotRow.tsx",
       "src/components/mypage/DraftsSection.tsx",
-      "src/components/albums/AlbumScreen.tsx",
     ]) {
       expect(read(path), `${path} が TrashButton を使っていない`).toContain("<TrashButton");
     }
+  });
+
+  /**
+   * #742（2026-10-06）: アルバムの削除だけは**印ではなく「⋯」のメニューの中**に移した。
+   * しおり詳細が既に同じ形で、画面に赤いものを出さずに済むため。
+   */
+  it("アルバムの削除は「⋯」のメニューの中（ゴミ箱の印ではない）", () => {
+    const source = read("src/components/albums/AlbumScreen.tsx");
+    expect(source).not.toContain("<TrashButton");
+    expect(source).toContain('role="menuitem"');
+    expect(source).toContain("このアルバムを削除");
   });
 
   /** 確認ダイアログの文言は変えない（取り消せない操作の説明は文字で残す） */

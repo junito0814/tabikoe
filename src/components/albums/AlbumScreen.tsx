@@ -1,9 +1,7 @@
 "use client";
 
-import { useState, type FormEvent, useMemo } from "react";
+import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import Link from "next/link";
-import { TrashButton } from "@/components/ui/TrashButton";
-import { PencilIcon } from "@/components/ui/LineIcons";
 import { InAppInvitePanel, searchUsersRequest, type InAppInviteApi } from "@/components/invitations/InAppInvitePanel";
 import type { InviteCandidate } from "@/lib/invitations/in-app";
 import type { UserSummary } from "@/lib/users/search-users";
@@ -84,6 +82,23 @@ export function AlbumScreen({
   const [inviteRole, setInviteRole] = useState<InvitableRole>("viewer");
   const [issuedPath, setIssuedPath] = useState<string | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
+  /*
+   * #742: 削除は「⋯」の中（しおり詳細と同じ形）。
+   * 投稿が 0 件のときだけ出す ── 投稿があるアルバムを消すと中の投稿も一緒に消えるため。
+   */
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+  const canDeleteAlbum = canManage && album.posts.length === 0 && api.deleteAlbum !== undefined;
+
+  // 外をタップしたら閉じる（しおり詳細と同じ）
+  useEffect(() => {
+    if (!isMenuOpen) return;
+    const onPointerDown = (event: PointerEvent) => {
+      if (!menuRef.current?.contains(event.target as Node)) setIsMenuOpen(false);
+    };
+    document.addEventListener("pointerdown", onPointerDown);
+    return () => document.removeEventListener("pointerdown", onPointerDown);
+  }, [isMenuOpen]);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   // すべての操作の共通枠。busy に操作名を入れて、完了まで他のボタンを無効にする
@@ -248,43 +263,63 @@ export function AlbumScreen({
           ) : (
             // v3.1（mentoring-7 Task9）: 「名前を変更」ボタンは置かない。しおりが無いアルバムだけタイトルをタップで変更。
             // しおりがあるアルバムは名前をしおり詳細のタイトルで変える（名前は 1 つ）
-            canManage && !album.itineraryId ? (
-              <button
-                type="button"
-                onClick={() => {
-                  setDraftTitle(title);
-                  setIsRenaming(true);
-                }}
-                aria-label={`${title}（名前を変更）`}
-                className="flex min-w-0 items-start gap-1.5 text-left text-[20px] font-bold text-ink"
-              >
-                <span className="min-w-0 break-words">{title}</span>
-                {/* #713: 絵文字をやめ、線の鉛筆にした（「押すと変えられる」の合図） */}
-                <span className="mt-1 text-muted">
-                  <PencilIcon size={13} />
-                </span>
-              </button>
-            ) : (
-              <h1 className="min-w-0 break-words text-[20px] font-bold text-ink">{title}</h1>
-            )
+            /*
+             * #742: タイトルの鉛筆の印を外した（押せば編集できるものに印を付けない。#694 と同じ考え方）。
+             * 右に「⋯」を置き、削除はその中へ移した（しおり詳細と同じ形）。
+             */
+            <div className="flex items-start gap-2" ref={menuRef}>
+              {canManage && !album.itineraryId ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setDraftTitle(title);
+                    setIsRenaming(true);
+                  }}
+                  aria-label={`${title}（名前を変更）`}
+                  className="min-w-0 flex-1 break-words text-left text-[20px] font-bold text-ink"
+                >
+                  {title}
+                </button>
+              ) : (
+                <h1 className="min-w-0 flex-1 break-words text-[20px] font-bold text-ink">{title}</h1>
+              )}
+              {canDeleteAlbum && (
+                <div className="relative shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => setIsMenuOpen((open) => !open)}
+                    aria-haspopup="menu"
+                    aria-expanded={isMenuOpen}
+                    aria-label="その他"
+                    className="h-8 w-8 rounded-full border border-line bg-surface text-[14px] font-bold text-ink"
+                  >
+                    ⋯
+                  </button>
+                  {isMenuOpen && (
+                    <ul role="menu" className="absolute right-0 z-20 mt-1 min-w-[170px] overflow-hidden rounded-[10px] border border-line bg-surface py-1 shadow-card">
+                      <li role="presentation">
+                        <button
+                          type="button"
+                          role="menuitem"
+                          onClick={() => {
+                            setIsMenuOpen(false);
+                            void handleDeleteAlbum();
+                          }}
+                          disabled={busy !== null}
+                          className="flex w-full px-3 py-2 text-left text-[13px] text-saved hover:bg-tint disabled:opacity-45"
+                        >
+                          {busy === "delete" ? "削除しています…" : "このアルバムを削除"}
+                        </button>
+                      </li>
+                    </ul>
+                  )}
+                </div>
+              )}
+            </div>
           )}
           <p className="text-[11px] text-muted">
             あなたの権限: {ALBUM_ROLE_LABELS[album.viewerRole]} ・ 投稿 {album.posts.length}件 ・ メンバー {members.length}人
           </p>
-          {/*
-            * #715: 投稿が 0 件のときだけ消せる。
-            * 投稿があるアルバムを消すと中の投稿も一緒に消えてしまうので、ボタン自体を出さない
-            * （消したいなら先に投稿を消してもらう）。ゴミ箱の印は #695 と同じ形。
-            */}
-          {canManage && album.posts.length === 0 && api.deleteAlbum && (
-            <TrashButton
-              onClick={() => void handleDeleteAlbum()}
-              label="このアルバムを削除"
-              disabled={busy !== null}
-              busy={busy === "delete"}
-              className="border border-line"
-            />
-          )}
           <div className="flex flex-wrap gap-2">
             {/* F-RC-05（SC-21）: このアルバムの写真・動画だけを並べて眺める（非公開投稿も含む） */}
             <Link href={`/albums/${album.tripId}/photos`} className="inline-flex h-8 w-fit items-center gap-1 rounded-full border border-line bg-surface px-3 text-[12px] font-semibold text-ink">

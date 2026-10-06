@@ -115,3 +115,38 @@ describe("SearchTopScreen", () => {
     expect(storage.getItem("tabikoe:map-state")).toBeNull();
   });
 });
+
+/**
+ * #740（2026-10-06）: 候補の下がメニューバーに隠れ、**Google のロゴまで見えなくなっていた**。
+ * 規約が求める表記なので、見えないのは出していないのと同じ。
+ */
+describe("候補がメニューバーに隠れない（#740）", () => {
+  async function openSuggestions() {
+    render(<SearchTopScreen api={api} geolocation={granted} />);
+    fireEvent.change(screen.getByRole("combobox", { name: "行き先" }), { target: { value: "おおさ" } });
+    await act(async () => {
+      vi.advanceTimersByTime(350);
+    });
+    await screen.findByRole("option", { name: /^大阪府/ });
+    return document.querySelector("[data-google-maps-attribution]")!.closest("div.absolute") ?? screen.getAllByRole("listbox")[0]!.closest("div.absolute")!;
+  }
+
+  it("メニューバー（z-40）より上に出る", async () => {
+    const panel = await openSuggestions();
+    expect(panel.className).toContain("z-50");
+  });
+
+  it("高さに上限があり、はみ出さない", async () => {
+    const panel = await openSuggestions();
+    expect(panel.className).toContain("max-h-[min(420px,50dvh)]");
+  });
+
+  /** ロゴがスクロールの中にあると、スクロールしないと見えない＝規約の求めを満たさない */
+  it("Google のロゴはスクロールの外にある（常に見える）", async () => {
+    await openSuggestions();
+    const logo = document.querySelector("[data-google-maps-attribution]")!;
+    const scroller = document.querySelector(".overflow-y-auto");
+    expect(scroller).not.toBeNull();
+    expect(scroller!.contains(logo)).toBe(false);
+  });
+});

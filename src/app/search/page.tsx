@@ -6,6 +6,7 @@ import { ErrorNotice } from "@/components/notices/ErrorNotice";
 import { ERROR_MESSAGES } from "@/components/notices/error-messages";
 import { Suspense } from "react";
 import { StreamingSpotPostListScreen, StreamingSpotSearchScreen } from "@/components/posts/StreamingSearchScreens";
+import { officialInfoSlot } from "@/components/spots/OfficialInfo";
 import { MapSheetSkeleton, PostSearchSkeleton } from "@/components/skeleton/Skeletons";
 import { loadSearchFirstPage, loadSearchShell, retryableEmptyFirstPage, type SearchPageQuery } from "@/lib/search/load-search-page";
 import { resolveListBack } from "@/lib/search/list-state";
@@ -48,7 +49,15 @@ export default async function SearchPage({ searchParams }: { searchParams: Promi
     const back = resolveListBack(typeof query.back === "string" ? query.back : null);
     return (
       <Suspense fallback={<MapSheetSkeleton backLabel={back?.label ?? "地図"} title={data.spot.name} />}>
-        <StreamingSpotPostListScreen spot={data.spot} initialState={data.initialState} addMode={data.addMode} back={back} firstPage={firstPage} />
+        <StreamingSpotPostListScreen
+          spot={data.spot}
+          initialState={data.initialState}
+          addMode={data.addMode}
+          back={back}
+          firstPage={firstPage}
+          /* #739: 検索結果のカードから開く経路。ここに差し込んでいなかったので公式情報が出ていなかった */
+          official={officialInfoSlot(data.spot.id)}
+        />
       </Suspense>
     );
   }

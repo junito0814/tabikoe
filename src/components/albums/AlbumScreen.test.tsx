@@ -166,3 +166,34 @@ describe("4-8: アルバムの各操作の待ち表示", () => {
     expect(screen.getByRole("button", { name: "無効化しています…" })).toBeInTheDocument();
   });
 });
+
+/**
+ * #742（2026-10-06）: アルバムの削除を「⋯」のメニューへ移し、タイトルの鉛筆の印を外した。
+ * しおり詳細と同じ形（決定事項・2026-10-06 の相談）。
+ */
+describe("削除の置き場所と鉛筆の印（#742）", () => {
+  const owned = () => <AlbumScreen album={album("owner")} initialInvitations={[]} viewerId="me" api={api({ deleteAlbum: vi.fn(async () => Response.json({ ok: true })) })} />;
+
+  it("タイトルに鉛筆の印を出さない（タップで名前を変えられるのは今までどおり）", () => {
+    render(owned());
+    const title = screen.getByRole("button", { name: /（名前を変更）$/ });
+    expect(title.querySelector("svg")).toBeNull();
+  });
+
+  it("投稿 0 件のオーナーには「⋯」が出て、中に削除がある", () => {
+    render(owned());
+    fireEvent.click(screen.getByRole("button", { name: "その他" }));
+    expect(screen.getByRole("menuitem", { name: "このアルバムを削除" })).toBeInTheDocument();
+  });
+
+  it("画面にゴミ箱のボタンが浮いていない", () => {
+    render(owned());
+    expect(document.querySelector("[data-trash-button]")).toBeNull();
+  });
+
+  it("投稿があるアルバムでは「⋯」を出さない（写真ごと消える事故を防ぐ）", () => {
+    const withPost = { ...album("owner"), posts: [{ id: "p1", spotId: "s1", spotName: "浅草寺", isManualSpot: false, category: "観光スポット", visitDate: null, duration: null, cost: null, rating: 4, commentExcerpt: null, latestComment: null, commentCount: 0, likeCount: 0, viewerHasLiked: false, viewerHasSaved: false, author: { id: "owner", displayName: "おーなー", avatarUrl: "/default-avatar.svg", isDeleted: false }, media: [], createdAt: "2026-09-01T00:00:00Z", latestStatus: null, walkMinutes: null, visibility: "public" as const, tripTitle: "夏の東北旅行" }] } as unknown as AlbumDetail;
+    render(<AlbumScreen album={withPost} initialInvitations={[]} viewerId="me" api={api({ deleteAlbum: vi.fn(async () => Response.json({ ok: true })) })} />);
+    expect(screen.queryByRole("button", { name: "その他" })).toBeNull();
+  });
+});

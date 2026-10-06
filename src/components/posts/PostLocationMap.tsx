@@ -25,6 +25,7 @@ export const LOCATION_PICK_ZOOM = 17;
 export function PostLocationMap({
   initialCenter,
   lockedPosition,
+  panTarget = null,
   onCenterChange,
   onMovedChange,
   onCurrentLocationResolved,
@@ -35,6 +36,14 @@ export function PostLocationMap({
   initialCenter: LatLng | null;
   /** 既存スポットを選んでいるときの固定位置 */
   lockedPosition: LatLng | null;
+  /**
+   * #738: ここへ寄せるだけ（固定はしない）。
+   *
+   * 【初心者向け】`lockedPosition` は「スポットが決まったので、もう動かさない」という意味。
+   * 確定の一手（#700）は**まだ決まっていない状態**で地図だけ動かしたいので、別の受け口にした。
+   * **値が変わったときだけ**寄せる ── 地図を動かすたびに来る中心を渡すと、寄せ続けてしまう。
+   */
+  panTarget?: LatLng | null;
   onCenterChange: (center: LatLng) => void;
   onMovedChange?: (moved: boolean) => void;
   /** 現在地の取得結果（fallback＝拒否）を親に知らせる */
@@ -100,6 +109,11 @@ export function PostLocationMap({
   useEffect(() => {
     if (lockedPosition) mapRef.current?.panTo(lockedPosition, LOCATION_PICK_ZOOM);
   }, [lockedPosition]);
+
+  // #738: 確定を待っている候補の位置へ寄せる（固定はしない。中央のピンはそのまま動かせる）
+  useEffect(() => {
+    if (panTarget) mapRef.current?.panTo(panTarget, LOCATION_PICK_ZOOM);
+  }, [panTarget]);
 
   const isFallback = resolvedFromCurrent === false && !initialCenter;
 

@@ -103,6 +103,13 @@ export function PostComposeScreen({
   const [isResolvingSpot, setIsResolvingSpot] = useState(false);
   const [moved, setMoved] = useState(false);
   const [centerFromCurrent, setCenterFromCurrent] = useState(initial.centerFromCurrentLocation);
+  /*
+   * #738: 候補を選んだときだけ動かす行き先。
+   *
+   * 【初心者向け】`position`（地図の中心）は地図を動かすたびに変わるので、それを地図に返すと
+   * 寄せ続けてしまう。候補を選んだ瞬間にだけ変わる値を別に持つ。
+   */
+  const [panTarget, setPanTarget] = useState<LatLng | null>(null);
   const mapInitialCenter = useMemo<LatLng | null>(() => existing?.position ?? initial.center, [existing?.position, initial.center]);
 
   // 地図が止まるたびに近くの登録済みスポットを調べる（固定中は調べない）
@@ -330,6 +337,7 @@ export function PostComposeScreen({
         <PostLocationMap
           initialCenter={mapInitialCenter}
           lockedPosition={lockedSpot ? { lat: lockedSpot.lat, lng: lockedSpot.lng } : null}
+          panTarget={panTarget}
           onCenterChange={handleCenterChange}
           onMovedChange={setMoved}
           onCurrentLocationResolved={({ center, fromCurrentLocation }) => {
@@ -389,6 +397,8 @@ export function PostComposeScreen({
                   position={position}
                   onMoveMapTo={(next) => {
                     setPosition(next);
+                    // #738: 地図を実際に動かすのはこちら（固定はしない）
+                    setPanTarget(next);
                     setMoved(true);
                   }}
                 />

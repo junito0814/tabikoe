@@ -5,6 +5,8 @@ import { createPostPhotoUrls } from "@/lib/posts/signed-url";
 import { findSavedSpotIds } from "./saved-spots";
 import { findLatestSpotStatuses, representativeMedia } from "@/lib/posts/post-cards";
 import { applyFilters, baseQuery, matchesFilters, SEARCH_PAGE_SIZE, type PostSearchFilters, type SearchRow } from "@/lib/posts/search-posts";
+import { resolveSpotCategory } from "@/lib/map/spot-category";
+import type { PostCategory } from "@/lib/posts/constants";
 
 /**
  * mentoring-7 Task3（v3.1）: 検索結果のスポット単位化
@@ -39,6 +41,11 @@ export interface SpotCardData {
   postCount: number;
   /** ★の平均（小数 1 桁）。評価の無い投稿は除いて平均する */
   averageRating: number | null;
+  /**
+   * #741: スポットの代表カテゴリ（ピンの色と記号を決める）。
+   * **ピンの色を決めているのと同じ関数**（`resolveSpotCategory`）で出すので、地図と一覧で食い違わない。
+   */
+  category: PostCategory | null;
   /** 最新の投稿の 1 枚目 */
   coverUrl: string | null;
   coverMediaType: "photo" | "video" | null;
@@ -75,6 +82,8 @@ export interface SpotAggregate {
   latestComment: string | null;
   coverPath: string | null;
   coverMediaType: "photo" | "video" | null;
+  /** #741: 代表カテゴリを出すための材料（投稿のカテゴリと日付） */
+  categoryInputs: { category: string; createdAt: string }[];
 }
 
 /** 投稿の行をスポットごとにまとめる（純粋関数）。行は新着順で渡す前提（先頭が最新） */
@@ -95,6 +104,8 @@ export function aggregateSpotCards(rows: SearchRow[]): SpotAggregate[] {
         postCount: 0,
         ratingSum: 0,
         ratingCount: 0,
+        // #741: 代表カテゴリを出すために、投稿のカテゴリと日付を集める
+        categoryInputs: [],
         latestPostAt: row.created_at,
         latestComment: firstLine(row.comment),
         coverPath: media?.storage_url ?? null,
@@ -103,6 +114,7 @@ export function aggregateSpotCards(rows: SearchRow[]): SpotAggregate[] {
       bySpot.set(spot.id, agg);
     }
     agg.postCount += 1;
+    agg.categoryInputs.push({ category: row.category, createdAt: row.created_at });
     if (typeof row.rating === "number") {
       agg.ratingSum += row.rating;
       agg.ratingCount += 1;
@@ -168,6 +180,7 @@ export async function searchSpotCards(
     isManualSpot: spot.source === "manual",
     postCount: spot.postCount,
     averageRating: spot.ratingCount > 0 ? Math.round((spot.ratingSum / spot.ratingCount) * 10) / 10 : null,
+    category: resolveSpotCategory(spot.categoryInputs),
     coverUrl: spot.coverPath ? (urls.get(spot.coverPath) ?? null) : null,
     coverMediaType: spot.coverMediaType,
     latestComment: spot.latestComment,
