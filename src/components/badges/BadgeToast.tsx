@@ -63,7 +63,7 @@ export function BadgeToast({
           </ul>
           <Link
             href="/badges"
-            className="mt-1.5 inline-block text-[11px] font-medium text-muted underline underline-offset-2"
+            className="tap-target mt-1.5 inline-block text-[11px] font-medium text-muted underline underline-offset-2"
           >
             バッジ一覧を見る
           </Link>

@@ -11,6 +11,7 @@ import { MapSheetSkeleton, PostSearchSkeleton } from "@/components/skeleton/Skel
 import { loadSearchFirstPage, loadSearchShell, retryableEmptyFirstPage, type SearchPageQuery } from "@/lib/search/load-search-page";
 import { resolveListBack } from "@/lib/search/list-state";
 import { ContentEnter } from "@/components/transitions/Reveal";
+import { searchPageTitle } from "@/lib/metadata/page-title";
 
 /**
  * SC-04 投稿一覧（タイムライン形式・検索結果）
@@ -23,6 +24,13 @@ import { ContentEnter } from "@/components/transitions/Reveal";
  * 読み込みは lib/search/load-search-page.ts にまとめ、行き先の種類で画面を出し分ける。
  * 「戻る」は検索トップ（ホーム）へ。スポット別は `?back=`（検索結果から来たならその URL）へ、無ければ地図へ（Bug #469）。
  */
+/** #785: タブ名は行き先（「大阪府の投稿」「大阪城」など）。条件なしは「みんなの投稿」 */
+export async function generateMetadata({ searchParams }: { searchParams: Promise<SearchPageQuery> }) {
+  const query = await searchParams;
+  const title = await searchPageTitle(query);
+  return title ? { title } : {};
+}
+
 export default async function SearchPage({ searchParams }: { searchParams: Promise<SearchPageQuery> }) {
   const supabase = await createClient();
   const query = await searchParams;

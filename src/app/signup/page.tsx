@@ -5,6 +5,9 @@ import { SignupConsentScreen } from "@/components/auth/SignupConsentScreen";
 import { safeRedirectPath } from "@/lib/safe-redirect";
 import { ContentEnter } from "@/components/transitions/Reveal";
 
+// #785: ブラウザのタブ名（「同意 | タビコエ」）
+export const metadata = { title: "同意" };
+
 /**
  * SC-20 同意画面（signup-login Task11、2026-09-22）
  * 出典: docs/tasks/account/signup-login/11-google-once-signup.md

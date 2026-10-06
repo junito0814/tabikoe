@@ -62,7 +62,7 @@ export default function DeleteAccountDialog({ isAdmin }: { isAdmin: boolean }) {
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="text-[13px] font-medium text-accent underline underline-offset-2"
+        className="tap-target text-[13px] font-medium text-accent underline underline-offset-2"
       >
         退会する
       </button>

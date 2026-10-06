@@ -8,6 +8,9 @@ import { listItineraries } from "@/lib/itineraries/get-itinerary";
 import { todayInJst } from "@/lib/posts/constants";
 import { ContentEnter } from "@/components/transitions/Reveal";
 
+// #785: ブラウザのタブ名（「計画 | タビコエ」）
+export const metadata = { title: "計画" };
+
 /**
  * SC-22 しおり一覧
  * 出典: docs/tasks/itinerary/itinerary-basics/02-itinerary-list-screen.md

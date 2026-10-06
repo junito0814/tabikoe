@@ -7,6 +7,9 @@ import { getMyPosts, getMyTripOptions } from "@/lib/users/my-page";
 import { getMyDrafts } from "@/lib/posts/drafts";
 import { ContentEnter } from "@/components/transitions/Reveal";
 
+// #785: ブラウザのタブ名（「投稿履歴 | タビコエ」）
+export const metadata = { title: "投稿履歴" };
+
 /**
  * SC-12 投稿履歴（#682。v3.1 の「あしあと」から改称。URL は変えていない）
  * 出典: docs/tasks/records/my-page-v4/01-post-history.md

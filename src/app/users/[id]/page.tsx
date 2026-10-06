@@ -6,6 +6,7 @@ import { isBlockedEitherWay } from "@/lib/blocks/get-blocked-user-ids";
 import { BlockUserButton } from "@/components/blocks/BlockUserButton";
 import { ReportLink } from "@/components/reports/ReportLink";
 import { DEFAULT_AVATAR_URL } from "@/lib/users/constants";
+import { userTitle } from "@/lib/metadata/page-title";
 
 /**
  * F-AC-05 Task5: 退会後のプロフィール非表示処理
@@ -21,6 +22,13 @@ import { DEFAULT_AVATAR_URL } from "@/lib/users/constants";
  * 他人のプロフィールを閲覧できるようにAdminクライアントで参照している。
  * 閲覧範囲の正式なポリシー設計はF-RC-01側で行う。
  */
+/** #785: タブ名は表示名。退会済み・見つからないときは出さない */
+export async function generateMetadata({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  const name = await userTitle(id);
+  return name ? { title: name } : {};
+}
+
 export default async function UserProfilePage({
   params,
 }: {

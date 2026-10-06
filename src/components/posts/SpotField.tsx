@@ -310,7 +310,7 @@ export function SpotField({
         <button
           type="button"
           onClick={() => onUnlock({ lat: lockedSpot.lat, lng: lockedSpot.lng })}
-          className="self-end text-[11px] font-medium text-muted underline underline-offset-2"
+          className="tap-target self-end text-[11px] font-medium text-muted underline underline-offset-2"
         >
           この付近の新しい場所
         </button>

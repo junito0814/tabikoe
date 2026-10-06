@@ -5,6 +5,9 @@ import { isReportTargetType, isUuid } from "@/lib/reports/validate-report-input"
 import { ReportForm } from "@/components/reports/ReportForm";
 import { buildReportHref } from "@/components/reports/report-href";
 
+// #785: ブラウザのタブ名（「報告 | タビコエ」）
+export const metadata = { title: "報告" };
+
 /**
  * SC-11 通報画面
  * 出典: docs/tasks/safety/reporting/02-report-screen-ui.md

@@ -6,6 +6,9 @@ import { BadgeScreen } from "@/components/badges/BadgeScreen";
 import { getBadgeStatuses, type BadgeStatus } from "@/lib/badges/badge-status";
 import { ContentEnter } from "@/components/transitions/Reveal";
 
+// #785: ブラウザのタブ名（「バッジ | タビコエ」）
+export const metadata = { title: "バッジ" };
+
 /**
  * SC-10 ステータスバッジ画面
  * 出典: docs/tasks/badges/status-badges/04-badge-screen-ui.md

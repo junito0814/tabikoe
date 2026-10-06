@@ -10,6 +10,9 @@ import { getMyPageSummary } from "@/lib/users/my-page";
 import { getBadgeStatuses } from "@/lib/badges/badge-status";
 import { ContentEnter } from "@/components/transitions/Reveal";
 
+// #785: ブラウザのタブ名（「マイページ | タビコエ」）
+export const metadata = { title: "マイページ" };
+
 /**
  * SC-06 マイページ
  * 出典: docs/tasks/records/my-page/00-index.md

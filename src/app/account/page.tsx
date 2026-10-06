@@ -11,6 +11,9 @@ import { BlockedUsersList, type BlockedUser } from "@/components/blocks/BlockedU
 import { createAdminClient } from "@/lib/supabase/admin";
 import { ContentEnter } from "@/components/transitions/Reveal";
 
+// #785: ブラウザのタブ名（「アカウント | タビコエ」）
+export const metadata = { title: "アカウント" };
+
 /**
  * プロフィール編集画面（SC-07）
  * 出典: docs/tasks/account/profile-edit/00-index.md, docs/tasks/account/logout/00-index.md,

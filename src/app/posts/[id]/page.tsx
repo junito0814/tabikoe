@@ -12,6 +12,7 @@ import { FlashNotice, resolveFlashKey } from "@/components/notices/FlashNotice";
 import { getPostDetail, type PostDetailData } from "@/lib/posts/post-detail";
 import { listComments, type CommentPage } from "@/lib/comments/list-comments";
 import { ContentEnter } from "@/components/transitions/Reveal";
+import { postTitle } from "@/lib/metadata/page-title";
 
 /**
  * SC-05 投稿詳細画面
@@ -22,6 +23,13 @@ import { ContentEnter } from "@/components/transitions/Reveal";
  * ログイン後に redirect_to でこの投稿へ戻す（F-AC-02 Task3 / F-AC-01 コールバックと共通の仕組み）。
  * 非公開投稿は投稿者本人・アルバムメンバー以外には 404（存在しない扱い）。
  */
+/** #785: タブ名は「〈スポット名〉の投稿」。下書き・非公開・削除では名前を出さない */
+export async function generateMetadata({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  const title = await postTitle(id);
+  return title ? { title } : {};
+}
+
 export default async function PostDetailPage({
   params,
   searchParams,

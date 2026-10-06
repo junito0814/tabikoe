@@ -151,7 +151,7 @@ export function PostDetailScreen({
             <h1 className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[18px] font-bold leading-tight text-ink">
               <Link
                 href={appendBackHref(`/spots/${post.spot.id}`, selfHref)}
-                className="min-w-0 break-words"
+                className="tap-target min-w-0 break-words"
               >
                 {post.spot.name}
               </Link>
@@ -244,7 +244,7 @@ export function PostDetailScreen({
             ) : (
               <Link
                 href={`/users/${post.author.id}`}
-                className="flex items-center gap-2 text-[12px] text-ink"
+                className="tap-target flex items-center gap-2 text-[12px] text-ink"
               >
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img

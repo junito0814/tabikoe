@@ -10,6 +10,9 @@ import { getWishlistItems } from "@/lib/wishlist/get-wishlist-items";
 import type { WishlistItem } from "@/lib/wishlist/constants";
 import { ContentEnter } from "@/components/transitions/Reveal";
 
+// #785: ブラウザのタブ名（「行きたい | タビコエ」）
+export const metadata = { title: "行きたい" };
+
 /**
  * SC-08 「行きたい」スポット一覧画面
  * 出典: docs/tasks/records/wishlist/02-wishlist-list-screen.md

@@ -68,7 +68,7 @@ export async function OfficialInfo({ spotId }: { spotId: string }) {
           href={info.websiteUri}
           target="_blank"
           rel="noopener noreferrer"
-          className="text-[12.5px] font-semibold text-accent underline underline-offset-2"
+          className="tap-target text-[12.5px] font-semibold text-accent underline underline-offset-2"
         >
           公式サイトを開く
         </a>

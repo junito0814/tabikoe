@@ -390,7 +390,7 @@ export function AlbumScreen({
                       onClick={() => handleRemove(member)}
                       disabled={busy !== null}
                       aria-label={`${member.displayName}を削除`}
-                      className="text-[11px] font-medium text-accent underline underline-offset-2 disabled:opacity-45"
+                      className="tap-target text-[11px] font-medium text-accent underline underline-offset-2 disabled:opacity-45"
                     >
                       {busy === `remove:${member.userId}` ? "削除中…" : "削除"}
                     </button>

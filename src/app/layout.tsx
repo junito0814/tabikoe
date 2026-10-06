@@ -24,7 +24,15 @@ import "./globals.css";
  */
 
 export const metadata: Metadata = {
-  title: "タビコエ",
+  /*
+   * #785（2026-10-06）: 画面ごとにタブ名を付ける。
+   *
+   * 【初心者向け】19 画面すべて「タビコエ」でした。履歴をたどるときも、
+   * タブを並べたときも、人に送ったときも、どのページか分かりません。
+   * `template` を決めておくと、各ページが `title: "通知"` と書くだけで
+   * **「通知 | タビコエ」**になります。`default` はホーム（何も書かないページ）用。
+   */
+  title: { default: "タビコエ", template: "%s | タビコエ" },
   description: "あなたのコエが、だれかのタビへ。",
   // loading-feedback Task 1: iPhone のホーム画面に置いたとき、単独のアプリとして開く（4.5.11 の場面 1）
   appleWebApp: {

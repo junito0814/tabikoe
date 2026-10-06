@@ -7,6 +7,9 @@ import { DraftsSection } from "@/components/mypage/DraftsSection";
 import { getMyDrafts } from "@/lib/posts/drafts";
 import { BackLink } from "@/components/layout/BackLink";
 
+// #785: ブラウザのタブ名（「下書き | タビコエ」）
+export const metadata = { title: "下書き" };
+
 /**
  * mentoring-7 Task1（v3.1）: 下書き一覧（SC-06 の「すべて見る」から）
  * 出典: docs/tasks/shared-ui/mentoring-7/01-terminology.md

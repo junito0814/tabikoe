@@ -61,7 +61,7 @@ export function BlockUserButton({
       <button
         type="button"
         onClick={() => setIsConfirming(true)}
-        className="text-[13px] font-medium text-muted underline underline-offset-2"
+        className="tap-target text-[13px] font-medium text-muted underline underline-offset-2"
       >
         このユーザーをブロック
       </button>

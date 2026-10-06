@@ -8,6 +8,9 @@ import { ReconsentScreen, type ReconsentItem } from "@/components/legal/Reconsen
 import { safeRedirectPath } from "@/lib/safe-redirect";
 import { ContentEnter } from "@/components/transitions/Reveal";
 
+// #785: ブラウザのタブ名（「同意 | タビコエ」）
+export const metadata = { title: "同意" };
+
 export const dynamic = "force-dynamic";
 
 /**

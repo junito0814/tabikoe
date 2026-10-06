@@ -325,7 +325,7 @@ function CommentItem({
         <span>・{formatDateTime(comment.createdAt)}</span>
         <span className="ml-auto flex items-center gap-3">
           {canReply && (
-            <button type="button" onClick={onReply} className="text-[11px] font-medium text-ink underline underline-offset-2" data-reply-button>
+            <button type="button" onClick={onReply} className="tap-target text-[11px] font-medium text-ink underline underline-offset-2" data-reply-button>
               返信
             </button>
           )}

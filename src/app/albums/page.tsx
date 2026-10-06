@@ -12,6 +12,9 @@ import { ContentEnter } from "@/components/transitions/Reveal";
 import { PullToRefresh } from "@/components/layout/PullToRefresh";
 import { BackLink } from "@/components/layout/BackLink";
 
+// #785: ブラウザのタブ名（「アルバム | タビコエ」）
+export const metadata = { title: "アルバム" };
+
 /**
  * アルバム一覧（SC-09 の入口。マイページの遷移メニューから開く）
  * 出典: docs/tasks/records/album/01-album-detail-handler.md（一覧取得）

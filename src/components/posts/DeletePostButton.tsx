@@ -48,7 +48,7 @@ export function DeletePostButton({ postId }: { postId: string }) {
       <button
         type="button"
         onClick={() => setIsConfirming(true)}
-        className="text-[13px] font-medium text-accent underline underline-offset-2"
+        className="tap-target text-[13px] font-medium text-accent underline underline-offset-2"
       >
         この投稿を削除
       </button>
