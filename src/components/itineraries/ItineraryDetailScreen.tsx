@@ -221,6 +221,15 @@ export function ItineraryDetailScreen({
     <div className="flex flex-col items-center px-4 pt-4 pb-24" data-itinerary-detail data-day-tab={String(day)}>
       <div className="w-full max-w-[520px]">
         <header className="flex flex-col gap-2.5">
+          {/*
+            * #757（2026-10-06）: 見出しを作り直した（案 D）。
+            *
+            * 【初心者向け】前は 1 行に「戻る・タイトル・地図で見る・⋯」の 4 つを並べていた。
+            * 390px 幅の実機で測ると、**タイトルに残る幅は 172px しかなかった**（太字 16px で
+            * 日本語 10 文字ほど）。例えば 16 文字のタイトルは 319px 必要で、半分で切れていた。
+            * そこで 1 行目は操作だけにし、タイトルを次の行へ独立させた（使える幅 358px）。
+            * 「地図で見る／地図を閉じる」は文字だけで 84px 取っていたので記号にした（要件 4.5.15）。
+            */}
           <div className="flex items-center gap-2">
             <Link href={back?.href ?? "/itineraries"} className="inline-flex h-8 shrink-0 items-center gap-1 text-[12px] font-medium text-muted">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden>
@@ -228,23 +237,21 @@ export function ItineraryDetailScreen({
               </svg>
               {back?.label ?? "計画"}
             </Link>
-            {/* v3.1: タイトルをタップで名前を変更。「名前を変更」ボタンは置かない。
-                #694: 鉛筆の印は外した（押せば編集できるものに印を付けない。プロフィールと同じ考え方） */}
-            {isOwner ? (
-              <button type="button" onClick={() => void rename()} aria-label={`${itinerary.title}（名前を変更）`} className="min-w-0 flex-1 truncate text-center text-[16px] font-bold text-ink">
-                {itinerary.title}
-              </button>
-            ) : (
-              <h1 className="min-w-0 flex-1 truncate text-center text-[16px] font-bold text-ink">{itinerary.title}</h1>
-            )}
+            {/* 戻ると右の操作を左右の端に寄せるための余白 */}
+            <span aria-hidden className="flex-1" />
             <button
               type="button"
               onClick={() => setShowMap((current) => !current)}
               aria-pressed={showMap}
-              className={`inline-flex h-8 shrink-0 items-center gap-1 rounded-full border px-3 text-[12px] font-semibold ${showMap ? "border-accent bg-accent text-white" : "border-line bg-surface text-ink"}`}
+              aria-label={showMap ? "地図を閉じる" : "地図で見る"}
+              className={`inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full border ${showMap ? "border-accent bg-accent text-white" : "border-line bg-surface text-ink"}`}
+              data-map-toggle
             >
-              {/* #694: 絵文字は外して文字だけにした */}
-              {showMap ? "地図を閉じる" : "地図で見る"}
+              {/* #757: 折りたたんだ地図の記号。開いている間は塗りつぶして「今は開いている」を示す */}
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden>
+                <path d="M9 4 3 6v14l6-2 6 2 6-2V4l-6 2-6-2z" stroke="currentColor" strokeWidth="1.7" strokeLinejoin="round" />
+                <path d="M9 4v14M15 6v14" stroke="currentColor" strokeWidth="1.7" strokeLinejoin="round" />
+              </svg>
             </button>
             <div ref={menuRef} className="relative">
               <button
@@ -259,6 +266,25 @@ export function ItineraryDetailScreen({
               </button>
               {isMenuOpen && (
                 <ul role="menu" className="absolute right-0 z-20 mt-1 min-w-[150px] overflow-hidden rounded-[10px] border border-line bg-surface py-1 shadow-card">
+                  {/*
+                    * #762（2026-10-06）: 「アルバム「〈タイトル〉」を見る（12）」という
+                    * 細長いボタンを見出しから外し、⋯ の中へ「アルバム」として入れた。
+                    * **すぐ上にそのタイトルが出ている**のに、ボタンの中でもう一度読ませていたため。
+                    * 行き先（移動）なので、操作（招待・メンバー・削除）より上に置く。
+                    */}
+                  {itinerary.albumPostCount > 0 && (
+                    <li role="presentation">
+                      <Link
+                        role="menuitem"
+                        href={`/albums/${itinerary.tripId}?back=${encodeURIComponent(`/itineraries/${itinerary.id}`)}`}
+                        onClick={() => setIsMenuOpen(false)}
+                        className="flex w-full px-3 py-2 text-left text-[13px] text-ink hover:bg-tint"
+                        data-album-link
+                      >
+                        アルバム
+                      </Link>
+                    </li>
+                  )}
                   {isOwner && (
                     <MenuItem
                       label="招待"
@@ -290,6 +316,20 @@ export function ItineraryDetailScreen({
             </div>
           </div>
 
+          {/* #757: タイトルは独立した行。横幅いっぱい（358px）を使い、長ければ 2 行まで出す */}
+          {isOwner ? (
+            <button
+              type="button"
+              onClick={() => void rename()}
+              aria-label={`${itinerary.title}（名前を変更）`}
+              className="line-clamp-2 w-full break-words text-left text-[18px] font-bold leading-[1.3] text-ink"
+            >
+              {itinerary.title}
+            </button>
+          ) : (
+            <h1 className="line-clamp-2 w-full break-words text-[18px] font-bold leading-[1.3] text-ink">{itinerary.title}</h1>
+          )}
+
           {/* v3.1: 期間は年つき。表示そのものをタップするとカレンダー（オーナーのみ）。「期間を変更」ボタンは置かない */}
           {canEdit ? (
             <button type="button" onClick={() => setDialog("period")} aria-label={itinerary.startDate ? `期間 ${periodLabel}（変更）` : "期間を設定"} className="flex w-fit items-center gap-1 text-[12px] text-ink" data-period>
@@ -305,11 +345,6 @@ export function ItineraryDetailScreen({
             {itinerary.spots.length} スポット
             {itinerary.members.length > 1 && ` ・ メンバー ${itinerary.members.length} 人`}
           </p>
-          {itinerary.albumPostCount > 0 && (
-            <Link href={`/albums/${itinerary.tripId}?back=${encodeURIComponent(`/itineraries/${itinerary.id}`)}`} className="inline-flex h-8 w-fit items-center gap-1 rounded-full border border-line bg-surface px-3 text-[12px] font-semibold text-ink">
-              アルバム「{itinerary.title}」を見る（{itinerary.albumPostCount}）
-            </Link>
-          )}
         </header>
 
         <DayTabs dayCount={itinerary.dayCount} dayDates={itinerary.dayDates} spots={itinerary.spots} value={day} onChange={setDay} className="mt-3" />
