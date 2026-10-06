@@ -114,7 +114,8 @@ describe("WishlistScreen", () => {
       toggleWishlist: vi.fn(),
     } as unknown as import("@/components/save/SaveSheet").SaveSheetApi;
     render(<WishlistScreen initialItems={items} submitRemove={vi.fn()} saveSheetApi={api} />);
-    fireEvent.click(screen.getByRole("button", { name: "浅草寺をしおりへ" }));
+    // #745: しおりに入っている行は読み上げ名が変わる（見た目は ✓）
+    fireEvent.click(screen.getByRole("button", { name: /浅草寺はしおりに入っています/ }));
     expect(await screen.findByRole("dialog", { name: "浅草寺 をしおりへ" })).toBeInTheDocument();
     // 「行きたい」の段は出さない
     expect(screen.queryByRole("checkbox", { name: /行きたいスポット/ })).toBeNull();
@@ -123,5 +124,50 @@ describe("WishlistScreen", () => {
     fireEvent.click(screen.getByRole("button", { name: "完了" }));
     expect(document.querySelector("[data-wishlist-item='a']")).toBeInTheDocument();
     expect(await screen.findByRole("status")).toHaveTextContent("大阪旅行 に保存しました");
+  });
+});
+
+/**
+ * #745（2026-10-06）: しおりに入れても「＋」のままだった。
+ *
+ * 【初心者向け】決定事項 76 は「行きたい・しおりのどれかに入っていれば ✓」だが、
+ * **この画面は全部が「行きたい」に入っている**ので、それをそのまま当てると全部 ✓ になって
+ * 意味がない。ここで知りたいのは「**しおりに入れたか**」。
+ */
+describe("しおりに入っていれば ✓（#745）", () => {
+  it("入っている行は ✓、入っていない行は ＋", () => {
+    render(<WishlistScreen initialItems={items} submitRemove={vi.fn()} />);
+    const inItinerary = document.querySelector("[data-wishlist-item='a'] [data-itinerary-saved]");
+    expect(inItinerary, "しおりに入っている行が ✓ になっていない").not.toBeNull();
+    expect(document.querySelector("[data-wishlist-item='b'] [data-itinerary-saved]")).toBeNull();
+  });
+
+  it("保存すると、その場で ✓ に変わる（取り直しを待たない）", async () => {
+    const api = {
+      itineraries: {
+        list: vi.fn(async () => ({ items: [{ id: "it-9", tripId: "t9", title: "京都旅行", startDate: null, endDate: null, dayCount: 0, spotCount: 0, checkedCount: 0, updatedAt: "", role: "owner" as const, hasAlbumPosts: false, containsSpot: false, spotDayIndex: null }] })),
+        addSpot: vi.fn(async () => Response.json({}, { status: 201 })),
+      },
+      wishlistCount: vi.fn(async () => 2),
+      toggleWishlist: vi.fn(),
+    } as unknown as import("@/components/save/SaveSheet").SaveSheetApi;
+
+    render(<WishlistScreen initialItems={items} submitRemove={vi.fn()} saveSheetApi={api} />);
+    // まだどのしおりにも入っていない行
+    expect(document.querySelector("[data-wishlist-item='b'] [data-itinerary-saved]")).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: /をしおりへ$/ }));
+    fireEvent.click(await screen.findByRole("checkbox", { name: /京都旅行/ }));
+    await waitFor(() => expect(api.itineraries.addSpot).toHaveBeenCalled());
+    fireEvent.click(screen.getByRole("button", { name: "完了" }));
+    await waitFor(() => expect(document.querySelector("[data-wishlist-item='b'] [data-itinerary-saved]")).not.toBeNull());
+  });
+});
+
+/** #746（2026-10-06）: 見出しが中央からずれていた（左右の幅が違うのに真ん中を伸ばしていた） */
+describe("見出しの位置（#746）", () => {
+  it("左右を同じ幅にして真ん中を挟む", () => {
+    render(<WishlistScreen initialItems={items} submitRemove={vi.fn()} />);
+    const row = screen.getByRole("heading", { name: "行きたい" }).parentElement!;
+    expect(row.className).toContain("grid-cols-[1fr_auto_1fr]");
   });
 });

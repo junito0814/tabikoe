@@ -80,10 +80,18 @@ export function WishlistScreen({
 
   const header = (
     <header className="flex flex-col gap-2.5">
-      <div className="flex items-center gap-2">
-        <BackLink href={back?.href ?? "/mypage"} label={back?.label ?? "マイページ"} />
-        <h1 className="min-w-0 flex-1 truncate text-center text-[16px] font-bold text-ink">行きたい</h1>
-        <span className="shrink-0 text-[12px] text-muted">{items.length}件</span>
+      {/*
+        * #746: 左右を同じ幅（1fr）にして真ん中を挟む。
+        *
+        * 【初心者向け】前は真ん中を `flex-1` で伸ばしていたが、`flex-1` は**残りの幅**に広がるので、
+        * 左（← マイページ）と右（件数）の幅が違うぶんだけ中央からずれていた。
+        */}
+      <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2">
+        <div className="justify-self-start">
+          <BackLink href={back?.href ?? "/mypage"} label={back?.label ?? "マイページ"} />
+        </div>
+        <h1 className="truncate text-center text-[16px] font-bold text-ink">行きたい</h1>
+        <span className="justify-self-end text-[12px] text-muted">{items.length}件</span>
       </div>
       <div role="radiogroup" aria-label="表示" className="inline-flex w-fit rounded-full border border-line bg-surface p-0.5">
         {(["list", "map"] as const).map((option) => (
@@ -143,15 +151,32 @@ export function WishlistScreen({
                       </span>
                     </span>
                   </Link>
+                  {/*
+                    * #745: しおりに入っていれば ✓、入っていなければ ＋。
+                    *
+                    * 【初心者向け】決定事項 76 は「行きたい・しおりのどれかに入っていれば ✓」だが、
+                    * **この画面は全部が「行きたい」に入っている**ので、それをそのまま当てると全部 ✓ に
+                    * なって意味がない。ここで知りたいのは「**しおりに入れたか**」。
+                    */}
                   <button
                     type="button"
                     onClick={() => setPickerSpot(item)}
-                    aria-label={`${item.name}をしおりへ`}
-                    className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-line bg-surface text-ink"
+                    aria-pressed={item.itineraries.length > 0}
+                    aria-label={item.itineraries.length > 0 ? `${item.name}はしおりに入っています（押すと変えられます）` : `${item.name}をしおりへ`}
+                    data-itinerary-saved={item.itineraries.length > 0 ? "true" : undefined}
+                    className={`inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full border transition-colors ${
+                      item.itineraries.length > 0 ? "border-accent bg-accent text-white" : "border-line bg-surface text-ink"
+                    }`}
                   >
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden>
-                      <path d="M12 5v14M5 12h14" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" />
-                    </svg>
+                    {item.itineraries.length > 0 ? (
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden>
+                        <path d="M5 12l5 5L19 7" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />
+                      </svg>
+                    ) : (
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden>
+                        <path d="M12 5v14M5 12h14" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" />
+                      </svg>
+                    )}
                   </button>
                   {/* v3.1（mentoring-7 Task1）: 「解除」の文字ではなくゴミ箱マーク。読み上げ用の名前は aria-label に残す */}
                   <button
@@ -184,9 +209,22 @@ export function WishlistScreen({
             spotName={pickerSpot.name}
             api={saveSheetApi}
             onClose={(result) => {
+              const spotId = pickerSpot.spotId;
               setPickerSpot(null);
               if (result.savedItinerary) {
-                setToast({ text: `${result.savedItinerary.title} に保存しました`, action: { label: "しおりを見る", href: `/itineraries/${result.savedItinerary.id}` } });
+                /*
+                 * #745: 押した瞬間に ✓ にする（要件 4.5.11 の場面 3）。
+                 * `router.refresh()` の戻りを待つと、1 往復のあいだ「＋」のままに見える。
+                 */
+                const saved = result.savedItinerary;
+                setItems((current) =>
+                  current.map((item) =>
+                    item.spotId === spotId && !item.itineraries.some((it) => it.id === saved.id)
+                      ? { ...item, itineraries: [...item.itineraries, { id: saved.id, title: saved.title, dayIndex: null }] }
+                      : item
+                  )
+                );
+                setToast({ text: `${saved.title} に保存しました`, action: { label: "しおりを見る", href: `/itineraries/${saved.id}` } });
                 router.refresh();
               }
             }}
