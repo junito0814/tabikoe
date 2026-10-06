@@ -17,6 +17,10 @@ import type { PostCategory, PostDuration } from "@/lib/posts/constants";
 import type { CostRange } from "@/lib/posts/search-posts";
 import { FilterButton } from "@/components/posts/FilterButton";
 import { FilterSheet } from "@/components/posts/FilterSheet";
+import { CARD_ATTRIBUTE, centeredCardIndex, scrollToCard } from "./card-strip";
+
+// #763: 計算は card-strip.ts へ移した（しおりの全画面のカード帯と共通）。読む側の都合でここからも出しておく
+export { centeredCardIndex, scrollToCard };
 
 export type FetchNearbyPosts = (center: { lat: number; lng: number }, mode: TravelMode, filters: SpotFilters) => Promise<NearbyPost[]>;
 
@@ -53,36 +57,6 @@ function fromSheet(value: SpotSheetValue): SpotFilters {
  *   - カードのタップで投稿詳細（/posts/[id]）
  * スクロール位置 → どのカードが中央か、は `scrollLeft / カード幅` で概算する（カード幅は固定）。
  */
-/**
- * 横スクロール領域の中央にいちばん近いカードの番号（Bug #503。単体テストの対象）。
- * 【初心者向け】`getBoundingClientRect()` は画面上の実際の位置を返す。カードの中心と、スクロール領域の中心の
- * 距離をくらべていちばん近いものを選ぶ。カードの幅・隙間・余白が変わっても、端まで送っても正しく決まる。
- */
-/** 指定した番号のカードを中央へ寄せる（map-restore Task1） */
-export function scrollToCard(scroller: HTMLElement | null, index: number): void {
-  const card = scroller?.querySelectorAll<HTMLElement>("[data-nearby-card]")[index];
-  // jsdom には scrollIntoView が無いので、あるときだけ呼ぶ
-  card?.scrollIntoView?.({ block: "nearest", inline: "center" });
-}
-
-export function centeredCardIndex(scroller: Pick<HTMLElement, "getBoundingClientRect"> & { querySelectorAll: HTMLElement["querySelectorAll"] }): number | null {
-  const cards = Array.from(scroller.querySelectorAll<HTMLElement>("[data-nearby-card]"));
-  if (cards.length === 0) return null;
-  const box = scroller.getBoundingClientRect();
-  const center = box.left + box.width / 2;
-  let best = 0;
-  let bestDistance = Number.POSITIVE_INFINITY;
-  cards.forEach((card, index) => {
-    const rect = card.getBoundingClientRect();
-    const distance = Math.abs(rect.left + rect.width / 2 - center);
-    if (distance < bestDistance) {
-      bestDistance = distance;
-      best = index;
-    }
-  });
-  return best;
-}
-
 export function NearbyVoices({
   center,
   fetchPosts = defaultFetchNearbyPosts,
@@ -294,7 +268,7 @@ export function NearbyVoices({
               key={post.id}
               type="button"
               onClick={() => selectOrOpen(index)}
-              data-nearby-card={post.id}
+              {...{ [CARD_ATTRIBUTE]: post.id }}
               aria-current={index === activeIndex ? "true" : undefined}
               className={`flex w-[176px] shrink-0 snap-center flex-col gap-1 rounded-[12px] border p-2.5 text-left ${
                 index === activeIndex ? "border-accent" : "border-line"

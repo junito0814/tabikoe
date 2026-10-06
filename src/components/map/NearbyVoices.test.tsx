@@ -30,7 +30,7 @@ const post = (id: string): NearbyPost => ({
 function stubLayout(scrollerWidth: number, cardLefts: number[]) {
   const scroller = document.querySelector("[data-nearby-voices] div.overflow-x-auto") as HTMLElement;
   scroller.getBoundingClientRect = () => ({ left: 0, width: scrollerWidth, right: scrollerWidth, top: 0, bottom: 0, height: 0, x: 0, y: 0, toJSON: () => ({}) });
-  const cards = Array.from(scroller.querySelectorAll<HTMLElement>("[data-nearby-card]"));
+  const cards = Array.from(scroller.querySelectorAll<HTMLElement>("[data-map-card]"));
   cards.forEach((card, index) => {
     const left = cardLefts[index];
     card.getBoundingClientRect = () => ({ left, width: 176, right: left + 176, top: 0, bottom: 0, height: 0, x: left, y: 0, toJSON: () => ({}) });
@@ -65,7 +65,7 @@ describe("NearbyVoices（近くのスポット）", () => {
   it("スクロールすると中央のカードを親に知らせる（右端でも最後のカードになる）", async () => {
     const onActiveChange = vi.fn();
     render(<NearbyVoices center={{ lat: 35.68, lng: 139.76 }} fetchPosts={async () => [post("a"), post("b"), post("c")]} onActiveChange={onActiveChange} />);
-    await waitFor(() => expect(document.querySelectorAll("[data-nearby-card]")).toHaveLength(3));
+    await waitFor(() => expect(document.querySelectorAll("[data-map-card]")).toHaveLength(3));
     const scroller = stubLayout(390, [-265, -79, 107]);
     scroller.dispatchEvent(new Event("scroll", { bubbles: true }));
     await waitFor(() => expect(onActiveChange).toHaveBeenCalledWith(expect.objectContaining({ id: "c" })));
@@ -82,7 +82,7 @@ describe("NearbyVoices（近くのスポット）", () => {
       />
     );
     await waitFor(() => expect(onActiveChange).toHaveBeenCalledWith(expect.objectContaining({ id: "c" })));
-    expect(document.querySelector("[data-nearby-card='c']")).toHaveAttribute("aria-current", "true");
+    expect(document.querySelector("[data-map-card='c']")).toHaveAttribute("aria-current", "true");
   });
 
   it("map-restore: 覚えていたカードが無くなっていたら先頭から始まる", async () => {
@@ -97,21 +97,21 @@ describe("NearbyVoices（近くのスポット）", () => {
     push.mockClear();
     const onActiveChange = vi.fn();
     render(<NearbyVoices center={{ lat: 35.68, lng: 139.76 }} backHref="/map?mode=explore" fetchPosts={async () => [post("a"), post("b")]} onActiveChange={onActiveChange} />);
-    await waitFor(() => expect(document.querySelectorAll("[data-nearby-card]")).toHaveLength(2));
+    await waitFor(() => expect(document.querySelectorAll("[data-map-card]")).toHaveLength(2));
     // 2 枚目（選ばれていない）を押す → 選ばれるだけ
-    fireEvent.click(document.querySelector("[data-nearby-card='b']") as HTMLElement);
+    fireEvent.click(document.querySelector("[data-map-card='b']") as HTMLElement);
     expect(push).not.toHaveBeenCalled();
     expect(onActiveChange).toHaveBeenLastCalledWith(expect.objectContaining({ id: "b" }));
-    expect(document.querySelector("[data-nearby-card='b']")).toHaveAttribute("aria-current", "true");
+    expect(document.querySelector("[data-map-card='b']")).toHaveAttribute("aria-current", "true");
     // もう一度押す → そのスポットの投稿一覧へ
-    fireEvent.click(document.querySelector("[data-nearby-card='b']") as HTMLElement);
+    fireEvent.click(document.querySelector("[data-map-card='b']") as HTMLElement);
     expect(push).toHaveBeenCalledWith("/spots/s-b?back=%2Fmap%3Fmode%3Dexplore");
   });
 
   it("Task3: カードはリンクではなくボタン（キーボードでも押せる）", async () => {
     render(<NearbyVoices center={{ lat: 35.68, lng: 139.76 }} fetchPosts={async () => [post("a")]} />);
-    await waitFor(() => expect(document.querySelector("[data-nearby-card]")).toBeInTheDocument());
-    expect((document.querySelector("[data-nearby-card='a']") as HTMLElement).tagName).toBe("BUTTON");
+    await waitFor(() => expect(document.querySelector("[data-map-card]")).toBeInTheDocument());
+    expect((document.querySelector("[data-map-card='a']") as HTMLElement).tagName).toBe("BUTTON");
   });
 });
 
