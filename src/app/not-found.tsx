@@ -8,15 +8,14 @@ import Link from "next/link";
  * 「404 | This page could not be found.」という**英語の素のページ**が出ます。
  * 戻る手段もメニューバーだけでした。
  *
+ * **タブ名について**: ここに `metadata` は書けません（Next.js の app router は
+ * `not-found.tsx` の `metadata` を読みません）。結果としてタブ名は既定の「タビコエ」になり、
+ * **スポット名などが漏れない**ので、#785 の狙いとも合っています。
+ *
  * **理由を言い分けません。** 「下書きなので見られません」「非公開です」と書くと、
  * **そこに何かが在ることが分かってしまいます**（他人の下書きの URL を順に試せば、
  * どの ID が存在するか当てられる）。見つからない・見られないは、どれも同じ文面にします。
  */
-export const metadata = {
-  // #785: 404 ではスポット名などを出さない（存在が漏れるため）
-  title: "ページが見つかりません",
-};
-
 export default function NotFound() {
   return (
     <main className="flex min-h-[70dvh] flex-col items-center justify-center gap-5 px-6 text-center">
