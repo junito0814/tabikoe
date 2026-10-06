@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useId, useRef, useState } from "react";
+import { useId, useState } from "react";
+import { useOutsideClose } from "@/lib/ui/use-outside-close";
 import { dayKeys, type DayKey } from "./DayTabs";
 
 /**
@@ -28,24 +29,9 @@ export function dayButtonLabel(day: DayKey): string {
 
 export function DayMoveDropdown({ value, dayCount, onChange, disabled = false }: { value: DayKey; dayCount: number; onChange: (day: DayKey) => void; disabled?: boolean }) {
   const [isOpen, setIsOpen] = useState(false);
-  const rootRef = useRef<HTMLDivElement>(null);
   const listId = useId();
-
-  useEffect(() => {
-    if (!isOpen) return;
-    const onPointerDown = (event: PointerEvent) => {
-      if (!rootRef.current?.contains(event.target as Node)) setIsOpen(false);
-    };
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") setIsOpen(false);
-    };
-    document.addEventListener("pointerdown", onPointerDown);
-    document.addEventListener("keydown", onKeyDown);
-    return () => {
-      document.removeEventListener("pointerdown", onPointerDown);
-      document.removeEventListener("keydown", onKeyDown);
-    };
-  }, [isOpen]);
+  // #789: ここにあった「外をタップ／Esc で閉じる」は use-outside-close に切り出した（時刻ピッカーと共通）
+  const rootRef = useOutsideClose<HTMLDivElement>(isOpen, () => setIsOpen(false));
 
   return (
     <div ref={rootRef} className="relative">

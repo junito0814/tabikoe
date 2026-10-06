@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
+import { useMemo, useState, type FormEvent } from "react";
 import Link from "next/link";
 import { InAppInvitePanel, searchUsersRequest, type InAppInviteApi } from "@/components/invitations/InAppInvitePanel";
 import { Sheet } from "@/components/ui/Sheet";
@@ -15,6 +15,7 @@ import type { AlbumDetail, AlbumMember } from "@/lib/albums/get-album";
 import { ALBUM_ROLE_LABELS, INVITABLE_ROLES, type InvitableRole } from "@/lib/albums/membership";
 import { MAX_TRIP_TITLE_LENGTH } from "@/lib/trips/constants";
 import { formatCost } from "@/components/posts/PostCard";
+import { useOutsideClose } from "@/lib/ui/use-outside-close";
 
 export interface AlbumInvitation {
   id: string;
@@ -90,18 +91,10 @@ export function AlbumScreen({
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   /** #750: 招待とメンバーは「⋯」から開くダイアログにまとめる（しおり詳細と同じ形） */
   const [dialog, setDialog] = useState<"invite" | "members" | null>(null);
-  const menuRef = useRef<HTMLDivElement>(null);
+  // #789: 外をタップ／Esc で閉じる（しおり詳細・行の「⋯」と同じ hook）
+  const menuRef = useOutsideClose<HTMLDivElement>(isMenuOpen, () => setIsMenuOpen(false));
   const canDeleteAlbum = canManage && album.posts.length === 0 && api.deleteAlbum !== undefined;
 
-  // 外をタップしたら閉じる（しおり詳細と同じ）
-  useEffect(() => {
-    if (!isMenuOpen) return;
-    const onPointerDown = (event: PointerEvent) => {
-      if (!menuRef.current?.contains(event.target as Node)) setIsMenuOpen(false);
-    };
-    document.addEventListener("pointerdown", onPointerDown);
-    return () => document.removeEventListener("pointerdown", onPointerDown);
-  }, [isMenuOpen]);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   // すべての操作の共通枠。busy に操作名を入れて、完了まで他のボタンを無効にする

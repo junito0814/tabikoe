@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useId, useRef, useState } from "react";
+import { useId, useState } from "react";
 import { POST_SORT_LABELS, POST_SORTS, type PostSort } from "@/lib/posts/post-cards";
+import { useOutsideClose } from "@/lib/ui/use-outside-close";
 
 /**
  * post-timeline Task2: 並び替えのドロップダウン
@@ -27,24 +28,9 @@ export function SortDropdown<S extends string = PostSort>({
   labels?: Record<S, string>;
 }) {
   const [isOpen, setIsOpen] = useState(false);
-  const rootRef = useRef<HTMLDivElement>(null);
   const listId = useId();
-
-  useEffect(() => {
-    if (!isOpen) return;
-    const onPointerDown = (event: PointerEvent) => {
-      if (!rootRef.current?.contains(event.target as Node)) setIsOpen(false);
-    };
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") setIsOpen(false);
-    };
-    document.addEventListener("pointerdown", onPointerDown);
-    document.addEventListener("keydown", onKeyDown);
-    return () => {
-      document.removeEventListener("pointerdown", onPointerDown);
-      document.removeEventListener("keydown", onKeyDown);
-    };
-  }, [isOpen]);
+  // #789: 外をタップ／Esc で閉じる（Day の一覧・時刻ピッカーと同じ hook）
+  const rootRef = useOutsideClose<HTMLDivElement>(isOpen, () => setIsOpen(false));
 
   return (
     <div ref={rootRef} className={`relative ${className ?? ""}`}>

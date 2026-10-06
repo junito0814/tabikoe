@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, use, useEffect, useRef, useState } from "react";
+import { Suspense, use, useState } from "react";
 import Link from "next/link";
 import { MediaGrid } from "@/components/media/MediaGrid";
 import { SaveButton } from "@/components/save/SaveButton";
@@ -17,6 +17,7 @@ import { appendBackHref, buildMapHrefWithBack } from "@/lib/search/list-state";
 import { MapSheetLayout } from "@/components/layout/MapSheetLayout";
 import { StaticSpotMap } from "@/components/map/StaticSpotMap";
 import { formatCost } from "./PostCard";
+import { useOutsideClose } from "@/lib/ui/use-outside-close";
 
 /**
  * F-VW-01 Task2 / post-detail-view-v3 Task1（v3.0）: 投稿詳細画面（SC-05）
@@ -55,16 +56,8 @@ export function PostDetailScreen({
   const returnTo = `/posts/${post.id}`;
   const cost = formatCost(post.cost);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const menuRef = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    if (!isMenuOpen) return;
-    const onPointerDown = (event: PointerEvent) => {
-      if (!menuRef.current?.contains(event.target as Node))
-        setIsMenuOpen(false);
-    };
-    document.addEventListener("pointerdown", onPointerDown);
-    return () => document.removeEventListener("pointerdown", onPointerDown);
-  }, [isMenuOpen]);
+  // #789: 外をタップ／Esc で閉じる（アプリ中の「⋯」で同じ hook を使う）
+  const menuRef = useOutsideClose<HTMLDivElement>(isMenuOpen, () => setIsMenuOpen(false));
 
   // 上の地図（SC-02）からは「← スポット名」でこの投稿に戻る（要件 8 章 46）
   const mapHref = buildMapHrefWithBack({ spot: post.spot.id, lat: post.spot.lat, lng: post.spot.lng }, selfHref);

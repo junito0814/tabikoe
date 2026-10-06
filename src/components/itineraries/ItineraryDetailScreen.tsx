@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useState, type FormEvent } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ErrorNotice } from "@/components/notices/ErrorNotice";
@@ -10,6 +10,7 @@ import { addSpotsHref } from "@/lib/itineraries/add-mode";
 import { formatPeriodLabel } from "@/lib/itineraries/day-utils";
 import type { ItineraryDetail, ItinerarySpotItem } from "@/lib/itineraries/get-itinerary";
 import { can } from "@/lib/itineraries/membership";
+import { MAX_TRIP_TITLE_LENGTH } from "@/lib/trips/constants";
 import { orderSpots } from "@/lib/itineraries/order-spots";
 import { MapSheetLayout } from "@/components/layout/MapSheetLayout";
 import { ItineraryStaticMap } from "@/components/map/ItineraryStaticMap";
@@ -21,6 +22,7 @@ import { ItinerarySpotRow } from "./ItinerarySpotRow";
 import { MembersDialog } from "./MembersDialog";
 import { PeriodDialog } from "./PeriodDialog";
 import { defaultItineraryApi, type ItineraryApi } from "./itinerary-api";
+import { useOutsideClose } from "@/lib/ui/use-outside-close";
 
 /**
  * itinerary-basics Task3 / itinerary-days Task2 / arrival-time Task3 / itinerary-check Task3: しおり詳細（SC-23）
@@ -79,6 +81,14 @@ export function ItineraryDetailScreen({
   const [error, setError] = useState<string | null>(null);
   const [dialog, setDialog] = useState<"period" | "invite" | "members" | "rename" | null>(null);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  /*
+   * #779（2026-10-06）: 名前の変更は `window.prompt("アルバム名", …)` だった。
+   * **しおりの画面なのに「アルバム名」と聞かれる**うえ、ブラウザ標準の箱なので
+   * 文字数の上限も効かず、見た目もアプリから浮いていた。
+   * アルバム（#742）と同じく、タイトルを押すとその場が入力欄になる形にする。
+   */
+  const [isRenaming, setIsRenaming] = useState(false);
+  const [draftTitle, setDraftTitle] = useState("");
   /**
    * loading-feedback Task 3（2026-09-30）: いま何をしている最中か。
    * 【初心者向け】この画面は押してから API と再取得の 2 往復が終わるまで何も変わらず、
@@ -87,17 +97,9 @@ export function ItineraryDetailScreen({
    * 時刻・メモ・チェックはここに含めない（押した瞬間に画面が変わる楽観更新のため）。
    */
   const [pending, setPending] = useState<PendingOp>(null);
-  const menuRef = useRef<HTMLDivElement>(null);
+  const menuRef = useOutsideClose<HTMLDivElement>(isMenuOpen, () => setIsMenuOpen(false));
   const isOwner = itinerary.role === "owner";
 
-  useEffect(() => {
-    if (!isMenuOpen) return;
-    const onPointerDown = (event: PointerEvent) => {
-      if (!menuRef.current?.contains(event.target as Node)) setIsMenuOpen(false);
-    };
-    document.addEventListener("pointerdown", onPointerDown);
-    return () => document.removeEventListener("pointerdown", onPointerDown);
-  }, [isMenuOpen]);
 
   // 操作後にサーバーから取り直す（並び順・件数・投稿済みをサーバーの判断に揃える）
   const reload = useCallback(async () => {
@@ -208,10 +210,21 @@ export function ItineraryDetailScreen({
     }
   };
 
-  const rename = async () => {
-    const next = window.prompt("アルバム名", itinerary.title);
-    if (next === null || next.trim() === itinerary.title) return;
-    await run(() => api.rename(itinerary.id, next.trim()), "タイトルを変更できませんでした", { kind: "rename" });
+  const startRename = () => {
+    setDraftTitle(itinerary.title);
+    setIsRenaming(true);
+  };
+
+  const submitRename = async (event: FormEvent) => {
+    event.preventDefault();
+    const next = draftTitle.trim();
+    // 空のまま／変わっていないときは、黙って元に戻す（エラーを出すほどのことではない）
+    if (next.length === 0 || next === itinerary.title) {
+      setIsRenaming(false);
+      return;
+    }
+    setIsRenaming(false);
+    await run(() => api.rename(itinerary.id, next), "タイトルを変更できませんでした", { kind: "rename" });
   };
 
   const periodLabel = formatPeriodLabel(itinerary.startDate, itinerary.endDate);
@@ -317,10 +330,28 @@ export function ItineraryDetailScreen({
           </div>
 
           {/* #757: タイトルは独立した行。横幅いっぱい（358px）を使い、長ければ 2 行まで出す */}
-          {isOwner ? (
+          {isOwner && isRenaming ? (
+            // #779: その場で書き換える（prompt は使わない）。形はアルバム（#742）と揃えた
+            <form onSubmit={(event) => void submitRename(event)} className="flex w-full gap-2" data-rename-title>
+              <input
+                value={draftTitle}
+                onChange={(event) => setDraftTitle(event.target.value)}
+                maxLength={MAX_TRIP_TITLE_LENGTH}
+                aria-label="しおりの名前"
+                autoFocus
+                className="h-10 min-w-0 flex-1 rounded-[8px] border border-line bg-surface px-3 text-[14px] text-ink focus:outline-none focus:ring-1 focus:ring-accent"
+              />
+              <button type="submit" disabled={pending !== null} className="h-10 shrink-0 rounded-[8px] bg-accent px-3 text-[12px] font-semibold text-white disabled:opacity-45">
+                保存
+              </button>
+              <button type="button" onClick={() => setIsRenaming(false)} className="h-10 shrink-0 rounded-[8px] border border-line bg-surface px-3 text-[12px] text-ink">
+                取消
+              </button>
+            </form>
+          ) : isOwner ? (
             <button
               type="button"
-              onClick={() => void rename()}
+              onClick={startRename}
               aria-label={`${itinerary.title}（名前を変更）`}
               className="line-clamp-2 w-full break-words text-left text-[18px] font-bold leading-[1.3] text-ink"
             >
