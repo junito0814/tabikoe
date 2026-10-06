@@ -12,6 +12,7 @@ import { PhotoGrid, type FetchMediaPage } from "@/components/media/PhotoGrid";
 import type { SpotMediaPage } from "@/lib/posts/search-photos";
 import type { ListView } from "@/lib/search/list-view";
 import { AddModeBanner, type AddModeInfo } from "./AddModeBanner";
+import { FilterButton } from "./FilterButton";
 import { FilterSheet } from "./FilterSheet";
 import { PullToRefresh } from "@/components/layout/PullToRefresh";
 import { SortDropdown } from "./SortDropdown";
@@ -150,14 +151,8 @@ export function SpotSearchScreen({
                 {backLabel}
               </Link>
               <h1 className="min-w-0 flex-1 truncate text-center text-[16px] font-bold text-ink">{title}</h1>
-              <button
-                type="button"
-                onClick={() => setIsSheetOpen(true)}
-                aria-haspopup="dialog"
-                className="h-8 shrink-0 rounded-full border border-line bg-surface px-3 text-[12px] font-semibold text-ink"
-              >
-                絞り込み{activeCount > 0 && `（${activeCount}）`}
-              </button>
+              {/* #811: 文字の「絞り込み（2）」をやめ、探すモードと同じ 3 本線の記号＋数にした（要件 4.5.15） */}
+              <FilterButton count={activeCount} expanded={isSheetOpen} onClick={() => setIsSheetOpen(true)} />
             </div>
             <div className="flex items-center justify-between gap-2">
               <ViewToggle value={state.view} onChange={onViewChange} showMap />
