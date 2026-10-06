@@ -13,7 +13,7 @@ import type { SearchContext } from "@/components/posts/post-search-query";
  *   - ?pref=大阪府         → 都道府県（47 都道府県のどれかでなければ「行き先なし」扱い）
  *   - ?lat&lng&q=大阪駅    → 座標の周辺 5km（q は見出し）
  *   - ?q=大阪駅（座標なし） → 候補から決定せず Enter した場合など。サーバー側で Geocoding して座標にする
- *   - 何も無い             → 全件（新着順）
+ *   - 何も無い             → **みんなの投稿**（全件・新着順。#808。ホームの「みんなの投稿を見る」から開く）
  * ページ（Server Component）から呼ぶ。Geocoding に失敗したら座標なし＝全件にせず、見出しだけ q にして「見つかりませんでした」を出す。
  */
 export type ResolvedDestination =
@@ -75,5 +75,8 @@ export async function resolveDestination(
     return { kind: "not_found", title: q, destination: null };
   }
 
-  return { kind: "none", title: "すべての投稿", destination: null };
+  // #808（2026-10-06）: 行き先なし＝「みんなの投稿」（要件 3.4.2）。
+  // 「全国」「全て」のような**範囲を示す言葉は出さない**（海外に出しても文言を変えなくて済む）。
+  // 地図の凡例で既に使っている言葉に合わせた。
+  return { kind: "none", title: "みんなの投稿", destination: null };
 }

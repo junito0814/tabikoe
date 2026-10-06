@@ -2,6 +2,7 @@
 
 import { useEffect, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
+import { AreaPicker } from "./AreaPicker";
 import { CloseButton } from "@/components/ui/CloseButton";
 import { POST_CATEGORIES, POST_DURATIONS, type PostCategory } from "@/lib/posts/constants";
 import {
@@ -43,6 +44,8 @@ export interface SheetFilters {
   /** explore-mode Task 4: 平均評価の下限（1〜5）。地図だけ */
   rating?: number | null;
   /** explore-mode Task 4: 「タビコエだけの場所」だけを出すか。地図だけ */
+  /** #809: エリア（都道府県の並び）。「みんなの投稿」のときだけ使う */
+  areas?: string[];
   /** 投稿一覧の「条件をクリア」で一緒に消すもの（地図には無い） */
   keyword?: string;
   view?: ListView;
@@ -51,6 +54,7 @@ export interface SheetFilters {
 /** 「条件をクリア」で戻す値（並び替えは条件ではないので触らない） */
 const CLEARED_FILTERS: SheetFilters = {
   categories: [],
+  areas: [],
   cost: null,
   duration: null,
   period: null,
@@ -71,12 +75,15 @@ export function FilterSheet<T extends SheetFilters>({
   open,
   value,
   variant = "posts",
+  showArea = false,
   onApply,
   onClose,
 }: {
   open: boolean;
   value: T;
   variant?: FilterSheetVariant;
+  /** #809: エリアの行を出すか（「みんなの投稿」のときだけ true） */
+  showArea?: boolean;
   /**
    * post-timeline Task 6（2026-10-03）: 「タビコエだけの場所」を出すか（投稿一覧のとき）。
    *
@@ -88,22 +95,27 @@ export function FilterSheet<T extends SheetFilters>({
 }) {
   // 閉じているときは中身ごと外す。開くたびに中身が作り直され、draft が適用中の条件から始まる
   if (!open) return null;
-  return <FilterSheetBody value={value} variant={variant} onApply={onApply} onClose={onClose} />;
+  return <FilterSheetBody value={value} variant={variant} showArea={showArea} onApply={onApply} onClose={onClose} />;
 }
 
 function FilterSheetBody<T extends SheetFilters>({
   value,
   variant,
+  showArea,
   onApply,
   onClose,
 }: {
   value: T;
   variant: FilterSheetVariant;
+  showArea: boolean;
   onApply: (next: T) => void;
   onClose: () => void;
 }) {
   const [draft, setDraft] = useState<T>(value);
   const isSpots = variant === "spots";
+  // #809: 「エリア」を押すと、同じシートの中が都道府県を選ぶ画面に切り替わる（画面を増やさない）
+  const [isPickingArea, setIsPickingArea] = useState(false);
+  const areas = draft.areas ?? [];
 
   /*
    * 条件を 1 つだけ書き換える。
@@ -293,6 +305,27 @@ function FilterSheetBody<T extends SheetFilters>({
           <CloseButton onClick={onClose} />
         </div>
 
+        {isPickingArea ? (
+          <AreaPicker selected={areas} onChange={(next) => patch({ areas: next })} onBack={() => setIsPickingArea(false)} />
+        ) : (
+          <>
+        {/*
+          * #809: エリアは**いちばん上**。「みんなの投稿」は行き先が決まっていないので、
+          * まず「どこの」を決めたい人が多い。検索結果（行き先あり）では出さない。
+          */}
+        {showArea && (
+          <button
+            type="button"
+            onClick={() => setIsPickingArea(true)}
+            data-area-row
+            className="flex items-center gap-2 rounded-[10px] border border-line px-3 py-2.5 text-[13px] text-ink"
+          >
+            エリア
+            <span className="ml-auto text-[12px] text-muted">{areas.length === 0 ? "指定なし" : `${areas.length} 都道府県`}</span>
+            <span className="text-muted" aria-hidden>›</span>
+          </button>
+        )}
+
         {isSpots
           /* #680: 「タビコエだけの場所」の行は廃止（決定事項 70）。地図は 4 つ、投稿一覧は 5 つ */
           ? [categorySection, costSection, durationSection, ratingSection]
@@ -310,6 +343,8 @@ function FilterSheetBody<T extends SheetFilters>({
             この条件で表示
           </button>
         </div>
+          </>
+        )}
       </form>
     </div>,
     document.body

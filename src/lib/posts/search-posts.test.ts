@@ -140,6 +140,8 @@ describe("parsePostSearchParams", () => {
       visitTo: null,
       sort: "newest",
       viewer: null,
+      // #809: エリア（行き先が決まっているときは空のまま）
+      areas: [],
     });
   });
 
@@ -158,6 +160,7 @@ describe("parsePostSearchParams", () => {
       visitTo: null,
       sort: "newest",
       viewer: null,
+      areas: [],
     });
   });
 
@@ -248,5 +251,19 @@ describe("applyFilters: タビコエだけの場所", () => {
     const { query, calls } = fakeQuery();
     applyFilters(query, base, []);
     expect(calls.some((call) => call.includes("spots.source"))).toBe(false);
+  });
+});
+
+/**
+ * #809（2026-10-06）: エリア（都道府県の並び）の読み取り
+ * 出典: 要件定義書 3.4.2「絞り込みのエリア」
+ */
+describe("エリアの絞り込み（#809）", () => {
+  it("areas= を都道府県の並びとして読む", () => {
+    expect(parsePostSearchParams(new URLSearchParams({ areas: "東京都,神奈川県" })).areas).toEqual(["東京都", "神奈川県"]);
+  });
+
+  it("空なら空の並び", () => {
+    expect(parsePostSearchParams(new URLSearchParams()).areas).toEqual([]);
   });
 });
