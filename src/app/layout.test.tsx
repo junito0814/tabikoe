@@ -13,11 +13,12 @@ vi.mock("@/lib/supabase/server", () => ({
 }));
 vi.mock("@/lib/auth/auth-user", () => ({ getAuthUserFromClaims: async () => ({ id: "u1", email: null }) }));
 vi.mock("@/components/layout/AppMenuBar", () => ({ AppMenuBar: ({ isAuthenticated }: { isAuthenticated: boolean }) => <div data-menu={String(isAuthenticated)} /> }));
-vi.mock("@/app/fonts", () => ({ outfit: { className: "outfit", variable: "outfit" }, lora: { className: "lora", variable: "lora" } }));
-// next/font/google はビルド時処理のため、テストでは差し替える
-vi.mock("next/font/google", () => ({
-  Geist: () => ({ variable: "geist-sans", className: "geist-sans" }),
-  Geist_Mono: () => ({ variable: "geist-mono", className: "geist-mono" }),
+// 2026-10-06: フォントはビルド時処理（.woff2 を読む）なので、テストでは差し替える
+vi.mock("@/app/fonts", () => ({
+  outfit: { className: "outfit", variable: "outfit" },
+  lora: { className: "lora", variable: "lora" },
+  geistSans: { className: "geist-sans", variable: "geist-sans" },
+  geistMono: { className: "geist-mono", variable: "geist-mono" },
 }));
 
 import RootLayout from "./layout";

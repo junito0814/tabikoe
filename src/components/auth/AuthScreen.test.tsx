@@ -18,7 +18,7 @@ vi.mock("next/navigation", () => ({
   useSearchParams: () => searchParams,
 }));
 
-// next/font/google はビルド時処理のため、テストでは差し替える
+// 2026-10-06: フォントはビルド時処理（.woff2 を読む）ため、テストでは差し替える
 vi.mock("@/app/fonts", () => ({
   outfit: { className: "outfit" },
   lora: { className: "lora" },
