@@ -5,6 +5,7 @@
  * 「座標化失敗時にエラーメッセージが出て遷移しないこと」「拒否時にそれぞれの挙動になること」
  */
 import { describe, expect, it, vi, beforeEach } from "vitest";
+import { readFileSync } from "node:fs";
 import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 
 const push = vi.fn();
@@ -148,5 +149,41 @@ describe("候補がメニューバーに隠れない（#740）", () => {
     const scroller = document.querySelector(".overflow-y-auto");
     expect(scroller).not.toBeNull();
     expect(scroller!.contains(logo)).toBe(false);
+  });
+});
+
+/**
+ * #749（2026-10-06）: キーボードが出ると Google の表記が隠れていた。
+ *
+ * 【初心者向け】`window.innerHeight`（画面全体）はキーボードが出ても変わらない。
+ * 変わるのは `window.visualViewport`（いま実際に見えている範囲）。
+ * jsdom には大きさが無いので、ここでは「**見える範囲を聞いているか**」を見る。
+ */
+describe("キーボードが出ても表記が見える（#749）", () => {
+  const source = readFileSync("src/components/search/DestinationInput.tsx", "utf8");
+
+  it("画面全体ではなく、見えている範囲で測る", () => {
+    expect(source).toContain("window.visualViewport");
+    expect(source).toContain("viewport.offsetTop + viewport.height");
+  });
+
+  it("キーボードの開閉で測り直す", () => {
+    expect(source).toContain('viewport.addEventListener("resize", measure)');
+    expect(source).toContain('viewport.addEventListener("scroll", measure)');
+    expect(source).toContain('viewport.removeEventListener("resize", measure)');
+  });
+
+  /**
+   * 最初は「狭すぎたら CSS の上限に任せる」としていたが、それだと**狭いときほど背が高くなり**、
+   * キーボードが出たときに隠れたままだった。測れたらその値を必ず使う。
+   */
+  it("測れた余白は必ず使う（狭いときに上限へ戻さない）", () => {
+    expect(source).toContain("setMaxHeight(space > 0 ? space : null)");
+    expect(source).not.toContain("MIN_PANEL_PX");
+  });
+
+  it("キーボードが出ているときはメニューバーのぶんを引かない（その下に隠れるため）", () => {
+    expect(source).toContain("keyboardOpen");
+    expect(source).toContain("!keyboardOpen && window.innerWidth < 768");
   });
 });
