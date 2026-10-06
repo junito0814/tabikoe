@@ -196,7 +196,8 @@ describe("#653: 切替の行がある（行きたい・検索結果）", () => {
 describe("#653: しおり詳細の右のボタンは 2 つ", () => {
   it("本物に「地図で見る」と「⋯」がある", () => {
     expect(real5.しおり詳細).toContain("地図で見る");
-    expect(real5.しおり詳細).toContain('aria-label="その他"');
+    // #770: 「⋯」は共通部品（MoreMenu）になった。aria-label はそちらが持つ
+    expect(real5.しおり詳細).toContain("<MoreMenu");
   });
 
   it("骨組みの見出しの行も 4 つ（戻る・題名・地図・その他）", () => {

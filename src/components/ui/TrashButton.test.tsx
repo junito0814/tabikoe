@@ -67,7 +67,8 @@ describe("削除を出す画面は、この部品を使う", () => {
   it("アルバムの削除は「⋯」のメニューの中（ゴミ箱の印ではない）", () => {
     const source = read("src/components/albums/AlbumScreen.tsx");
     expect(source).not.toContain("<TrashButton");
-    expect(source).toContain('role="menuitem"');
+    // #770: 「⋯」は共通部品（MoreMenu）になった。role="menuitem" はそちらが持つ
+    expect(source).toContain("<MoreMenuItem");
     expect(source).toContain("このアルバムを削除");
   });
 
