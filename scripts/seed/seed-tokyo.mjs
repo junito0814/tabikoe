@@ -64,17 +64,26 @@ const COMMENTS = [
 // 取得元・取得日・人が写っていないことの確認は photos.json に書いてある。
 const PHOTOS = JSON.parse(readFileSync(new URL("./photos.json", import.meta.url), "utf8"));
 const SEED_PHOTO_PREFIX = "seed/";
-/** 何枚目かを渡すと、使う写真のバケット内パスを返す（16 枚を順ぐりに使う） */
-const PHOTO = (n, kind) => {
-  const pool = PHOTOS.photos.filter((photo) => photo.kind === kind);
-  const chosen = pool[Math.abs(n) % pool.length];
-  return `${SEED_PHOTO_PREFIX}${chosen.file}`;
-};
 
-/** 写真を取ってきて Storage に入れる（既に同じ名前があれば上書き） */
+/*
+ * #777: スポット名 → 使う写真。
+ *
+ * 【初心者向け】もとは「食べ物のカテゴリなら食べ物の写真、それ以外は風景」を**順ぐりに**割り当てていた。
+ * そのせいで「神楽坂の石畳の路地」に厳島神社の海上鳥居が出たり、同じ鳥居が 2 つの投稿に出たりしていた。
+ * いまは photos.json に**写真ごとに「どのスポットのものか」**を書いてあり、そこだけを見る。
+ *   - **1 投稿 1 枚**（前は 1〜3 枚だった）
+ *   - **同じ写真を 2 投稿で使わない**（使ったら usedPhotos に入れて二度と使わない）
+ *   - 合うスポットが無い写真（photos.json の spot が null）は使わない
+ * 結果として**写真が付かない投稿のほうが多くなる**。これは意図どおりで、
+ * 「合わない写真を出すより、何も出さないほうがまし」という判断。
+ */
+const USABLE_PHOTOS = PHOTOS.photos.filter((photo) => photo.spot);
+const PHOTO_BY_SPOT = new Map(USABLE_PHOTOS.map((photo) => [photo.spot, `${SEED_PHOTO_PREFIX}${photo.file}`]));
+
+/** 写真を取ってきて Storage に入れる（既に同じ名前があれば上書き）。使うものだけ */
 async function uploadSeedPhotos() {
-  console.log(`写真: Pixabay から ${PHOTOS.photos.length} 枚を取って Storage に入れます`);
-  for (const photo of PHOTOS.photos) {
+  console.log(`写真: Pixabay から ${USABLE_PHOTOS.length} 枚を取って Storage に入れます（使わない ${PHOTOS.photos.length - USABLE_PHOTOS.length} 枚は入れない）`);
+  for (const photo of USABLE_PHOTOS) {
     const response = await fetch(photo.url);
     if (!response.ok) throw new Error(`写真を取れませんでした: ${photo.url}（HTTP ${response.status}）`);
     const body = new Uint8Array(await response.arrayBuffer());
@@ -83,7 +92,7 @@ async function uploadSeedPhotos() {
       .upload(`${SEED_PHOTO_PREFIX}${photo.file}`, body, { contentType: "image/jpeg", upsert: true });
     if (error) throw new Error(`Storage に入れられませんでした: ${photo.file}（${error.message}）`);
   }
-  console.log(`写真: ${PHOTOS.photos.length} 枚を入れました（${SEED_PHOTO_PREFIX}）`);
+  console.log(`写真: ${USABLE_PHOTOS.length} 枚を入れました（${SEED_PHOTO_PREFIX}）`);
 }
 
 // 「自分」のしおり（東京 2 泊 3 日）に入れるスポット（SPOTS の index）
@@ -223,6 +232,8 @@ async function main() {
   // 4. 投稿（約 55 件。うち非公開 2 件）。スポットごとに 1 件、10 件に 1 つは 2 件
   const postRows = [];
   const photoRows = [];
+  /** #777: 一度使った写真は二度使わない */
+  const usedPhotos = new Set();
   let n = 0;
   for (let i = 0; i < spotRows.length; i += 1) {
     const count = i % 10 === 0 ? 2 : 1; // 51 スポットで 57 件（＋自分の 2 件・下書き 4 件）＝「50 件ほど」
@@ -253,11 +264,11 @@ async function main() {
         created_at: created.toISOString(),
         published_at: created.toISOString(),
       });
-      const photoCount = 1 + ((i + k) % 3); // 1〜3 枚
-      for (let p = 0; p < photoCount; p += 1) {
-        // 食べ物のカテゴリなら食べ物の写真、それ以外は風景（#703）
-        const kind = SPOTS[i].cat === "グルメ" ? "food" : "landscape";
-        photoRows.push({ post_id: id, media_type: "photo", storage_url: PHOTO(i + k + p, kind), display_order: p });
+      // #777: そのスポットの写真があり、まだどの投稿にも使っていなければ 1 枚だけ付ける
+      const photo = PHOTO_BY_SPOT.get(spot.name);
+      if (photo && !usedPhotos.has(photo)) {
+        usedPhotos.add(photo);
+        photoRows.push({ post_id: id, media_type: "photo", storage_url: photo, display_order: 0 });
       }
       n += 1;
     }
@@ -284,12 +295,12 @@ async function main() {
       created_at: created.toISOString(),
       published_at: created.toISOString(),
     });
-    photoRows.push({
-      post_id: id,
-      media_type: "photo",
-      storage_url: PHOTO(s.i, SPOTS[s.i].cat === "グルメ" ? "food" : "landscape"),
-      display_order: 0,
-    });
+    // #777: 自分の投稿も同じ決まり（そのスポットの写真が余っていれば 1 枚だけ）
+    const myPhoto = PHOTO_BY_SPOT.get(SPOTS[s.i].name);
+    if (myPhoto && !usedPhotos.has(myPhoto)) {
+      usedPhotos.add(myPhoto);
+      photoRows.push({ post_id: id, media_type: "photo", storage_url: myPhoto, display_order: 0 });
+    }
   }
   // 自分の下書き 4 件
   for (const [k, d] of MY_DRAFTS.entries()) {

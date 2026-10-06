@@ -17,7 +17,9 @@ const photos = JSON.parse(readFileSync("scripts/seed/photos.json", "utf8")) as {
   source: string;
   fetchedAt: string;
   checkedBy: string;
-  photos: { file: string; kind: string; what: string; url: string }[];
+  assignedAt: string;
+  assignedBy: string;
+  photos: { file: string; kind: string; what: string; url: string; spot: string | null; why: string }[];
   rejected: { url: string; reason: string }[];
 };
 
@@ -183,5 +185,66 @@ describe("seed の印を外した（#776）", () => {
   it("入れる側と消す側が同じ定義を見ている（二重に書かない）", () => {
     expect(seed).toContain('from "./seed-data.mjs"');
     expect(clean).toContain('from "./seed-data.mjs"');
+  });
+});
+
+
+/**
+ * #777: seed の写真を場所に合わせて選び直した（1 投稿 1 枚・使い回しなし）。
+ *
+ * 【初心者向け】写真そのものが場所に合っているかは、やはり目で見るしかない
+ * （機械には「これが高尾山らしいか」は分からない）。ここで見張るのは**書き方の決まり**:
+ *   - どの写真にも「どのスポットのものか」と「なぜそう決めたか」が書いてある
+ *   - 1 枚が 2 つのスポットを兼ねていない（＝ 2 投稿に出ない）
+ *   - 書いてあるスポット名が本当に seed にある（打ち間違いで誰にも結び付かないのを防ぐ）
+ */
+describe("seed の写真を場所に合わせた（#777）", () => {
+  const seedSource = readFileSync("scripts/seed/seed-tokyo.mjs", "utf8");
+  const fix = readFileSync("scripts/seed/fix-seed-photos.mjs", "utf8");
+  const seedData = readFileSync("scripts/seed/seed-data.mjs", "utf8");
+
+  it("どの写真にも「どのスポットのものか」と理由が書いてある", () => {
+    for (const photo of photos.photos) {
+      expect(photo, photo.file).toHaveProperty("spot");
+      expect(photo.why, photo.file).toBeTruthy();
+    }
+    expect(photos.assignedAt).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+    expect(photos.assignedBy).toContain("1 投稿 1 枚");
+  });
+
+  it("1 枚の写真が 2 つのスポットを兼ねていない（同じ写真が 2 投稿に出ない）", () => {
+    const spots = photos.photos.map((photo) => photo.spot).filter((spot): spot is string => spot !== null);
+    expect(new Set(spots).size).toBe(spots.length);
+  });
+
+  it("結び付けたスポット名が本当に seed にある（打ち間違い防止）", () => {
+    for (const photo of photos.photos) {
+      if (photo.spot === null) continue;
+      expect(seedData, `${photo.file} の spot「${photo.spot}」`).toContain(`name: "${photo.spot}"`);
+    }
+  });
+
+  it("合うスポットが無い写真は使わない（理由つき）", () => {
+    const unused = photos.photos.filter((photo) => photo.spot === null);
+    expect(unused.length).toBeGreaterThan(0);
+    for (const photo of unused) expect(photo.why.length, photo.file).toBeGreaterThan(5);
+  });
+
+  it("入れるときは 1 投稿 1 枚で、一度使った写真は二度使わない", () => {
+    expect(seedSource).toContain("usedPhotos");
+    expect(seedSource).toContain("PHOTO_BY_SPOT");
+    // 1〜3 枚を順ぐりに付けていた書き方が戻っていないこと
+    expect(seedSource).not.toContain("photoCount");
+    expect(seedSource).toContain("display_order: 0");
+  });
+
+  it("使わない写真は Storage に入れない", () => {
+    expect(seedSource).toContain("USABLE_PHOTOS");
+    expect(seedSource).toContain("for (const photo of USABLE_PHOTOS)");
+  });
+
+  it("既にある行を直す道具は、既定では直さない", () => {
+    expect(fix).toContain('const apply = process.argv.includes("--apply")');
+    expect(fix).toContain("if (!apply)");
   });
 });
