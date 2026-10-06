@@ -22,10 +22,10 @@ import { ItinerarySpotRow } from "./ItinerarySpotRow";
 import { MembersDialog } from "./MembersDialog";
 import { PeriodDialog } from "./PeriodDialog";
 import { defaultItineraryApi, type ItineraryApi } from "./itinerary-api";
-import { useOutsideClose } from "@/lib/ui/use-outside-close";
 import { HIGHLIGHT_MS, scrollBehaviorFor, scrollRowIntoView } from "@/lib/ui/scroll-to-row";
 import { useConfirm } from "@/components/ui/ConfirmSheet";
 import { BackLink } from "@/components/layout/BackLink";
+import { MoreMenu, MoreMenuItem } from "@/components/ui/MoreMenu";
 
 /**
  * itinerary-basics Task3 / itinerary-days Task2 / arrival-time Task3 / itinerary-check Task3: しおり詳細（SC-23）
@@ -83,7 +83,6 @@ export function ItineraryDetailScreen({
   const [toast, setToast] = useState<ToastMessage | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [dialog, setDialog] = useState<"period" | "invite" | "members" | "rename" | null>(null);
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
   /*
    * #779（2026-10-06）: 名前の変更は、ブラウザ標準の `window.prompt` で「アルバム名」と聞いていた。
    * **しおりの画面なのに「アルバム名」と聞かれる**うえ、ブラウザ標準の箱なので
@@ -102,7 +101,6 @@ export function ItineraryDetailScreen({
    * 時刻・メモ・チェックはここに含めない（押した瞬間に画面が変わる楽観更新のため）。
    */
   const [pending, setPending] = useState<PendingOp>(null);
-  const menuRef = useOutsideClose<HTMLDivElement>(isMenuOpen, () => setIsMenuOpen(false));
   /*
    * #761（2026-10-06）: 上 1/3 の地図のピンを押したら、一覧のその行へ飛んで一瞬光らせる。
    *
@@ -296,67 +294,20 @@ export function ItineraryDetailScreen({
                 <path d="M9 4v14M15 6v14" stroke="currentColor" strokeWidth="1.7" strokeLinejoin="round" />
               </svg>
             </button>
-            <div ref={menuRef} className="relative">
-              <button
-                type="button"
-                onClick={() => setIsMenuOpen((open) => !open)}
-                aria-haspopup="menu"
-                aria-expanded={isMenuOpen}
-                aria-label="その他"
-                className="h-8 w-8 rounded-full border border-line bg-surface text-[0.875rem] font-bold text-ink"
-              >
-                ⋯
-              </button>
-              {isMenuOpen && (
-                <ul role="menu" className="absolute right-0 z-20 mt-1 min-w-[150px] overflow-hidden rounded-[10px] border border-line bg-surface py-1 shadow-card">
-                  {/*
-                    * #762（2026-10-06）: 「アルバム「〈タイトル〉」を見る（12）」という
-                    * 細長いボタンを見出しから外し、⋯ の中へ「アルバム」として入れた。
-                    * **すぐ上にそのタイトルが出ている**のに、ボタンの中でもう一度読ませていたため。
-                    * 行き先（移動）なので、操作（招待・メンバー・削除）より上に置く。
-                    */}
-                  {itinerary.albumPostCount > 0 && (
-                    <li role="presentation">
-                      <Link
-                        role="menuitem"
-                        href={`/albums/${itinerary.tripId}?back=${encodeURIComponent(`/itineraries/${itinerary.id}`)}`}
-                        onClick={() => setIsMenuOpen(false)}
-                        className="flex w-full px-3 py-2 text-left text-[0.8125rem] text-ink hover:bg-tint"
-                        data-album-link
-                      >
-                        アルバム
-                      </Link>
-                    </li>
-                  )}
-                  {isOwner && (
-                    <MenuItem
-                      label="招待"
-                      onClick={() => {
-                        setIsMenuOpen(false);
-                        setDialog("invite");
-                      }}
-                    />
-                  )}
-                  <MenuItem
-                    label="メンバー"
-                    onClick={() => {
-                      setIsMenuOpen(false);
-                      setDialog("members");
-                    }}
-                  />
-                  {isOwner && (
-                    <MenuItem
-                      label="しおりを削除"
-                      danger
-                      onClick={() => {
-                        setIsMenuOpen(false);
-                        void deleteItinerary();
-                      }}
-                    />
-                  )}
-                </ul>
+            {/* #770: 「⋯」は共通部品（アプリ中で同じ作りを 4 か所に書き写していた） */}
+            <MoreMenu>
+              {/*
+                * #762（2026-10-06）: 「アルバム「〈タイトル〉」を見る（12）」という
+                * 細長いボタンを見出しから外し、⋯ の中へ「アルバム」として入れた。
+                * 行き先（移動）なので、操作（招待・メンバー・削除）より上に置く。
+                */}
+              {itinerary.albumPostCount > 0 && (
+                <MoreMenuItem label="アルバム" href={`/albums/${itinerary.tripId}?back=${encodeURIComponent(`/itineraries/${itinerary.id}`)}`} />
               )}
-            </div>
+              {isOwner && <MoreMenuItem label="招待" onClick={() => setDialog("invite")} />}
+              <MoreMenuItem label="メンバー" onClick={() => setDialog("members")} />
+              {isOwner && <MoreMenuItem label="しおりを削除" danger onClick={() => void deleteItinerary()} />}
+            </MoreMenu>
           </div>
 
           {/* #757: タイトルは独立した行。横幅いっぱい（358px）を使い、長ければ 2 行まで出す */}
@@ -577,15 +528,5 @@ function DayGroup({
         })}
       </ul>
     </section>
-  );
-}
-
-function MenuItem({ label, onClick, danger = false }: { label: string; onClick: () => void; danger?: boolean }) {
-  return (
-    <li role="presentation">
-      <button type="button" role="menuitem" onClick={onClick} className={`flex w-full px-3 py-2 text-left text-[0.8125rem] hover:bg-tint ${danger ? "text-saved" : "text-ink"}`}>
-        {label}
-      </button>
-    </li>
   );
 }

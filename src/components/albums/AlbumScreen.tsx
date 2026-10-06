@@ -19,6 +19,7 @@ import { useOutsideClose } from "@/lib/ui/use-outside-close";
 import { useConfirm } from "@/components/ui/ConfirmSheet";
 import { BackLink } from "@/components/layout/BackLink";
 import { formatDate, formatDateTime } from "@/lib/format/date-time";
+import { MoreMenu, MoreMenuItem } from "@/components/ui/MoreMenu";
 
 export interface AlbumInvitation {
   id: string;
@@ -285,49 +286,19 @@ export function AlbumScreen({
                 <h1 className="min-w-0 flex-1 break-words text-[1.25rem] font-bold text-ink">{title}</h1>
               )}
               {/* #750: 「⋯」は誰にでも出す（メンバーは誰でも見られる。中身は権限で変わる） */}
-              <div className="relative shrink-0">
-                <button
-                  type="button"
-                  onClick={() => setIsMenuOpen((open) => !open)}
-                  aria-haspopup="menu"
-                  aria-expanded={isMenuOpen}
-                  aria-label="その他"
-                  className="h-8 w-8 rounded-full border border-line bg-surface text-[0.875rem] font-bold text-ink"
-                >
-                  ⋯
-                </button>
-                {isMenuOpen && (
-                  <ul role="menu" className="absolute right-0 z-20 mt-1 min-w-[170px] overflow-hidden rounded-[10px] border border-line bg-surface py-1 shadow-card">
-                    {canManage && (
-                      <AlbumMenuItem
-                        label="招待"
-                        onClick={() => {
-                          setIsMenuOpen(false);
-                          setDialog("invite");
-                        }}
-                      />
-                    )}
-                    <AlbumMenuItem
-                      label="メンバー"
-                      onClick={() => {
-                        setIsMenuOpen(false);
-                        setDialog("members");
-                      }}
-                    />
-                    {canDeleteAlbum && (
-                      <AlbumMenuItem
-                        label={busy === "delete" ? "削除しています…" : "このアルバムを削除"}
-                        danger
-                        disabled={busy !== null}
-                        onClick={() => {
-                          setIsMenuOpen(false);
-                          void handleDeleteAlbum();
-                        }}
-                      />
-                    )}
-                  </ul>
+              {/* #770: 「⋯」は共通部品（アプリ中で同じ作りを 4 か所に書き写していた） */}
+              <MoreMenu className="shrink-0">
+                {canManage && <MoreMenuItem label="招待" onClick={() => setDialog("invite")} />}
+                <MoreMenuItem label="メンバー" onClick={() => setDialog("members")} />
+                {canDeleteAlbum && (
+                  <MoreMenuItem
+                    label={busy === "delete" ? "削除しています…" : "このアルバムを削除"}
+                    danger
+                    disabled={busy !== null}
+                    onClick={() => void handleDeleteAlbum()}
+                  />
                 )}
-              </div>
+              </MoreMenu>
             </div>
           )}
           <p className="text-[0.6875rem] text-muted">
@@ -565,19 +536,3 @@ const defaultApi: AlbumApi = {
   leave: (tripId) => fetchWithAuthRedirect(`/api/trips/${tripId}/members/me`, { method: "DELETE" }),
 };
 
-/** #750: 「⋯」の中の 1 行（しおり詳細の MenuItem と同じ形） */
-function AlbumMenuItem({ label, onClick, danger = false, disabled = false }: { label: string; onClick: () => void; danger?: boolean; disabled?: boolean }) {
-  return (
-    <li role="presentation">
-      <button
-        type="button"
-        role="menuitem"
-        onClick={onClick}
-        disabled={disabled}
-        className={`flex w-full px-3 py-2 text-left text-[0.8125rem] hover:bg-tint disabled:opacity-45 ${danger ? "text-saved" : "text-ink"}`}
-      >
-        {label}
-      </button>
-    </li>
-  );
-}

@@ -1,13 +1,14 @@
 "use client";
 
-import { Suspense, use, useState } from "react";
+import { Suspense, use } from "react";
 import Link from "next/link";
 import { MediaGrid } from "@/components/media/MediaGrid";
 import { SaveButton } from "@/components/save/SaveButton";
 import { LikeButton } from "@/components/likes/LikeButton";
 import { CommentSection } from "@/components/comments/CommentSection";
 import { CommentsSkeleton } from "@/components/skeleton/Skeletons";
-import { ReportLink } from "@/components/reports/ReportLink";
+import { buildReportHref } from "@/components/reports/report-href";
+import { MoreMenu, MoreMenuItem } from "@/components/ui/MoreMenu";
 import { DeletePostButton } from "@/components/posts/DeletePostButton";
 import { SpotStatusButtons } from "@/components/spots/SpotStatusButtons";
 import type { CommentPage } from "@/lib/comments/list-comments";
@@ -17,7 +18,6 @@ import { appendBackHref, buildMapHrefWithBack } from "@/lib/search/list-state";
 import { MapSheetLayout } from "@/components/layout/MapSheetLayout";
 import { StaticSpotMap } from "@/components/map/StaticSpotMap";
 import { formatCost } from "./PostCard";
-import { useOutsideClose } from "@/lib/ui/use-outside-close";
 import { BackLink } from "@/components/layout/BackLink";
 import { formatDate, formatDateTime } from "@/lib/format/date-time";
 
@@ -57,9 +57,6 @@ export function PostDetailScreen({
   const backLabel = back?.label ?? "投稿一覧";
   const returnTo = `/posts/${post.id}`;
   const cost = formatCost(post.cost);
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
-  // #789: 外をタップ／Esc で閉じる（アプリ中の「⋯」で同じ hook を使う）
-  const menuRef = useOutsideClose<HTMLDivElement>(isMenuOpen, () => setIsMenuOpen(false));
 
   // 上の地図（SC-02）からは「← スポット名」でこの投稿に戻る（要件 8 章 46）
   const mapHref = buildMapHrefWithBack({ spot: post.spot.id, lat: post.spot.lat, lng: post.spot.lng }, selfHref);
@@ -109,43 +106,23 @@ export function PostDetailScreen({
               {/* #813: 戻るは共通部品（自前で ‹ を描かない） */}
               <BackLink href={backHref} label={backLabel} />
               <span className="flex-1" />
-              {post.isOwner ? (
-                <div ref={menuRef} className="relative">
-                  <button
-                    type="button"
-                    onClick={() => setIsMenuOpen((open) => !open)}
-                    aria-haspopup="menu"
-                    aria-expanded={isMenuOpen}
-                    aria-label="その他"
-                    className="h-8 w-8 rounded-full border border-line bg-surface text-[0.875rem] font-bold text-ink"
-                  >
-                    ⋯
-                  </button>
-                  {isMenuOpen && (
-                    <div
-                      role="menu"
-                      className="absolute right-0 z-20 mt-1 flex min-w-[140px] flex-col overflow-hidden rounded-[10px] border border-line bg-surface py-1 shadow-card"
-                    >
-                      <Link
-                        href={`/posts/${post.id}/edit`}
-                        role="menuitem"
-                        className="px-3 py-2 text-[0.8125rem] text-ink hover:bg-tint"
-                      >
-                        編集
-                      </Link>
-                      <div className="px-3 py-1.5">
-                        <DeletePostButton postId={post.id} />
-                      </div>
-                    </div>
-                  )}
-                </div>
-              ) : (
-                <ReportLink
-                  targetType="post"
-                  targetId={post.id}
-                  returnTo={returnTo}
-                />
-              )}
+              {/*
+                * #770（2026-10-06）: 他人の投稿では「通報する」が**右上に下線リンクで裸**だった。
+                * 主役ではない操作なので「⋯」の中へ入れ、自分の投稿と同じ形にそろえる
+                * （自分の投稿は 編集・削除。通報は出ない）。
+                */}
+              <MoreMenu>
+                {post.isOwner ? (
+                  <>
+                    <MoreMenuItem label="編集" href={`/posts/${post.id}/edit`} />
+                    <li role="presentation" className="px-3 py-1.5">
+                      <DeletePostButton postId={post.id} />
+                    </li>
+                  </>
+                ) : (
+                  <MoreMenuItem label="通報する" href={buildReportHref({ targetType: "post", targetId: post.id, returnTo })} />
+                )}
+              </MoreMenu>
             </div>
 
             <h1 className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[1.125rem] font-bold leading-tight text-ink">
@@ -183,13 +160,16 @@ export function PostDetailScreen({
               aria-label={post.rating !== null ? `星${post.rating}` : "未評価"}
             >
               {post.rating !== null ? (
+                /*
+                  * #773（2026-10-06）: 「★★★☆☆ 星3」の**文字**を外した。
+                  * 一覧では既に外してあり（docs/stars-and-trim）、詳細だけ残っていた。
+                  * 星の数で分かることを、もう一度文字で書かない。
+                  * 読み上げには上の `aria-label`（「星3」）が残るので意味は失わない。
+                  */
                 <>
                   <span className="text-star">{"★".repeat(post.rating)}</span>
                   <span className="text-line">
                     {"★".repeat(5 - post.rating)}
-                  </span>
-                  <span className="ml-1.5 text-[0.75rem] text-muted">
-                    星{post.rating}
                   </span>
                 </>
               ) : (

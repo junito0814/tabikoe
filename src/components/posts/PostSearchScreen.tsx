@@ -53,6 +53,7 @@ export function PostSearchScreen({
   initialState,
   initialPage,
   title,
+  headerAction,
   backHref,
   backLabel,
   backParam = null,
@@ -70,6 +71,8 @@ export function PostSearchScreen({
   initialPage: PostCardPage;
   /** 見出し（大阪府／大阪駅／スポット名） */
   title: string;
+  /** #770: 見出しの右に置くもの（スポット別一覧の「⋯」）。無ければ何も出さない */
+  headerAction?: ReactNode;
   backHref: string;
   backLabel: string;
   /** Bug #469: この一覧自身が受け取った戻り先（`back=`）。投稿詳細へ渡す一覧 URL に付け直して数珠つなぎにする */
@@ -184,6 +187,8 @@ export function PostSearchScreen({
                 絞り込み{activeCount > 0 && `（${activeCount}）`}
               </button>
             )}
+            {/* #770: 主役ではない操作（通報する）は右上の「⋯」へ */}
+            {headerAction}
           </div>
           {header}
           <div className="flex items-center justify-between gap-2">

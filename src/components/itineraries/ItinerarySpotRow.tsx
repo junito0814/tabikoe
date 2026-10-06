@@ -1,13 +1,13 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
 import { TimePicker10 } from "@/components/ui/TimePicker10";
-import { useOutsideClose } from "@/lib/ui/use-outside-close";
 import type { ItinerarySpotItem } from "@/lib/itineraries/get-itinerary";
 import { composeHref } from "@/lib/posts/compose-initial-state";
 import { DayMoveDropdown } from "./DayMoveDropdown";
 import type { DayKey } from "./DayTabs";
+import { MoreMenu, MoreMenuItem } from "@/components/ui/MoreMenu";
+import { useOutsideClose } from "@/lib/ui/use-outside-close";
 
 /** メモの上限（書記素）。API と同じ値 */
 export const MEMO_MAX_LENGTH = 500;
@@ -83,9 +83,6 @@ export function ItinerarySpotRow({
   const timeRef = useOutsideClose<HTMLDivElement>(isPickingTime, () => setIsPickingTime(false));
   const [memo, setMemo] = useState(spot.memo ?? "");
   const [isEditingMemo, setIsEditingMemo] = useState(false);
-  // #753: 右端の「⋯」。外をタップしたら閉じる（しおり詳細・アルバムの「⋯」と同じ作法）
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const menuRef = useOutsideClose<HTMLDivElement>(isMenuOpen, () => setIsMenuOpen(false));
   const checked = spot.checkedAt !== null;
   const hasTime = spot.arrivalTime !== null;
 
@@ -218,59 +215,15 @@ export function ItinerarySpotRow({
           <span className="text-star">★</span>
           {spot.ratingAverage ?? "0.0"}
         </span>
-        <div ref={menuRef} className="relative">
-          <button
-            type="button"
-            onClick={() => setIsMenuOpen((open) => !open)}
-            aria-haspopup="menu"
-            aria-expanded={isMenuOpen}
-            aria-label={`${spot.name} のその他`}
-            disabled={pending !== null}
-            className="flex h-7 w-7 items-center justify-center rounded-full border border-line bg-surface text-[0.8125rem] font-bold text-ink disabled:opacity-45"
-          >
-            ⋯
-          </button>
-          {isMenuOpen && (
-            <ul role="menu" className="absolute right-0 z-20 mt-1 min-w-[150px] overflow-hidden rounded-[10px] border border-line bg-surface py-1 shadow-card">
-              <li role="presentation">
-                {/* Bug #471: 「← しおり」で戻れるように、このしおりの URL を back= で渡す */}
-                <Link
-                  role="menuitem"
-                  href={`/spots/${spot.spotId}?back=${encodeURIComponent(`/itineraries/${itineraryId}`)}`}
-                  prefetch={false}
-                  className="flex w-full px-3 py-2 text-left text-[0.8125rem] text-ink hover:bg-tint"
-                >
-                  投稿を見る
-                </Link>
-              </li>
-              {!spot.hasPosted && (
-                <li role="presentation">
-                  <Link
-                    role="menuitem"
-                    href={composeHref({ kind: "itinerary", itineraryId, spotId: spot.spotId, dayIndex: spot.dayIndex })}
-                    className="flex w-full px-3 py-2 text-left text-[0.8125rem] text-ink hover:bg-tint"
-                  >
-                    投稿する
-                  </Link>
-                </li>
-              )}
-              <li role="presentation">
-                <button
-                  type="button"
-                  role="menuitem"
-                  onClick={() => {
-                    setIsMenuOpen(false);
-                    onRemove(spot.spotId);
-                  }}
-                  disabled={pending !== null}
-                  className="flex w-full px-3 py-2 text-left text-[0.8125rem] text-saved hover:bg-tint disabled:opacity-45"
-                >
-                  しおりから外す
-                </button>
-              </li>
-            </ul>
+        {/* #770: 「⋯」は共通部品（アプリ中で同じ作りを 4 か所に書き写していた） */}
+        <MoreMenu label={`${spot.name} のその他`} disabled={pending !== null}>
+          {/* Bug #471: 「← しおり」で戻れるように、このしおりの URL を back= で渡す */}
+          <MoreMenuItem label="投稿を見る" href={`/spots/${spot.spotId}?back=${encodeURIComponent(`/itineraries/${itineraryId}`)}`} />
+          {!spot.hasPosted && (
+            <MoreMenuItem label="投稿する" href={composeHref({ kind: "itinerary", itineraryId, spotId: spot.spotId, dayIndex: spot.dayIndex })} />
           )}
-        </div>
+          <MoreMenuItem label="しおりから外す" danger disabled={pending !== null} onClick={() => onRemove(spot.spotId)} />
+        </MoreMenu>
       </div>
       </div>
     </li>

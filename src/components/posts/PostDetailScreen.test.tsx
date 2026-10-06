@@ -100,8 +100,11 @@ describe("PostDetailScreen（SC-05）", () => {
 
   it("本人には編集・削除、他人には通報の導線を出す", () => {
     const { unmount } = render(<PostDetailScreen post={post} initialComments={noComments} />);
-    expect(screen.getByRole("link", { name: "通報する" })).toBeInTheDocument();
-    expect(screen.queryByRole("link", { name: "編集" })).toBeNull();
+    // #770: 他人の投稿でも「通報する」は右上の「⋯」の中（下線リンクで裸に置かない）
+    expect(screen.queryByRole("link", { name: "通報する" })).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "その他" }));
+    expect(screen.getByRole("menuitem", { name: "通報する" })).toBeInTheDocument();
+    expect(screen.queryByRole("menuitem", { name: "編集" })).toBeNull();
     unmount();
     render(<PostDetailScreen post={{ ...post, isOwner: true }} initialComments={noComments} />);
     expect(screen.queryByRole("link", { name: "通報する" })).toBeNull();

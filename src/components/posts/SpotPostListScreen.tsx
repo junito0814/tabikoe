@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { ReportLink } from "@/components/reports/ReportLink";
+import { buildReportHref } from "@/components/reports/report-href";
+import { MoreMenu, MoreMenuItem } from "@/components/ui/MoreMenu";
 import { SaveButton } from "@/components/save/SaveButton";
 import { composeHref } from "@/lib/posts/compose-initial-state";
 import type { PostCardPage } from "@/lib/posts/post-cards";
@@ -103,7 +104,6 @@ export function SpotPostListScreen({
         >
           投稿する
         </Link>
-        <ReportLink targetType="spot" targetId={spot.id} returnTo={`/spots/${spot.id}`} />
       </div>
     </div>
   );
@@ -141,6 +141,15 @@ export function SpotPostListScreen({
         initialPage={initialPage}
         initialMediaPage={initialMediaPage}
         title={spot.name}
+        /*
+         * #770（2026-10-06）: 「通報する」は「＋」「投稿する」のすぐ隣に下線リンクで並んでいた。
+         * 主役の操作と並べる重さのものではないので、右上の「⋯」の中へ（アルバム・しおりと同じ形）。
+         */
+        headerAction={
+          <MoreMenu>
+            <MoreMenuItem label="通報する" href={buildReportHref({ targetType: "spot", targetId: spot.id, returnTo: `/spots/${spot.id}` })} />
+          </MoreMenu>
+        }
         backHref={back?.href ?? "/map"}
         backLabel={back?.label ?? "地図"}
         backParam={back?.href ?? null}
