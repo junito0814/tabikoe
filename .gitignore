@@ -40,3 +40,6 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# seed の id 控え（#776）。環境ごとに違うので共有しない
+/scripts/seed/seed-ids.json
