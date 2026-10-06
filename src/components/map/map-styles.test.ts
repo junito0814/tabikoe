@@ -81,9 +81,9 @@ describe("buildMapOptions（map-display-v3 Task3）", () => {
     afterEach(() => {
       window.matchMedia = original;
     });
-    const setPointer = (coarse: boolean) => {
+    const setPointer = (coarse: boolean, phone = false) => {
       window.matchMedia = ((query: string) => ({
-        matches: query.includes("pointer: coarse") ? coarse : false,
+        matches: query.includes("pointer: coarse") ? coarse : query.includes("max-width") ? phone : false,
         addEventListener: () => {},
         removeEventListener: () => {},
       })) as unknown as typeof window.matchMedia;
@@ -107,6 +107,25 @@ describe("buildMapOptions（map-display-v3 Task3）", () => {
       expect(buildMapOptions("light", 14, "cooperative").zoomControl).toBe(false);
     });
 
+    /**
+     * #801（2026-10-06）: スマホ幅では出さない
+     * 出典: Issue #801「スマホ幅では地図の ＋/− ズームボタンを出さない」
+     *
+     * 【初心者向け】「指で触れるか」だけで見ていたので、**投稿を書く画面の地図にだけ ＋/− が出て**いた。
+     * 幅でも見るようにして、スマホ幅ではどの地図にも出さない。
+     */
+    it("#801: スマホ幅（768px 未満）では、指で触れなくても出さない", async () => {
+      const { buildMapOptions } = await import("./map-styles");
+      setPointer(false, true);
+      expect(buildMapOptions("light", 14, "greedy").zoomControl).toBe(false);
+    });
+
+    it("#801: パソコン（768px 以上・指で触れない）では今までどおり出す", async () => {
+      const { buildMapOptions } = await import("./map-styles");
+      setPointer(false, false);
+      expect(buildMapOptions("light", 14, "greedy").zoomControl).toBe(true);
+    });
+
     it("matchMedia が無い環境（サーバー側の描画）では出す側に倒す", async () => {
       const { buildMapOptions } = await import("./map-styles");
       // @ts-expect-error テストのために一時的に消す
@@ -115,11 +134,20 @@ describe("buildMapOptions（map-display-v3 Task3）", () => {
     });
   });
 
-  it("gesture をそのまま gestureHandling に渡し、見るだけの地図ではキーボード操作も止める", async () => {
+  it("gesture をそのまま gestureHandling に渡す", async () => {
     const { buildMapOptions } = await import("./map-styles");
     expect(buildMapOptions("light", 14, "cooperative").gestureHandling).toBe("cooperative");
-    expect(buildMapOptions("light", 14, "cooperative").keyboardShortcuts).toBe(true);
     expect(buildMapOptions("light", 14, "none").gestureHandling).toBe("none");
-    expect(buildMapOptions("light", 14, "none").keyboardShortcuts).toBe(false);
+  });
+
+  /**
+   * #787（2026-10-06）: キーボード ショートカットの印（⌨）を出さない
+   * 出典: Issue #787「地図のキーボード ショートカットの印（⌨）を出さない」
+   */
+  it("キーボード ショートカットの印はどの地図でも出さない（スマホにキーボードは無い）", async () => {
+    const { buildMapOptions } = await import("./map-styles");
+    for (const gesture of ["none", "cooperative", "greedy"] as const) {
+      expect(buildMapOptions("light", 14, gesture).keyboardShortcuts, gesture).toBe(false);
+    }
   });
 });

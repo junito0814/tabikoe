@@ -1,10 +1,10 @@
 "use client";
 
 import { useCallback, useRef, useState } from "react";
-import Link from "next/link";
 import { GoogleMap, type GoogleMapHandle } from "./GoogleMap";
 import { isSameView, type MapView } from "./static-map-view";
 import type { LatLng } from "./initial-center";
+import { LOGO_SAFE_CLASS, MapOverlayControls } from "./MapOverlayControls";
 
 /** 上部の地図の初期ズーム。「戻す」はここへ戻る */
 const INITIAL_ZOOM = 15;
@@ -40,7 +40,8 @@ export function StaticSpotMap({ spot, href, className }: { spot: { id: string; n
   }, []);
 
   return (
-    <div className={`relative overflow-hidden ${className ?? ""}`} data-static-spot-map>
+    /* #764: 地図の中身を 16px 上げて、左下の Google のロゴがシートに隠れないようにする（高さは変えない） */
+    <div className={`relative overflow-hidden ${LOGO_SAFE_CLASS} ${className ?? ""}`} data-static-spot-map>
       <GoogleMap
         ref={mapRef}
         initialCenter={{ lat: spot.lat, lng: spot.lng }}
@@ -51,21 +52,8 @@ export function StaticSpotMap({ spot, href, className }: { spot: { id: string; n
         onBoundsChange={handleBoundsChange}
         className="h-full w-full"
       />
-      {/* シート（MapSheetLayout）が地図の下端に 16px かぶさるので、その分（12 + 16 = 28px）上げて隠れないようにする */}
-      <div className="absolute right-3 bottom-7 z-10 flex items-center gap-2">
-        {moved && (
-          <button
-            type="button"
-            onClick={reset}
-            className="tap-target rounded-full bg-surface/90 px-2.5 py-1 text-[0.6875rem] font-medium text-ink shadow-[0_1px_4px_rgba(30,42,56,0.25)]"
-          >
-            戻す
-          </button>
-        )}
-        <Link href={href} className="tap-target rounded-full bg-ink/80 px-2.5 py-1 text-[0.6875rem] font-medium text-on-ink">
-          地図を全画面に
-        </Link>
-      </div>
+      {/* #760: 「戻す」＋「全画面に」は共通部品（2 か所に同じものを書かない） */}
+      <MapOverlayControls fullscreenHref={href} moved={moved} onReset={reset} />
     </div>
   );
 }
