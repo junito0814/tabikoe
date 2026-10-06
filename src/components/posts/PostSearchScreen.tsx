@@ -7,13 +7,12 @@ import { ErrorNotice } from "@/components/notices/ErrorNotice";
 import { CardListSkeleton } from "@/components/skeleton/Skeletons";
 import { ERROR_MESSAGES } from "@/components/notices/error-messages";
 import { fetchWithAuthRedirect, UnauthorizedError } from "@/lib/api/fetch-with-auth-redirect";
-import type { PostCardData, PostCardPage, PostSort } from "@/lib/posts/post-cards";
+import { POST_SORT_LABELS, POST_SORTS, type PostCardData, type PostCardPage, type PostSort } from "@/lib/posts/post-cards";
 import { PhotoGrid, type FetchMediaPage } from "@/components/media/PhotoGrid";
 import type { SpotMediaPage } from "@/lib/posts/search-photos";
 import { AddModeBanner, type AddModeInfo } from "./AddModeBanner";
 import { FilterSheet } from "./FilterSheet";
 import { PostCard } from "./PostCard";
-import { SortDropdown } from "./SortDropdown";
 import { ViewToggle } from "./ViewToggle";
 import type { ListView } from "@/lib/search/list-view";
 import {
@@ -26,6 +25,7 @@ import {
 import { useInfiniteScroll } from "./use-infinite-scroll";
 import { useListRestore } from "./use-search-list";
 import { BackLink } from "@/components/layout/BackLink";
+import { Select } from "@/components/ui/Select";
 
 export type FetchSearchPage = (params: URLSearchParams) => Promise<PostCardPage>;
 
@@ -188,7 +188,8 @@ export function PostSearchScreen({
           {header}
           <div className="flex items-center justify-between gap-2">
             <ViewToggle value={state.view} onChange={onViewChange} />
-            <SortDropdown value={state.sort as PostSort} onChange={onSortChange} />
+            {/* #812: 自前のリストをやめ、ブラウザ標準の <select> に（スマホでは OS の選択画面が開く） */}
+            <Select<PostSort> value={state.sort as PostSort} onChange={onSortChange} options={POST_SORTS} label={(sort) => POST_SORT_LABELS[sort]} ariaLabel="並び替え" />
           </div>
         </header>
 

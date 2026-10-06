@@ -228,8 +228,8 @@ describe("ItineraryDetailScreen（SC-23）", () => {
     const api = makeApi(moved);
     render(<ItineraryDetailScreen initial={detail()} viewerId="me" api={api} initialDay={1} />);
     const rowB = document.querySelector("[data-itinerary-spot='b']") as HTMLElement;
-    fireEvent.click(within(rowB).getByRole("button", { name: "Day を移動: Day 1" }));
-    fireEvent.click(screen.getByRole("option", { name: "Day 2" }));
+    // #812: 自前のリストをやめ、ブラウザ標準の <select> になった
+    fireEvent.change(within(rowB).getByRole("combobox", { name: "Day を移動: Day 1" }), { target: { value: "2" } });
     await waitFor(() => expect(api.updateSpot).toHaveBeenCalledWith("it-1", "b", { dayIndex: 2 }));
     expect(screen.getByRole("tab", { name: /Day 1/ })).toHaveAttribute("aria-selected", "true");
     const toast = await screen.findByRole("status");
@@ -380,7 +380,7 @@ describe("行の形（#753・#793）", () => {
     expect(within(r).queryByRole("link", { name: "投稿一覧" })).toBeNull();
     expect(within(r).queryByRole("link", { name: "投稿する" })).toBeNull();
     expect(within(r).queryByRole("button", { name: /をしおりから削除$/ })).toBeNull();
-    expect(within(r).getByRole("button", { name: /^Day を(移動|決める)/ })).toBeInTheDocument();
+    expect(within(r).getByRole("combobox", { name: /^Day を(移動|決める)/ })).toBeInTheDocument();
   });
 
   it("赤いゴミ箱が行に出ていない（取り返しのつかない操作がいちばん目立つ形をやめた）", () => {
@@ -421,7 +421,7 @@ describe("行の形（#753・#793）", () => {
   it("#793: 「日付なし」の行のボタンは「Day を決める」（その塊にいる時点で日付なしだと分かるため）", () => {
     const data = detail({ spots: [spot("z", { dayIndex: null })] });
     render(<ItineraryDetailScreen initial={data} viewerId="me" api={makeApi(data)} />);
-    expect(within(row("z")).getByRole("button", { name: "Day を決める" })).toHaveTextContent("Day を決める");
+    expect(within(row("z")).getByRole("combobox", { name: "Day を決める" })).toHaveTextContent("Day を決める");
   });
 });
 
@@ -537,12 +537,13 @@ describe("名前の変更と重なり（#779・#789）", () => {
     const data = detail({ spots: [spot("a")] });
     render(<ItineraryDetailScreen initial={data} viewerId="me" api={makeApi(data)} />);
     fireEvent.click(screen.getByRole("button", { name: "到着予定時刻を設定" }));
-    const dayButton = screen.getByRole("button", { name: /Day を移動/ });
+    // #812: Day は <select> になったので、触ると OS の選択画面が開く。
+    // ここで確かめたいのは「時刻ピッカーが閉じること」
+    const daySelect = screen.getByRole("combobox", { name: /Day を移動/ });
     // 実機のタップは pointerdown → click の順に起きる
-    fireEvent.pointerDown(dayButton);
-    fireEvent.click(dayButton);
+    fireEvent.pointerDown(daySelect);
+    fireEvent.click(daySelect);
     expect(document.querySelector("[data-time-picker]")).toBeNull();
-    expect(screen.getByRole("listbox", { name: "移動先の Day" })).toBeInTheDocument();
   });
 
   it("#789: Esc で時刻ピッカーが閉じる", () => {
@@ -575,7 +576,10 @@ describe("ALL の並び（#759）", () => {
   it("Day を移す選択肢の並びは変わらない（Day 1〜n → 日付なし）", () => {
     const data = detail({ spots: [spot("a", { dayIndex: 1 })] });
     render(<ItineraryDetailScreen initial={data} viewerId="me" api={makeApi(data)} />);
-    fireEvent.click(screen.getByRole("button", { name: /Day を移動/ }));
-    expect(screen.getAllByRole("option").map((option) => option.textContent)).toEqual(["Day 1", "Day 2", "Day 3", "日付なし"]);
+    expect(
+      within(screen.getByRole("combobox", { name: /Day を移動/ }))
+        .getAllByRole("option")
+        .map((option) => option.textContent)
+    ).toEqual(["Day 1", "Day 2", "Day 3", "日付なし"]);
   });
 });

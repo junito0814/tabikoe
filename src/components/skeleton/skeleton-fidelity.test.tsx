@@ -187,7 +187,8 @@ describe("#653: 切替の行がある（行きたい・検索結果）", () => {
 
   it("検索結果に表示切替と並び替えの行がある", () => {
     expect(real5.検索結果).toContain("<ViewToggle");
-    expect(real5.検索結果).toContain("<SortDropdown");
+    // #812: 自前のリスト（SortDropdown）をやめ、共通の Select（ブラウザ標準の <select>）になった
+    expect(real5.検索結果).toContain("<Select");
     expect(part("PostSearchSkeleton")).toContain("flex items-center justify-between gap-2");
   });
 });

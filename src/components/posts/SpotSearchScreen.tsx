@@ -14,7 +14,6 @@ import { AddModeBanner, type AddModeInfo } from "./AddModeBanner";
 import { FilterButton } from "./FilterButton";
 import { FilterSheet } from "./FilterSheet";
 import { PullToRefresh } from "@/components/layout/PullToRefresh";
-import { SortDropdown } from "./SortDropdown";
 import { SpotCard } from "./SpotCard";
 import { ViewToggle } from "./ViewToggle";
 import { SearchMapView } from "./SearchMapView";
@@ -23,6 +22,7 @@ import { buildPostSearchParams, buildSearchPageHref, canFilterByArea, countActiv
 import { useInfiniteScroll } from "./use-infinite-scroll";
 import { useListRestore } from "./use-search-list";
 import { BackLink } from "@/components/layout/BackLink";
+import { Select } from "@/components/ui/Select";
 
 export type FetchSpotPage = (params: URLSearchParams) => Promise<SpotCardPage>;
 
@@ -156,7 +156,8 @@ export function SpotSearchScreen({
             </div>
             <div className="flex items-center justify-between gap-2">
               <ViewToggle value={state.view} onChange={onViewChange} showMap />
-              <SortDropdown<SpotSort> value={state.sort as SpotSort} onChange={onSortChange} options={SPOT_SORTS} labels={SPOT_SORT_LABELS} />
+              {/* #812: 自前のリストをやめ、ブラウザ標準の <select> に */}
+              <Select<SpotSort> value={state.sort as SpotSort} onChange={onSortChange} options={SPOT_SORTS} label={(sort) => SPOT_SORT_LABELS[sort]} ariaLabel="並び替え" />
             </div>
             {/*
               * #809: 絞っているエリアの札。**全部選んだ地方は 1 枚にまとめる**（areaChips）。

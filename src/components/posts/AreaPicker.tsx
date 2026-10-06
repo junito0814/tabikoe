@@ -1,6 +1,7 @@
 "use client";
 
 import { REGIONS, regionState, togglePrefecture, toggleRegion } from "@/lib/search/regions";
+import { BackLink } from "@/components/layout/BackLink";
 
 /**
  * #809: 絞り込みの「エリア」を選ぶ画面（地方ごとに都道府県を並べる）
@@ -15,12 +16,8 @@ export function AreaPicker({ selected, onChange, onBack }: { selected: readonly 
   return (
     <div className="flex flex-col gap-3" data-area-picker>
       <div className="flex items-center gap-2">
-        <button type="button" onClick={onBack} className="inline-flex h-8 shrink-0 items-center gap-1 text-[12px] font-medium text-muted">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden>
-            <path d="M15 5l-7 7 7 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
-          絞り込み
-        </button>
+        {/* #813: 戻るは共通部品から描く（自前で ‹ を描かない）。行き先はシートの中なので onClick */}
+        <BackLink label="絞り込み" onClick={onBack} />
         <h3 className="flex-1 text-center text-[15px] font-bold text-ink">エリア</h3>
         <span className="w-[72px]" />
       </div>

@@ -13,7 +13,7 @@ import { saveListState } from "@/lib/search/list-state";
 /**
  * 出典: docs/tasks/map-search/post-timeline/02-timeline-ui.md 単体テスト
  * - カードに必須要素がすべて描画されること
- * - 並び替えドロップダウンで選択がボタン表示に反映されること
+ * - 並び替え（<select>）で選択が表示に反映されること
  * - #681: 距離の絞り込みは出ない（地図タブに置き換え）
  * 出典: docs/tasks/map-search/post-timeline/03-scroll-and-back.md 単体テスト
  * - 保存した状態が URL キーで復元されること
@@ -110,11 +110,11 @@ describe("PostSearchScreen（SC-04 タイムライン）", () => {
     expect(article.querySelector("[data-spot-status]")).toBeNull();
   });
 
-  it("並び替えはドロップダウンで、選ぶとボタン表示が変わり URL と一覧を更新する", async () => {
+  it("並び替えは <select> で、選ぶと表示が変わり URL と一覧を更新する", async () => {
     const fetchPage = renderScreen();
-    fireEvent.click(screen.getByRole("button", { name: "並び替え: 新着順" }));
-    fireEvent.click(screen.getByRole("option", { name: "評価順" }));
-    expect(screen.getByRole("button", { name: "並び替え: 評価順" })).toBeInTheDocument();
+    // #812: 自前のリストをやめ、ブラウザ標準の <select> になった
+    fireEvent.change(screen.getByRole("combobox", { name: "並び替え" }), { target: { value: "rating" } });
+    expect(screen.getByRole("combobox", { name: "並び替え" })).toHaveValue("rating");
     await waitFor(() => expect(fetchPage).toHaveBeenCalledTimes(1));
     expect(Object.fromEntries(fetchPage.mock.calls[0][0])).toEqual({ pref: "大阪府", sort: "rating" });
     expect(replace).toHaveBeenCalledWith("/search?pref=%E5%A4%A7%E9%98%AA%E5%BA%9C&sort=rating", { scroll: false });
@@ -122,8 +122,7 @@ describe("PostSearchScreen（SC-04 タイムライン）", () => {
 
   it("Bug #483: 戻り先（back）があるときは、並び替え・写真切替で URL を書き換えても back を保つ", async () => {
     renderScreen({ context: { destination: { kind: "spot", spotId: "spot-1" } }, title: "東京駅", backHref: "/search?pref=東京都", backLabel: "東京都", backParam: "/search?pref=東京都" });
-    fireEvent.click(screen.getByRole("button", { name: "並び替え: 新着順" }));
-    fireEvent.click(screen.getByRole("option", { name: "評価順" }));
+    fireEvent.change(screen.getByRole("combobox", { name: "並び替え" }), { target: { value: "rating" } });
     await waitFor(() => expect(replace).toHaveBeenCalled());
     const url = new URL(String(replace.mock.calls[0][0]), "https://example.com");
     expect(url.searchParams.get("sort")).toBe("rating");
@@ -249,8 +248,7 @@ describe("loading-feedback Task 3: 条件を変えたら古い一覧を残さな
     // 最初は 1 件出ている
     expect(screen.getByText("たこ焼き〇〇")).toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole("button", { name: "並び替え: 新着順" }));
-    fireEvent.click(screen.getByRole("option", { name: "評価順" }));
+    fireEvent.change(screen.getByRole("combobox", { name: "並び替え" }), { target: { value: "rating" } });
 
     // 古いカードは残らず、読み込んでいることが分かる
     await waitFor(() => expect(screen.queryByText("たこ焼き〇〇")).not.toBeInTheDocument());
@@ -299,7 +297,7 @@ describe("スポット別の一覧（#692）", () => {
   it("絞り込みは出さず、並び替えは残す", () => {
     renderScreen({ initialPage: { posts: [card("p1")], nextOffset: null }, context: spotContext });
     expect(screen.queryByRole("button", { name: /絞り込み/ })).toBeNull();
-    expect(screen.getByRole("button", { name: /並び替え/ })).toBeInTheDocument();
+    expect(screen.getByRole("combobox", { name: /並び替え/ })).toBeInTheDocument();
   });
 
   it("投稿カードに「＋」を出さない", () => {

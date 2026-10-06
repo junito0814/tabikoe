@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { fetchWithAuthRedirect, UnauthorizedError } from "@/lib/api/fetch-with-auth-redirect";
 import type { AlbumSort } from "@/lib/albums/get-album";
 import { CloseButton } from "@/components/ui/CloseButton";
+import { Select } from "@/components/ui/Select";
 
 /**
  * #715: アルバム一覧の「＋ 新規」と並び順
@@ -51,15 +52,14 @@ export function AlbumListControls({
       <div className="flex items-center justify-between gap-2">
         <label className="flex items-center gap-1.5 text-[12px] text-muted">
           <span className="sr-only">並び順</span>
-          <select
+          {/* #812: 見た目は共通部品（Select）に */}
+          <Select
             value={sort}
-            onChange={(event) => router.replace(`/albums?sort=${event.target.value}`)}
-            aria-label="並び順"
-            className="h-8 rounded-full border border-line bg-surface px-2 text-[12px] font-semibold text-ink"
-          >
-            <option value="newest">新着順</option>
-            <option value="oldest">古い順</option>
-          </select>
+            onChange={(next) => router.replace(`/albums?sort=${next}`)}
+            options={["newest", "oldest"] as const}
+            label={(option) => (option === "newest" ? "新着順" : "古い順")}
+            ariaLabel="並び順"
+          />
         </label>
         <button
           type="button"

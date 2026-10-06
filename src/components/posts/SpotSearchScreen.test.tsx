@@ -60,9 +60,10 @@ describe("SpotSearchScreen（SC-04 検索結果・スポット単位）", () => 
   it("並び替えは 新着順／評価順／投稿数順 で、投稿数順を選ぶと sort=count で取り直し URL も変わる", async () => {
     const fetchPage = vi.fn<(params: URLSearchParams) => Promise<{ spots: SpotCardData[]; nextOffset: number | null }>>(async () => ({ spots: [spot("s9")], nextOffset: null }));
     render(<SpotSearchScreen context={pref} initialState={EMPTY_SEARCH_STATE} initialPage={{ spots: [spot("s1")], nextOffset: null }} title="東京都" backHref="/" backLabel="ホーム" fetchPage={fetchPage} />);
-    fireEvent.click(screen.getByRole("button", { name: "並び替え: 新着順" }));
-    expect(screen.getAllByRole("option").map((o) => o.textContent)).toEqual(["新着順", "評価順", "投稿数順"]);
-    fireEvent.click(screen.getByRole("option", { name: "投稿数順" }));
+    // #812: 自前のリストをやめ、ブラウザ標準の <select> になった
+    const sort = screen.getByRole("combobox", { name: "並び替え" });
+    expect(within(sort).getAllByRole("option").map((o) => o.textContent)).toEqual(["新着順", "評価順", "投稿数順"]);
+    fireEvent.change(sort, { target: { value: "count" } });
     await waitFor(() => expect(fetchPage).toHaveBeenCalled());
     expect(fetchPage.mock.calls[0]?.[0].get("sort")).toBe("count");
     expect(replace).toHaveBeenCalledWith(expect.stringContaining("sort=count"), { scroll: false });
