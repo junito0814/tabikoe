@@ -24,6 +24,7 @@ import { PeriodDialog } from "./PeriodDialog";
 import { defaultItineraryApi, type ItineraryApi } from "./itinerary-api";
 import { useOutsideClose } from "@/lib/ui/use-outside-close";
 import { HIGHLIGHT_MS, scrollBehaviorFor, scrollRowIntoView } from "@/lib/ui/scroll-to-row";
+import { useConfirm } from "@/components/ui/ConfirmSheet";
 
 /**
  * itinerary-basics Task3 / itinerary-days Task2 / arrival-time Task3 / itinerary-check Task3: しおり詳細（SC-23）
@@ -83,13 +84,15 @@ export function ItineraryDetailScreen({
   const [dialog, setDialog] = useState<"period" | "invite" | "members" | "rename" | null>(null);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   /*
-   * #779（2026-10-06）: 名前の変更は `window.prompt("アルバム名", …)` だった。
+   * #779（2026-10-06）: 名前の変更は、ブラウザ標準の `window.prompt` で「アルバム名」と聞いていた。
    * **しおりの画面なのに「アルバム名」と聞かれる**うえ、ブラウザ標準の箱なので
    * 文字数の上限も効かず、見た目もアプリから浮いていた。
    * アルバム（#742）と同じく、タイトルを押すとその場が入力欄になる形にする。
    */
   const [isRenaming, setIsRenaming] = useState(false);
   const [draftTitle, setDraftTitle] = useState("");
+  // #778: 確認はブラウザ標準の箱ではなく、アプリ共通のシートで聞く
+  const { confirm, confirmSheet } = useConfirm();
   /**
    * loading-feedback Task 3（2026-09-30）: いま何をしている最中か。
    * 【初心者向け】この画面は押してから API と再取得の 2 往復が終わるまで何も変わらず、
@@ -210,7 +213,8 @@ export function ItineraryDetailScreen({
 
   const removeSpot = async (spotId: string) => {
     const spot = itinerary.spots.find((item) => item.spotId === spotId);
-    if (!spot || !window.confirm(`「${spot.name}」をしおりから外しますか？（投稿と行きたいはそのままです）`)) return;
+    if (!spot) return;
+    if (!(await confirm({ title: `「${spot.name}」をしおりから外しますか？`, description: "投稿と行きたいはそのままです。", confirmLabel: "外す", danger: true }))) return;
     await run(() => api.removeSpot(itinerary.id, spotId), "外せませんでした", { kind: "remove", spotId });
   };
 
@@ -220,7 +224,7 @@ export function ItineraryDetailScreen({
   };
 
   const deleteItinerary = async () => {
-    if (!window.confirm("このしおりを削除しますか？\n同じ旅行のアルバム（投稿）は残ります。")) return;
+    if (!(await confirm({ title: "このしおりを削除しますか？", description: "同じ旅行のアルバム（投稿）は残ります。", confirmLabel: "削除", danger: true }))) return;
     setPending({ kind: "delete" });
     try {
       const response = await api.remove(itinerary.id);
@@ -260,6 +264,7 @@ export function ItineraryDetailScreen({
 
   const content = (
     <div className="flex flex-col items-center px-4 pt-4 pb-24" data-itinerary-detail data-day-tab={String(day)}>
+      {confirmSheet}
       <div className="w-full max-w-[520px]">
         <header className="flex flex-col gap-2.5">
           {/*

@@ -16,6 +16,7 @@ import { ALBUM_ROLE_LABELS, INVITABLE_ROLES, type InvitableRole } from "@/lib/al
 import { MAX_TRIP_TITLE_LENGTH } from "@/lib/trips/constants";
 import { formatCost } from "@/components/posts/PostCard";
 import { useOutsideClose } from "@/lib/ui/use-outside-close";
+import { useConfirm } from "@/components/ui/ConfirmSheet";
 
 export interface AlbumInvitation {
   id: string;
@@ -96,6 +97,8 @@ export function AlbumScreen({
   const canDeleteAlbum = canManage && album.posts.length === 0 && api.deleteAlbum !== undefined;
 
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  // #778: 確認はブラウザ標準の箱ではなく、アプリ共通のシートで聞く
+  const { confirm, confirmSheet } = useConfirm();
 
   // すべての操作の共通枠。busy に操作名を入れて、完了まで他のボタンを無効にする
   const run = async (key: string, action: () => Promise<void>, failure: string) => {
@@ -170,8 +173,8 @@ export function AlbumScreen({
       "権限を変更できませんでした"
     );
 
-  const handleRemove = (member: AlbumMember) => {
-    if (!window.confirm(`${member.displayName}をアルバムから削除しますか？`)) return;
+  const handleRemove = async (member: AlbumMember) => {
+    if (!(await confirm({ title: `${member.displayName}をアルバムから外しますか？`, confirmLabel: "外す", danger: true }))) return;
     void run(
       `remove:${member.userId}`,
       async () => {
@@ -184,9 +187,9 @@ export function AlbumScreen({
   };
 
   /** #715: 投稿 0 件のアルバムを消す。確認してから */
-  const handleDeleteAlbum = () => {
+  const handleDeleteAlbum = async () => {
     if (!api.deleteAlbum) return;
-    if (!window.confirm(`「${title}」を削除しますか？（取り消せません）`)) return;
+    if (!(await confirm({ title: `「${title}」を削除しますか？`, description: "取り消せません。", confirmLabel: "削除", danger: true }))) return;
     void run(
       "delete",
       async () => {
@@ -199,8 +202,8 @@ export function AlbumScreen({
     );
   };
 
-  const handleLeave = () => {
-    if (!window.confirm("このアルバムから退出しますか？（これまでの自分の投稿はアルバムに残ります）")) return;
+  const handleLeave = async () => {
+    if (!(await confirm({ title: "このアルバムから退出しますか？", description: "これまでの自分の投稿はアルバムに残ります。", confirmLabel: "退出", danger: true }))) return;
     void run(
       "leave",
       async () => {
@@ -229,6 +232,7 @@ export function AlbumScreen({
 
   return (
     <div className="flex min-h-screen flex-col items-center bg-app px-4 py-6">
+      {confirmSheet}
       <div className="flex w-full max-w-[560px] flex-col gap-5">
         <header className="flex flex-col gap-2">
           {/* Bug #471: どこから来たかで戻り先を変える（しおり・通知など）。無ければアルバム一覧 */}

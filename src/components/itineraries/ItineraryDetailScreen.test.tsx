@@ -14,6 +14,7 @@ vi.setConfig({ testTimeout: 15000 });
 import { ItineraryDetailScreen } from "./ItineraryDetailScreen";
 import type { ItineraryApi } from "./itinerary-api";
 import type { ItineraryDetail, ItinerarySpotItem } from "@/lib/itineraries/get-itinerary";
+import { acceptConfirm, confirmSheetText } from "@/components/ui/confirm-sheet.testing";
 
 /**
  * 出典: docs/tasks/itinerary/itinerary-basics/03-itinerary-detail-skeleton.md 単体テスト
@@ -88,6 +89,13 @@ function makeApi(current: ItineraryDetail): ItineraryApi {
 beforeEach(() => {
   vi.spyOn(window, "confirm").mockReturnValue(true);
 });
+
+// #778: 確認は window.confirm ではなくアプリ共通のシートになった。「⋯ → しおりから外す」のあと「外す」を押す
+const removeSpotFromMenu = async (row: HTMLElement) => {
+  openRowMenu(row);
+  fireEvent.click(within(row).getByRole("menuitem", { name: "しおりから外す" }));
+  await acceptConfirm();
+};
 
 /**
  * #753（2026-10-06）: 行の操作（投稿を見る・投稿する・しおりから外す）は右端の「⋯」の中へ移した。
@@ -239,7 +247,10 @@ describe("ItineraryDetailScreen（SC-23）", () => {
     expect(screen.getByRole("menuitem", { name: "招待" })).toBeInTheDocument();
     expect(screen.queryByRole("menuitem", { name: "名前を変更" })).toBeNull(); // v3.1: タイトルのタップで変更
     fireEvent.click(screen.getByRole("menuitem", { name: "しおりを削除" }));
-    expect(window.confirm).toHaveBeenCalledWith(expect.stringContaining("アルバム（投稿）は残ります"));
+    // #778: 確認はアプリ共通のシート。アルバムが残る旨はその説明に出る
+    await waitFor(() => expect(document.querySelector("[data-confirm-sheet]")).toBeInTheDocument());
+    expect(confirmSheetText()).toContain("アルバム（投稿）は残ります");
+    await acceptConfirm();
     await waitFor(() => expect(api.remove).toHaveBeenCalledWith("it-1"));
     unmount();
 
@@ -278,8 +289,7 @@ describe("loading-feedback Task 3: 押した直後に画面が変わる", () => 
     render(<ItineraryDetailScreen initial={current} viewerId="me" api={api} />);
 
     const row = (document.querySelector("[data-spot-row='b']") ?? screen.getByText("スポットb").closest("li")!) as HTMLElement;
-    openRowMenu(row);
-    fireEvent.click(within(row).getByRole("menuitem", { name: "しおりから外す" }));
+    await removeSpotFromMenu(row);
 
     // 押した直後に出る（API の結果を待たない）
     expect(await screen.findByRole("status")).toHaveTextContent("しおりから外しています…");
@@ -298,8 +308,7 @@ describe("loading-feedback Task 3: 押した直後に画面が変わる", () => 
     render(<ItineraryDetailScreen initial={current} viewerId="me" api={api} />);
 
     const row = screen.getByText("スポットb").closest("li")! as HTMLElement;
-    openRowMenu(row);
-    fireEvent.click(within(row).getByRole("menuitem", { name: "しおりから外す" }));
+    await removeSpotFromMenu(row);
 
     // 1 往復目（removeSpot）は終わったが、再取得はまだ
     await waitFor(() => expect(api.get).toHaveBeenCalled());
@@ -316,8 +325,7 @@ describe("loading-feedback Task 3: 押した直後に画面が変わる", () => 
     render(<ItineraryDetailScreen initial={current} viewerId="me" api={api} />);
 
     const rowB = screen.getByText("スポットb").closest("li")! as HTMLElement;
-    openRowMenu(rowB);
-    fireEvent.click(within(rowB).getByRole("menuitem", { name: "しおりから外す" }));
+    await removeSpotFromMenu(rowB);
     await waitFor(() => expect(screen.getByText("外せませんでした")).toBeInTheDocument());
     expect(screen.queryByRole("status")).not.toBeInTheDocument();
   });

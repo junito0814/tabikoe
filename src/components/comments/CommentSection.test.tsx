@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { CommentSection, type CommentApi } from "./CommentSection";
 import type { CommentData } from "@/lib/comments/list-comments";
+import { acceptConfirm } from "@/components/ui/confirm-sheet.testing";
 
 /**
  * 出典: docs/tasks/browsing/comments/06-comment-ui.md 単体テスト
@@ -127,11 +128,11 @@ describe("CommentSection（v3.2: 返信）", () => {
   });
 
   it("返信がある親を削除すると「削除されたコメント」の枠が残り、返信は読める", async () => {
-    vi.spyOn(window, "confirm").mockReturnValue(true);
     const remove = vi.fn(async () => Response.json({ deleted: true, keptFrame: true }));
     const root = comment("root", true, { replies: [comment("r1", false, { parentId: "root", replyToName: "わたし" })] });
     render(<CommentSection postId="p1" initialPage={{ comments: [root], nextOffset: null, totalCount: 2 }} canComment returnTo="/posts/p1" api={api({ remove })} />);
     fireEvent.click(screen.getAllByRole("button", { name: "このコメントを削除" })[0]);
+    await acceptConfirm(); // #778: 確認はアプリ共通のシート（window.confirm ではない）
     await waitFor(() => expect(remove).toHaveBeenCalledWith("root"));
     await waitFor(() => expect(document.querySelector("[data-comment='root'] [data-deleted-comment]")).toBeInTheDocument());
     expect(document.querySelector("[data-comment='r1']")).toBeInTheDocument();

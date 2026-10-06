@@ -7,6 +7,7 @@ import { TrashButton } from "@/components/ui/TrashButton";
 import { fetchWithAuthRedirect, UnauthorizedError } from "@/lib/api/fetch-with-auth-redirect";
 import { composeHref } from "@/lib/posts/compose-href";
 import type { DraftListPage, DraftSummary } from "@/lib/posts/drafts";
+import { useConfirm } from "@/components/ui/ConfirmSheet";
 
 /**
  * my-page-v3 Task1: マイページの「下書き」の段
@@ -33,11 +34,14 @@ export function DraftsSection({
   const [total, setTotal] = useState(initial.total);
   const [pendingId, setPendingId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  // #778: 確認はブラウザ標準の箱ではなく、アプリ共通のシートで聞く
+  const { confirm, confirmSheet } = useConfirm();
 
   if (total === 0) return null;
 
   const remove = async (draft: DraftSummary) => {
-    if (pendingId || !window.confirm(`下書き「${draft.spotName}」を削除しますか？`)) return;
+    if (pendingId) return;
+    if (!(await confirm({ title: `下書き「${draft.spotName}」を削除しますか？`, confirmLabel: "削除", danger: true }))) return;
     setPendingId(draft.id);
     setError(null);
     try {
@@ -58,6 +62,7 @@ export function DraftsSection({
 
   return (
     <section aria-label="下書き" data-drafts-section className="flex flex-col gap-2 rounded-[12px] border border-dashed border-line bg-surface p-3">
+      {confirmSheet}
       <h2 className="flex items-center gap-1.5 text-[13px] font-bold text-ink">
         <PencilIcon size={12} />
         下書き {total} 件

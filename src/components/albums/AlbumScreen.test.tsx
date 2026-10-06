@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { AlbumScreen, type AlbumApi } from "./AlbumScreen";
 import type { AlbumDetail } from "@/lib/albums/get-album";
+import { acceptConfirm } from "@/components/ui/confirm-sheet.testing";
 
 /**
  * 出典: docs/tasks/records/album/03-album-title-rename-integration.md 単体テスト
@@ -148,11 +149,11 @@ describe("4-8: アルバムの各操作の待ち表示", () => {
     expect(screen.getByRole("button", { name: "保存しています…" })).toBeInTheDocument();
   });
 
-  it("メンバー削除を押すと、その行だけ「削除中…」になる", () => {
-    vi.spyOn(window, "confirm").mockReturnValue(true);
+  it("メンバー削除を押すと、その行だけ「削除中…」になる", async () => {
     render(<AlbumScreen album={album("owner")} initialInvitations={[]} viewerId="me" api={api({ removeMember: never })} />);
     openAlbumDialog("メンバー");
     fireEvent.click(screen.getByRole("button", { name: "わたしを削除" }));
+    await acceptConfirm(); // #778: 確認はアプリ共通のシート
     expect(screen.getByRole("button", { name: "わたしを削除" })).toHaveTextContent("削除中…");
   });
 
@@ -163,11 +164,11 @@ describe("4-8: アルバムの各操作の待ち表示", () => {
     expect(screen.getByText("変更しています…")).toBeInTheDocument();
   });
 
-  it("退出を押すと「退出しています…」になる", () => {
-    vi.spyOn(window, "confirm").mockReturnValue(true);
+  it("退出を押すと「退出しています…」になる", async () => {
     render(<AlbumScreen album={album("editor")} initialInvitations={[]} viewerId="me" api={api({ leave: never })} />);
     openAlbumDialog("メンバー");
     fireEvent.click(screen.getByRole("button", { name: "このアルバムから退出" }));
+    await acceptConfirm();
     expect(screen.getByRole("button", { name: "退出しています…" })).toBeInTheDocument();
   });
 
