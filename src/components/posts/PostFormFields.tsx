@@ -142,11 +142,11 @@ export function PostFormFields({
 
       {spotField}
 
-      {/* カテゴリ: ドロップダウン（7 つ） */}
-      <div className="flex items-center gap-2">
+      {/* カテゴリ: ドロップダウン（7 つ）。#798: ラベルは欄の上（画面の中で型を揃える） */}
+      <div className="flex flex-col gap-1.5">
         <label
           htmlFor="post-category"
-          className="w-[84px] shrink-0 text-[0.75rem] font-medium text-muted"
+          className="text-[0.75rem] font-medium text-muted"
         >
           カテゴリ *
         </label>
