@@ -9,6 +9,7 @@ import { parseWishlistView } from "@/lib/wishlist/wishlist-view";
 import { getWishlistItems } from "@/lib/wishlist/get-wishlist-items";
 import type { WishlistItem } from "@/lib/wishlist/constants";
 import { ContentEnter } from "@/components/transitions/Reveal";
+import { parseListSort } from "@/lib/records/list-sort";
 
 // #785: ブラウザのタブ名（「行きたい | タビコエ」）
 export const metadata = { title: "行きたい" };
@@ -19,14 +20,16 @@ export const metadata = { title: "行きたい" };
  *
  * ログイン必須（4.1）。マイページ（SC-06, Phase 7）からの導線は my-page Task4 で置く。
  */
-export default async function WishlistPage({ searchParams }: { searchParams: Promise<{ view?: string; back?: string }> }) {
+export default async function WishlistPage({ searchParams }: { searchParams: Promise<{ view?: string; back?: string; sort?: string }> }) {
   const supabase = await createClient();
   const user = await requireUserOrRedirect(supabase, "/wishlist");
-  const { view, back } = await searchParams;
+  const { view, back, sort: sortParam } = await searchParams;
+  // #797: アルバム一覧と同じ並び順（既定は新着順）
+  const sort = parseListSort(sortParam);
 
   let items: WishlistItem[] | null = null;
   try {
-    items = await getWishlistItems(createAdminClient(), user.id);
+    items = await getWishlistItems(createAdminClient(), user.id, sort);
   } catch {
     items = null;
   }
@@ -41,7 +44,7 @@ export default async function WishlistPage({ searchParams }: { searchParams: Pro
 
   return (
     <ContentEnter>
-      <WishlistScreen initialItems={items} initialView={parseWishlistView(view)} back={resolveListBack(back)} />
+      <WishlistScreen initialItems={items} initialView={parseWishlistView(view)} sort={sort} back={resolveListBack(back)} />
     </ContentEnter>
   );
 }

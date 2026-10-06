@@ -11,6 +11,8 @@ import { SPOT_PLACEHOLDER_IMAGE_URL } from "@/lib/wishlist/constants";
 import { ContentEnter } from "@/components/transitions/Reveal";
 import { PullToRefresh } from "@/components/layout/PullToRefresh";
 import { BackLink } from "@/components/layout/BackLink";
+import { EmptyState } from "@/components/ui/EmptyState";
+import { parseListSort } from "@/lib/records/list-sort";
 
 // #785: ブラウザのタブ名（「アルバム | タビコエ」）
 export const metadata = { title: "アルバム" };
@@ -25,7 +27,8 @@ export default async function AlbumsPage({ searchParams }: { searchParams: Promi
   const user = await requireUserOrRedirect(supabase, "/albums");
 
   // #715: 並び順（新着順／古い順）。おかしな値は既定の新着順にする
-  const sort: AlbumSort = (await searchParams).sort === "oldest" ? "oldest" : "newest";
+  // #797: 並び順の読み取りは行きたいと同じ純粋関数へ寄せた（約束 14）
+  const sort: AlbumSort = parseListSort((await searchParams).sort);
 
   let albums: AlbumSummary[] | null = null;
   try {
@@ -59,11 +62,8 @@ export default async function AlbumsPage({ searchParams }: { searchParams: Promi
             </header>
 
             {albums.length === 0 ? (
-              <p className="py-16 text-center text-[0.8125rem] leading-[1.8] text-muted">
-                まだアルバムがありません
-                <br />
-                「＋ 新規」で作るか、投稿するとアルバムごとにまとまります
-              </p>
+              /* #800: 空の画面は同じ部品で。ここは上に「＋ 新規」があるのでボタンは置かない */
+              <EmptyState title="まだアルバムがありません" description="「＋ 新規」で作るか、投稿するとアルバムごとにまとまります" />
             ) : (
               <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3">
                 {albums.map((album) => (

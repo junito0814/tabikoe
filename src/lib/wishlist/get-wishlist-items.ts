@@ -2,6 +2,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { getBlockedUserIds } from "@/lib/blocks/get-blocked-user-ids";
 import { createPostPhotoUrls } from "@/lib/posts/signed-url";
 import { resolveWishlistThumbnail, type WishlistItem } from "./constants";
+import { isAscending, type ListSort } from "@/lib/records/list-sort";
 
 /**
  * F-RC-05 Task2: ログインユーザーの「行きたい」スポット一覧を組み立てる
@@ -29,13 +30,15 @@ interface PostRow {
 
 export async function getWishlistItems(
   admin: SupabaseClient,
-  userId: string
+  userId: string,
+  /** #797: 並び順。既定は新着順（アルバム一覧と同じ） */
+  sort: ListSort = "newest"
 ): Promise<WishlistItem[]> {
   const { data, error } = await admin
     .from("wishlist")
     .select("spot_id, created_at, spot:spots(id, name, prefecture, lat, lng)")
     .eq("user_id", userId)
-    .order("created_at", { ascending: false });
+    .order("created_at", { ascending: isAscending(sort) });
 
   if (error) throw error;
 

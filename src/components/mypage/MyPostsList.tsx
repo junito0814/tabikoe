@@ -11,6 +11,7 @@ import { fetchWithAuthRedirect, UnauthorizedError } from "@/lib/api/fetch-with-a
 import type { MyPost, MyPostsPage } from "@/lib/users/my-page";
 import { useInfiniteScroll } from "@/components/posts/use-infinite-scroll";
 import { formatDateTime } from "@/lib/format/date-time";
+import { EmptyState } from "@/components/ui/EmptyState";
 
 export type FetchMyPosts = (tripId: string | null, offset: number) => Promise<MyPostsPage>;
 
@@ -102,7 +103,8 @@ export function MyPostsList({
       {posts.length === 0 && isLoading ? (
         <CardListSkeleton count={2} />
       ) : posts.length === 0 ? (
-        <p className="py-10 text-center text-[0.8125rem] text-muted">まだ投稿がありません</p>
+        /* #800: 空のときに「次の一手」を 1 つ置く（ここには「＋ 新規」が無いので） */
+        <EmptyState title="まだ投稿がありません" description="行った場所のコエを残しましょう" action={{ label: "投稿する", href: "/posts/new" }} />
       ) : (
         <ul className="flex flex-col gap-2">
           {posts.map((post) => (

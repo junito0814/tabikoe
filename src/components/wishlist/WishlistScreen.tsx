@@ -15,6 +15,9 @@ import type { WishlistView } from "@/lib/wishlist/wishlist-view";
 import { MapScreen } from "@/components/map/MapScreen";
 import { resolveMapOpen } from "@/components/map/map-navigation";
 import { PullToRefresh } from "@/components/layout/PullToRefresh";
+import { LIST_SORT_LABELS, LIST_SORTS, type ListSort } from "@/lib/records/list-sort";
+import { Select } from "@/components/ui/Select";
+import { EmptyState } from "@/components/ui/EmptyState";
 
 /**
  * F-RC-05 Task2 / wishlist-v3 Task2（v3.0）: 「行きたい」（SC-08。一覧／地図の切替）
@@ -30,6 +33,7 @@ import { PullToRefresh } from "@/components/layout/PullToRefresh";
 export function WishlistScreen({
   initialItems,
   initialView = "list",
+  sort = "newest",
   submitRemove = defaultSubmitRemove,
   saveSheetApi,
   back = null,
@@ -38,6 +42,8 @@ export function WishlistScreen({
   /** Bug #471: 直前の画面（`?back=` から page.tsx が解決）。無ければ既定の戻り先 */
   back?: { href: string; label: string } | null;
   initialView?: WishlistView;
+  /** #797: 並び順（アルバム一覧と同じ。既定は新着順） */
+  sort?: ListSort;
   /** 差し替え口（単体テスト用） */
   submitRemove?: (spotId: string) => Promise<Response>;
   /** 差し替え口（単体テスト用） */
@@ -54,9 +60,22 @@ export function WishlistScreen({
   // Bug #471: ここから開く画面（スポット別一覧・地図の吹き出し）に「行きたいへ戻る」を渡す
   const selfHref = appendBackHref(view === "map" ? "/wishlist?view=map" : "/wishlist", back?.href);
 
+  /*
+   * #797（2026-10-06）: 表示（一覧／地図）と並び順は**どちらも URL に持つ**。
+   * 【初心者向け】並び順だけを state に持つと、地図に切り替えて戻ったときに消えます。
+   * URL に入れておけば、戻っても・共有しても同じ並びで開けます。
+   */
+  const hrefFor = (nextView: WishlistView, nextSort: ListSort) => {
+    const params = new URLSearchParams();
+    if (nextView === "map") params.set("view", "map");
+    if (nextSort !== "newest") params.set("sort", nextSort);
+    const query = params.toString();
+    return appendBackHref(`/wishlist${query ? `?${query}` : ""}`, back?.href);
+  };
+
   const changeView = (next: WishlistView) => {
     setView(next);
-    router.replace(appendBackHref(next === "map" ? "/wishlist?view=map" : "/wishlist", back?.href), { scroll: false });
+    router.replace(hrefFor(next, sort), { scroll: false });
   };
 
   const handleRemove = async (spotId: string) => {
@@ -79,33 +98,39 @@ export function WishlistScreen({
   };
 
   const header = (
-    <header className="flex flex-col gap-2.5">
-      {/*
-        * #746: 左右を同じ幅（1fr）にして真ん中を挟む。
-        *
-        * 【初心者向け】前は真ん中を `flex-1` で伸ばしていたが、`flex-1` は**残りの幅**に広がるので、
-        * 左（← マイページ）と右（件数）の幅が違うぶんだけ中央からずれていた。
-        */}
-      <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2">
-        <div className="justify-self-start">
-          <BackLink href={back?.href ?? "/mypage"} label={back?.label ?? "マイページ"} />
-        </div>
-        <h1 className="truncate text-center text-[1rem] font-bold text-ink">行きたい</h1>
-        <span className="justify-self-end text-[0.75rem] text-muted">{items.length}件</span>
+    /*
+      * #797（2026-10-06）: 見出しをアルバム・投稿履歴と同じ形にした（**上に戻る、下に大きなタイトル**）。
+      * 以前はここだけ「戻る・中央のタイトル・右に件数」が 1 行で、3 画面で形が違っていた。
+      */
+    <header className="flex flex-col gap-2">
+      <BackLink href={back?.href ?? "/mypage"} label={back?.label ?? "マイページ"} />
+      <div className="flex items-baseline gap-2">
+        <h1 className="flex-1 text-[1.125rem] font-bold text-ink">行きたい</h1>
+        <span className="text-[0.75rem] text-muted">{items.length} 件</span>
       </div>
-      <div role="radiogroup" aria-label="表示" className="inline-flex w-fit rounded-full border border-line bg-surface p-0.5">
-        {(["list", "map"] as const).map((option) => (
-          <button
-            key={option}
-            type="button"
-            role="radio"
-            aria-checked={view === option}
-            onClick={() => view !== option && changeView(option)}
-            className={`tap-target h-7 rounded-full px-3 text-[0.75rem] font-semibold ${view === option ? "bg-ink text-on-ink" : "text-muted"}`}
-          >
-            {option === "list" ? "一覧" : "地図"}
-          </button>
-        ))}
+      <div className="flex items-center justify-between gap-2">
+        <div role="radiogroup" aria-label="表示" className="inline-flex w-fit rounded-full border border-line bg-surface p-0.5">
+          {(["list", "map"] as const).map((option) => (
+            <button
+              key={option}
+              type="button"
+              role="radio"
+              aria-checked={view === option}
+              onClick={() => view !== option && changeView(option)}
+              className={`tap-target h-7 rounded-full px-3 text-[0.75rem] font-semibold ${view === option ? "bg-ink text-on-ink" : "text-muted"}`}
+            >
+              {option === "list" ? "一覧" : "地図"}
+            </button>
+          ))}
+        </div>
+        {/* #797: 置き場所は投稿履歴の「すべてのアルバム」と同じ（切替の右） */}
+        <Select<ListSort>
+          value={sort}
+          onChange={(next) => router.replace(hrefFor(view, next), { scroll: false })}
+          options={LIST_SORTS}
+          label={(option) => LIST_SORT_LABELS[option]}
+          ariaLabel="並び順"
+        />
       </div>
     </header>
   );
@@ -126,7 +151,12 @@ export function WishlistScreen({
         <div className="w-full max-w-[520px]">
           {header}
           {items.length === 0 ? (
-            <p className="py-16 text-center text-[0.8125rem] text-muted">まだ「行きたい」スポットはありません</p>
+            /* #800: 空のときに「次の一手」を 1 つ置く */
+            <EmptyState
+              title="まだ「行きたい」スポットはありません"
+              description="気になるスポットの「＋」で、ここに貯まります"
+              action={{ label: "スポットを探す", href: "/" }}
+            />
           ) : (
             <ul className="mt-3 flex flex-col gap-2.5">
               {items.map((item) => (
