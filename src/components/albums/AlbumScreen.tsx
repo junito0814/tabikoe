@@ -133,7 +133,7 @@ export function AlbumScreen({
         setTitle(next);
         setIsRenaming(false);
       },
-      "アルバム名を変更できませんでした（同じ名前の旅行がある場合は変更できません）"
+      "アルバム名を変更できませんでした（同じ名前のアルバムがある場合は変更できません）"
     );
   };
 

@@ -202,7 +202,7 @@ function SaveSheetBody({
     void guard(async () => {
       const response = await api.itineraries.create({ title, startDate: null, endDate: null });
       if (response.status === 409) {
-        setError("その旅行にはすでにしおりがあります。一覧から選んでください");
+        setError("そのアルバムにはすでにしおりがあります。一覧から選んでください");
         return;
       }
       if (!response.ok) throw new Error("create");

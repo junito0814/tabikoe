@@ -171,15 +171,24 @@ export function WishlistScreen({
                     />
                     <span className="min-w-0 flex-1">
                       <span className="block truncate text-[0.875rem] font-semibold text-ink">{item.name}</span>
+                      {/*
+                        * #790（2026-10-06）: しおり名を**別の行**にした。
+                        *
+                        * 【初心者向け】以前は「東京都 ・ 投稿 1 件 ・ 〈しおり名〉 Day 1」を 1 行に詰めていて、
+                        * 390px に入りきらず**しおり名が単語の途中で次の行に落ちて**いた。
+                        * 1 行目は場所の話、2 行目はしおりの話、と分けると切れない。
+                        * 長い名前は 2 行目だけ「…」で省く（`truncate`）。
+                        */}
                       <span className="mt-0.5 block text-[0.6875rem] text-muted">
                         {item.prefecture ?? "都道府県未設定"} ・ {item.postCount > 0 ? `投稿 ${item.postCount} 件` : "投稿なし"}
-                        {item.itineraries.map((it) => (
-                          <span key={it.id} className="ml-1 text-accent">
-                            ・ {it.title}
-                            {it.dayIndex !== null && ` Day ${it.dayIndex}`}
-                          </span>
-                        ))}
                       </span>
+                      {item.itineraries.length > 0 && (
+                        <span className="mt-0.5 block truncate text-[0.6875rem] text-accent" data-wishlist-itineraries>
+                          {item.itineraries
+                            .map((it) => (it.dayIndex !== null ? `Day ${it.dayIndex} ・ ${it.title}` : it.title))
+                            .join(" ／ ")}
+                        </span>
+                      )}
                     </span>
                   </Link>
                   {/*

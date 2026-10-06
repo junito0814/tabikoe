@@ -23,7 +23,8 @@ export function EmptyState({
   return (
     <div className="flex flex-col items-center gap-3 py-12 text-center" data-empty-state>
       <p className="text-[0.875rem] font-bold text-ink">{title}</p>
-      {description && <p className="max-w-[300px] text-[0.75rem] leading-[1.8] text-muted">{description}</p>}
+      {/* #774: 最後の 1 文字だけが次の行に落ちないよう、行の長さをそろえる */}
+      {description && <p className="max-w-[300px] text-[0.75rem] leading-[1.8] text-balance text-muted">{description}</p>}
       {action && (
         /* #784: 指で押す的は 32px 以上。ここは主役の一手なので 44px（h-11） */
         <Link href={action.href} className="mt-1 flex h-11 items-center rounded-full bg-accent px-5 text-[0.875rem] font-bold text-white">
