@@ -11,6 +11,7 @@ import { defaultItineraryApi, type ItineraryApi } from "./itinerary-api";
 import { PullToRefresh } from "@/components/layout/PullToRefresh";
 import { PostFab } from "@/components/posts/PostFab";
 import { HeartIcon } from "@/components/ui/LineIcons";
+import { EmptyState } from "@/components/ui/EmptyState";
 
 /**
  * itinerary-basics Task2: しおり一覧（SC-22）
@@ -69,11 +70,8 @@ export function ItineraryListScreen({
           </div>
 
           {sorted.length === 0 ? (
-            <div className="py-16 text-center text-[0.8125rem] leading-[1.8] text-muted">
-              しおりがありません
-              <br />
-              「＋ 新規」か、投稿一覧の「＋」から作れます
-            </div>
+            /* #800: 空の画面は同じ部品で（約束 14）。ここは上に「＋ 新規」があるのでボタンは置かない */
+            <EmptyState title="しおりがありません" description="「＋ 新規」か、投稿一覧の「＋」から作れます" />
           ) : (
             <ul className="flex flex-col gap-2.5">
               {sorted.map((item) => {

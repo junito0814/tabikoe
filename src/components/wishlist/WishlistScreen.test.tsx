@@ -167,12 +167,35 @@ describe("しおりに入っていれば ✓（#745）", () => {
   });
 });
 
-/** #746（2026-10-06）: 見出しが中央からずれていた（左右の幅が違うのに真ん中を伸ばしていた） */
-describe("見出しの位置（#746）", () => {
-  it("左右を同じ幅にして真ん中を挟む", () => {
+/**
+ * #797（2026-10-06）: 見出しをアルバム・投稿履歴と同じ形にした（上に戻る、下に大きなタイトル）。
+ * ~~#746: 左右を同じ幅にして真ん中を挟む~~ → 中央ぞろえ自体をやめたので、この確認も置き換えた。
+ */
+describe("見出しの形（#797）", () => {
+  it("戻るが上の行、その下に大きなタイトル（アルバム・投稿履歴と同じ）", () => {
     render(<WishlistScreen initialItems={items} submitRemove={vi.fn()} />);
-    const row = screen.getByRole("heading", { name: "行きたい" }).parentElement!;
-    expect(row.className).toContain("grid-cols-[1fr_auto_1fr]");
+    const heading = screen.getByRole("heading", { name: "行きたい" });
+    expect(heading.className).toContain("text-[1.125rem]");
+    // 戻るはタイトルと同じ行ではなく、その上の行
+    expect(heading.parentElement?.querySelector("a[href='/mypage']")).toBeNull();
+    expect(screen.getByRole("link", { name: "マイページ" })).toBeInTheDocument();
+  });
+
+  it("並び順が切替の右にあり、選ぶと URL に入る（地図に移っても消えない）", () => {
+    render(<WishlistScreen initialItems={items} submitRemove={vi.fn()} />);
+    const sort = screen.getByRole("combobox", { name: "並び順" });
+    expect(sort).toHaveValue("newest");
+    fireEvent.change(sort, { target: { value: "oldest" } });
+    expect(replace).toHaveBeenLastCalledWith("/wishlist?sort=oldest", { scroll: false });
+    // 地図に切り替えても並び順は残る
+    fireEvent.click(screen.getByRole("radio", { name: "地図" }));
+    expect(replace).toHaveBeenLastCalledWith("/wishlist?view=map", { scroll: false });
+  });
+
+  it("#800: 空のときは「スポットを探す」が出て、押すとホームへ", () => {
+    render(<WishlistScreen initialItems={[]} submitRemove={vi.fn()} />);
+    expect(document.querySelector("[data-empty-state]")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "スポットを探す" })).toHaveAttribute("href", "/");
   });
 });
 
