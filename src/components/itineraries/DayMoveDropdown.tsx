@@ -1,15 +1,14 @@
 "use client";
 
-import { useId, useState } from "react";
-import { useOutsideClose } from "@/lib/ui/use-outside-close";
 import { dayKeys, type DayKey } from "./DayTabs";
+import { Select } from "@/components/ui/Select";
 
 /**
  * itinerary-days Task2: 行の「Day n ▾」ドロップダウン（Day の移動）
  * 出典: docs/tasks/itinerary/itinerary-days/02-day-tabs-and-move-ui.md
  *
- * 【初心者向け】SortDropdown と同じ作り（ボタン＋listbox、外側クリックと Esc で閉じる）。
- * 選ぶと onChange(移動先)。画面は今の Day に留まり、トーストは親が出す。
+ * 【初心者向け】ブラウザ標準の `<select>`（#812）。選ぶと onChange(移動先)。
+ * 画面は今の Day に留まり、トーストは親が出す。
  */
 export function dayLabel(day: DayKey): string {
   return day === null ? "日付なし" : `Day ${day}`;
@@ -28,51 +27,32 @@ export function dayButtonLabel(day: DayKey): string {
 }
 
 export function DayMoveDropdown({ value, dayCount, onChange, disabled = false }: { value: DayKey; dayCount: number; onChange: (day: DayKey) => void; disabled?: boolean }) {
-  const [isOpen, setIsOpen] = useState(false);
-  const listId = useId();
-  // #789: ここにあった「外をタップ／Esc で閉じる」は use-outside-close に切り出した（時刻ピッカーと共通）
-  const rootRef = useOutsideClose<HTMLDivElement>(isOpen, () => setIsOpen(false));
-
+  /*
+   * #812（2026-10-06）: 自前のリストをやめ、ブラウザ標準の `<select>` にした。
+   *
+   * 【初心者向け】`DayKey` は `number | null`（null＝日付なし）ですが、
+   * `<select>` の値は**文字でしか持てません**。そこで `null` を `"none"` という文字に
+   * 置き換えて渡し、選ばれたら戻します。
+   */
+  const toKey = (day: DayKey) => (day === null ? "none" : String(day));
+  const fromKey = (key: string): DayKey => (key === "none" ? null : Number(key));
+  const options = dayKeys(dayCount).map(toKey);
   return (
-    <div ref={rootRef} className="relative">
-      <button
-        type="button"
-        onClick={() => setIsOpen((open) => !open)}
-        disabled={disabled}
-        aria-haspopup="listbox"
-        aria-expanded={isOpen}
-        aria-controls={listId}
-        aria-label={value === null ? "Day を決める" : `Day を移動: ${dayLabel(value)}`}
-        className="inline-flex h-7 items-center gap-1 rounded-full border border-line bg-surface px-2.5 text-[11px] font-semibold text-ink disabled:opacity-45"
-      >
-        {dayButtonLabel(value)}
-        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" aria-hidden>
-          <path d="M6 9l6 6 6-6" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
-        </svg>
-      </button>
-      {isOpen && (
-        <ul id={listId} role="listbox" aria-label="移動先の Day" className="absolute right-0 z-20 mt-1 min-w-[120px] overflow-hidden rounded-[10px] border border-line bg-surface py-1 shadow-card">
-          {dayKeys(dayCount).map((day) => {
-            const selected = day === value;
-            return (
-              <li key={day ?? "undecided"} role="presentation">
-                <button
-                  type="button"
-                  role="option"
-                  aria-selected={selected}
-                  onClick={() => {
-                    setIsOpen(false);
-                    if (!selected) onChange(day);
-                  }}
-                  className={`flex w-full px-3 py-2 text-left text-[12px] ${selected ? "font-semibold text-accent" : "text-ink"} hover:bg-tint`}
-                >
-                  {dayLabel(day)}
-                </button>
-              </li>
-            );
-          })}
-        </ul>
-      )}
-    </div>
+    <Select
+      value={toKey(value)}
+      onChange={(key) => {
+        const next = fromKey(key);
+        if (next !== value) onChange(next);
+      }}
+      options={options}
+      /*
+       * #753: 「日付なし」の行では、顔に出す文字だけ「Day を決める」にする。
+       * その塊にいる時点で日付なしだと分かるので、やること（Day を決める）を書く。
+       * Day が決まっている行の一覧では「日付なし」のまま（そちらは「日付を外す」選択肢なので）。
+       */
+      label={(key) => (key === "none" && value === null ? dayButtonLabel(null) : dayLabel(fromKey(key)))}
+      ariaLabel={value === null ? "Day を決める" : `Day を移動: ${dayLabel(value)}`}
+      disabled={disabled}
+    />
   );
 }

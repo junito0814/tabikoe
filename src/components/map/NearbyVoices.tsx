@@ -17,6 +17,7 @@ import type { PostCategory, PostDuration } from "@/lib/posts/constants";
 import type { CostRange } from "@/lib/posts/search-posts";
 import { FilterSheet } from "@/components/posts/FilterSheet";
 import { CARD_ATTRIBUTE, centeredCardIndex, scrollToCard } from "./card-strip";
+import { Select } from "@/components/ui/Select";
 
 // #763: 計算は card-strip.ts へ移した（しおりの全画面のカード帯と共通）。読む側の都合でここからも出しておく
 export { centeredCardIndex, scrollToCard };
@@ -204,23 +205,18 @@ export function NearbyVoices({
       <div className="flex items-center justify-between gap-2">
         <h2 className="text-[14px] font-bold text-ink">近くのスポット</h2>
         <div className="flex items-center gap-1.5">
-          <select
-            aria-label="移動手段"
+          {/* #812: 見た目は共通部品（Select）に。中身は今までどおりブラウザ標準の <select> */}
+          <Select<TravelMode>
+            ariaLabel="移動手段"
             value={mode}
-            onChange={(event) => {
-              const next = event.target.value as TravelMode;
+            onChange={(next) => {
               restoreSpotRef.current = null; // 移動手段を変えたら、復元の指定は忘れる
               setMode(next);
               onModeChange?.(next);
             }}
-            className="h-8 rounded-full border border-line bg-surface px-2 text-[12px] font-semibold text-ink"
-          >
-            {TRAVEL_MODES.map((option) => (
-              <option key={option} value={option}>
-                {TRAVEL_MODE_LABELS[option]}
-              </option>
-            ))}
-          </select>
+            options={TRAVEL_MODES}
+            label={(option) => TRAVEL_MODE_LABELS[option]}
+          />
           <button
             type="button"
             aria-label="絞り込み"
