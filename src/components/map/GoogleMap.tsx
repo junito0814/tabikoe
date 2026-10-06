@@ -19,6 +19,11 @@ export interface GoogleMapPin extends PinMarkerOptions {
   lng: number;
   type: AnyPinType;
   title?: string;
+  /**
+   * #761（2026-10-06）: 今これを選んでいる。地図の上で大きくし、他のピンより前に出す。
+   * 一覧の行を光らせるだけだと「地図のどれを押したか」が地図側で分からないため。
+   */
+  selected?: boolean;
   /** pin-categories Task1: そのスポットのカテゴリ（PinMarkerOptions 側で型が付く。色と記号を決める） */
 }
 
@@ -33,6 +38,9 @@ export interface GoogleMapHandle {
 }
 
 export { LONG_PRESS_MS } from "./use-long-press";
+
+/** #761: 選んだピンの倍率 */
+export const SELECTED_PIN_SCALE = 1.35;
 
 interface GoogleMapProps {
   initialCenter: LatLng;
@@ -288,7 +296,7 @@ export function GoogleMap({
   // ピンの描画。親が毎レンダー新しい配列を渡しても、中身（id・座標・種別）が同じなら置き直さない
   // （置き直すたびにマーカーが消えて再描画され、点滅して見えるため）
   const pinsSignature =
-    pins.map((pin) => `${pin.id}:${pin.lat}:${pin.lng}:${pin.type}:${pin.label ?? ""}:${pin.dayIndex ?? ""}:${pin.done ? 1 : 0}:${pin.category ?? ""}`).join("|") +
+    pins.map((pin) => `${pin.id}:${pin.lat}:${pin.lng}:${pin.type}:${pin.label ?? ""}:${pin.dayIndex ?? ""}:${pin.done ? 1 : 0}:${pin.category ?? ""}:${pin.selected ? 1 : 0}`).join("|") +
     `#${theme}`;
   const pinsRef = useRef(pins);
   useEffect(() => {
@@ -304,13 +312,17 @@ export function GoogleMap({
     const markers = pinsRef.current.map((pin) => {
       // pin-categories Task1: しずく型なので、座標を指すのは中央ではなく先端（pinMarkerAnchor）
       const anchor = pinMarkerAnchor(pin.type);
+      // #761: 選んだピンは 1.35 倍。絵は同じで大きさだけ変えるので、指す点（anchor）も同じ倍率で伸ばす
+      const scale = pin.selected ? SELECTED_PIN_SCALE : 1;
+      const size = PIN_MARKER_SIZE * scale;
       const marker = new google.maps.Marker({
         position: { lat: pin.lat, lng: pin.lng },
         title: pin.title ?? resolvePinLook(pin.type).label,
+        zIndex: pin.selected ? 1000 : undefined,
         icon: {
           url: pinIconDataUrl(pin.type, { label: pin.label, dayIndex: pin.dayIndex, done: pin.done, category: pin.category }),
-          scaledSize: new google.maps.Size(PIN_MARKER_SIZE, PIN_MARKER_SIZE),
-          anchor: new google.maps.Point(anchor.x, anchor.y),
+          scaledSize: new google.maps.Size(size, size),
+          anchor: new google.maps.Point(anchor.x * scale, anchor.y * scale),
         },
       });
       marker.addListener("click", () => onPinClickRef.current?.(pin.id));

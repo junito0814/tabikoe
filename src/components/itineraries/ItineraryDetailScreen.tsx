@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useState, type FormEvent } from "react";
+import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ErrorNotice } from "@/components/notices/ErrorNotice";
@@ -23,6 +23,7 @@ import { MembersDialog } from "./MembersDialog";
 import { PeriodDialog } from "./PeriodDialog";
 import { defaultItineraryApi, type ItineraryApi } from "./itinerary-api";
 import { useOutsideClose } from "@/lib/ui/use-outside-close";
+import { HIGHLIGHT_MS, scrollBehaviorFor, scrollRowIntoView } from "@/lib/ui/scroll-to-row";
 
 /**
  * itinerary-basics Task3 / itinerary-days Task2 / arrival-time Task3 / itinerary-check Task3: しおり詳細（SC-23）
@@ -98,6 +99,33 @@ export function ItineraryDetailScreen({
    */
   const [pending, setPending] = useState<PendingOp>(null);
   const menuRef = useOutsideClose<HTMLDivElement>(isMenuOpen, () => setIsMenuOpen(false));
+  /*
+   * #761（2026-10-06）: 上 1/3 の地図のピンを押したら、一覧のその行へ飛んで一瞬光らせる。
+   *
+   * 【初心者向け】「光らせる」仕組み（`highlighted`）は**もともと有りました**。ただし
+   * URL の `?spot=` から来るだけ ── つまり**全画面の地図から戻ってきたとき**しか効きません。
+   * ここで state を 1 つ足し、同じ仕組みをピンのタップからも呼べるようにします。
+   * props の `highlightSpotId` を初期値にするので、戻ってきたときの強調は今までどおりです。
+   *
+   * カードを出さない理由: この画面は**下 2/3 が一覧**です。カードを出すと同じスポットが
+   * 画面に 2 回出るうえ、カードに載る情報は行より少ない（行には 時刻・チェック・メモ・Day・★・⋯ が全部ある）。
+   * 行へ飛ばせば、そのまま編集にも入れます。
+   */
+  const [highlighted, setHighlighted] = useState<string | null>(highlightSpotId);
+  const highlightTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => () => {
+    if (highlightTimerRef.current) clearTimeout(highlightTimerRef.current);
+  }, []);
+
+  const focusSpotRow = (spotId: string) => {
+    setHighlighted(spotId);
+    if (highlightTimerRef.current) clearTimeout(highlightTimerRef.current);
+    highlightTimerRef.current = setTimeout(() => setHighlighted(null), HIGHLIGHT_MS);
+    // 描き終わってから寄せる（光る枠が付いた状態で動かすため）
+    requestAnimationFrame(() => {
+      scrollRowIntoView(document.querySelector(`[data-itinerary-spot="${CSS.escape(spotId)}"]`), scrollBehaviorFor(window.matchMedia?.bind(window)));
+    });
+  };
   const isOwner = itinerary.role === "owner";
 
 
@@ -399,7 +427,7 @@ export function ItineraryDetailScreen({
               showHeading={day === ALL_TAB && itinerary.dayCount > 0}
               itineraryId={itinerary.id}
               dayCount={itinerary.dayCount}
-              highlightSpotId={highlightSpotId}
+              highlightSpotId={highlighted}
               onUpdate={updateSpot}
               onRemove={(spotId) => void removeSpot(spotId)}
               onMoveDay={(spotId, target) => void moveDay(spotId, target)}
@@ -471,7 +499,10 @@ export function ItineraryDetailScreen({
   );
 
   return showMap ? (
-    <MapSheetLayout map={<ItineraryStaticMap itinerary={itinerary} day={day} className="h-full w-full" />} summary={mapSummary}>
+    <MapSheetLayout
+      map={<ItineraryStaticMap itinerary={itinerary} day={day} className="h-full w-full" onPinClick={focusSpotRow} selectedSpotId={highlighted} />}
+      summary={mapSummary}
+    >
       {content}
     </MapSheetLayout>
   ) : (

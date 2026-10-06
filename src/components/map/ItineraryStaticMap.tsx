@@ -22,9 +22,24 @@ import type { LatLng } from "./initial-center";
  * つまり「初期表示」は計算されるまで分からないので、fitBounds が落ち着いた次の idle の
  * 中心・ズームを覚えておき、「戻す」はそこへ帰る。
  */
-export function ItineraryStaticMap({ itinerary, day, className }: { itinerary: ItineraryDetail; day: DayTab; className?: string }) {
+export function ItineraryStaticMap({
+  itinerary,
+  day,
+  className,
+  onPinClick,
+  selectedSpotId = null,
+}: {
+  itinerary: ItineraryDetail;
+  day: DayTab;
+  className?: string;
+  /** #761: ピンを押したときに呼ぶ（親が一覧のその行へ飛ばす） */
+  onPinClick?: (spotId: string) => void;
+  /** #761: 今選んでいるスポット。そのピンだけ大きくする */
+  selectedSpotId?: string | null;
+}) {
   const mapRef = useRef<GoogleMapHandle>(null);
-  const pins = buildItineraryPins(itinerary, day);
+  // #761: ピンの id はスポットの id（buildItineraryPins が `spot.spotId` を入れている）
+  const pins = buildItineraryPins(itinerary, day).map((pin) => (pin.id === selectedSpotId ? { ...pin, selected: true } : pin));
   const first = pins[0];
   const fittedKeyRef = useRef<string | null>(null);
   const key = pins.map((pin) => pin.id).join(",");
@@ -69,6 +84,7 @@ export function ItineraryStaticMap({ itinerary, day, className }: { itinerary: I
         initialCenter={first ? { lat: first.lat, lng: first.lng } : TOKYO_STATION}
         initialZoom={13}
         pins={pins}
+        onPinClick={onPinClick}
         cluster={false}
         gesture="cooperative"
         onBoundsChange={onBoundsChange}
