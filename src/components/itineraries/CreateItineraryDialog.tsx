@@ -48,7 +48,7 @@ export function CreateItineraryDialog({
       return;
     }
     if (!title.trim()) {
-      setError("アルバム名を入力してください");
+      setError("しおりの名前を入力してください");
       return;
     }
     setIsSubmitting(true);
@@ -75,8 +75,14 @@ export function CreateItineraryDialog({
   return (
     <Sheet open={open} title="新しいしおり" onClose={onClose}>
       <form onSubmit={(event) => void handleSubmit(event)} className="flex flex-col gap-3" data-create-itinerary>
+        {/*
+          * #780（2026-10-06）: ここの見出しは「アルバム」だった。
+          * 開いているシートは「新しいしおり」なのに、入力欄には「アルバム」と書いてあり、
+          * **何を入れる欄なのか分からなかった**（タイトルと欄の名前が食い違っていた）。
+          * 入れるものの名前をそのまま書く。アルバムとつながる説明は下の一文に任せる。
+          */}
         <label className="flex flex-col gap-1 text-[12px] font-medium text-muted">
-          アルバム
+          しおりの名前
           <input
             value={title}
             onChange={(event) => setTitle(event.target.value)}
@@ -86,7 +92,7 @@ export function CreateItineraryDialog({
             className="h-11 rounded-[10px] border border-line bg-surface px-3 text-[14px] text-ink focus:outline-none focus:ring-1 focus:ring-accent"
           />
         </label>
-        <p className="text-[11px] text-muted">同じタイトルのアルバム（投稿のまとまり）とつながります</p>
+        <p className="text-[11px] text-muted">同じ名前のアルバム（投稿のまとまり）とつながります</p>
         <div className="grid grid-cols-2 gap-2">
           <label className="flex flex-col gap-1 text-[12px] font-medium text-muted">
             開始日（任意）

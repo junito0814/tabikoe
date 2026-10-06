@@ -72,11 +72,30 @@ describe("ItineraryListScreen（SC-22）", () => {
   it("「＋ 新規」でタイトルと期間を入れて作成すると詳細へ", async () => {
     render(<ItineraryListScreen today="2026-09-18" items={[]} api={api} />);
     fireEvent.click(screen.getByRole("button", { name: "＋ 新規" }));
-    fireEvent.change(screen.getByLabelText("アルバム"), { target: { value: "大阪旅行" } });
+    fireEvent.change(screen.getByLabelText("しおりの名前"), { target: { value: "大阪旅行" } });
     fireEvent.change(screen.getByLabelText("開始日（任意）"), { target: { value: "2026-09-20" } });
     fireEvent.change(screen.getByLabelText("終了日（任意）"), { target: { value: "2026-09-22" } });
     fireEvent.click(screen.getByRole("button", { name: "作成する" }));
     await waitFor(() => expect(api.create).toHaveBeenCalledWith({ title: "大阪旅行", startDate: "2026-09-20", endDate: "2026-09-22" }));
     await waitFor(() => expect(push).toHaveBeenCalledWith("/itineraries/it-new"));
+  });
+
+  /*
+   * #780（2026-10-06）: 入力欄のラベルが「アルバム」で、何を入れる欄か分からなかった。
+   * 「新しいしおり」という見出しと食い違っていたのが原因。
+   */
+  it("#780: 入力欄のラベルは「しおりの名前」。空のままだとその言葉で知らせる", async () => {
+    render(<ItineraryListScreen today="2026-09-18" items={[]} api={api} />);
+    fireEvent.click(screen.getByRole("button", { name: "＋ 新規" }));
+    expect(screen.getByLabelText("しおりの名前")).toBeInTheDocument();
+    expect(screen.queryByLabelText("アルバム")).toBeNull();
+    expect(screen.getByText("同じ名前のアルバム（投稿のまとまり）とつながります")).toBeInTheDocument();
+
+    // required は jsdom の送信では効かないので、値を空にして送信する
+    const input = screen.getByLabelText("しおりの名前");
+    fireEvent.change(input, { target: { value: " " } });
+    fireEvent.click(screen.getByRole("button", { name: "作成する" }));
+    expect(await screen.findByText("しおりの名前を入力してください")).toBeInTheDocument();
+    expect(api.create).not.toHaveBeenCalled();
   });
 });

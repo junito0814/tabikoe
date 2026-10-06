@@ -124,7 +124,9 @@ describe("ItineraryDetailScreen（SC-23）", () => {
     // #753: 「投稿一覧」は「⋯」の中の「投稿を見る」になった（要件 4.5.15 の言葉の統一）
     openRowMenu(document.querySelector("[data-itinerary-spot='a']") as HTMLElement);
     expect(screen.getByRole("menuitem", { name: "投稿を見る" })).toHaveAttribute("href", "/spots/a?back=%2Fitineraries%2Fit-1");
-    expect(screen.getByRole("link", { name: /アルバム「.*」を見る/ })).toHaveAttribute("href", "/albums/trip-1?back=%2Fitineraries%2Fit-1");
+    // #762: 「アルバム「〈タイトル〉」を見る」は見出しから外し、「⋯」の中の「アルバム」になった
+    fireEvent.click(screen.getByRole("button", { name: "その他" }));
+    expect(screen.getByRole("menuitem", { name: "アルバム" })).toHaveAttribute("href", "/albums/trip-1?back=%2Fitineraries%2Fit-1");
     unmount();
     render(<ItineraryDetailScreen initial={data} viewerId="me" api={makeApi(data)} />);
     expect(screen.getByRole("link", { name: "計画" })).toHaveAttribute("href", "/itineraries");
@@ -331,10 +333,11 @@ describe("印を減らす（#694）", () => {
     expect(document.body.textContent).not.toContain("✎");
   });
 
-  it("「地図で見る」は文字だけ", () => {
+  it("#757: 「地図で見る」は記号だけ（絵文字ではなく、読み上げ用の名前は持つ）", () => {
     render(<ItineraryDetailScreen initial={detail()} viewerId="me" api={makeApi(detail())} />);
     const button = screen.getByRole("button", { name: "地図で見る" });
-    expect(button.textContent?.trim()).toBe("地図で見る");
+    expect(button.textContent?.trim()).toBe(""); // 文字は入っていない
+    expect(button.querySelector("svg")).toBeInTheDocument();
   });
 
   it("期間に絵文字を出さない", () => {
@@ -411,5 +414,62 @@ describe("行の形（#753・#793）", () => {
     const data = detail({ spots: [spot("z", { dayIndex: null })] });
     render(<ItineraryDetailScreen initial={data} viewerId="me" api={makeApi(data)} />);
     expect(within(row("z")).getByRole("button", { name: "Day を決める" })).toHaveTextContent("Day を決める");
+  });
+});
+
+/*
+ * 本2-2（2026-10-06）: 見出しの作り直し
+ * - #757: タイトルは独立した行（切れない）、「地図で見る」は記号
+ * - #762: 「アルバム…を見る」は「⋯」の中の「アルバム」へ
+ */
+describe("見出しの作り直し（#757・#762）", () => {
+  const longTitle = "#755 確認用 沖縄本島ぐるっと一周 5 泊 6 日";
+
+  it("#757: タイトルは 1 行目から外れ、横幅いっぱいで 2 行まで出す（truncate をやめた）", () => {
+    const data = detail({ title: longTitle });
+    render(<ItineraryDetailScreen initial={data} viewerId="me" api={makeApi(data)} />);
+    const title = screen.getByRole("button", { name: `${longTitle}（名前を変更）` });
+    expect(title).toHaveTextContent(longTitle);
+    expect(title.className).toContain("line-clamp-2");
+    expect(title.className).toContain("w-full");
+    expect(title.className).not.toContain("truncate");
+    // 1 行目（戻る・地図・⋯ の行）には入っていない
+    expect(title.closest("[data-map-toggle]")).toBeNull();
+    expect(screen.getByRole("link", { name: "計画" }).parentElement).not.toContainElement(title);
+  });
+
+  it("#757: オーナーでなければタイトルは見出し（h1）。押しても何も起きない", () => {
+    const data = detail({ title: longTitle, role: "member" });
+    render(<ItineraryDetailScreen initial={data} viewerId="me" api={makeApi(data)} />);
+    const title = screen.getByRole("heading", { level: 1, name: longTitle });
+    expect(title.className).toContain("line-clamp-2");
+    expect(screen.queryByRole("button", { name: `${longTitle}（名前を変更）` })).toBeNull();
+  });
+
+  it("#757: 地図の記号は開くと塗りつぶし、名前も「地図を閉じる」に変わる", () => {
+    render(<ItineraryDetailScreen initial={detail()} viewerId="me" api={makeApi(detail())} />);
+    const toggle = screen.getByRole("button", { name: "地図で見る" });
+    expect(toggle).toHaveAttribute("aria-pressed", "false");
+    expect(toggle.className).not.toContain("bg-accent");
+    fireEvent.click(toggle);
+    const opened = screen.getByRole("button", { name: "地図を閉じる" });
+    expect(opened).toHaveAttribute("aria-pressed", "true");
+    expect(opened.className).toContain("bg-accent");
+  });
+
+  it("#762: 「アルバム」は「⋯」の中のいちばん上（行き先なので操作より先）", () => {
+    const data = detail({ albumPostCount: 3 });
+    render(<ItineraryDetailScreen initial={data} viewerId="me" api={makeApi(data)} />);
+    fireEvent.click(screen.getByRole("button", { name: "その他" }));
+    const labels = screen.getAllByRole("menuitem").map((item) => item.textContent);
+    expect(labels).toEqual(["アルバム", "招待", "メンバー", "しおりを削除"]);
+  });
+
+  it("#762: 投稿が 0 件なら「アルバム」は出さない。見出しにもボタンを残さない", () => {
+    const data = detail({ albumPostCount: 0 });
+    render(<ItineraryDetailScreen initial={data} viewerId="me" api={makeApi(data)} />);
+    fireEvent.click(screen.getByRole("button", { name: "その他" }));
+    expect(screen.queryByRole("menuitem", { name: "アルバム" })).toBeNull();
+    expect(document.body.textContent).not.toContain("を見る（");
   });
 });
