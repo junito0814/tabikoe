@@ -43,10 +43,19 @@ function MenuIcon({ itemKey }: { itemKey: MenuItem["key"] }) {
         </svg>
       );
     case "itineraries":
-      // ブックマーク（しおり）
+      /*
+       * #802（2026-10-06）: ~~ブックマーク~~ → **旅程（2 点を点線で結ぶ道筋）**。
+       *
+       * 【初心者向け】ブックマークの形は、ほとんどのアプリで「**保存した**」を意味する
+       * （Instagram の保存・X のブックマーク）。タビコエで「保存」にあたるのは
+       * 行きたい（♡）なので、計画にブックマークを使うと逆に読まれる。
+       * 「どこからどこへ回るか」を表す道筋にした。
+       */
       return (
         <svg {...common}>
-          <path d="M7 4h10a1 1 0 0 1 1 1v15l-6-4-6 4V5a1 1 0 0 1 1-1z" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round" />
+          <circle cx="6" cy="6.5" r="2.5" stroke="currentColor" strokeWidth="1.8" />
+          <circle cx="18" cy="17.5" r="2.5" stroke="currentColor" strokeWidth="1.8" />
+          <path d="M8.2 8c4 0 3.6 8.4 7.6 8.4" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeDasharray="2.5 2.5" />
         </svg>
       );
     case "notifications":

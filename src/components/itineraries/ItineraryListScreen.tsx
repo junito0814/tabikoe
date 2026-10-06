@@ -9,6 +9,7 @@ import { itineraryGroup, sortItineraries } from "@/lib/itineraries/sort-itinerar
 import { CreateItineraryDialog } from "./CreateItineraryDialog";
 import { defaultItineraryApi, type ItineraryApi } from "./itinerary-api";
 import { PullToRefresh } from "@/components/layout/PullToRefresh";
+import { PostFab } from "@/components/posts/PostFab";
 import { HeartIcon } from "@/components/ui/LineIcons";
 
 /**
@@ -39,7 +40,8 @@ export function ItineraryListScreen({
 
   return (
     <PullToRefresh>
-      <div className="flex min-h-screen flex-col items-center bg-app px-4 py-6">
+      {/* #807: 右下の「＋ ここに投稿」に最後の行が隠れないよう、下に 80px の余白（pb-24） */}
+      <div className="flex min-h-screen flex-col items-center bg-app px-4 pt-6 pb-24">
         <div className="w-full max-w-[520px]">
           {/* #693: 画面名は「計画」。中の区切りの見出しが「しおり」になる（決定事項 75） */}
           <header className="mb-4">
@@ -124,6 +126,7 @@ export function ItineraryListScreen({
           }}
         />
       </div>
+      <PostFab />
     </PullToRefresh>
   );
 }
