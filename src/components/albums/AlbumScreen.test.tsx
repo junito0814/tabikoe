@@ -59,11 +59,12 @@ describe("AlbumScreen（SC-09）", () => {
   it("Bug #471: 戻るは back があればその画面名、無ければアルバム一覧。投稿へのリンクにはこのアルバムを back で渡す", () => {
     const withPost = { ...album("viewer"), posts: [{ id: "p1", spotId: "s1", spotName: "浅草寺", isManualSpot: false, category: "観光スポット", visitDate: null, duration: null, cost: null, rating: 4, commentExcerpt: null, latestComment: null, commentCount: 0, likeCount: 0, viewerHasLiked: false, viewerHasSaved: false, author: { id: "owner", displayName: "おーなー", avatarUrl: "/default-avatar.svg", isDeleted: false }, media: [], createdAt: "2026-09-01T00:00:00Z", latestStatus: null, walkMinutes: null, visibility: "public" as const, tripTitle: "夏の東北旅行" }] } as unknown as AlbumDetail;
     const { unmount } = render(<AlbumScreen album={withPost} initialInvitations={[]} viewerId="me" api={api()} back={{ href: "/notifications", label: "通知" }} />);
-    expect(screen.getByRole("link", { name: "← 通知" })).toHaveAttribute("href", "/notifications");
+    // #813: 戻るは共通部品（BackLink）になり、文字の「←」ではなく記号になった
+    expect(screen.getByRole("link", { name: "通知" })).toHaveAttribute("href", "/notifications");
     expect(document.querySelector("a[href^='/posts/p1']")).toHaveAttribute("href", "/posts/p1?back=%2Falbums%2Ftrip-1");
     unmount();
     render(<AlbumScreen album={album("viewer")} initialInvitations={[]} viewerId="me" api={api()} />);
-    expect(screen.getByRole("link", { name: "← アルバム一覧" })).toHaveAttribute("href", "/albums");
+    expect(screen.getByRole("link", { name: "アルバム一覧" })).toHaveAttribute("href", "/albums");
   });
 
   it("SC-21: ヘッダーに「写真」リンクが出て、アルバム写真一覧へ行ける", () => {

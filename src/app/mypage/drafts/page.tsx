@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireUserOrRedirect } from "@/lib/auth/require-user-or-redirect";
@@ -6,6 +5,7 @@ import { ErrorNotice } from "@/components/notices/ErrorNotice";
 import { ERROR_MESSAGES } from "@/components/notices/error-messages";
 import { DraftsSection } from "@/components/mypage/DraftsSection";
 import { getMyDrafts } from "@/lib/posts/drafts";
+import { BackLink } from "@/components/layout/BackLink";
 
 /**
  * mentoring-7 Task1（v3.1）: 下書き一覧（SC-06 の「すべて見る」から）
@@ -26,9 +26,8 @@ export default async function MyDraftsPage() {
   return (
     <div className="mx-auto flex min-h-screen w-full max-w-[420px] flex-col gap-4 bg-app px-4 pt-4 pb-[calc(60px+env(safe-area-inset-bottom))] md:pb-6">
       <header className="flex items-center gap-2">
-        <Link href="/mypage" className="flex h-9 items-center rounded-full border border-line bg-surface px-3 text-[12px] font-semibold text-ink shadow-card">
-          ← マイページ
-        </Link>
+        {/* #813: 枠付きの丸いボタンをやめ、他の画面と同じ共通部品に揃えた */}
+        <BackLink href="/mypage" label="マイページ" />
         <h1 className="text-[17px] font-bold text-ink">下書き</h1>
       </header>
       {drafts ? (

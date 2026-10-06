@@ -52,7 +52,8 @@ describe("SearchTopScreen", () => {
     expect(screen.getByText("駅")).toBeInTheDocument();
     expect(screen.getByText("スポット")).toBeInTheDocument();
     fireEvent.click(screen.getByRole("option", { name: /大阪城/ }).querySelector("button")!);
-    expect(push).toHaveBeenCalledWith("/search?spot=s1");
+    // #756: ホームから来たことを伝える（開いた先の戻るが「‹ ホーム」になる）
+    expect(push).toHaveBeenCalledWith("/search?spot=s1&back=%2F");
   });
 
   /**

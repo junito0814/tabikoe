@@ -1,7 +1,6 @@
 "use client";
 
 import { useCallback, useRef, useState } from "react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ErrorNotice } from "@/components/notices/ErrorNotice";
 import { CardListSkeleton } from "@/components/skeleton/Skeletons";
@@ -23,6 +22,7 @@ import { areaChips, removeAreaChip } from "@/lib/search/regions";
 import { buildPostSearchParams, buildSearchPageHref, canFilterByArea, countActiveFilters, type PostSearchState, type SearchContext } from "./post-search-query";
 import { useInfiniteScroll } from "./use-infinite-scroll";
 import { useListRestore } from "./use-search-list";
+import { BackLink } from "@/components/layout/BackLink";
 
 export type FetchSpotPage = (params: URLSearchParams) => Promise<SpotCardPage>;
 
@@ -148,12 +148,8 @@ export function SpotSearchScreen({
         <div className="w-full max-w-[520px] px-4 pt-4">
           <header className="mb-3 flex flex-col gap-2.5">
             <div className="flex items-center gap-2">
-              <Link href={backHref} className="inline-flex h-8 shrink-0 items-center gap-1 text-[12px] font-medium text-muted">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden>
-                  <path d="M15 5l-7 7 7 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                </svg>
-                {backLabel}
-              </Link>
+              {/* #813: 戻るは共通部品（自前で ‹ を描かない） */}
+              <BackLink href={backHref} label={backLabel} />
               <h1 className="min-w-0 flex-1 truncate text-center text-[16px] font-bold text-ink">{title}</h1>
               {/* #811: 文字の「絞り込み（2）」をやめ、探すモードと同じ 3 本線の記号＋数にした（要件 4.5.15） */}
               <FilterButton count={activeCount} expanded={isSheetOpen} onClick={() => setIsSheetOpen(true)} />

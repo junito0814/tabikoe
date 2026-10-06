@@ -18,6 +18,7 @@ import { MapSheetLayout } from "@/components/layout/MapSheetLayout";
 import { StaticSpotMap } from "@/components/map/StaticSpotMap";
 import { formatCost } from "./PostCard";
 import { useOutsideClose } from "@/lib/ui/use-outside-close";
+import { BackLink } from "@/components/layout/BackLink";
 
 /**
  * F-VW-01 Task2 / post-detail-view-v3 Task1（v3.0）: 投稿詳細画面（SC-05）
@@ -104,27 +105,8 @@ export function PostDetailScreen({
           {notice}
           <header className="flex flex-col gap-2">
             <div className="flex items-center gap-2">
-              <Link
-                href={backHref}
-                className="inline-flex h-8 shrink-0 items-center gap-1 text-[12px] font-medium text-muted"
-              >
-                <svg
-                  width="16"
-                  height="16"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  aria-hidden
-                >
-                  <path
-                    d="M15 5l-7 7 7 7"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                </svg>
-                {backLabel}
-              </Link>
+              {/* #813: 戻るは共通部品（自前で ‹ を描かない） */}
+              <BackLink href={backHref} label={backLabel} />
               <span className="flex-1" />
               {post.isOwner ? (
                 <div ref={menuRef} className="relative">

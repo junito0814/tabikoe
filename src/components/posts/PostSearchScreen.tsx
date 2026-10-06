@@ -1,7 +1,6 @@
 "use client";
 
 import { useCallback, useRef, useState, type ReactNode } from "react";
-import Link from "next/link";
 import { appendBackHref } from "@/lib/search/list-state";
 import { useRouter } from "next/navigation";
 import { ErrorNotice } from "@/components/notices/ErrorNotice";
@@ -26,6 +25,7 @@ import {
 } from "./post-search-query";
 import { useInfiniteScroll } from "./use-infinite-scroll";
 import { useListRestore } from "./use-search-list";
+import { BackLink } from "@/components/layout/BackLink";
 
 export type FetchSearchPage = (params: URLSearchParams) => Promise<PostCardPage>;
 
@@ -167,12 +167,8 @@ export function PostSearchScreen({
       <div className="w-full max-w-[520px] px-4 pt-4">
         <header className="mb-3 flex flex-col gap-2.5">
           <div className="flex items-center gap-2">
-            <Link href={backHref} className="inline-flex h-8 shrink-0 items-center gap-1 text-[12px] font-medium text-muted">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden>
-                <path d="M15 5l-7 7 7 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
-              {backLabel}
-            </Link>
+            {/* #813: 戻るは共通部品（自前で ‹ を描かない） */}
+            <BackLink href={backHref} label={backLabel} />
             <h1 className="min-w-0 flex-1 truncate text-center text-[16px] font-bold text-ink">{title}</h1>
             {/*
               * #692: スポット別の一覧では絞り込みを出さない（並び替えは残す）。

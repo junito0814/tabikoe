@@ -17,6 +17,7 @@ import { MAX_TRIP_TITLE_LENGTH } from "@/lib/trips/constants";
 import { formatCost } from "@/components/posts/PostCard";
 import { useOutsideClose } from "@/lib/ui/use-outside-close";
 import { useConfirm } from "@/components/ui/ConfirmSheet";
+import { BackLink } from "@/components/layout/BackLink";
 
 export interface AlbumInvitation {
   id: string;
@@ -235,10 +236,9 @@ export function AlbumScreen({
       {confirmSheet}
       <div className="flex w-full max-w-[560px] flex-col gap-5">
         <header className="flex flex-col gap-2">
-          {/* Bug #471: どこから来たかで戻り先を変える（しおり・通知など）。無ければアルバム一覧 */}
-          <Link href={back?.href ?? "/albums"} className="text-[12px] text-muted underline underline-offset-2">
-            ← {back?.label ?? "アルバム一覧"}
-          </Link>
+          {/* Bug #471: どこから来たかで戻り先を変える（しおり・通知など）。無ければアルバム一覧
+              #813: 下線付きの「← 一覧」をやめ、他の画面と同じ共通部品に揃えた */}
+          <BackLink href={back?.href ?? "/albums"} label={back?.label ?? "アルバム一覧"} />
           {isRenaming ? (
             <form onSubmit={handleRename} className="flex gap-2">
               <input

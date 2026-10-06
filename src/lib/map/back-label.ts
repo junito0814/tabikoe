@@ -37,6 +37,10 @@ const NAMED_PATHS: [RegExp, string][] = [
   [/^\/mymap\/?$/, "投稿履歴"],
   [/^\/badges\/?$/, "バッジ"],
   [/^\/map\/?$/, "地図"],
+  // #792: 規約のページ（/terms・/privacy）から戻るときに使う
+  [/^\/account\/?$/, "アカウント"],
+  [/^\/signup\/?$/, "同意"],
+  [/^\/consent\/renew\/?$/, "同意"],
 ];
 
 export function classifyBackHref(back: string | null | undefined): BackTarget {

@@ -13,7 +13,8 @@ describe("ReconsentScreen", () => {
     render(<ReconsentScreen items={[{ kind: "terms", version: "1.3", summary: "・違反の記録を 90 日保持" }]} redirectTo="/mypage" submit={submit} />);
     expect(screen.getByText("利用規約が変わりました（1.3）")).toBeInTheDocument();
     expect(screen.getByText("・違反の記録を 90 日保持")).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "全文を読む →" })).toHaveAttribute("href", "/terms");
+    // #792: 読みに行った先の戻るで同意画面に帰れるよう、来た画面を渡す
+    expect(screen.getByRole("link", { name: "全文を読む →" })).toHaveAttribute("href", "/terms?back=%2Fconsent%2Frenew");
     const button = screen.getByRole("button", { name: "同意して続ける" });
     expect(button).toBeDisabled();
     fireEvent.click(screen.getByLabelText("利用規約に同意する"));

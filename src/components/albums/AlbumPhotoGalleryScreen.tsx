@@ -1,10 +1,10 @@
 "use client";
 
-import Link from "next/link";
 import { useMemo } from "react";
 import { PhotoGrid, type FetchMediaPage } from "@/components/media/PhotoGrid";
 import { fetchWithAuthRedirect } from "@/lib/api/fetch-with-auth-redirect";
 import type { SpotMediaPage } from "@/lib/posts/search-photos";
+import { BackLink } from "@/components/layout/BackLink";
 
 /**
  * F-RC-05 Task2: SC-21 アルバム写真一覧（画面）
@@ -23,9 +23,8 @@ export function AlbumPhotoGalleryScreen({ tripId, title, initialPage }: { tripId
     <div className="flex min-h-screen flex-col items-center bg-app px-4 py-6">
       <div className="flex w-full max-w-[560px] flex-col gap-4">
         <header className="flex flex-col gap-1">
-          <Link href={`/albums/${tripId}`} className="text-[12px] text-muted underline underline-offset-2">
-            ← {title}
-          </Link>
+          {/* #813: 下線付きの「← 題名」をやめ、他の画面と同じ共通部品に揃えた */}
+          <BackLink href={`/albums/${tripId}`} label={title} />
           <h1 className="text-[18px] font-bold text-ink">写真・動画</h1>
         </header>
         <PhotoGrid params={params} initialPage={initialPage} fetchPage={fetchPage} backHref={`/albums/${tripId}/photos`} />

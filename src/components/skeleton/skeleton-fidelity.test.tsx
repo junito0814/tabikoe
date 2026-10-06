@@ -166,7 +166,8 @@ describe("#653: 残り 5 画面の外枠が本物と同じ", () => {
 
 describe("#653: アルバム詳細の形（いちばんずれていた）", () => {
   it("本物は戻るが独立した 1 行で、その下に 20px のタイトル", () => {
-    expect(real5.アルバム詳細).toContain('className="text-[12px] text-muted underline underline-offset-2"');
+    // #813: 下線付きの「← 一覧」をやめ、共通部品（BackLink）に揃えた
+    expect(real5.アルバム詳細).toContain("<BackLink");
     expect(real5.アルバム詳細).toContain("text-[20px] font-bold text-ink");
   });
 

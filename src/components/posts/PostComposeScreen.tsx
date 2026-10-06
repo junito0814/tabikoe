@@ -18,6 +18,7 @@ import { useSheetDrag } from "@/components/layout/use-sheet-drag";
 import { SpotField } from "./SpotField";
 import { buildComposePayload, type UploadedMedia } from "./compose-payload";
 import { POSTING_RESTRICTED_ERROR, postingRestrictedMessage } from "@/lib/moderation/posting-restriction";
+import { BackLink } from "@/components/layout/BackLink";
 
 const MAX_PHOTO_SIZE_BYTES = 10 * 1024 * 1024;
 const MAX_VIDEO_SIZE_BYTES = 100 * 1024 * 1024;
@@ -325,14 +326,8 @@ export function PostComposeScreen({
       {/* 上 1/3（パソコンでは左 1/3）: 地図 */}
       <div className={`relative shrink-0 transition-[height] md:h-full md:w-1/3 ${sheetExpanded ? "h-0 md:h-full" : "h-[34%]"}`}>
         <div className="absolute left-3 top-3 z-10">
-          <button
-            type="button"
-            onClick={() => router.back()}
-            aria-label="戻る"
-            className="flex h-10 w-10 items-center justify-center rounded-full border border-line bg-surface shadow-card"
-          >
-            ‹
-          </button>
+          {/* #813: 記号だけの丸ボタンをやめ、地図の上の戻ると同じ見た目に揃えた（行き先は「来た画面」なので onClick） */}
+          <BackLink label="戻る" variant="floating" onClick={() => router.back()} />
         </div>
         <PostLocationMap
           initialCenter={mapInitialCenter}
