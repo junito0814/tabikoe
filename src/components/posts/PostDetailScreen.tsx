@@ -223,7 +223,8 @@ export function PostDetailScreen({
               </span>
             ) : (
               <Link
-                href={`/users/${post.author.id}`}
+                /* #767: 戻ると「‹ 投稿」でここに帰れるよう back を渡す */
+                href={appendBackHref(`/users/${post.author.id}`, selfHref)}
                 className="tap-target flex items-center gap-2 text-[0.75rem] text-ink"
               >
                 {/* eslint-disable-next-line @next/next/no-img-element */}

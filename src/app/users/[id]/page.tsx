@@ -3,10 +3,11 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireUserOrRedirect } from "@/lib/auth/require-user-or-redirect";
 import { isBlockedEitherWay } from "@/lib/blocks/get-blocked-user-ids";
-import { BlockUserButton } from "@/components/blocks/BlockUserButton";
-import { ReportLink } from "@/components/reports/ReportLink";
 import { DEFAULT_AVATAR_URL } from "@/lib/users/constants";
 import { userTitle } from "@/lib/metadata/page-title";
+import { resolveListBack } from "@/lib/search/list-state";
+import { getPublicPostsByUser, getPublicProfileStats } from "@/lib/users/public-profile";
+import { PublicProfileScreen } from "@/components/users/PublicProfileScreen";
 
 /**
  * F-AC-05 Task5: 退会後のプロフィール非表示処理
@@ -31,10 +32,13 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
 
 export default async function UserProfilePage({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{ back?: string }>;
 }) {
   const { id } = await params;
+  const query = await searchParams;
 
   // 要件定義書3.5.4: 未ログイン状態でトップページ以外へ直接アクセスした場合は
   // ログイン画面へ誘導し、ログイン完了後に元の遷移先へ戻す
@@ -61,24 +65,24 @@ export default async function UserProfilePage({
   }
 
   const displayName = profile.display_name ?? "ユーザー";
+  const selfHref = `/users/${id}`;
+  // #767: 来た画面（投稿詳細から来たら「‹ 投稿」）。無ければホーム
+  const back = resolveListBack(query.back ?? null);
+  const [stats, posts] = await Promise.all([
+    getPublicProfileStats(admin, id),
+    getPublicPostsByUser(admin, id, viewer.id, 0).catch(() => ({ posts: [], nextOffset: null })),
+  ]);
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-app px-6">
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img
-        src={profile.avatar_url ?? DEFAULT_AVATAR_URL}
-        alt={`${displayName}のアイコン画像`}
-        className="h-24 w-24 rounded-full object-cover"
-      />
-      <p className="text-[0.9375rem] font-semibold text-ink">{displayName}</p>
-
-      {!isSelf && (
-        <div className="mt-4 flex w-full max-w-[360px] items-center justify-center gap-4">
-          {/* F-SF-01 Task2: ユーザー通報の導線（SC-11へ） */}
-          <ReportLink targetType="user" targetId={id} returnTo={`/users/${id}`} />
-          <BlockUserButton targetUserId={id} targetDisplayName={displayName} />
-        </div>
-      )}
-    </div>
+    <PublicProfileScreen
+      userId={id}
+      displayName={displayName}
+      avatarUrl={profile.avatar_url ?? DEFAULT_AVATAR_URL}
+      stats={stats}
+      posts={posts.posts}
+      isSelf={isSelf}
+      back={back}
+      selfHref={selfHref}
+    />
   );
 }
