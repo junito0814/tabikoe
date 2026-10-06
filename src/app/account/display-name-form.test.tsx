@@ -33,8 +33,24 @@ describe("DisplayNameForm", () => {
   });
 
   it("200文字ちょうどは保存できる", () => {
-    render(<DisplayNameForm initialDisplayName={"あ".repeat(200)} />);
+    render(<DisplayNameForm initialDisplayName={"あ".repeat(199)} />);
+    // #783: 変えたときだけ押せる
+    fireEvent.change(screen.getByRole("textbox"), { target: { value: "あ".repeat(200) } });
     expect(screen.getByRole("button", { name: "保存" })).toBeEnabled();
+  });
+
+  /**
+   * #783（2026-10-06）: 「保存」が何も変えていなくても押せた。
+   * 押しても同じ値を送るだけで見た目は何も起きないので、「効かないボタン」に見える。
+   */
+  it("#783: 名前を変えていないときは「保存」を押せない", () => {
+    render(<DisplayNameForm initialDisplayName="太郎" />);
+    expect(screen.getByRole("button", { name: "保存" })).toBeDisabled();
+    fireEvent.change(screen.getByRole("textbox"), { target: { value: "花子" } });
+    expect(screen.getByRole("button", { name: "保存" })).toBeEnabled();
+    // 元に戻したらまた押せない
+    fireEvent.change(screen.getByRole("textbox"), { target: { value: "太郎" } });
+    expect(screen.getByRole("button", { name: "保存" })).toBeDisabled();
   });
 
   it("201文字では保存ボタンが無効化される", () => {
@@ -57,6 +73,7 @@ describe("DisplayNameForm", () => {
 
   it("保存成功時にメッセージを表示する", async () => {
     render(<DisplayNameForm initialDisplayName="太郎" />);
+    fireEvent.change(screen.getByRole("textbox"), { target: { value: "花子" } });
     fireEvent.click(screen.getByRole("button", { name: "保存" }));
     expect(await screen.findByText("保存しました")).toBeInTheDocument();
   });
@@ -64,6 +81,7 @@ describe("DisplayNameForm", () => {
   it("保存失敗時にメッセージを表示する", async () => {
     fetchMock.mockResolvedValue({ ok: false });
     render(<DisplayNameForm initialDisplayName="太郎" />);
+    fireEvent.change(screen.getByRole("textbox"), { target: { value: "花子" } });
     fireEvent.click(screen.getByRole("button", { name: "保存" }));
     expect(await screen.findByText("保存に失敗しました")).toBeInTheDocument();
   });

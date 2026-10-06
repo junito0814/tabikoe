@@ -57,7 +57,8 @@ export function BlockedUsersList({
       <h2 className="mb-2 text-[0.75rem] font-medium text-muted">ブロック中のユーザー</h2>
 
       {blockedUsers.length === 0 ? (
-        <p className="text-[0.75rem] text-muted">ブロック中のユーザーはいません</p>
+        /* #783: すぐ上に「ブロック中のユーザー」と出ているので、ここは「いません」だけ */
+        <p className="text-[0.75rem] text-muted">いません</p>
       ) : (
         <ul className="flex flex-col gap-2">
           {blockedUsers.map((user) => (
@@ -78,7 +79,8 @@ export function BlockedUsersList({
                 type="button"
                 onClick={() => handleUnblock(user.id)}
                 disabled={pendingId !== null}
-                className="text-[0.75rem] font-medium text-accent underline underline-offset-2 disabled:opacity-45"
+                /* #799: 下線の文字リンクをやめ、押せるボタンに（要件 4.5.16） */
+                className="h-8 shrink-0 rounded-full border border-line bg-surface px-3 text-[0.75rem] font-semibold text-ink disabled:opacity-45"
               >
                 {pendingId === user.id ? "解除中..." : "解除"}
               </button>

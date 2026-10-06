@@ -17,6 +17,12 @@ export default function DisplayNameForm({ initialDisplayName }: { initialDisplay
 
   const length = graphemeLength(value);
   const isTooLong = length > MAX_LENGTH;
+  /*
+   * #783（2026-10-06）: 「保存」が**何も変えていなくても押せた**。
+   * 押しても同じ値を送るだけで、見た目には何も起きないので「効かないボタン」に見える。
+   * 変えたときだけ押せるようにする。
+   */
+  const isUnchanged = value === initialDisplayName;
 
   const handleSave = async () => {
     if (isTooLong || isSaving) return;
@@ -53,7 +59,7 @@ export default function DisplayNameForm({ initialDisplayName }: { initialDisplay
         <button
           type="button"
           onClick={handleSave}
-          disabled={isTooLong || isSaving}
+          disabled={isTooLong || isSaving || isUnchanged}
           className="h-8 rounded-[8px] bg-accent px-4 text-[0.75rem] font-semibold text-white disabled:cursor-not-allowed disabled:opacity-45"
         >
           {isSaving ? "保存中..." : "保存"}

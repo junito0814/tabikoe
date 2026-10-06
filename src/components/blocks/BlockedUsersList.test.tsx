@@ -14,7 +14,8 @@ const users: BlockedUser[] = [
 describe("BlockedUsersList", () => {
   it("ブロック中のユーザーがいなければ空メッセージを表示する", () => {
     render(<BlockedUsersList initialBlockedUsers={[]} submitUnblock={vi.fn()} />);
-    expect(screen.getByText("ブロック中のユーザーはいません")).toBeInTheDocument();
+    // #783: すぐ上に見出しがあるので「いません」だけ
+    expect(screen.getByText("いません")).toBeInTheDocument();
   });
 
   it("初期一覧を表示する", () => {
