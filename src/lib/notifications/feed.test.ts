@@ -40,7 +40,7 @@ const notification = (id: string, createdAt: string): PersonalNotificationItem =
   fallbackMessage: null,
 });
 const announcement = (id: string, publishedAt: string): AnnouncementItem => ({
-  kind: "announcement",
+  kind: "announcement", isRead: false,
   id,
   title: "t",
   body: "b",

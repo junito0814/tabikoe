@@ -16,9 +16,10 @@ import { formatDateTime } from "@/lib/format/date-time";
 
 export interface NotificationApi {
   fetchPage: (offset: number) => Promise<FeedPage>;
-  markRead: (notificationIds: string[]) => Promise<Response>;
-  /** #711: 未読に戻す */
-  markUnread: (notificationIds: string[]) => Promise<Response>;
+  /** #754: お知らせも既読にできる（kind で表を分ける） */
+  markRead: (ids: string[], kind?: "notification" | "announcement") => Promise<Response>;
+  /** #711: 未読に戻す。#754: お知らせも */
+  markUnread: (ids: string[], kind?: "notification" | "announcement") => Promise<Response>;
   /** #711: すべて既読にする（読み込んでいない分も含めて） */
   markAllRead: () => Promise<Response>;
   /** v3.2: アプリ内招待に応答する（参加する／辞退） */
@@ -94,12 +95,14 @@ export function NotificationListScreen({
   const openAt = (index: number) => {
     setOpenIndex(index);
     const item = items[index];
-    if (item?.kind !== "notification" || item.isRead) return;
+    // #754: お知らせも既読にする（以前は個人向け通知だけだった）
+    if (!item || item.isRead) return;
+    const kind = item.kind;
     void (async () => {
       try {
-        const response = await api.markRead([item.id]);
+        const response = await api.markRead([item.id], kind);
         if (!response.ok) return;
-        setItems((current) => current.map((entry) => (entry.kind === "notification" && entry.id === item.id ? { ...entry, isRead: true } : entry)));
+        setItems((current) => current.map((entry) => (entry.kind === kind && entry.id === item.id ? { ...entry, isRead: true } : entry)));
         dispatchNotificationsRead();
       } catch (error) {
         if (error instanceof UnauthorizedError) return;
@@ -108,12 +111,12 @@ export function NotificationListScreen({
     })();
   };
 
-  /** #711: 未読に戻す（モーダルの中だけに置く） */
-  const markUnread = async (item: Extract<FeedItem, { kind: "notification" }>) => {
+  /** #711: 未読に戻す（モーダルの中だけに置く）。#754: お知らせも */
+  const markUnread = async (item: FeedItem) => {
     try {
-      const response = await api.markUnread([item.id]);
+      const response = await api.markUnread([item.id], item.kind);
       if (!response.ok) return;
-      setItems((current) => current.map((entry) => (entry.kind === "notification" && entry.id === item.id ? { ...entry, isRead: false } : entry)));
+      setItems((current) => current.map((entry) => (entry.kind === item.kind && entry.id === item.id ? { ...entry, isRead: false } : entry)));
       dispatchNotificationsRead();
       setOpenIndex(null);
     } catch (error) {
@@ -122,6 +125,15 @@ export function NotificationListScreen({
     }
   };
 
+  /**
+   * #775（2026-10-06）: 未読が 1 件でもあるか。無ければ「すべて既読にする」を出さない。
+   *
+   * 【初心者向け】ここで見ているのは**読み込んだぶん**です。読み込んでいない古い通知に
+   * 未読が残っていることはありますが、画面に 1 件も未読が無いのに押せるボタンがあるより、
+   * 見えているものに合わせる方が分かりやすいと判断しました。
+   */
+  const hasUnread = items.some((item) => !item.isRead);
+
   /** #711: すべて既読にする。読み込んでいない分も含めて */
   const markAllRead = async () => {
     if (isMarkingAll) return;
@@ -129,7 +141,8 @@ export function NotificationListScreen({
     try {
       const response = await api.markAllRead();
       if (!response.ok) return;
-      setItems((current) => current.map((entry) => (entry.kind === "notification" ? { ...entry, isRead: true } : entry)));
+      // #754: お知らせも既読にする
+      setItems((current) => current.map((entry) => ({ ...entry, isRead: true })));
       dispatchNotificationsRead();
     } catch (error) {
       if (error instanceof UnauthorizedError) return;
@@ -180,15 +193,23 @@ export function NotificationListScreen({
         <div className="flex w-full max-w-[520px] flex-col gap-3">
           <div className="flex items-center justify-between gap-2">
             <h1 className="text-[1.125rem] font-bold text-ink">通知</h1>
-            {/* #711: 自動既読をやめたので、まとめて消す道を右上に置く（決定事項 79） */}
-            <button
-              type="button"
-              onClick={() => void markAllRead()}
-              disabled={isMarkingAll}
-              className="h-8 shrink-0 rounded-full border border-line bg-surface px-3 text-[0.75rem] font-semibold text-ink disabled:opacity-45"
-            >
-              {isMarkingAll ? "既読にしています…" : "すべて既読にする"}
-            </button>
+            {/*
+              * #711: 自動既読をやめたので、まとめて消す道を右上に置く（決定事項 79）。
+              * #775（2026-10-06）: **未読が 1 件も無ければ出さない**。
+              * 既読にできるものが無いのに押せるボタンがあると、押しても何も起きず不安になる。
+              * #754 でお知らせも未読を持つようになったので、その分も数に入る。
+              */}
+            {hasUnread && (
+              <button
+                type="button"
+                onClick={() => void markAllRead()}
+                disabled={isMarkingAll}
+                className="h-8 shrink-0 rounded-full border border-line bg-surface px-3 text-[0.75rem] font-semibold text-ink disabled:opacity-45"
+                data-mark-all-read
+              >
+                {isMarkingAll ? "既読にしています…" : "すべて既読にする"}
+              </button>
+            )}
           </div>
 
 
@@ -204,10 +225,13 @@ export function NotificationListScreen({
                       onClick={() => openAt(index)}
                       data-announcement={item.id}
                       data-new={item.isNew ? "true" : undefined}
+                      data-unread={item.isRead ? undefined : "true"}
                       className={`flex w-full items-start gap-3 rounded-[12px] border bg-surface p-3 text-left ${
-                        item.isNew ? "border-accent" : "border-line"
+                        item.isRead ? "border-line" : "border-accent shadow-card"
                       }`}
                     >
+                      {/* #754: 個人向け通知と同じ青い丸。既読なら場所だけ空けて並びをそろえる */}
+                      <span className={`mt-1.5 h-2 w-2 shrink-0 rounded-full ${item.isRead ? "bg-transparent" : "bg-accent"}`} aria-hidden />
                       <span className="mt-0.5 shrink-0" aria-hidden>
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
                           <path d="M4 10v4a1 1 0 0 0 1 1h3l6 4V5L8 9H5a1 1 0 0 0-1 1z" stroke="var(--accent)" strokeWidth="1.8" strokeLinejoin="round" />
@@ -341,7 +365,8 @@ export function NotificationListScreen({
                     {open.invitation ? "招待を見る" : "この投稿を見る"}
                   </Link>
                 )}
-                {open.kind === "notification" && open.isRead && (
+                {/* #754: お知らせでも「未読に戻す」が使える */}
+                {open.isRead && (
                   <button
                     type="button"
                     onClick={() => void markUnread(open)}
@@ -417,17 +442,18 @@ const defaultApi: NotificationApi = {
     if (!response.ok) throw new Error(`Failed to fetch notifications: ${response.status}`);
     return (await response.json()) as FeedPage;
   },
-  markRead: (notificationIds) =>
+  // #754: kind でどちらの表を触るか決める
+  markRead: (ids, kind = "notification") =>
     fetchWithAuthRedirect("/api/notifications/read", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ notificationIds }),
+      body: JSON.stringify(kind === "announcement" ? { announcementIds: ids } : { notificationIds: ids }),
     }),
-  markUnread: (notificationIds) =>
+  markUnread: (ids, kind = "notification") =>
     fetchWithAuthRedirect("/api/notifications/read", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ notificationIds, read: false }),
+      body: JSON.stringify(kind === "announcement" ? { announcementIds: ids, read: false } : { notificationIds: ids, read: false }),
     }),
   markAllRead: () =>
     fetchWithAuthRedirect("/api/notifications/read", {

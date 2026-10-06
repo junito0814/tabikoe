@@ -38,6 +38,17 @@ export interface AnnouncementItem {
   title: string;
   body: string;
   publishedAt: string;
+  /**
+   * #754（2026-10-06）: 読んだかどうか。
+   *
+   * 【初心者向け】お知らせは **1 件を全員で共有**する作りなので、行そのものに `is_read` を
+   * 持てません。`announcement_reads`（誰がどれを読んだか）に自分の行があるかで決めます。
+   */
+  isRead: boolean;
+  /**
+   * 公開から 7 日以内か。
+   * #754: **未読のときだけ**画面に出す（既読なら「新着」と言う意味が無い）。
+   */
   isNew: boolean;
 }
 
@@ -313,7 +324,7 @@ export async function getNotificationFeed(
   offset: number,
   now: Date = new Date()
 ): Promise<FeedPage> {
-  const [notificationsResult, announcementsResult] = await Promise.all([
+  const [notificationsResult, announcementsResult, readsResult] = await Promise.all([
     admin
       .from("notifications")
       .select("id, type, related_id, is_read, created_at")
@@ -326,9 +337,22 @@ export async function getNotificationFeed(
       .select("id, title, body, published_at")
       .lte("published_at", now.toISOString())
       .order("published_at", { ascending: false }),
+    /*
+     * #754: 自分が読んだお知らせ（行があれば既読）。
+     *
+     * 【初心者向け】この表はマイグレーションで足したばかりなので、**まだ当てていない環境**では
+     * 存在しません。そこで失敗しても画面全体を壊さず、「**全部既読**」として扱います
+     * （未読の印が出ないだけで、通知一覧は今までどおり読めます）。当てれば自然に効き始めます。
+     */
+    admin
+      .from("announcement_reads")
+      .select("announcement_id")
+      .eq("user_id", userId)
+      .then((result) => (result.error ? { data: null } : result)),
   ]);
   if (notificationsResult.error) throw notificationsResult.error;
   if (announcementsResult.error) throw announcementsResult.error;
+  // readsResult は落ちても止めない（上のコメント参照）
 
   const rows = ((notificationsResult.data ?? []) as NotificationRow[]).filter((row) => isNotificationType(row.type));
   const lookups = await buildLookups(admin, rows);
@@ -357,19 +381,31 @@ export async function getNotificationFeed(
     };
   });
 
+  /*
+   * #754: 自分が読んだお知らせの id。ここに無ければ未読。
+   * ただし表そのものが無い環境（マイグレーション未適用）では `null` が来るので、
+   * そのときは**全部既読**として扱う（未読の印を出さないだけ。画面は壊さない）。
+   */
+  const reads = readsResult.data as { announcement_id: string }[] | null;
+  const readAnnouncementIds = reads === null ? null : new Set(reads.map((row) => row.announcement_id));
   const announcements: AnnouncementItem[] = ((announcementsResult.data ?? []) as {
     id: string;
     title: string;
     body: string;
     published_at: string;
-  }[]).map((row) => ({
-    kind: "announcement",
-    id: row.id,
-    title: row.title,
-    body: row.body,
-    publishedAt: row.published_at,
-    isNew: isNewAnnouncement(row.published_at, now),
-  }));
+  }[]).map((row) => {
+    const isRead = readAnnouncementIds === null ? true : readAnnouncementIds.has(row.id);
+    return {
+      kind: "announcement" as const,
+      id: row.id,
+      title: row.title,
+      body: row.body,
+      publishedAt: row.published_at,
+      isRead,
+      // #754: 「NEW」は未読のときだけ（既読のものに「新着」と言わない）
+      isNew: !isRead && isNewAnnouncement(row.published_at, now),
+    };
+  });
 
   return paginateFeed(mergeFeed(notifications, announcements), offset);
 }
