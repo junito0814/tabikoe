@@ -11,6 +11,7 @@ import { useInfiniteScroll } from "@/components/posts/use-infinite-scroll";
 import { dispatchNotificationsRead } from "./notification-events";
 import { PullToRefresh } from "@/components/layout/PullToRefresh";
 import { CloseButton } from "@/components/ui/CloseButton";
+import { useCloseOnBack } from "@/lib/ui/use-close-on-back";
 
 export interface NotificationApi {
   fetchPage: (offset: number) => Promise<FeedPage>;
@@ -169,6 +170,8 @@ export function NotificationListScreen({
 
   /** いま開いている通知（位置から引く。既読にした直後も最新が出る） */
   const open = openIndex === null ? null : (items[openIndex] ?? null);
+  // #796: Android の戻るキー（iOS の端スワイプ）でモーダルだけ閉じる（画面ごと通知一覧から出ない）
+  useCloseOnBack(open !== null, () => setOpenIndex(null));
 
   return (
     <PullToRefresh>

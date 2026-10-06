@@ -5,6 +5,7 @@ import { createPortal } from "react-dom";
 import Link from "next/link";
 import type { MediaItem } from "./MediaGrid";
 import { CloseButton } from "@/components/ui/CloseButton";
+import { useCloseOnBack } from "@/lib/ui/use-close-on-back";
 
 /**
  * media-layout-v3 Task1: 写真・動画モーダル（全画面共通）
@@ -38,6 +39,8 @@ export function MediaModal({
   const [index, setIndex] = useState(() => Math.min(Math.max(startIndex, 0), Math.max(items.length - 1, 0)));
   const touchStartX = useRef<number | null>(null);
   const dialogRef = useRef<HTMLDivElement>(null);
+  // #796: Android の戻るキー（iOS の端スワイプ）でモーダルだけ閉じる。この部品は開いている間しか描かれない
+  useCloseOnBack(true, onClose);
 
   const hasPrev = index > 0;
   const hasNext = index < items.length - 1;

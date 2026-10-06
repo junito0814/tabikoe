@@ -2,13 +2,20 @@
 
 import { useEffect, useId, type ReactNode } from "react";
 import { createPortal } from "react-dom";
+import { useCloseOnBack } from "@/lib/ui/use-close-on-back";
+import { usePullToClose } from "@/lib/ui/use-pull-to-close";
 import { CloseButton } from "./CloseButton";
+import { SheetHandleBar } from "./SheetHandleBar";
 
 /**
  * 共通: 下から出るシート（パソコン幅では中央のダイアログ）
  * 出典: docs/wireframes.md（絞り込みシート・保存先シート・期間の変更など）
  *
  * 【初心者向け】背景の暗い層（タップで閉じる）＋本体。Esc でも閉じる。
+ *
+ * #796（2026-10-06）: **Android の戻るキー**でも閉じる（画面ごと戻らない）。`use-close-on-back` 参照。
+ * #804（2026-10-06）: 上に**取っ手の棒**を出し、**下に 80px 引いても閉じる**。`use-pull-to-close` 参照。
+ * どちらもここ 1 か所に入れてあるので、アプリ中のすべてのシートに効きます（約束 14）。
  * `role="dialog"` と `aria-modal` を付け、見出しを `aria-labelledby` で結ぶ（スクリーンリーダー向け）。
  * 中身は children に任せ、このファイルは「開閉と枠」だけを担当する。
  */
@@ -28,6 +35,8 @@ export function Sheet({
   className?: string;
 }) {
   const titleId = useId();
+  useCloseOnBack(open, onClose);
+  const { offset, handleProps } = usePullToClose(onClose);
   useEffect(() => {
     if (!open) return;
     const onKeyDown = (event: KeyboardEvent) => {
@@ -48,9 +57,25 @@ export function Sheet({
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}
+        style={offset > 0 ? { transform: `translateY(${offset}px)` } : undefined}
         className={`relative flex max-h-[85dvh] w-full max-w-[520px] flex-col rounded-t-[16px] bg-surface shadow-card md:rounded-[16px] ${className ?? ""}`}
       >
-        <div className="flex items-center justify-between px-4 pt-4 pb-2">
+        {/*
+          * #804: 取っ手の棒。iOS のシートと同じ「下に引けば閉じる」の合図。
+          * 掴める範囲は 32px 以上（h-8）。パソコン幅（中央のダイアログ）では出さない。
+          * 中身のスクロールとは取り合わない ── 棒はスクロールする場所の外にあるため。
+          */}
+        <button
+          type="button"
+          {...handleProps}
+          onClick={onClose}
+          aria-label="閉じる"
+          data-sheet-pull-handle
+          className="flex h-8 w-full shrink-0 touch-none items-center justify-center md:hidden"
+        >
+          <SheetHandleBar />
+        </button>
+        <div className="flex items-center justify-between px-4 pb-2 pt-1 md:pt-4">
           <h2 id={titleId} className="text-[15px] font-bold text-ink">
             {title}
           </h2>

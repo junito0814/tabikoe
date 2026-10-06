@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { useSheetContentDrag, useSheetDrag } from "./use-sheet-drag";
+import { SheetHandleBar } from "@/components/ui/SheetHandleBar";
 
 /**
  * mentoring-7 Task4・Task11（v3.1）: 上 1/3 地図＋下 2/3 シートの共通レイアウト
@@ -131,7 +132,7 @@ export function MapSheetLayout({
           // 4.5.6: 掴める範囲は 32px 以上（h-8）。見た目の線は細いまま
           className="flex h-8 w-full touch-none items-center justify-center md:hidden"
         >
-          <span className="h-1 w-10 rounded-full bg-line" />
+          <SheetHandleBar />
         </button>
         {/* 地図を広くした段階では見出しの 1 行だけ。続きは上にスライドして読む（4.5.6） */}
         {tallMap && summary ? <div data-sheet-summary>{summary}</div> : children}
