@@ -37,7 +37,7 @@ describe("SearchTopScreen", () => {
     const { container } = render(<SearchTopScreen api={api} geolocation={granted} />);
     expect(screen.getByRole("combobox", { name: "行き先" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "近くのスポットを探す" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "ここを投稿" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "ここに投稿" })).toBeInTheDocument(); // #807: 右下の PostFab
     expect(container.querySelector("[role=region]")).toBeNull();
   });
 
@@ -98,14 +98,14 @@ describe("SearchTopScreen", () => {
     await waitFor(() => expect(screen.getByRole("combobox", { name: "行き先" })).toHaveFocus());
   });
 
-  it("「ここを投稿」は許可なら現在地付き、拒否なら位置なしで投稿画面へ", async () => {
+  it("右下の「ここに投稿」（#807）は許可なら現在地付き、拒否なら位置なしで投稿画面へ", async () => {
     const { unmount } = render(<SearchTopScreen api={api} geolocation={granted} />);
-    fireEvent.click(screen.getByRole("button", { name: "ここを投稿" }));
+    fireEvent.click(screen.getByRole("button", { name: "ここに投稿" }));
     await waitFor(() => expect(push).toHaveBeenCalledWith("/posts/new?lat=35.1&lng=139.2&from=current"));
     unmount();
     push.mockReset();
     render(<SearchTopScreen api={api} geolocation={denied} />);
-    fireEvent.click(screen.getByRole("button", { name: "ここを投稿" }));
+    fireEvent.click(screen.getByRole("button", { name: "ここに投稿" }));
     await waitFor(() => expect(push).toHaveBeenCalledWith("/posts/new?from=current"));
   });
 
