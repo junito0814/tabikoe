@@ -1,7 +1,6 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ErrorNotice } from "@/components/notices/ErrorNotice";
 import { ERROR_MESSAGES } from "@/components/notices/error-messages";
@@ -121,12 +120,10 @@ export function MyMapScreen({
     <div className="relative flex h-[calc(100dvh-60px)] flex-col bg-app md:h-dvh">
       <div className="pointer-events-none absolute inset-x-0 top-0 z-10 flex flex-col gap-2 p-3">
         <div className="pointer-events-auto mx-auto flex w-full max-w-[420px] items-center gap-2">
-          <Link
-            href="/mypage"
-            className="flex h-9 shrink-0 items-center rounded-full border border-line bg-surface px-3 text-[12px] font-semibold text-ink shadow-card"
-          >
-            マイページ
-          </Link>
+          {/*
+            * #747: 地図の上の「マイページ」のピルは外した。
+            * #682 で投稿履歴に画面名とタブを付け、その上に戻るを置いたので二重になっていた。
+            */}
           <div
             role="radiogroup"
             aria-label="表示するピン"

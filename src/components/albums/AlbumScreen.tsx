@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import Link from "next/link";
 import { InAppInvitePanel, searchUsersRequest, type InAppInviteApi } from "@/components/invitations/InAppInvitePanel";
+import { Sheet } from "@/components/ui/Sheet";
 import type { InviteCandidate } from "@/lib/invitations/in-app";
 import type { UserSummary } from "@/lib/users/search-users";
 import { useRouter } from "next/navigation";
@@ -87,6 +88,8 @@ export function AlbumScreen({
    * 投稿が 0 件のときだけ出す ── 投稿があるアルバムを消すと中の投稿も一緒に消えるため。
    */
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  /** #750: 招待とメンバーは「⋯」から開くダイアログにまとめる（しおり詳細と同じ形） */
+  const [dialog, setDialog] = useState<"invite" | "members" | null>(null);
   const menuRef = useRef<HTMLDivElement>(null);
   const canDeleteAlbum = canManage && album.posts.length === 0 && api.deleteAlbum !== undefined;
 
@@ -283,38 +286,50 @@ export function AlbumScreen({
               ) : (
                 <h1 className="min-w-0 flex-1 break-words text-[20px] font-bold text-ink">{title}</h1>
               )}
-              {canDeleteAlbum && (
-                <div className="relative shrink-0">
-                  <button
-                    type="button"
-                    onClick={() => setIsMenuOpen((open) => !open)}
-                    aria-haspopup="menu"
-                    aria-expanded={isMenuOpen}
-                    aria-label="その他"
-                    className="h-8 w-8 rounded-full border border-line bg-surface text-[14px] font-bold text-ink"
-                  >
-                    ⋯
-                  </button>
-                  {isMenuOpen && (
-                    <ul role="menu" className="absolute right-0 z-20 mt-1 min-w-[170px] overflow-hidden rounded-[10px] border border-line bg-surface py-1 shadow-card">
-                      <li role="presentation">
-                        <button
-                          type="button"
-                          role="menuitem"
-                          onClick={() => {
-                            setIsMenuOpen(false);
-                            void handleDeleteAlbum();
-                          }}
-                          disabled={busy !== null}
-                          className="flex w-full px-3 py-2 text-left text-[13px] text-saved hover:bg-tint disabled:opacity-45"
-                        >
-                          {busy === "delete" ? "削除しています…" : "このアルバムを削除"}
-                        </button>
-                      </li>
-                    </ul>
-                  )}
-                </div>
-              )}
+              {/* #750: 「⋯」は誰にでも出す（メンバーは誰でも見られる。中身は権限で変わる） */}
+              <div className="relative shrink-0">
+                <button
+                  type="button"
+                  onClick={() => setIsMenuOpen((open) => !open)}
+                  aria-haspopup="menu"
+                  aria-expanded={isMenuOpen}
+                  aria-label="その他"
+                  className="h-8 w-8 rounded-full border border-line bg-surface text-[14px] font-bold text-ink"
+                >
+                  ⋯
+                </button>
+                {isMenuOpen && (
+                  <ul role="menu" className="absolute right-0 z-20 mt-1 min-w-[170px] overflow-hidden rounded-[10px] border border-line bg-surface py-1 shadow-card">
+                    {canManage && (
+                      <AlbumMenuItem
+                        label="招待"
+                        onClick={() => {
+                          setIsMenuOpen(false);
+                          setDialog("invite");
+                        }}
+                      />
+                    )}
+                    <AlbumMenuItem
+                      label="メンバー"
+                      onClick={() => {
+                        setIsMenuOpen(false);
+                        setDialog("members");
+                      }}
+                    />
+                    {canDeleteAlbum && (
+                      <AlbumMenuItem
+                        label={busy === "delete" ? "削除しています…" : "このアルバムを削除"}
+                        danger
+                        disabled={busy !== null}
+                        onClick={() => {
+                          setIsMenuOpen(false);
+                          void handleDeleteAlbum();
+                        }}
+                      />
+                    )}
+                  </ul>
+                )}
+              </div>
             </div>
           )}
           <p className="text-[11px] text-muted">
@@ -336,8 +351,8 @@ export function AlbumScreen({
 
         {errorMessage && <ErrorNotice message={errorMessage} />}
 
-        <section aria-labelledby="members-heading" className="rounded-[12px] border border-line bg-surface p-4">
-          <h2 id="members-heading" className="mb-2 text-[13px] font-bold text-ink">メンバー</h2>
+        {/* #750: 招待とメンバーは「⋯」から開くダイアログへ移した（しおり詳細と同じ形） */}
+        <Sheet open={dialog === "members"} title="メンバー" onClose={() => setDialog(null)}>
           <ul className="flex flex-col gap-2">
             {members.map((member) => (
               <li key={member.userId} className="flex items-center gap-2 text-[12px]" data-member={member.userId}>
@@ -398,75 +413,71 @@ export function AlbumScreen({
               {busy === "leave" ? "退出しています…" : "このアルバムから退出"}
             </button>
           )}
-        </section>
-
-        {canManage && (
-          <section aria-labelledby="invite-heading" className="rounded-[12px] border border-line bg-surface p-4">
-            <h2 id="invite-heading" className="mb-2 text-[13px] font-bold text-ink">招待</h2>
-            <label className="mb-2 flex items-center gap-2 text-[12px] text-muted">
-              付与する権限
-              <select
-                value={inviteRole}
-                aria-label="付与する権限"
-                onChange={(event) => setInviteRole(event.target.value as InvitableRole)}
-                className="h-9 rounded-[6px] border border-line bg-surface px-2 text-[12px] text-ink"
-              >
-                {INVITABLE_ROLES.map((role) => (
-                  <option key={role} value={role}>
-                    {ALBUM_ROLE_LABELS[role]}
-                  </option>
-                ))}
-              </select>
-            </label>
-            {/* v3.2（feedback-0919 Task6）: アプリ内招待（一緒だった人・ユーザー名検索）。選んだ権限で送る */}
-            {inAppApi && <InAppInvitePanel api={inAppApi} className="mb-3" />}
-            <h3 className="mb-1 text-[12px] font-bold text-ink">
-              リンクで招待 <span className="font-normal text-muted">（アプリを使っていない人向け）</span>
-            </h3>
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={() => void handleIssue()}
-                disabled={busy !== null}
-                className="h-9 rounded-[8px] bg-ink px-3 text-[12px] font-semibold text-on-ink disabled:opacity-45"
-              >
-                {busy === "issue" ? "発行中…" : "リンクを発行（7日間有効）"}
-              </button>
+        </Sheet>
+        <Sheet open={dialog === "invite" && canManage} title="招待" onClose={() => setDialog(null)}>
+          <label className="mb-2 flex items-center gap-2 text-[12px] text-muted">
+            付与する権限
+            <select
+              value={inviteRole}
+              aria-label="付与する権限"
+              onChange={(event) => setInviteRole(event.target.value as InvitableRole)}
+              className="h-9 rounded-[6px] border border-line bg-surface px-2 text-[12px] text-ink"
+            >
+              {INVITABLE_ROLES.map((role) => (
+                <option key={role} value={role}>
+                  {ALBUM_ROLE_LABELS[role]}
+                </option>
+              ))}
+            </select>
+          </label>
+          {/* v3.2（feedback-0919 Task6）: アプリ内招待（一緒だった人・ユーザー名検索）。選んだ権限で送る */}
+          {inAppApi && <InAppInvitePanel api={inAppApi} className="mb-3" />}
+          <h3 className="mb-1 text-[12px] font-bold text-ink">
+            リンクで招待 <span className="font-normal text-muted">（アプリを使っていない人向け）</span>
+          </h3>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => void handleIssue()}
+              disabled={busy !== null}
+              className="h-9 rounded-[8px] bg-ink px-3 text-[12px] font-semibold text-on-ink disabled:opacity-45"
+            >
+              {busy === "issue" ? "発行中…" : "リンクを発行（7日間有効）"}
+            </button>
+          </div>
+          {issuedPath && (
+            <div className="mt-2 rounded-[8px] bg-tint p-2.5 text-[12px] text-ink">
+              <p className="mb-1 text-[11px] text-muted">このリンクを共有してください（再表示はできません）</p>
+              <code className="break-all" data-invitation-url>{`${origin}${issuedPath}`}</code>
             </div>
-            {issuedPath && (
-              <div className="mt-2 rounded-[8px] bg-tint p-2.5 text-[12px] text-ink">
-                <p className="mb-1 text-[11px] text-muted">このリンクを共有してください（再表示はできません）</p>
-                <code className="break-all" data-invitation-url>{`${origin}${issuedPath}`}</code>
-              </div>
-            )}
-            {invitations.length > 0 && (
-              <ul className="mt-3 flex flex-col gap-1.5">
-                {invitations.map((invitation) => (
-                  <li key={invitation.id} className="flex items-center gap-2 text-[11px] text-muted">
-                    <span>{ALBUM_ROLE_LABELS[invitation.role as InvitableRole] ?? invitation.role}</span>
-                    <span>期限 {new Date(invitation.expiresAt).toLocaleDateString("ja-JP")}</span>
-                    <span className="ml-auto">
-                      {invitation.status === "valid" ? (
-                        <button
-                          type="button"
-                          onClick={() => void handleRevoke(invitation.id)}
-                          disabled={busy !== null}
-                          className="font-medium text-accent underline underline-offset-2 disabled:opacity-45"
-                        >
-                          {busy === `revoke:${invitation.id}` ? "無効化しています…" : "無効化"}
-                        </button>
-                      ) : invitation.status === "revoked" ? (
-                        "無効化済み"
-                      ) : (
-                        "期限切れ"
-                      )}
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </section>
-        )}
+          )}
+          {invitations.length > 0 && (
+            <ul className="mt-3 flex flex-col gap-1.5">
+              {invitations.map((invitation) => (
+                <li key={invitation.id} className="flex items-center gap-2 text-[11px] text-muted">
+                  <span>{ALBUM_ROLE_LABELS[invitation.role as InvitableRole] ?? invitation.role}</span>
+                  <span>期限 {new Date(invitation.expiresAt).toLocaleDateString("ja-JP")}</span>
+                  <span className="ml-auto">
+                    {invitation.status === "valid" ? (
+                      <button
+                        type="button"
+                        onClick={() => void handleRevoke(invitation.id)}
+                        disabled={busy !== null}
+                        className="font-medium text-accent underline underline-offset-2 disabled:opacity-45"
+                      >
+                        {busy === `revoke:${invitation.id}` ? "無効化しています…" : "無効化"}
+                      </button>
+                    ) : invitation.status === "revoked" ? (
+                      "無効化済み"
+                    ) : (
+                      "期限切れ"
+                    )}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </Sheet>
 
         <section aria-labelledby="posts-heading" className="flex flex-col gap-3">
           <h2 id="posts-heading" className="text-[13px] font-bold text-ink">投稿</h2>
@@ -555,3 +566,20 @@ const defaultApi: AlbumApi = {
     fetchWithAuthRedirect(`/api/trips/${tripId}/members/${userId}`, { method: "DELETE" }),
   leave: (tripId) => fetchWithAuthRedirect(`/api/trips/${tripId}/members/me`, { method: "DELETE" }),
 };
+
+/** #750: 「⋯」の中の 1 行（しおり詳細の MenuItem と同じ形） */
+function AlbumMenuItem({ label, onClick, danger = false, disabled = false }: { label: string; onClick: () => void; danger?: boolean; disabled?: boolean }) {
+  return (
+    <li role="presentation">
+      <button
+        type="button"
+        role="menuitem"
+        onClick={onClick}
+        disabled={disabled}
+        className={`flex w-full px-3 py-2 text-left text-[13px] hover:bg-tint disabled:opacity-45 ${danger ? "text-saved" : "text-ink"}`}
+      >
+        {label}
+      </button>
+    </li>
+  );
+}

@@ -105,3 +105,19 @@ describe("PostHistoryScreen（SC-12 投稿履歴）", () => {
     expect(screen.queryByRole("region", { name: "下書き" })).toBeNull();
   });
 });
+
+/**
+ * #747（2026-10-06）: 地図タブで戻るボタンが 2 つ出ていた。
+ * `MyMapScreen` が「あしあと」1 枚だったころの戻る（地図の上に浮かぶピル）を持っていたため。
+ */
+describe("戻るは 1 つだけ（#747）", () => {
+  it("地図タブでも「マイページ」へ戻る導線は 1 つ", () => {
+    render(<PostHistoryScreen {...base} view="map" />);
+    expect(screen.getAllByRole("link", { name: "マイページ" })).toHaveLength(1);
+  });
+
+  it("地図の上にはピンの切り替えだけが残る", () => {
+    render(<PostHistoryScreen {...base} view="map" />);
+    expect(screen.getByRole("radiogroup", { name: "表示するピン" })).toBeInTheDocument();
+  });
+});

@@ -1,20 +1,10 @@
 import type { Metadata, Viewport } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { geistSans, geistMono } from "./fonts";
 import { AppMenuBar } from "@/components/layout/AppMenuBar";
 import { createClient } from "@/lib/supabase/server";
 import { getAuthUserFromClaims } from "@/lib/auth/auth-user";
 import { LAUNCH_GROUND } from "@/lib/theme/colors";
 import "./globals.css";
-
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
 
 /*
  * #662（2026-10-03）: iOS の起動画面の画像の**宣言を外した**。
@@ -108,7 +98,7 @@ export const viewport: Viewport = {
 /**
  * 【初心者向け】layout.tsx は全ページの「外枠」。<html><body> と、全画面共通のメニューバーをここで 1 回だけ描き、
  * 各ページ（page.tsx）の中身は `children` として差し込まれる。ページを移動しても layout は作り直されない。
- * `metadata` はブラウザのタブに出るタイトルと説明。フォントは next/font で読み込み、CSS 変数として渡している。
+ * `metadata` はブラウザのタブに出るタイトルと説明。フォントは next/font/local で読み込み（fonts.ts）、CSS 変数として渡している。
  *
  * 共通メニューバー（要件定義書4.2）はここで全画面に載せる。
  * 表示・非表示の判定はAppMenuBar側がパスで行う（未ログインのホーム・ログイン・新規作成・管理画面では出ない）。

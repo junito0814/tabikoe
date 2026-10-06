@@ -37,11 +37,22 @@ const api = (overrides: Partial<AlbumApi> = {}): AlbumApi => ({
   ...overrides,
 });
 
+/**
+ * #750（2026-10-06）: 招待とメンバーは「⋯」から開くダイアログへ移した。
+ * そのため、中を見るテストは **まず「⋯」を開く** 必要がある。
+ */
+const openAlbumDialog = (label: "招待" | "メンバー") => {
+  fireEvent.click(screen.getByRole("button", { name: "その他" }));
+  fireEvent.click(screen.getByRole("menuitem", { name: label }));
+};
+
 describe("AlbumScreen（SC-09）", () => {
-  it("v3.1: 「日常」ではオーナーでも名前の変更と招待リンクが出ない", () => {
+  it("v3.1: 「日常」ではオーナーでも名前の変更と招待が出ない", () => {
     render(<AlbumScreen album={{ ...album("owner"), title: "日常", isDaily: true }} initialInvitations={[]} viewerId="me" api={api()} />);
-    expect(screen.queryByRole("button", { name: "名前を変更" })).toBeNull();
-    expect(screen.queryByRole("heading", { name: "招待リンク" })).toBeNull();
+    expect(screen.queryByRole("button", { name: /名前を変更/ })).toBeNull();
+    // #750: 招待は「⋯」の中。「日常」では中にも出ない
+    fireEvent.click(screen.getByRole("button", { name: "その他" }));
+    expect(screen.queryByRole("menuitem", { name: "招待" })).toBeNull();
   });
 
   it("Bug #471: 戻るは back があればその画面名、無ければアルバム一覧。投稿へのリンクにはこのアルバムを back で渡す", () => {
@@ -77,10 +88,12 @@ describe("AlbumScreen（SC-09）", () => {
     expect(screen.getByRole("heading", { name: "夏の東北旅行" })).toBeInTheDocument();
   });
 
-  it.each(["editor", "viewer"] as const)("%s には名称変更ボタンが出ない", (role) => {
+  it.each(["editor", "viewer"] as const)("%s には名称変更も招待も出ず、「⋯」のメンバーから退出できる", (role) => {
     render(<AlbumScreen album={album(role)} initialInvitations={[]} viewerId="me" api={api()} />);
     expect(screen.queryByRole("button", { name: /名前を変更/ })).toBeNull();
-    expect(screen.queryByRole("button", { name: /リンクを発行/ })).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "その他" }));
+    expect(screen.queryByRole("menuitem", { name: "招待" })).toBeNull();
+    fireEvent.click(screen.getByRole("menuitem", { name: "メンバー" }));
     expect(screen.getByRole("button", { name: "このアルバムから退出" })).toBeInTheDocument();
   });
 
@@ -97,6 +110,7 @@ describe("AlbumScreen（SC-09）", () => {
 
   it("オーナーは招待リンクを発行でき、URLが表示される", async () => {
     render(<AlbumScreen album={album("owner")} initialInvitations={[]} viewerId="owner" api={api()} />);
+    openAlbumDialog("招待");
     fireEvent.change(screen.getByRole("combobox", { name: "付与する権限" }), { target: { value: "editor" } });
     fireEvent.click(screen.getByRole("button", { name: /リンクを発行/ }));
     const url = await screen.findByText(/\/invitations\/abc$/);
@@ -106,6 +120,7 @@ describe("AlbumScreen（SC-09）", () => {
   it("オーナーはメンバーの権限を変更でき、オーナー行には操作が出ない", async () => {
     const changeRole = vi.fn(async () => Response.json({}));
     render(<AlbumScreen album={album("owner")} initialInvitations={[]} viewerId="owner" api={api({ changeRole })} />);
+    openAlbumDialog("メンバー");
     expect(screen.queryByRole("combobox", { name: "おーなーの権限" })).toBeNull();
     fireEvent.change(screen.getByRole("combobox", { name: "わたしの権限" }), { target: { value: "viewer" } });
     await waitFor(() => expect(changeRole).toHaveBeenCalledWith("trip-1", "me", "viewer"));
@@ -136,12 +151,14 @@ describe("4-8: アルバムの各操作の待ち表示", () => {
   it("メンバー削除を押すと、その行だけ「削除中…」になる", () => {
     vi.spyOn(window, "confirm").mockReturnValue(true);
     render(<AlbumScreen album={album("owner")} initialInvitations={[]} viewerId="me" api={api({ removeMember: never })} />);
+    openAlbumDialog("メンバー");
     fireEvent.click(screen.getByRole("button", { name: "わたしを削除" }));
     expect(screen.getByRole("button", { name: "わたしを削除" })).toHaveTextContent("削除中…");
   });
 
   it("権限を変えると「変更しています…」が隣に出る（select は文言を持てないため）", () => {
     render(<AlbumScreen album={album("owner")} initialInvitations={[]} viewerId="me" api={api({ changeRole: never })} />);
+    openAlbumDialog("メンバー");
     fireEvent.change(screen.getByLabelText("わたしの権限"), { target: { value: "viewer" } });
     expect(screen.getByText("変更しています…")).toBeInTheDocument();
   });
@@ -149,6 +166,7 @@ describe("4-8: アルバムの各操作の待ち表示", () => {
   it("退出を押すと「退出しています…」になる", () => {
     vi.spyOn(window, "confirm").mockReturnValue(true);
     render(<AlbumScreen album={album("editor")} initialInvitations={[]} viewerId="me" api={api({ leave: never })} />);
+    openAlbumDialog("メンバー");
     fireEvent.click(screen.getByRole("button", { name: "このアルバムから退出" }));
     expect(screen.getByRole("button", { name: "退出しています…" })).toBeInTheDocument();
   });
@@ -162,6 +180,7 @@ describe("4-8: アルバムの各操作の待ち表示", () => {
         api={api({ revokeInvitation: never })}
       />
     );
+    openAlbumDialog("招待");
     fireEvent.click(screen.getByRole("button", { name: "無効化" }));
     expect(screen.getByRole("button", { name: "無効化しています…" })).toBeInTheDocument();
   });
@@ -191,9 +210,49 @@ describe("削除の置き場所と鉛筆の印（#742）", () => {
     expect(document.querySelector("[data-trash-button]")).toBeNull();
   });
 
-  it("投稿があるアルバムでは「⋯」を出さない（写真ごと消える事故を防ぐ）", () => {
+  it("投稿があるアルバムでは「⋯」の中に削除を出さない（写真ごと消える事故を防ぐ）", () => {
     const withPost = { ...album("owner"), posts: [{ id: "p1", spotId: "s1", spotName: "浅草寺", isManualSpot: false, category: "観光スポット", visitDate: null, duration: null, cost: null, rating: 4, commentExcerpt: null, latestComment: null, commentCount: 0, likeCount: 0, viewerHasLiked: false, viewerHasSaved: false, author: { id: "owner", displayName: "おーなー", avatarUrl: "/default-avatar.svg", isDeleted: false }, media: [], createdAt: "2026-09-01T00:00:00Z", latestStatus: null, walkMinutes: null, visibility: "public" as const, tripTitle: "夏の東北旅行" }] } as unknown as AlbumDetail;
     render(<AlbumScreen album={withPost} initialInvitations={[]} viewerId="me" api={api({ deleteAlbum: vi.fn(async () => Response.json({ ok: true })) })} />);
-    expect(screen.queryByRole("button", { name: "その他" })).toBeNull();
+    // #750: 「⋯」自体はメンバーを見るために誰にでも出る。中の「削除」だけが出ない
+    fireEvent.click(screen.getByRole("button", { name: "その他" }));
+    expect(screen.getByRole("menuitem", { name: "メンバー" })).toBeInTheDocument();
+    expect(screen.queryByRole("menuitem", { name: "このアルバムを削除" })).toBeNull();
+  });
+});
+
+/**
+ * #750（2026-10-06）: 「⋯」に 招待・メンバー・このアルバムを削除 をまとめた（しおり詳細と同じ形）。
+ * 画面に段として並んでいた「招待」「メンバー」は、ここから開くダイアログへ移した。
+ */
+describe("招待とメンバーを「⋯」へまとめる（#750）", () => {
+  const owned = () => <AlbumScreen album={album("owner")} initialInvitations={[]} viewerId="me" api={api({ deleteAlbum: vi.fn(async () => Response.json({ ok: true })) })} />;
+
+  it("オーナーの「⋯」は 招待・メンバー・このアルバムを削除 の 3 つ", () => {
+    render(owned());
+    fireEvent.click(screen.getByRole("button", { name: "その他" }));
+    expect(screen.getAllByRole("menuitem").map((item) => item.textContent)).toEqual(["招待", "メンバー", "このアルバムを削除"]);
+  });
+
+  it("開く前は画面に招待もメンバーも出ていない（縦に長くならない）", () => {
+    render(owned());
+    expect(screen.queryByRole("combobox", { name: "付与する権限" })).toBeNull();
+    expect(document.querySelector("[data-member='owner']")).toBeNull();
+  });
+
+  it("「メンバー」を選ぶとダイアログが開き、× で閉じる", () => {
+    render(owned());
+    openAlbumDialog("メンバー");
+    const dialog = screen.getByRole("dialog", { name: "メンバー" });
+    expect(dialog.querySelector("[data-member='owner']")).not.toBeNull();
+    // Sheet は背景（タップで閉じる）にも「閉じる」が付くので、右上の × を押す
+    fireEvent.click(document.querySelector("[data-close-button]") as HTMLElement);
+    expect(screen.queryByRole("dialog")).toBeNull();
+  });
+
+  it("「招待」を選ぶとダイアログが開く", () => {
+    render(owned());
+    openAlbumDialog("招待");
+    expect(screen.getByRole("dialog", { name: "招待" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /リンクを発行/ })).toBeInTheDocument();
   });
 });
