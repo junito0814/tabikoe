@@ -187,3 +187,23 @@ describe("キーボードが出ても表記が見える（#749）", () => {
     expect(source).toContain("!keyboardOpen && window.innerWidth < 768");
   });
 });
+
+/**
+ * #808（2026-10-06）: ホームの 3 つ目は「みんなの投稿を見る」
+ * 出典: 要件定義書 3.4.1、ワイヤーフレーム決定事項 83
+ */
+describe("みんなの投稿を見る（#808）", () => {
+  it("3 つ目は /search へのリンク（位置情報も入力も要らない）", () => {
+    render(<SearchTopScreen api={api} geolocation={granted} />);
+    expect(screen.getByRole("link", { name: "みんなの投稿を見る" })).toHaveAttribute("href", "/search");
+  });
+
+  it("ホームに置くのは 入力欄・近くのスポットを探す・みんなの投稿を見る の 3 つだけ（投稿は右下の PostFab）", () => {
+    const { container } = render(<SearchTopScreen api={api} geolocation={granted} />);
+    const labels = [...container.querySelectorAll("button, a")]
+      .filter((el) => !el.closest("[data-post-fab]"))
+      .map((el) => el.textContent?.trim())
+      .filter((t) => t && t.length > 0);
+    expect(labels).toEqual(["近くのスポットを探す", "みんなの投稿を見る"]);
+  });
+});

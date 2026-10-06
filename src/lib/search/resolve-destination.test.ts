@@ -53,3 +53,23 @@ describe("resolveDestination", () => {
     expect((await resolveDestination(adminWithSpot(null), {})).kind).toBe("none");
   });
 });
+
+/**
+ * #808（2026-10-06）: 行き先なしの /search は「みんなの投稿」
+ * 出典: 要件定義書 3.4.2「みんなの投稿」・3.4.1、ワイヤーフレーム決定事項 83
+ */
+describe("みんなの投稿（#808）", () => {
+  it("引数が何も無ければ、見出しは「みんなの投稿」で行き先は null（＝全件）", async () => {
+    const resolved = await resolveDestination({} as never, {});
+    expect(resolved.kind).toBe("none");
+    if (resolved.kind === "spot_missing") throw new Error("spot_missing にはならない");
+    expect(resolved.title).toBe("みんなの投稿");
+    expect(resolved.destination).toBeNull();
+  });
+
+  it("「全国」「全て」のような範囲の言葉を見出しに出さない（海外に出しても変えなくて済むように）", async () => {
+    const resolved = await resolveDestination({} as never, {});
+    if (resolved.kind === "spot_missing") throw new Error("spot_missing にはならない");
+    expect(resolved.title).not.toMatch(/全国|全て|すべて|近く/);
+  });
+});
