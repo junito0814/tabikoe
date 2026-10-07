@@ -184,3 +184,27 @@ describe("PostDetailScreen（SC-05）", () => {
     expect(screen.getByRole("note")).toHaveTextContent("運営が確認するまで他の人には表示されません");
   });
 });
+
+/*
+ * #875（2026-10-07）: 「まだあった／無くなっていた」のボタンはスポット別の一覧へ移した。
+ * 投稿詳細には**最新の報告を出すだけ**にし、報告したい人はスポットの画面へ送る。
+ */
+describe("まだあった報告の置き場所（#875）", () => {
+  it("投稿詳細にボタンは無く、最新の報告と「報告する」の案内だけが出る", () => {
+    render(
+      <PostDetailScreen
+        post={{ ...post, spotStatus: { latest: { status: "still_there", reportedAt: "2026-09-20T00:00:00Z" }, mine: null } }}
+        initialComments={noComments}
+      />
+    );
+    expect(screen.queryByRole("button", { name: "まだあった" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "無くなっていた" })).toBeNull();
+    expect(document.querySelector("[data-spot-status-label]")?.textContent).toContain("9月にまだあった");
+    expect(screen.getByRole("link", { name: "報告する" }).getAttribute("href")).toContain("/spots/");
+  });
+
+  it("報告が無ければ何も出さない", () => {
+    render(<PostDetailScreen post={{ ...post, spotStatus: { latest: null, mine: null } }} initialComments={noComments} />);
+    expect(document.querySelector("[data-spot-status-label]")).toBeNull();
+  });
+});

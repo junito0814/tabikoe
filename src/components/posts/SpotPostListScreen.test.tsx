@@ -23,7 +23,7 @@ const spot: SpotSummary = {
   postCount: 7,
   ratingAverage: 4.5,
   isSaved: false,
-  latestStatus: { status: "still_there", reportedAt: "2026-09-10T00:00:00Z" },
+  latestStatus: { status: "still_there", reportedAt: "2026-09-10T00:00:00Z" }, myStatus: null,
 };
 
 const card = (id: string): PostCardData => ({
@@ -137,5 +137,22 @@ describe("Google の公式情報の差し込み口（#701）", () => {
       />
     );
     expect(document.querySelector("[data-official-info]")).not.toBeInTheDocument();
+  });
+});
+
+/*
+ * #875（2026-10-07）: 「この場所、まだありますか？」はスポットの画面に置く。
+ * 報告はスポット単位（1 人 1 件）なので、投稿ではなくスポットの情報。
+ */
+describe("まだあった報告（#875）", () => {
+  it("見出しに「まだあった」「無くなっていた」のボタンが出る", () => {
+    render(<SpotPostListScreen spot={spot} initialState={EMPTY_SEARCH_STATE} initialPage={{ posts: [], nextOffset: null }} fetchPage={vi.fn()} />);
+    expect(screen.getByRole("button", { name: "まだあった" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "無くなっていた" })).toBeInTheDocument();
+  });
+
+  it("最新の報告は 1 か所にだけ出る（見出しの行と二重にしない）", () => {
+    render(<SpotPostListScreen spot={spot} initialState={EMPTY_SEARCH_STATE} initialPage={{ posts: [], nextOffset: null }} fetchPage={vi.fn()} />);
+    expect(screen.getAllByText("9月にまだあった")).toHaveLength(1);
   });
 });
