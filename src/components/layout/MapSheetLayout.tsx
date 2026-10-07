@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, type ReactNode } from "react";
+import { shouldSnap } from "@/lib/ui/snap-when-scrollable";
 import { useSheetContentDrag, useSheetDrag } from "./use-sheet-drag";
 import { SheetHandleBar } from "@/components/ui/SheetHandleBar";
 
@@ -51,20 +52,47 @@ export function MapSheetLayout({
   const [tallMap, setTallMap] = useState(false);
   const step: SheetStep = expanded ? "full" : tallMap ? "map" : "default";
 
-  // 吸い付く場所は document 全体のスクロールなので、html 要素に scroll-snap を付ける（この画面の間だけ）
+  /*
+   * 吸い付く場所は document 全体のスクロールなので、html 要素に scroll-snap を付ける（この画面の間だけ）。
+   *
+   * #867（2026-10-07）: ただし**よく送れる画面でだけ**付ける。
+   * 投稿が 1 件しかないときのように中身が短いと、送れる量が 2 つめの吸い付き位置を
+   * わずかに超えるだけになり、**最後のわずかな部分に留まれません**（引き戻される）。
+   * そこにコメントの行があって押せませんでした。判断は `shouldSnap` に切り出してあります。
+   */
   useEffect(() => {
     const root = document.documentElement;
     const previous = root.style.scrollSnapType;
-    root.style.scrollSnapType = "y proximity";
+
+    const applySnap = () => {
+      const snapOffset = mapRef.current?.offsetHeight ?? 0;
+      const enabled = shouldSnap({
+        scrollHeight: root.scrollHeight,
+        viewportHeight: window.innerHeight,
+        snapOffset,
+      });
+      root.style.scrollSnapType = enabled ? "y proximity" : previous;
+    };
+
     const onScroll = () => {
       const mapHeight = mapRef.current?.offsetHeight ?? 0;
       setExpanded(mapHeight > 0 && window.scrollY >= mapHeight - 1);
     };
     window.addEventListener("scroll", onScroll, { passive: true });
     onScroll();
+    applySnap();
+
+    /*
+     * 中身はあとから伸びる（コメントの読み込み・写真の到着・続きの読み込み）ので、
+     * 高さが変わるたびに付け外しを見直す。
+     */
+    const observer = typeof ResizeObserver === "function" ? new ResizeObserver(applySnap) : null;
+    observer?.observe(document.body);
+
     return () => {
       root.style.scrollSnapType = previous;
       window.removeEventListener("scroll", onScroll);
+      observer?.disconnect();
     };
   }, []);
 

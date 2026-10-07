@@ -371,8 +371,20 @@ export function PostComposeScreen({
             <PostFormFields
               values={values}
               onChange={updateValues}
-              // #794: 既存のスポットに投稿するときだけ「おすすめ」を 1 つ出す
-              suggestedCategory={suggestedCategory({ spotCategory, current: values.category, source: initial.source })}
+              /*
+                * #794: 既存のスポットに投稿するときだけ「おすすめ」を 1 つ出す。
+                *
+                * #865（2026-10-07）: `spotCategory` は URL に `?spot=` が付いているときだけ
+                * サーバーが引いていたので、**地図から投稿すると出なかった**（スポットはブラウザ側で
+                * 後から決まるため）。地図で決まったスポット（`resolvedSpot`）の代表カテゴリを先に見る。
+                */
+              suggestedCategory={suggestedCategory({
+                // 地図でスポットが決まっていればそちらが正（そのスポットの代表カテゴリ）。
+                // 決まっていなければ、URL の `?spot=` からサーバーが引いたもの
+                spotCategory: resolvedSpot ? (resolvedSpot.category ?? null) : spotCategory,
+                current: values.category,
+                source: initial.source,
+              })}
               spotField={
                 <SpotField
                   lockedSpot={lockedSpot}
