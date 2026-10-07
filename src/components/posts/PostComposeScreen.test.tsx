@@ -219,4 +219,40 @@ describe("カテゴリのおすすめ（#794）", () => {
     fireEvent.click(document.querySelector("[data-suggested-category]") as HTMLElement);
     expect(screen.getByLabelText("滞在時間 *")).toHaveValue("宿泊");
   });
+
+  /*
+   * #865（2026-10-07）: 地図から投稿したとき（URL に `?spot=` が無い）も「おすすめ」が出ること。
+   *
+   * 【初心者向け】ここが出ていなかったのは、代表カテゴリを**サーバーで `?spot=` から**しか
+   * 引いていなかったため。いちばんよく使う入口（ホームの「＋ ここに投稿」・地図の長押し）は
+   * `?spot=` を付けず、スポットはブラウザ側で後から決まる。
+   */
+  it("地図でスポットが決まったら、そのスポットの代表カテゴリを勧める（#865）", async () => {
+    const api = makeApi({
+      resolveSpot: vi.fn(async () => ({
+        id: "s-near",
+        name: "浅草寺",
+        lat: 35.7148,
+        lng: 139.7967,
+        prefecture: "東京都",
+        source: "places" as const,
+        distance_meters: 12,
+        category: "観光スポット" as const,
+      })),
+    });
+    // `?spot=` が無い＝現在地から開いた入口。spotCategory はサーバーから渡らない
+    render(<PostComposeScreen initial={currentLocation} api={api} spotCategory={null} />);
+    expect(document.querySelector("[data-suggested-category]")).toBeNull();
+
+    // 地図が動いてスポットが決まる（親は 300ms 待ってから照合する）
+    await act(async () => {
+      lastOnBoundsChange?.(null, { lat: 35.7148, lng: 139.7967 });
+      await new Promise((resolve) => setTimeout(resolve, 350));
+    });
+    await waitFor(() => expect(api.resolveSpot).toHaveBeenCalled());
+    await waitFor(() => {
+      const suggestion = document.querySelector("[data-suggested-category]");
+      expect(suggestion?.textContent).toContain("観光スポット");
+    });
+  });
 });

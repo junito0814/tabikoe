@@ -1,3 +1,4 @@
+import type { PostCategory } from "@/lib/posts/constants";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 /** 重複登録防止の判定半径（要件定義書3.3.5） */
@@ -11,6 +12,8 @@ export interface NearbySpot {
   prefecture: string | null;
   source: "places" | "manual";
   distance_meters: number;
+  /** #865: そのスポットの代表カテゴリ（/api/spots/resolve が付ける。近傍検索そのものは付けない） */
+  category?: PostCategory | null;
 }
 
 /**

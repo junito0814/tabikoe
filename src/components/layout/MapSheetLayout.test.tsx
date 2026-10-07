@@ -25,10 +25,16 @@ import { SHEET_DRAG_THRESHOLD_PX } from "./use-sheet-drag";
 const originalOffsetHeight = Object.getOwnPropertyDescriptor(HTMLElement.prototype, "offsetHeight");
 const originalScrollTo = Object.getOwnPropertyDescriptor(window, "scrollTo");
 
-function setup({ steps, summary }: { steps?: 2 | 3; summary?: boolean } = {}) {
+function setup({ steps, summary, scrollHeight = 3000 }: { steps?: 2 | 3; summary?: boolean; scrollHeight?: number } = {}) {
   const scrollTo = vi.fn();
   Object.defineProperty(window, "scrollTo", { value: scrollTo, writable: true, configurable: true });
   Object.defineProperty(HTMLElement.prototype, "offsetHeight", { configurable: true, get: () => 300 });
+  /*
+   * #867: 吸い付きは「よく送れる画面」でだけ付ける。jsdom は高さを持たないので、
+   * ページの高さと画面の高さをここで決める（既定は十分に送れる状態）。
+   */
+  Object.defineProperty(document.documentElement, "scrollHeight", { configurable: true, get: () => scrollHeight });
+  Object.defineProperty(window, "innerHeight", { value: 844, writable: true, configurable: true });
   render(
     <MapSheetLayout map={<div data-testid="map" />} steps={steps} summary={summary ? <span>見出しの 1 行</span> : undefined}>
       <p>内容</p>
@@ -112,6 +118,17 @@ describe("MapSheetLayout（v3.1 Task11: スライド／map-sheet Task2: 3 段階
     fireEvent.scroll(window);
     fireEvent.keyDown(handle, { key: "Enter" });
     expect(scrollTo).toHaveBeenLastCalledWith(expect.objectContaining({ top: 0 }));
+  });
+
+  /*
+   * #867（2026-10-07）: 投稿が 1 件しかないときのように中身が短いと、送れる量が
+   * 2 つめの吸い付き位置をわずかに超えるだけになり、**最後の部分に留まれない**
+   * （引き戻される）。そこにコメントの行があって押せなかった。
+   */
+  it("中身が短いときは吸い付かせない（#867）", () => {
+    // 実測値: ページ 1208px・画面 844px・地図 300px → 送れるのは 364px しかない
+    setup({ scrollHeight: 1208 });
+    expect(document.documentElement.style.scrollSnapType).toBe("");
   });
 
   it("steps が 2 なら地図を広くする段階は無い（SC-03）", () => {
