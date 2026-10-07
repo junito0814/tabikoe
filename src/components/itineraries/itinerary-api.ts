@@ -31,7 +31,8 @@ export interface ItineraryApi {
   /** v3.2: アプリ内招待（候補・検索・送信） */
   fetchInviteCandidates: (id: string) => Promise<{ candidates: InviteCandidate[] }>;
   searchUsers: (query: string) => Promise<{ users: UserSummary[] }>;
-  sendInvitation: (id: string, inviteeUserId: string) => Promise<Response>;
+  /** #869: inviteToAlbum は「同じ旅行のアルバムにも招待するか」（既定は true） */
+  sendInvitation: (id: string, inviteeUserId: string, inviteToAlbum?: boolean) => Promise<Response>;
   removeMember: (id: string, userId: string) => Promise<Response>;
   leave: (id: string) => Promise<Response>;
 }
@@ -59,8 +60,12 @@ export const defaultItineraryApi: ItineraryApi = {
   revokeInvitation: (id, invitationId) => fetchWithAuthRedirect(`/api/itineraries/${id}/invitations/${invitationId}`, { method: "DELETE" }),
   fetchInviteCandidates: async (id) => readJson(await fetchWithAuthRedirect(`/api/itineraries/${id}/invite-candidates`)),
   searchUsers: searchUsersRequest,
-  sendInvitation: (id, inviteeUserId) =>
-    fetchWithAuthRedirect(`/api/itineraries/${id}/invitations`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ inviteeUserId }) }),
+  sendInvitation: (id, inviteeUserId, inviteToAlbum = true) =>
+    fetchWithAuthRedirect(`/api/itineraries/${id}/invitations`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ inviteeUserId, inviteToAlbum }),
+    }),
   removeMember: (id, userId) => fetchWithAuthRedirect(`/api/itineraries/${id}/members/${userId}`, { method: "DELETE" }),
   leave: (id) => fetchWithAuthRedirect(`/api/itineraries/${id}/members/me`, { method: "DELETE" }),
 };

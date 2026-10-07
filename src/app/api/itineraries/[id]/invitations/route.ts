@@ -12,6 +12,7 @@ import { sendInAppInvitation } from "@/lib/invitations/in-app";
  *
  * POST /api/itineraries/[id]/invitations  → { invitation: { id, path, expiresAt } }。レート制限 itinerary_invite
  *   v3.2: body に inviteeUserId があればアプリ内招待（{ invitation: { id, inviteeUserId } }。同じ枠で数える）
+ *   #869: body の inviteToAlbum が false なら、同じ旅行のアルバムには招待しない（既定は招待する）
  * GET  /api/itineraries/[id]/invitations  → 有効な招待の一覧（無効化の UI 用）
  */
 export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -34,7 +35,12 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   }
 
   if (inviteeUserId) {
-    const sent = await sendInAppInvitation(context.admin, { kind: "itinerary", targetId: id, inviterId: context.userId, inviteeId: inviteeUserId });
+    /*
+     * #869（2026-10-07）: `inviteToAlbum` が false のときだけアルバムを外す（既定は true）。
+     * 送る側が決めたことなので、受諾のときに読めるよう招待の行に覚える（要件 3.11.7）。
+     */
+    const inviteToAlbum = body?.inviteToAlbum !== false;
+    const sent = await sendInAppInvitation(context.admin, { kind: "itinerary", targetId: id, inviterId: context.userId, inviteeId: inviteeUserId, inviteToAlbum });
     if (!sent.ok) {
       const status = sent.error === "insert_failed" ? 500 : sent.error === "invitee_not_found" ? 404 : 409;
       return NextResponse.json({ error: sent.error }, { status });

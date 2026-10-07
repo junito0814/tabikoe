@@ -39,9 +39,22 @@ export function InviteDialog({ open, itineraryId, onClose, api }: { open: boolea
    */
   const [busyKey, setBusyKey] = useState<string | null>(null);
   const busy = busyKey !== null;
+  /*
+   * #869（2026-10-07）: 「アルバムにも招待する」。既定はオン。
+   *
+   * 【初心者向け】しおりとアルバムは同じ旅行に紐づくのに、しおりに招待しても
+   * アルバムには入らず、招待し直す二度手間になっていました（実機確認での指摘）。
+   * ただし**黙って広げません** ── アルバムに入るとその人には**非公開の投稿も見える**ので
+   * （要件 3.3.6）、送る側が分かったうえで決める形にしています（要件 3.11.7）。
+   */
+  const [inviteToAlbum, setInviteToAlbum] = useState(true);
   const inAppApi = useMemo<InAppInviteApi>(
-    () => ({ fetchCandidates: () => api.fetchInviteCandidates(itineraryId), searchUsers: api.searchUsers, send: (userId) => api.sendInvitation(itineraryId, userId) }),
-    [api, itineraryId]
+    () => ({
+      fetchCandidates: () => api.fetchInviteCandidates(itineraryId),
+      searchUsers: api.searchUsers,
+      send: (userId) => api.sendInvitation(itineraryId, userId, inviteToAlbum),
+    }),
+    [api, itineraryId, inviteToAlbum]
   );
 
   useEffect(() => {
@@ -126,7 +139,26 @@ export function InviteDialog({ open, itineraryId, onClose, api }: { open: boolea
     <Sheet open={open} title="招待" onClose={onClose}>
       <div className="flex flex-col gap-3" data-invite-dialog>
         {/* v3.2（feedback-0919 Task6）: アプリ内招待（一緒だった人・ユーザー名検索）。下はアプリを使っていない人向けのリンク招待 */}
-        <InAppInvitePanel api={inAppApi} />
+        <InAppInvitePanel
+          api={inAppApi}
+          before={
+            <label className="flex items-start gap-2 rounded-[10px] border border-line bg-tint p-2.5" data-invite-to-album>
+              <input
+                type="checkbox"
+                checked={inviteToAlbum}
+                onChange={(event) => setInviteToAlbum(event.target.checked)}
+                className="mt-0.5 h-5 w-5 shrink-0 accent-[var(--accent)]"
+              />
+              <span className="text-[0.75rem] leading-[1.6] text-ink">
+                {/* #766: 画面では「旅行」と言わない（用語は「アルバム」） */}
+                このしおりの<span className="font-semibold">アルバムにも招待する</span>
+                <span className="mt-0.5 block text-[0.6875rem] text-muted">
+                  アルバムに入ると、その人には<span className="font-medium">非公開の投稿も見えます</span>。計画だけを一緒に立てたいときは外してください
+                </span>
+              </span>
+            </label>
+          }
+        />
         {pending.length > 0 && (
           <div>
             <h3 className="mb-1.5 text-[0.75rem] font-semibold text-muted">未回答の招待</h3>

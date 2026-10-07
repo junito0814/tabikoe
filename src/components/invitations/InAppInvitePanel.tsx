@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { fetchWithAuthRedirect, UnauthorizedError } from "@/lib/api/fetch-with-auth-redirect";
 import type { InviteCandidate } from "@/lib/invitations/in-app";
 import type { UserSummary } from "@/lib/users/search-users";
@@ -23,7 +23,19 @@ export interface InAppInviteApi {
  * どちらの行にも「招待を送る」があり、送ると相手の通知一覧に届く。未回答の相手は「送信済み」にする。
  * 検索と候補の両方に出る人は重複させない。
  */
-export function InAppInvitePanel({ api, className }: { api: InAppInviteApi; className?: string }) {
+export function InAppInvitePanel({
+  api,
+  className,
+  before,
+}: {
+  api: InAppInviteApi;
+  className?: string;
+  /**
+   * #869: 相手を選ぶ前に置きたいもの（しおりの「アルバムにも招待する」など）。
+   * アルバムとしおりで共通の部品なので、画面ごとの事情はここから差し込む（約束 14）。
+   */
+  before?: ReactNode;
+}) {
   const [candidates, setCandidates] = useState<InviteCandidate[] | null>(null);
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<UserSummary[]>([]);
@@ -137,6 +149,7 @@ export function InAppInvitePanel({ api, className }: { api: InAppInviteApi; clas
 
   return (
     <div className={`flex flex-col gap-3 ${className ?? ""}`} data-in-app-invite>
+      {before}
       <input
         type="search"
         value={query}
