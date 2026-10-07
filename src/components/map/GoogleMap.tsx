@@ -226,6 +226,12 @@ export function GoogleMap({
     });
     map.addListener("click", () => {
       detector.cancel();
+      /*
+       * #866（2026-10-07）: 長押しを出した直後の `click` は無視する。
+       * 長押しは指を離す前に成立するので、離した瞬間のタップで
+       * 出したばかりの吹き出しと一時ピンが消えていた。
+       */
+      if (detector.consumeClickAfterLongPress()) return;
       onMapClickRef.current?.();
     });
     // タッチの移動は Maps API の mousemove に乗らないことがあるため DOM でも見る

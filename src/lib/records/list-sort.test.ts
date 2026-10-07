@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { isAscending, LIST_SORT_LABELS, LIST_SORTS, parseListSort } from "./list-sort";
+import { isAscending, listSortLabel, LIST_SORTS, parseListSort } from "./list-sort";
 
 /** 出典: Issue #797 */
 describe("parseListSort（#797）", () => {
@@ -32,7 +32,10 @@ describe("isAscending（#797）", () => {
 describe("選択肢と文字", () => {
   it("2 つだけ。文字は「新着順」「古い順」", () => {
     expect(LIST_SORTS).toEqual(["newest", "oldest"]);
-    expect(LIST_SORT_LABELS.newest).toBe("新着順");
-    expect(LIST_SORT_LABELS.oldest).toBe("古い順");
+    // #863: 「何の」新しい順かが言葉に入る
+    expect(listSortLabel("newest", "保存")).toBe("保存が新しい順");
+    expect(listSortLabel("oldest", "保存")).toBe("保存が古い順");
+    expect(listSortLabel("newest", "作成")).toBe("作成が新しい順");
+    expect(listSortLabel("oldest", "作成")).toBe("作成が古い順");
   });
 });

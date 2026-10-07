@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { createLongPressDetector, LONG_PRESS_MS } from "./use-long-press";
+import { createLongPressDetector, LONG_PRESS_MS, type LongPressDetector } from "./use-long-press";
 
 /**
  * 出典: docs/tasks/map-search/pin-interaction-v3/02-long-press.md 単体テスト
@@ -60,3 +60,69 @@ describe("createLongPressDetector", () => {
     expect(onLongPress).toHaveBeenCalledWith({ lat: 1, lng: 2 });
   });
 });
+
+/*
+ * #866（2026-10-07）: 長押しのあと指を離すと、地図が**ふつうのタップ**を出す。
+ * そのタップで吹き出しが消えてしまっていたので、直後の 1 回だけ飲み込めること。
+ */
+describe("長押しの直後のタップ（#866）", () => {
+  it("長押しが成立したら、次のタップを 1 回だけ飲み込む", () => {
+    const fired: { lat: number; lng: number }[] = [];
+    let run: (() => void) | null = null;
+    const detector: LongPressDetector = createLongPressDetector((point) => fired.push(point), {
+      setTimer: (fn) => {
+        run = fn;
+        return 1;
+      },
+      clearTimer: () => {
+        run = null;
+      },
+    });
+
+    detector.start({ lat: 35, lng: 139, x: 0, y: 0 });
+    runPending(run);
+    expect(fired).toHaveLength(1);
+
+    // 指を離した瞬間のタップは無視する
+    expect(detector.consumeClickAfterLongPress()).toBe(true);
+    // 次のタップはふつうに効く（吹き出しを消せる）
+    expect(detector.consumeClickAfterLongPress()).toBe(false);
+  });
+
+  it("長押ししていないただのタップは飲み込まない", () => {
+    const detector = createLongPressDetector(() => {});
+    expect(detector.consumeClickAfterLongPress()).toBe(false);
+  });
+
+  it("右クリック（即時の長押し）のあとも 1 回だけ飲み込む", () => {
+    const fired: { lat: number; lng: number }[] = [];
+    const detector = createLongPressDetector((point) => fired.push(point));
+    detector.trigger({ lat: 35, lng: 139 });
+    expect(fired).toHaveLength(1);
+    expect(detector.consumeClickAfterLongPress()).toBe(true);
+    expect(detector.consumeClickAfterLongPress()).toBe(false);
+  });
+
+  it("動かして取り消したときは飲み込まない（長押しが成立していない）", () => {
+    let run: (() => void) | null = null;
+    const detector: LongPressDetector = createLongPressDetector(() => {}, {
+      setTimer: (fn) => {
+        run = fn;
+        return 1;
+      },
+      clearTimer: () => {
+        run = null;
+      },
+    });
+    detector.start({ lat: 35, lng: 139, x: 0, y: 0 });
+    detector.move({ lat: 35, lng: 139, x: 100, y: 100 });
+    expect(run).toBeNull();
+    expect(detector.consumeClickAfterLongPress()).toBe(false);
+  });
+});
+
+/** 【初心者向け】`let run: (() => void) | null` に差し替え関数から代入すると、TS は「まだ null のまま」と見る。
+ *  いったん変数に受けてから呼ぶ（テストだけの都合） */
+function runPending(fn: (() => void) | null): void {
+  if (fn) fn();
+}

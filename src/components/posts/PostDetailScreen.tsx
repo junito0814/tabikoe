@@ -9,7 +9,9 @@ import { CommentSection } from "@/components/comments/CommentSection";
 import { CommentsSkeleton } from "@/components/skeleton/Skeletons";
 import { buildReportHref } from "@/components/reports/report-href";
 import { MoreMenu, MoreMenuItem } from "@/components/ui/MoreMenu";
-import { DeletePostButton } from "@/components/posts/DeletePostButton";
+import { useConfirm } from "@/components/ui/ConfirmSheet";
+import { ErrorNotice } from "@/components/notices/ErrorNotice";
+import { useDeletePost } from "@/components/posts/use-delete-post";
 import { SpotStatusButtons } from "@/components/spots/SpotStatusButtons";
 import type { CommentPage } from "@/lib/comments/list-comments";
 import type { PostDetailData } from "@/lib/posts/post-detail";
@@ -59,6 +61,23 @@ export function PostDetailScreen({
   const returnTo = `/posts/${post.id}`;
   const cost = formatCost(post.cost);
 
+  /*
+   * #862（2026-10-07）: 削除の確認はアプリ共通のシート（#778）で、**メニューの外**に置く。
+   * メニューの中に置くと、押した瞬間にメニューごと消えて確認が出ない。
+   */
+  const { confirm, confirmSheet } = useConfirm();
+  const { deletePost, isDeleting, errorMessage: deleteError } = useDeletePost(post.id);
+  const confirmDelete = async () => {
+    const ok = await confirm({
+      title: "この投稿を削除しますか？",
+      description: "この投稿に付いた写真・コメント・いいねも一緒に消えます。元に戻せません。",
+      confirmLabel: "削除",
+      danger: true,
+    });
+    if (!ok) return;
+    await deletePost();
+  };
+
   // 上の地図（SC-02）からは「← スポット名」でこの投稿に戻る（要件 8 章 46）
   const mapHref = buildMapHrefWithBack({ spot: post.spot.id, lat: post.spot.lat, lng: post.spot.lng }, selfHref);
 
@@ -99,9 +118,11 @@ export function PostDetailScreen({
 
   return (
     <MapSheetLayout map={map} summary={summary}>
+      {confirmSheet}
       <div className="flex flex-col items-center px-4 pt-2 pb-8">
         <article className="flex w-full max-w-[520px] flex-col gap-4">
           {notice}
+          {deleteError && <ErrorNotice message={deleteError} />}
           <header className="flex flex-col gap-2">
             <div className="flex items-center gap-2">
               {/* #813: 戻るは共通部品（自前で ‹ を描かない） */}
@@ -116,9 +137,14 @@ export function PostDetailScreen({
                 {post.isOwner ? (
                   <>
                     <MoreMenuItem label="編集" href={`/posts/${post.id}/edit`} />
-                    <li role="presentation" className="px-3 py-1.5">
-                      <DeletePostButton postId={post.id} />
-                    </li>
+                    {/*
+                      * #862（2026-10-07）: 削除も「編集」と同じ共通部品にする。
+                      *
+                      * 【初心者向け】以前はここに**確認ダイアログごと持った部品**を置いていた。
+                      * `MoreMenu` は内側のどこを押しても閉じるので、押した瞬間に部品ごと消え、
+                      * **確認が出ず削除もできなかった**。確認は画面の側（メニューの外）で出す。
+                      */}
+                    <MoreMenuItem label="削除" danger disabled={isDeleting} onClick={() => void confirmDelete()} />
                   </>
                 ) : (
                   <MoreMenuItem label="通報する" href={buildReportHref({ targetType: "post", targetId: post.id, returnTo })} />

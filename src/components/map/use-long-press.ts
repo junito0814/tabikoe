@@ -29,6 +29,16 @@ export interface LongPressDetector {
   /** 右クリックなど「即時に長押し」として扱う */
   trigger: (point: LongPressPoint) => void;
   isPending: () => boolean;
+  /**
+   * #866: 長押しを出した直後の `click` を 1 回だけ飲み込むためのもの。
+   *
+   * 【初心者向け】長押しは**指を離す前**（500ms 経った時点）に成立します。そのあと指を離すと、
+   * 地図は**ふつうのタップ**として `click` を出します。タップは「吹き出しを消す」に繋いであるので、
+   * 出したばかりの吹き出しが即座に消えていました（#866）。
+   * 呼ぶ側はタップのたびにこれを聞き、`true` が返ったらその 1 回を無視します。
+   * 1 回返したら印は消えるので、次のタップはふつうに効きます。
+   */
+  consumeClickAfterLongPress: () => boolean;
 }
 
 export function createLongPressDetector(
@@ -47,6 +57,8 @@ export function createLongPressDetector(
 
   let timer: unknown = null;
   let origin: LongPressPoint | null = null;
+  /** #866: 長押しを出した直後か（次の click を 1 回だけ飲み込む） */
+  let justFired = false;
 
   const cancel = () => {
     if (timer !== null) clearTimer(timer);
@@ -62,7 +74,10 @@ export function createLongPressDetector(
         timer = null;
         const target = origin;
         origin = null;
-        if (target) onLongPress({ lat: target.lat, lng: target.lng });
+        if (target) {
+          justFired = true;
+          onLongPress({ lat: target.lat, lng: target.lng });
+        }
       }, delay);
     },
     move: (point) => {
@@ -74,8 +89,14 @@ export function createLongPressDetector(
     cancel,
     trigger: (point) => {
       cancel();
+      justFired = true;
       onLongPress({ lat: point.lat, lng: point.lng });
     },
     isPending: () => timer !== null,
+    consumeClickAfterLongPress: () => {
+      if (!justFired) return false;
+      justFired = false;
+      return true;
+    },
   };
 }

@@ -15,7 +15,7 @@ import type { WishlistView } from "@/lib/wishlist/wishlist-view";
 import { MapScreen } from "@/components/map/MapScreen";
 import { resolveMapOpen } from "@/components/map/map-navigation";
 import { PullToRefresh } from "@/components/layout/PullToRefresh";
-import { LIST_SORT_LABELS, LIST_SORTS, type ListSort } from "@/lib/records/list-sort";
+import { LIST_SORTS, listSortLabel, type ListSort } from "@/lib/records/list-sort";
 import { Select } from "@/components/ui/Select";
 import { EmptyState } from "@/components/ui/EmptyState";
 
@@ -128,7 +128,7 @@ export function WishlistScreen({
           value={sort}
           onChange={(next) => router.replace(hrefFor(view, next), { scroll: false })}
           options={LIST_SORTS}
-          label={(option) => LIST_SORT_LABELS[option]}
+          label={(option) => listSortLabel(option, "保存")}
           ariaLabel="並び順"
         />
       </div>
@@ -251,22 +251,31 @@ export function WishlistScreen({
             onClose={(result) => {
               const spotId = pickerSpot.spotId;
               setPickerSpot(null);
-              if (result.savedItinerary) {
-                /*
-                 * #745: 押した瞬間に ✓ にする（要件 4.5.11 の場面 3）。
-                 * `router.refresh()` の戻りを待つと、1 往復のあいだ「＋」のままに見える。
-                 */
-                const saved = result.savedItinerary;
-                setItems((current) =>
-                  current.map((item) =>
-                    item.spotId === spotId && !item.itineraries.some((it) => it.id === saved.id)
-                      ? { ...item, itineraries: [...item.itineraries, { id: saved.id, title: saved.title, dayIndex: null }] }
-                      : item
-                  )
-                );
+              const saved = result.savedItinerary;
+              /*
+               * #745: 押した瞬間に ✓ にする（要件 4.5.11 の場面 3）。
+               * `router.refresh()` の戻りを待つと、1 往復のあいだ「＋」のままに見える。
+               *
+               * #864（2026-10-07）: ここは**追加したときしか見ていなかった**ので、
+               * しおりから**外しても ✓ のまま**だった（`savedItinerary` は外したときは null）。
+               * シートが返す `inAnyItinerary`（どれかのしおりに入っているか）で、どちらの向きにも直す。
+               */
+              setItems((current) =>
+                current.map((item) => {
+                  if (item.spotId !== spotId) return item;
+                  if (saved && !item.itineraries.some((it) => it.id === saved.id)) {
+                    return { ...item, itineraries: [...item.itineraries, { id: saved.id, title: saved.title, dayIndex: null }] };
+                  }
+                  // どのしおりにも入っていないなら、行の下の「〈しおり名〉 Day 1」も消す
+                  if (!result.inAnyItinerary) return { ...item, itineraries: [] };
+                  return item;
+                })
+              );
+              if (saved) {
                 setToast({ text: `${saved.title} に保存しました`, action: { label: "しおりを見る", href: `/itineraries/${saved.id}` } });
-                router.refresh();
               }
+              // 外したときも取り直す（どのしおりが残ったかはサーバーが正）
+              router.refresh();
             }}
           />
         )}

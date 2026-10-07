@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { BackLink } from "@/components/layout/BackLink";
 import Link from "next/link";
 import { ErrorNotice } from "@/components/notices/ErrorNotice";
 import { fetchWithAuthRedirect, UnauthorizedError } from "@/lib/api/fetch-with-auth-redirect";
@@ -102,7 +103,15 @@ export function ReportForm({
   }
 
   return (
-    <div className="flex min-h-screen flex-col items-center gap-5 bg-app px-6 py-12">
+    <div className="flex min-h-screen flex-col items-center gap-5 bg-app px-6 pt-4 pb-12">
+      {/*
+        * #870（2026-10-07）: 戻るが無く、間違えて開くと前の画面に帰れなかった。
+        * 戻るは #813 で共通部品にそろえたが、この画面だけ漏れていた。
+        * 行き先は通報の対象を開いていた画面（`returnTo`。下の「やめる」と同じ）。
+        */}
+      <div className="w-full max-w-[360px]">
+        <BackLink href={returnTo} label="戻る" />
+      </div>
       <h1 className="text-[1rem] font-bold text-ink">
         {REPORT_TARGET_LABELS[targetType]}を通報
       </h1>
