@@ -166,6 +166,43 @@ describe("しおりに入っていれば ✓（#745）", () => {
     fireEvent.click(screen.getByRole("button", { name: "完了" }));
     await waitFor(() => expect(document.querySelector("[data-wishlist-item='b'] [data-itinerary-saved]")).not.toBeNull());
   });
+
+  /*
+   * #864（2026-10-07）: しおりから**外した**ときも「✓」が「＋」に戻ること。
+   *
+   * 【初心者向け】ここが落ちていたのは、シートを閉じたときの処理が
+   * 「追加したとき（savedItinerary がある）」しか見ていなかったため。
+   * 外すと savedItinerary は null なので、画面が何も変わらなかった。
+   */
+  it("しおりから外すと ✓ が ＋ に戻る（#864）", async () => {
+    const api = {
+      itineraries: {
+        list: vi.fn(async () => ({
+          items: [
+            { id: "it-1", tripId: "t1", title: "大阪旅行", startDate: null, endDate: null, dayCount: 0, spotCount: 0, checkedCount: 0, updatedAt: "", role: "owner" as const, hasAlbumPosts: false, containsSpot: true, spotDayIndex: 1 },
+          ],
+        })),
+        addSpot: vi.fn(async () => Response.json({}, { status: 201 })),
+        removeSpot: vi.fn(async () => new Response(null, { status: 204 })),
+      },
+      wishlistCount: vi.fn(async () => 2),
+      toggleWishlist: vi.fn(),
+    } as unknown as import("@/components/save/SaveSheet").SaveSheetApi;
+
+    render(<WishlistScreen initialItems={items} submitRemove={vi.fn()} saveSheetApi={api} />);
+    // 行 a は「大阪旅行 Day 1」に入っているので ✓
+    expect(document.querySelector("[data-wishlist-item='a'] [data-itinerary-saved]")).not.toBeNull();
+
+    fireEvent.click(screen.getByRole("button", { name: /^.*はしおりに入っています/ }));
+    // チェックを外す
+    fireEvent.click(await screen.findByRole("checkbox", { name: /大阪旅行/ }));
+    await waitFor(() => expect(api.itineraries.removeSpot).toHaveBeenCalled());
+    fireEvent.click(screen.getByRole("button", { name: "完了" }));
+
+    await waitFor(() => expect(document.querySelector("[data-wishlist-item='a'] [data-itinerary-saved]")).toBeNull());
+    // 行の下の「〈しおり名〉 Day 1」も消える
+    expect(document.querySelector("[data-wishlist-item='a'] [data-wishlist-itineraries]")).toBeNull();
+  });
 });
 
 /**

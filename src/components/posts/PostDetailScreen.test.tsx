@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
-import { act, fireEvent, render, screen } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { acceptConfirm, confirmSheetText, rejectConfirm } from "@/components/ui/confirm-sheet.testing";
 import { PostDetailScreen } from "./PostDetailScreen";
 import type { PostDetailData } from "@/lib/posts/post-detail";
 
@@ -111,8 +112,48 @@ describe("PostDetailScreen（SC-05）", () => {
     // 本人は「⋯」の中に編集・削除
     fireEvent.click(screen.getByRole("button", { name: "その他" }));
     expect(screen.getByRole("menuitem", { name: "編集" })).toHaveAttribute("href", "/posts/p1/edit");
-    expect(screen.getByRole("button", { name: "この投稿を削除" })).toBeInTheDocument();
+    // #862: 削除も「編集」と同じ共通部品（menuitem）。裸のリンクで字がずれない
+    expect(screen.getByRole("menuitem", { name: "削除" })).toBeInTheDocument();
     expect(screen.queryByRole("link", { name: /投稿する/ })).toBeNull();
+  });
+
+  /*
+   * #862（2026-10-07）: 「⋯ → 削除」で**確認が出て、消える**こと。
+   *
+   * 【初心者向け】ここが落ちていたのは、確認ダイアログを「⋯」メニューの中に描いていたため。
+   * メニューは内側のどこを押しても閉じるので、押した瞬間に確認ごと消えていた。
+   * 「メニューを開く → 削除を押す → 確認が出る」まで通して確かめる。
+   */
+  it("「⋯ → 削除」で確認シートが出て、削除できる（#862）", async () => {
+    const calls: { url: string; method?: string }[] = [];
+    const fetchMock = vi.fn(async (url: string, init?: RequestInit) => {
+      calls.push({ url, method: init?.method });
+      return new Response(null, { status: 204 });
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(<PostDetailScreen post={{ ...post, isOwner: true }} initialComments={noComments} />);
+    fireEvent.click(screen.getByRole("button", { name: "その他" }));
+    fireEvent.click(screen.getByRole("menuitem", { name: "削除" }));
+
+    // メニューが閉じても確認シートは残る（ここが #862 の肝）
+    await waitFor(() => expect(document.querySelector("[data-confirm-sheet]")).not.toBeNull());
+    expect(confirmSheetText()).toContain("この投稿を削除しますか？");
+
+    await acceptConfirm();
+    await waitFor(() => expect(calls.some((c) => c.url === "/api/posts/p1" && c.method === "DELETE")).toBe(true));
+    vi.unstubAllGlobals();
+  });
+
+  it("確認を「やめる」と削除しない（#862）", async () => {
+    const fetchMock = vi.fn(async () => new Response(null, { status: 204 }));
+    vi.stubGlobal("fetch", fetchMock);
+    render(<PostDetailScreen post={{ ...post, isOwner: true }} initialComments={noComments} />);
+    fireEvent.click(screen.getByRole("button", { name: "その他" }));
+    fireEvent.click(screen.getByRole("menuitem", { name: "削除" }));
+    await rejectConfirm();
+    expect(fetchMock).not.toHaveBeenCalled();
+    vi.unstubAllGlobals();
   });
 
   it("非公開投稿ではいいねボタンとコメントフォームを出さない", () => {

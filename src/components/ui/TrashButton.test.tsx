@@ -72,10 +72,16 @@ describe("削除を出す画面は、この部品を使う", () => {
     expect(source).toContain("このアルバムを削除");
   });
 
-  /** 確認ダイアログの文言は変えない（取り消せない操作の説明は文字で残す） */
-  it("投稿の削除は、確認ダイアログの文言をそのまま残している", () => {
-    const source = read("src/components/posts/DeletePostButton.tsx");
-    expect(source).toContain("投稿を削除しますか");
-    expect(source).toContain("元に戻すことはできません");
+  /**
+   * 確認の文言は変えない（取り消せない操作の説明は文字で残す）。
+   *
+   * #862（2026-10-07）: 置き場所が `DeletePostButton.tsx` から `PostDetailScreen.tsx` に移った。
+   * 確認ダイアログを「⋯」メニューの中に描いていたせいで、押した瞬間にメニューごと消えて
+   * **確認が出ず削除もできなかった**ため、確認は画面の側（共通の確認シート）に移した。
+   */
+  it("投稿の削除は、確認の文言をそのまま残している", () => {
+    const source = read("src/components/posts/PostDetailScreen.tsx");
+    expect(source).toContain("この投稿を削除しますか");
+    expect(source).toContain("元に戻せません");
   });
 });

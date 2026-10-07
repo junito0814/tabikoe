@@ -44,7 +44,15 @@ export default async function WishlistPage({ searchParams }: { searchParams: Pro
 
   return (
     <ContentEnter>
-      <WishlistScreen initialItems={items} initialView={parseWishlistView(view)} sort={sort} back={resolveListBack(back)} />
+      {/*
+        * #863（2026-10-07）: `key` に並び順を入れて、変わったら部品を作り直す。
+        *
+        * 【初心者向け】`WishlistScreen` は一覧を `useState(initialItems)` に持っている
+        * （「行きたいから外したらその場で消す」ため）。`useState` の初期値は**いちばん最初しか見ない**ので、
+        * 並べ替えた結果が届いても画面は古い順のままだった。`key` が変わると React は部品ごと作り直すので、
+        * 新しい並びがそのまま初期値になる。
+        */}
+      <WishlistScreen key={sort} initialItems={items} initialView={parseWishlistView(view)} sort={sort} back={resolveListBack(back)} />
     </ContentEnter>
   );
 }

@@ -11,10 +11,19 @@
 export const LIST_SORTS = ["newest", "oldest"] as const;
 export type ListSort = (typeof LIST_SORTS)[number];
 
-export const LIST_SORT_LABELS: Record<ListSort, string> = {
-  newest: "新着順",
-  oldest: "古い順",
-};
+/**
+ * #863（2026-10-07）: 「何の」新しい順かを言葉に入れる。
+ *
+ * 【初心者向け】以前は「新着順／古い順」とだけ出していて、**何の日付で並ぶのか分かりません**でした
+ * （保存した日なのか、投稿された日なのか、スポットができた日なのか）。
+ * 画面ごとに基準が違うので、基準の言葉（「保存」「作成」）を受け取って作ります。
+ * アルバム一覧がラベルを自前で書いていたのも、ここに寄せました（約束 14）。
+ */
+export type ListSortBasis = "保存" | "作成";
+
+export function listSortLabel(sort: ListSort, basis: ListSortBasis): string {
+  return sort === "newest" ? `${basis}が新しい順` : `${basis}が古い順`;
+}
 
 /** `?sort=` の読み取り。既定は新着順（知らない値も新着順に倒す） */
 export function parseListSort(value: string | null | undefined): ListSort {

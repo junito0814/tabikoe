@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { fetchWithAuthRedirect, UnauthorizedError } from "@/lib/api/fetch-with-auth-redirect";
 import type { AlbumSort } from "@/lib/albums/get-album";
+import { listSortLabel } from "@/lib/records/list-sort";
 import { CloseButton } from "@/components/ui/CloseButton";
 import { Select } from "@/components/ui/Select";
 
@@ -57,7 +58,7 @@ export function AlbumListControls({
             value={sort}
             onChange={(next) => router.replace(`/albums?sort=${next}`)}
             options={["newest", "oldest"] as const}
-            label={(option) => (option === "newest" ? "新着順" : "古い順")}
+            label={(option) => listSortLabel(option, "作成")}
             ariaLabel="並び順"
           />
         </label>

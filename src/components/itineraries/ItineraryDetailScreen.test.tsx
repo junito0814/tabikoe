@@ -418,10 +418,10 @@ describe("行の形（#753・#793）", () => {
     expect(within(row("z")).queryByText("1")).toBeNull();
   });
 
-  it("#793: 「日付なし」の行のボタンは「Day を決める」（その塊にいる時点で日付なしだと分かるため）", () => {
+  it("#793・#871: 「日付なし」の行のボタンは「未選択」（その塊にいる時点で日付なしだと分かるため）", () => {
     const data = detail({ spots: [spot("z", { dayIndex: null })] });
     render(<ItineraryDetailScreen initial={data} viewerId="me" api={makeApi(data)} />);
-    expect(within(row("z")).getByRole("combobox", { name: "Day を決める" })).toHaveTextContent("Day を決める");
+    expect(within(row("z")).getByRole("combobox", { name: /未選択/ })).toHaveTextContent("未選択");
   });
 });
 
