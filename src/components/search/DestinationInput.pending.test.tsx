@@ -150,3 +150,53 @@ describe("#665: 候補が出たり消えたりする", () => {
     expect(screen.queryByText("探しています…"), "待ち表示が残らない").toBeNull();
   });
 });
+
+/*
+ * #868（2026-10-07）: 候補を指で送ったら、キーボードを下げる（Google マップと同じ）。
+ *
+ * 【初心者向け】キーボードが画面の半分を占めると、候補は一度に 2〜3 件しか見えない。
+ * 送り始めた時点で入力欄から焦点を外せば、枠が広がって全部見える。
+ * ただし焦点を外すと候補が閉じる作りなので、**こちらから外したときは閉じない**ことまで確かめる。
+ */
+describe("候補を送るとキーボードを下げる（#868）", () => {
+  const setViewport = (height: number) => {
+    Object.defineProperty(window, "innerHeight", { value: 844, configurable: true, writable: true });
+    Object.defineProperty(window, "visualViewport", {
+      value: { offsetTop: 0, height, addEventListener: vi.fn(), removeEventListener: vi.fn() },
+      configurable: true,
+      writable: true,
+    });
+  };
+
+  async function openSuggestions() {
+    render(<DestinationInput suggest={ready(["大阪府", "大阪駅", "大阪城"])} onSelect={vi.fn()} onSubmitFreeText={vi.fn()} />);
+    const input = screen.getByRole("combobox") as HTMLInputElement;
+    fireEvent.change(input, { target: { value: "おおさ" } });
+    const first = await screen.findByText("大阪府");
+    const scroller = first.closest(".overflow-y-auto") as HTMLElement;
+    input.focus();
+    return { input, scroller };
+  }
+
+  it("キーボードが出ているときは、候補を送ると焦点が外れる（＝キーボードが下がる）", async () => {
+    setViewport(400); // 844 − 400 ＝ 444px ぶん隠れている
+    const { input, scroller } = await openSuggestions();
+    expect(document.activeElement).toBe(input);
+
+    fireEvent.touchMove(scroller);
+    expect(document.activeElement).not.toBe(input);
+
+    // 焦点が外れても候補は開いたまま（こちらから外したので閉じない）
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 250));
+    });
+    expect(screen.queryByText("大阪府")).toBeInTheDocument();
+  });
+
+  it("キーボードが出ていない（パソコン）ときは何もしない", async () => {
+    setViewport(844);
+    const { input, scroller } = await openSuggestions();
+    fireEvent.touchMove(scroller);
+    expect(document.activeElement).toBe(input);
+  });
+});

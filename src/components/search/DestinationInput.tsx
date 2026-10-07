@@ -47,6 +47,18 @@ export function DestinationInput({
   const panelRef = useRef<HTMLDivElement>(null);
   const [maxHeight, setMaxHeight] = useState<number | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  /*
+   * #868（2026-10-07）: 候補を指で送ったら、キーボードを下げる（Google マップと同じ）。
+   *
+   * 【初心者向け】候補の枠は「いま見えている範囲」に合わせて縮み、中はスクロールできます。
+   * それでも**キーボードが画面の半分を占めるので、一度に 2〜3 件しか見えません**。
+   * 送るたびに少しずつしか進まず、実機で「下まで見れない」と報告されました。
+   *
+   * 送り始めた時点でキーボードを下げると、枠が一気に広がって全部見えます。
+   * キーボードを下げるには入力欄から焦点を外しますが、**外すと候補が閉じる**作りなので
+   * （`onBlur` の 150ms 後）、「わざと外した」ことをここで覚えておいて 1 回だけ見逃します。
+   */
+  const dismissingKeyboard = useRef(false);
   const [query, setQuery] = useState("");
   const [suggestions, setSuggestions] = useState<DestinationSuggestion[]>([]);
   const [isOpen, setIsOpen] = useState(false);
@@ -124,6 +136,11 @@ export function DestinationInput({
   const PANEL_GAP_PX = 8;
   /** これ以上縮んでいたらキーボードが出ていると見なす */
   const KEYBOARD_THRESHOLD_PX = 120;
+  /** #868: いまキーボードが出ているか（出ていないときは焦点を外さない。パソコンでは常に false） */
+  const isKeyboardOpen = () => {
+    const viewport = typeof window === "undefined" ? null : window.visualViewport;
+    return viewport ? window.innerHeight - viewport.height > KEYBOARD_THRESHOLD_PX : false;
+  };
 
 
   const trimmedQuery = query.trim();
@@ -216,7 +233,14 @@ export function DestinationInput({
             setIsComposing(false);
           }}
           onFocus={() => visibleSuggestions.length > 0 && setIsOpen(true)}
-          onBlur={() => setTimeout(() => setIsOpen(false), 150)}
+          onBlur={() => {
+            // #868: 候補を送るためにこちらから外したときは、候補を開いたままにする
+            if (dismissingKeyboard.current) {
+              dismissingKeyboard.current = false;
+              return;
+            }
+            setTimeout(() => setIsOpen(false), 150);
+          }}
           placeholder="どこへ行く？"
           aria-label="行き先"
           autoComplete="off"
@@ -256,7 +280,19 @@ export function DestinationInput({
           style={maxHeight === null ? undefined : { maxHeight }}
           className="absolute z-50 mt-1 flex max-h-[min(420px,50dvh)] w-full flex-col overflow-hidden rounded-[12px] border border-line bg-surface shadow-card"
         >
-          <div className="min-h-0 flex-1 overflow-y-auto">
+          <div
+            className="min-h-0 flex-1 overflow-y-auto"
+            /*
+              * #868: 指で送り始めたらキーボードを下げる。
+              * `scroll` ではなく `touchmove` で見るのは、**候補が短くて送れないときでも**
+              * 「下を見ようとした」ことが分かるため（Google マップも同じ動き）。
+              */
+            onTouchMove={() => {
+              if (!isKeyboardOpen()) return;
+              dismissingKeyboard.current = true;
+              inputRef.current?.blur();
+            }}
+          >
           {groupBySource(visibleSuggestions, (suggestion) => destinationSuggestionSource(suggestion.kind)).map(
             (group, groupIndex) => (
               <section key={group.source} className={groupIndex > 0 ? "border-t border-line" : undefined}>
