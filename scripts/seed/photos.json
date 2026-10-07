@@ -1,156 +1,786 @@
 {
-  "source": "Pixabay（https://pixabay.com/ja/）",
-  "fetchedAt": "2026-10-05",
-  "license": "Pixabay Content License。アプリの中で使うのは可。写真そのものの再配布・販売は不可。識別できる人物が主題のものは使わない（写っている人の権利までは許諾されないため）",
-  "checkedBy": "2026-10-05 に 20 枚を 1 枚ずつ目で見て確認した。人が写っていた 3 枚（寺の参道・ラーメンを持つ手・居酒屋の客）とイラスト 1 枚を外し、残った 16 枚を使う",
-  "assignedAt": "2026-10-07",
-  "assignedBy": "#777: 16 枚を 1 枚ずつ見て、合うスポットがあるものだけ結び付けた（spot）。合うスポットが無い 6 枚は spot を null にして使わない（why に理由）。1 投稿 1 枚、同じ写真を 2 投稿で使わない",
-  "photos": [
-    {
-      "file": "landscape-01.jpg",
-      "kind": "landscape",
-      "what": "朱の鳥居（奉納の札）",
-      "url": "https://cdn.pixabay.com/photo/2023/09/15/11/43/torii-8254663_1280.jpg",
-      "spot": null,
-      "why": "朱の鳥居が連なる景色（伏見稲荷のような千本鳥居）。seed のスポットに合うものが無い"
-    },
-    {
-      "file": "landscape-02.jpg",
-      "kind": "landscape",
-      "what": "紅葉と寺の屋根",
-      "url": "https://cdn.pixabay.com/photo/2021/08/30/01/41/koyasan-6584637_640.jpg",
-      "spot": "高尾山 山頂",
-      "why": "紅葉と寺の屋根。高尾山薬王院のある山頂の景色として無理がない"
-    },
-    {
-      "file": "landscape-03.jpg",
-      "kind": "landscape",
-      "what": "夜の五重塔",
-      "url": "https://cdn.pixabay.com/photo/2022/01/24/13/51/temple-6963458_640.jpg",
-      "spot": "浅草寺",
-      "why": "夜の五重塔。浅草寺にも五重塔がある"
-    },
-    {
-      "file": "landscape-04.jpg",
-      "kind": "landscape",
-      "what": "新緑と和風建築",
-      "url": "https://cdn.pixabay.com/photo/2025/03/29/10/59/ryoan-ji-9500830_640.jpg",
-      "spot": "清澄庭園",
-      "why": "新緑と和風建築。日本庭園の景色"
-    },
-    {
-      "file": "landscape-05.jpg",
-      "kind": "landscape",
-      "what": "池に映る金色の楼閣",
-      "url": "https://cdn.pixabay.com/photo/2019/02/14/06/08/kinkaku-ji-3995910_640.jpg",
-      "spot": null,
-      "why": "金閣寺。見ればすぐ京都と分かるので、東京のスポットには使えない"
-    },
-    {
-      "file": "landscape-06.jpg",
-      "kind": "landscape",
-      "what": "湖に立つ鳥居（白黒）",
-      "url": "https://cdn.pixabay.com/photo/2017/01/13/08/08/tori-1976609_640.jpg",
-      "spot": null,
-      "why": "厳島神社の海上鳥居（広島）。これが「神楽坂の石畳の路地」に出ていたのが #777 の発端"
-    },
-    {
-      "file": "landscape-07.jpg",
-      "kind": "landscape",
-      "what": "夜に並ぶ和傘",
-      "url": "https://cdn.pixabay.com/photo/2015/02/15/03/04/japanese-umbrellas-636870_1280.jpg",
-      "spot": "代々木公園の日曜マーケット",
-      "why": "夜に並ぶ和傘。催しの飾り付け"
-    },
-    {
-      "file": "landscape-08.jpg",
-      "kind": "landscape",
-      "what": "夕暮れの海辺",
-      "url": "https://cdn.pixabay.com/photo/2022/04/15/07/58/sunset-7133867_640.jpg",
-      "spot": "豊洲ぐるり公園の夕日",
-      "why": "夕暮れの海辺。スポット名そのもの"
-    },
-    {
-      "file": "landscape-09.jpg",
-      "kind": "landscape",
-      "what": "緑の中の滝",
-      "url": "https://cdn.pixabay.com/photo/2023/09/16/22/05/japan-8257601_640.jpg",
-      "spot": "奥多摩 川遊びスポット",
-      "why": "緑の中の滝。奥多摩の渓流"
-    },
-    {
-      "file": "landscape-10.jpg",
-      "kind": "landscape",
-      "what": "夜の木造の店先",
-      "url": "https://cdn.pixabay.com/photo/2021/12/17/10/09/night-6876155_640.jpg",
-      "spot": "新宿 思い出横丁",
-      "why": "夜の木造の店先。横丁そのもの"
-    },
-    {
-      "file": "food-01.jpg",
-      "kind": "food",
-      "what": "担々麺",
-      "url": "https://cdn.pixabay.com/photo/2019/11/23/15/30/ramen-4647411_640.jpg",
-      "spot": null,
-      "why": "担々麺。担々麺・ラーメンの seed スポットが無い"
-    },
-    {
-      "file": "food-02.jpg",
-      "kind": "food",
-      "what": "そばにつゆを注ぐ",
-      "url": "https://cdn.pixabay.com/photo/2017/08/05/07/24/japanese-food-2582411_640.jpg",
-      "spot": "渋谷 奥の立ち食い蕎麦",
-      "why": "そばにつゆを注ぐ。スポット名そのもの"
-    },
-    {
-      "file": "food-03.jpg",
-      "kind": "food",
-      "what": "湯気の立つラーメン",
-      "url": "https://cdn.pixabay.com/photo/2020/09/17/12/25/ramen-5579023_640.jpg",
-      "spot": "吉祥寺ハモニカ横丁",
-      "why": "湯気の立つラーメン。横丁の店で出てくる一杯として無理がない"
-    },
-    {
-      "file": "food-04.jpg",
-      "kind": "food",
-      "what": "塩ラーメン",
-      "url": "https://cdn.pixabay.com/photo/2015/03/20/15/13/ramen-682343_640.jpg",
-      "spot": null,
-      "why": "塩ラーメン。同上（food-03 を吉祥寺ハモニカ横丁に使ったので、こちらは余る）"
-    },
-    {
-      "file": "food-05.jpg",
-      "kind": "food",
-      "what": "干されたそうめん",
-      "url": "https://cdn.pixabay.com/photo/2020/10/05/03/07/noodles-5628035_640.jpg",
-      "spot": null,
-      "why": "干されたそうめん（製麺所）。そうめんの seed スポットが無い"
-    },
-    {
-      "file": "food-06.jpg",
-      "kind": "food",
-      "what": "和食の前菜",
-      "url": "https://cdn.pixabay.com/photo/2022/02/11/05/54/food-7006591_640.jpg",
-      "spot": "築地場外市場",
-      "why": "和食の前菜。市場の食べ歩きで出てくる盛り合わせ"
-    }
-  ],
-  "rejected": [
-    {
-      "url": "https://cdn.pixabay.com/photo/2020/01/31/07/27/temple-4807321_640.jpg",
-      "reason": "参道に人が 2 人（後ろ姿）"
-    },
-    {
-      "url": "https://cdn.pixabay.com/photo/2022/06/02/18/22/ramen-7238665_640.jpg",
-      "reason": "丼を持つ手と胴体が写っている"
-    },
-    {
-      "url": "https://cdn.pixabay.com/photo/2021/12/21/03/54/street-6884533_640.jpg",
-      "reason": "居酒屋の客が写っている"
-    },
-    {
-      "url": "https://cdn.pixabay.com/photo/2023/12/07/22/24/cherry-blossoms-8436420_640.jpg",
-      "reason": "イラストで人物も描かれている（投稿写真として不自然）"
-    }
-  ]
+ "source": "Pixabay（https://pixabay.com/ja/）",
+ "fetchedAt": "2026-10-07",
+ "license": "Pixabay Content License。アプリの中で使うのは可。写真そのものの再配布・販売は不可。識別できる人物が主題のものは使わない（写っている人の権利までは許諾されないため）",
+ "checkedBy": "2026-10-07（#893）: スポット 51 件それぞれに Pixabay を検索し、候補 160 枚あまりを一覧（コンタクトシート）にして 1 枚ずつ目で見た。(1) 人が主題のもの、(2) 場所が明らかに違うもの（皇居の検索でスコットランドの城、銭湯の検索で温泉のサル、神楽坂の検索で欧州の石畳など）、(3) CG・イラストは外した。残した 86 枚を、合うスポットに結び付けた。同じ写真が 2 つのスポットに付かないことをコードで確かめている（picks を作る処理が重複で止まる）",
+ "note": "#777 までは 16 枚しか無く、1 投稿 1 枚・使い回し禁止のため **76 投稿中 62 件に写真が付かなかった**。#893 で 86 枚に増やし、すべての seed 投稿に 1 枚以上付くようにした。2 枚以上あるスポットは、1 投稿に複数枚載せるか、その場所の 2 件目の投稿に回す。投稿を作らないスポット（SPOTS_WITHOUT_POSTS）の写真も 1 枚ずつ持っている ── あとでそこに投稿が付いたときに使えるようにするため",
+ "replacedSpot": {
+  "神楽坂の石畳の路地": "「石畳の路地」で出てくるのは欧州の街並みか京都（八坂の塔が写る）ばかりだったので、場所が特定できない『夜の路地』（ハモニカ横丁の検索で出たもの）を回した"
+ },
+ "photos": [
+  {
+   "file": "s00-1.jpg",
+   "spot": "浅草寺",
+   "order": 0,
+   "pixabayId": 9607429,
+   "url": "https://pixabay.com/get/gdf278d454d787b11bd5e27827db18bcdbc2409ca4c309f9ec2762703848283cda5999a5304f03c6a3c7bb8cbbaa458ad9b9ab0f3ecc0d4f4eded9110b26669ec_1280.jpg",
+   "page": "https://pixabay.com/photos/asakusa-temple-tokyo-asakusa-9607429/",
+   "tags": "asakusa temple, tokyo, asakusa, senso-ji, japanese, temple, religion, architecture, culture, crowd, traditional, religious festival, tourism, to travel, japan"
+  },
+  {
+   "file": "s01-1.jpg",
+   "spot": "隅田公園の桜並木",
+   "order": 0,
+   "pixabayId": 1835081,
+   "url": "https://pixabay.com/get/gf90da5800bdaf0f9daa99c031c70733ed548a36e1ea1b6533fc0efae36b60f28767152bdba4439f31e31ec97a7b86f43b69ddae92e38c0afdee1deb76dda54a5_1280.jpg",
+   "page": "https://pixabay.com/photos/boat-cherry-blossom-park-river-1835081/",
+   "tags": "boat, cherry blossom, park, river, spring, tokyo, gray river, gray boat, nature, gray park"
+  },
+  {
+   "file": "s01-2.jpg",
+   "spot": "隅田公園の桜並木",
+   "order": 1,
+   "pixabayId": 4879343,
+   "url": "https://pixabay.com/get/g7819eed8280cb1c14fe16552db16d89c10b528a2c62916a1e2aaea2df5773862611c8bc08dcde0d9094506c697e59ae0aafb6f8de652e90b7a42060d506aa2af_1280.jpg",
+   "page": "https://pixabay.com/photos/natural-landscape-river-water-4879343/",
+   "tags": "natural, landscape, river, water, nature, plant, flower background, wood, flowers, cherry blossoms, katana, flower wallpaper, beautiful flowers, cherry blossom petal blizzard, season, spring, satoyama, trip, japan"
+  },
+  {
+   "file": "s02-1.jpg",
+   "spot": "かっぱ橋の小さな金物屋",
+   "order": 0,
+   "pixabayId": 1839061,
+   "url": "https://pixabay.com/get/g2a17b67470485758b99c1d96370f56b4a1bb242f7454a75a00f467ace36d2e9bb192bb6d43fd008fb68b0f60498ff029b7432ec670c6f5374692318c08cd0540_1280.jpg",
+   "page": "https://pixabay.com/photos/knives-set-chopping-board-slice-1839061/",
+   "tags": "knives, set, chopping board, slice, sharp, sharpness, blades, knife set, kitchen tools, orange slices, kitchen, kitchen utensils, flat lay, knives, knives, knives, knife set, kitchen tools, kitchen, kitchen, kitchen, kitchen, kitchen, kitchen utensils"
+  },
+  {
+   "file": "s02-2.jpg",
+   "spot": "かっぱ橋の小さな金物屋",
+   "order": 1,
+   "pixabayId": 7704191,
+   "url": "https://pixabay.com/get/g7a5670ff05316cff2111026b5ba8317c856e9286b3dbef425144bb7f84129e8459b5c5928f4f1d3a0eb2b632df6460664ce82ff0ffde6f6012b2a9e12a95d46f_1280.jpg",
+   "page": "https://pixabay.com/photos/sushi-salmon-japanese-knife-7704191/",
+   "tags": "sushi, salmon, japanese, knife, kitchen, cooking, food, vegetarian"
+  },
+  {
+   "file": "s03-1.jpg",
+   "spot": "東京スカイツリー",
+   "order": 0,
+   "pixabayId": 3397292,
+   "url": "https://pixabay.com/get/g632f427cbe662a2a4beee9b16f67f0677269e7d37dea9bdf5cbc405649632bb7592bc1299268e08d6e7e92966fe5988de588f695c1f919fca5721af7e0e9e767_1280.jpg",
+   "page": "https://pixabay.com/photos/view-tokyo-japan-tower-skytree-3397292/",
+   "tags": "view, tokyo, japan, tower, skytree, landmark, urban, downtown, tokyo, tokyo, tokyo, tokyo, tokyo"
+  },
+  {
+   "file": "s03-2.jpg",
+   "spot": "東京スカイツリー",
+   "order": 1,
+   "pixabayId": 7103210,
+   "url": "https://pixabay.com/get/g8e7800abf06ee8ca9591ad9c61554597642b71ed2bba8da03ee4f6f48dfc365dc29c2c76450b13d37b9c974e2be6919623708bf8d1d7e7cdc55422ac423cf175_1280.jpg",
+   "page": "https://pixabay.com/photos/observation-deck-tokyo-skytree-7103210/",
+   "tags": "observation deck, tokyo skytree, architecture, japan, black and white, urban, walkway, tunnel, building, observation deck, tokyo skytree, tokyo skytree, tokyo skytree, tokyo skytree, tokyo skytree, architecture, architecture, japan, japan, japan, walkway, tunnel, tunnel, tunnel, tunnel, building, building, building, building"
+  },
+  {
+   "file": "s04-1.jpg",
+   "spot": "押上の路地裏 喫茶",
+   "order": 0,
+   "pixabayId": 563797,
+   "url": "https://pixabay.com/get/gb2fddd1661bab8376c82220d9274d0ae9354c9492b09b37034b5a6c6c71f23f727e2a0bf77c1ca4dcc0a890ffededd5f196df1c39de73d1752372546f7fa6776_1280.jpg",
+   "page": "https://pixabay.com/photos/coffee-milk-sugar-cup-of-coffee-563797/",
+   "tags": "coffee, milk, sugar, cup of coffee, coffee cup, coffee beans, aroma, black coffee, caffeine, cafe, coffee break, coffee, coffee, coffee, coffee, coffee, sugar, sugar"
+  },
+  {
+   "file": "s05-1.jpg",
+   "spot": "谷中銀座",
+   "order": 0,
+   "pixabayId": 4335235,
+   "url": "https://pixabay.com/get/g7277a1d9ce3df680ad245aa8e56c99fc82e8bb560454ae0a9cae4580c8c6812cca37611b15f31e135ef65f5d77f5a7bace44707a45e9afb9691b34b74848b733_1280.jpg",
+   "page": "https://pixabay.com/photos/woman-japan-street-shopping-center-4335235/",
+   "tags": "woman, japan, street, shopping center, shops, lifestyle, city, japan, japan, japan, japan, japan"
+  },
+  {
+   "file": "s05-2.jpg",
+   "spot": "谷中銀座",
+   "order": 1,
+   "pixabayId": 3467634,
+   "url": "https://pixabay.com/get/g62da882efdd5b8c38cff3d4cd64e2bcd42d90056289f275b1edb67b188eb7d68c9a6640c228d9abf5e847b66c64e1f26267e7c7fc3f3eb71a190e10f3419c078_1280.jpg",
+   "page": "https://pixabay.com/photos/couple-street-city-man-woman-3467634/",
+   "tags": "couple, street, city, man, woman, walking, urban, town, kumamoto, japan, couple, walking, japan, japan, japan, japan, japan"
+  },
+  {
+   "file": "s06-1.jpg",
+   "spot": "谷中の猫がいる坂",
+   "order": 0,
+   "pixabayId": 7108080,
+   "url": "https://pixabay.com/get/g62a55e56872785d7b407fff6edaa9d72a5b37c7b3cc3d1b3632f2882e6fccef6bd2359f2fc5118a5c3042386769f10074f51ff45798a4f66096b27b343bca9ec_1280.jpg",
+   "page": "https://pixabay.com/photos/cat-kitten-pet-young-cat-stray-cat-7108080/",
+   "tags": "cat, nature, kitten, pet, young cat, stray cat, street cat, feral cat, animal, domestic cat, blue eyes, feline, mammal, close up"
+  },
+  {
+   "file": "s07-1.jpg",
+   "spot": "上野恩賜公園",
+   "order": 0,
+   "pixabayId": 6916302,
+   "url": "https://pixabay.com/get/g0ada8d58b70bed17f4ef90dbe4ee8628a2b192130e3fd1fdcbdfb24a0a6d2adaeedd049f2faf050f8bfafe268cea9db35820ca8f40c759edde47f89768bb46e2_1280.jpg",
+   "page": "https://pixabay.com/photos/shinobazu-pond-ueno-park-tokyo-6916302/",
+   "tags": "shinobazu pond, ueno park, tokyo, japan, nature, taito city, boats, water, sunset, sky, apartment building, park, pond, skyline"
+  },
+  {
+   "file": "s07-2.jpg",
+   "spot": "上野恩賜公園",
+   "order": 1,
+   "pixabayId": 7024594,
+   "url": "https://pixabay.com/get/g5a9c80c223c27d870a8989ed16098a0ae442bbaa87c5ac60b6b2a4c2000be39e6ad3e0003c456600810653a3bd3800dbb82861ae5cd359491ff556b08a81fb95_1280.jpg",
+   "page": "https://pixabay.com/photos/night-shinobazu-pond-temple-7024594/",
+   "tags": "night, shinobazu pond, temple, ueno park, taito city, tokyo, japan, night lights, city lights, city, ueno park, ueno park, ueno park, ueno park, ueno park"
+  },
+  {
+   "file": "s08-1.jpg",
+   "spot": "アメ横の立ち飲み",
+   "order": 0,
+   "pixabayId": 6827115,
+   "url": "https://pixabay.com/get/gca9d3c1677361bbe360ad7ffea9c38dcf80f4d9aa5279136670582ba7bc6e484f0e2855e97f7e799e3934e9ea17c28dc3ab78731dc6f68ad504056dcc893dc2f_1280.jpg",
+   "page": "https://pixabay.com/photos/izakaya-japanese-alley-night-alley-6827115/",
+   "tags": "izakaya, japanese alley, night, alley, japan, shopping street, kichijoji, izakaya, izakaya, izakaya, izakaya, izakaya"
+  },
+  {
+   "file": "s09-1.jpg",
+   "spot": "秋葉原 ラジオ会館",
+   "order": 0,
+   "pixabayId": 5404746,
+   "url": "https://pixabay.com/get/gf6be67d5d4f218e3b183396629c27fb4a5e18bdc617620c642d4d46099a62153fc4f95c95d638644c5ff42e37ebb14e6ae8ab0d9fac55c3cb923802cb492b779_1280.jpg",
+   "page": "https://pixabay.com/photos/manga-animated-heroic-fantasy-5404746/",
+   "tags": "manga, animated, heroic fantasy, characters, neon, sign, colorful, street, avenue, urban, night, akihabara, tokyo, japan, asia, manga, manga, manga, akihabara, akihabara, akihabara, tokyo, tokyo, tokyo, tokyo, tokyo"
+  },
+  {
+   "file": "s09-2.jpg",
+   "spot": "秋葉原 ラジオ会館",
+   "order": 1,
+   "pixabayId": 1180397,
+   "url": "https://pixabay.com/get/g42a03b4c6044c8f2d153c7ad91a782668e0af78ce28d78c75ab46507d2dd35952a79db05998459ab972ddbe248cb317e0ad828d77274ce3d5e14e4149b8d0249_1280.jpg",
+   "page": "https://pixabay.com/photos/akihabara-tokyo-night-japan-1180397/",
+   "tags": "akihabara, tokyo, night, japan, japanese, shopping, asian, technology, lighted, advertisement, akihabara, akihabara, akihabara, akihabara, akihabara"
+  },
+  {
+   "file": "s10-1.jpg",
+   "spot": "神保町の古本カフェ",
+   "order": 0,
+   "pixabayId": 4515917,
+   "url": "https://pixabay.com/get/g463862250f2e967350bd2b181927bf6cb56d656ed36a10dd531caf78439acec93d46521edbd64b8cb26dac9e2b4182fbcb4cd90c95ae9339aef75632a30a016d_1280.jpg",
+   "page": "https://pixabay.com/photos/books-bookshelf-old-literature-4515917/",
+   "tags": "books, bookshelf, old, literature, knowledge, education, library, bookstore, vintage, retro, antiquarian bookshop, tübingen, baden württemberg, closeup, books, bookshelf, bookshelf, education, education, library, library, library, library, library, bookstore"
+  },
+  {
+   "file": "s11-1.jpg",
+   "spot": "皇居 東御苑",
+   "order": 0,
+   "pixabayId": 9603413,
+   "url": "https://pixabay.com/get/gf6a590fcd1e7bac05bcc6de215f87c89ec50945c8e59913a786077dc471b1cdc188aadb3ab4bbed0c644e27c8c9df99eaff4bfecd3ee387f2c68e2cdd2b5d7da_1280.jpg",
+   "page": "https://pixabay.com/photos/imperial-palace-tokyo-tokyo-9603413/",
+   "tags": "imperial palace tokyo, tokyo, architecture, traditional, building, culture, japanese, palace, historical, tourism, to travel, japan"
+  },
+  {
+   "file": "s11-2.jpg",
+   "spot": "皇居 東御苑",
+   "order": 1,
+   "pixabayId": 4530051,
+   "url": "https://pixabay.com/get/g874454a7332c3d310af3cc6ce0b7dacf49a5463c92860a7c78b41ee4be8f2cd757aa1b156ea12eb01eb9fe8c0e02a60a1b12cde0a45553f312b4703d1b989cbb_1280.jpg",
+   "page": "https://pixabay.com/photos/japan-imperial-architecture-tokyo-4530051/",
+   "tags": "japan, imperial, architecture, tokyo, japanese, the story, nature, building, historical, city, palace, buddhism, travel, tree, emperor"
+  },
+  {
+   "file": "s12-1.jpg",
+   "spot": "東京駅 丸の内駅舎",
+   "order": 0,
+   "pixabayId": 641768,
+   "url": "https://pixabay.com/get/g699354d00bf63996ea2d9baa82239dc0305a34f9ee6edcc2ee716c82322a490b785aa4d7baa81cbe1403fd712ed6a8998e39eca1886794bb1c3ddcfd0c2545b8_1280.jpg",
+   "page": "https://pixabay.com/photos/tokyo-station-tokyo-station-japan-641768/",
+   "tags": "tokyo station, tokyo, station, japan, train station, brick, building, urban, business, city, antique, sightseeing, tokyo station, tokyo station, tokyo, tokyo, tokyo, tokyo, tokyo"
+  },
+  {
+   "file": "s12-2.jpg",
+   "spot": "東京駅 丸の内駅舎",
+   "order": 1,
+   "pixabayId": 3523393,
+   "url": "https://pixabay.com/get/g5d6d42de68c7f2d442688258f7afa82758c89a37924f2f290a8b243fb4fa6b0ccb905dae373e070e8251915d0da7c98b1b36959f4ec86e3cc2006dc355d10745_1280.jpg",
+   "page": "https://pixabay.com/photos/japan-tokyo-tokyo-station-3523393/",
+   "tags": "japan, tokyo ¡¡, ¡¡, tokyo station, station, transportation, city, tokyo, building, railway, journey, citizen know, night view, night scenes, tokyo, tokyo, tokyo, tokyo, tokyo"
+  },
+  {
+   "file": "s13-1.jpg",
+   "spot": "日本橋の屋上テラス",
+   "order": 0,
+   "pixabayId": 734809,
+   "url": "https://pixabay.com/get/gb653625540c896d2238a4316d661fe64fd00e54aebad0e743bdd983c514034a630056af6e2e2d80d783c7eeae2c87ffaeaa4ff149bd79c3c3fb403dc8bb3ed7e_1280.jpg",
+   "page": "https://pixabay.com/photos/view-city-view-terrace-734809/",
+   "tags": "view, city view, terrace, observation deck, café, panorama of the city, table, cups, chairs, rooftop cafe, architecture, premises, gastronomy, sunny, terrace, rooftop cafe, rooftop cafe, rooftop cafe, rooftop cafe, rooftop cafe"
+  },
+  {
+   "file": "s13-2.jpg",
+   "spot": "日本橋の屋上テラス",
+   "order": 1,
+   "pixabayId": 176291,
+   "url": "https://pixabay.com/get/g32baf55e06fadb366e6f5d60f3c8023fb86b8fb17cb2642405b6a9d2cba7fbf96b7cd207fbad8034548836908da86a696befb843cdbc01df8a8ac97424d485e7_1280.jpg",
+   "page": "https://pixabay.com/photos/outdoor-patio-urban-architecture-176291/",
+   "tags": "outdoor, patio, urban, architecture, pub, lighting, glass, drinks, relaxation, meeting, pleasure, style, background, light, patio, patio, patio, patio, patio"
+  },
+  {
+   "file": "s14-1.jpg",
+   "spot": "築地場外市場",
+   "order": 0,
+   "pixabayId": 2063197,
+   "url": "https://pixabay.com/get/gc50393c18e8d4eb30c230c77207a6cb7905a6dbcea29219ed3511aec7af23e95756c72a6c8f488460033fe82fd3ef75b12eb0f53e63e478e599e377e8134666b_1280.jpg",
+   "page": "https://pixabay.com/photos/octopus-tsukiji-market-fish-market-2063197/",
+   "tags": "octopus, tsukiji market, fish market, red, tsukiji, japanese, gourmet, seafood, market, cuisine, red fish, red fishing, red market, octopus, octopus, octopus, octopus, octopus, fish market, fish market, tsukiji, tsukiji, seafood"
+  },
+  {
+   "file": "s14-2.jpg",
+   "spot": "築地場外市場",
+   "order": 1,
+   "pixabayId": 523823,
+   "url": "https://pixabay.com/get/g92564619aca3230bb45d92eca408537df16ad771644aca488e2c8d207e12f8d65bbac21a121a015574eb59f14dcceb03afabeb3b87f9c58d77e5da00ecfb0110_1280.jpg",
+   "page": "https://pixabay.com/photos/fish-market-japan-tokyo-tsukiji-523823/",
+   "tags": "fish, market, japan, tokyo, tsukiji, nature, tourist, attraction, japanese, brown fish, brown fishing, brown market"
+  },
+  {
+   "file": "s15-1.jpg",
+   "spot": "築地の卵焼き屋（行列なし）",
+   "order": 0,
+   "pixabayId": 646182,
+   "url": "https://pixabay.com/get/gbaa1928771b6f4094d104fb7be1b60d46ff1b9764d142ece0e33a5020511f4e9a9a3c62a56fff1ad8b8b3884204540eb4c4db53c80ac6299fe5bc4a19ceac959_1280.jpg",
+   "page": "https://pixabay.com/photos/okinawa-market-japan-japanese-646182/",
+   "tags": "okinawa, market, japan, japanese, seafood, restaurant, shop, freshness, shopping, asia, food, travel, street, traditional, stall, vacation, bazaar, store, dry market, wet market, clean market, oriental, retail, fresh, clean, holidays, okinawa, okinawa, okinawa, okinawa, okinawa"
+  },
+  {
+   "file": "s16-1.jpg",
+   "spot": "浜離宮恩賜庭園",
+   "order": 0,
+   "pixabayId": 9612432,
+   "url": "https://pixabay.com/get/gd26a0a022e816231589b2ac4cc562e7b03039a8d2c76288c04de2190a8d347773b144993a003b843d4cbebdab53d7028db46d33208c6182cb5d3f9273e4a3aae_1280.jpg",
+   "page": "https://pixabay.com/photos/japanese-garden-tokyo-park-garden-9612432/",
+   "tags": "japanese garden, tokyo, park, garden, lake, trees, japanese, culture, nature, traditional, quiet, relaxation, japan"
+  },
+  {
+   "file": "s16-2.jpg",
+   "spot": "浜離宮恩賜庭園",
+   "order": 1,
+   "pixabayId": 1537193,
+   "url": "https://pixabay.com/get/g33006e3280772a6aea93017925cd8d6db5891e1e445d5b2dd45ec121e04bde18ff92939dcea4d5f41f2215135c8de68f0a11b36b5f55c84e3059d46a546e8040_1280.jpg",
+   "page": "https://pixabay.com/photos/tokyo-japanese-garden-pond-green-1537193/",
+   "tags": "tokyo, japanese, garden, pond, green, summer, tokyo, tokyo, tokyo, tokyo, tokyo"
+  },
+  {
+   "file": "s17-1.jpg",
+   "spot": "チームラボプラネッツ",
+   "order": 0,
+   "pixabayId": 2521549,
+   "url": "https://pixabay.com/get/g02325f4112284e5593938d1bb2556f4d2b31e3803e2d157d73a09b46c5b7e31c44802b6bed7ac380efa68af0917247c184ba65cd7f234ad5588a659693995888_1280.jpg",
+   "page": "https://pixabay.com/photos/bulbs-lamps-knitted-light-2521549/",
+   "tags": "bulbs, lamps, knitted, light, interior design, room lighting, energy, art, art installation, installation, art object, biennale, art installation, art installation, art installation, art installation, art installation, installation, installation"
+  },
+  {
+   "file": "s17-2.jpg",
+   "spot": "チームラボプラネッツ",
+   "order": 1,
+   "pixabayId": 7750888,
+   "url": "https://pixabay.com/get/g512df0a69f66783170f611d37eef2af286cecdea15f01796da7a28e85e6cfdba7c44fb8a8ec9118aeea5337608e1adf6f3fc5554901fe4f15fa62e562ebf03ad_1280.jpg",
+   "page": "https://pixabay.com/photos/neon-light-light-installation-7750888/",
+   "tags": "neon light, light installation, light art"
+  },
+  {
+   "file": "s18-1.jpg",
+   "spot": "豊洲ぐるり公園の夕日",
+   "order": 0,
+   "pixabayId": 2086645,
+   "url": "https://pixabay.com/get/ga550293110ee6625d5ead502ef549083bb4d01002c323e929ee8661593e8ef6b819f5ee74029ab19ef2c80004ae72572b005355a910b69602b5c2c634ea3f369_1280.jpg",
+   "page": "https://pixabay.com/photos/rainbow-bridge-tokyo-bridge-2086645/",
+   "tags": "rainbow bridge, tokyo, bridge, landmark, travel, architecture, japan, city, japanese, evening, bay, panorama, night, building, blue city, blue travel, blue rainbow, blue building, blue night, blue bridge, tokyo, tokyo, tokyo, tokyo, tokyo, japan"
+  },
+  {
+   "file": "s18-2.jpg",
+   "spot": "豊洲ぐるり公園の夕日",
+   "order": 1,
+   "pixabayId": 3897106,
+   "url": "https://pixabay.com/get/g2d97ba84aa58e6cb345d00cb0bcf7dd466c5900b1745d224c8bf2b5b8e46989336aff43e5e5125bd76d006bf3d341504aef01e2146ae5f4ba6547b29c65e7079_1280.jpg",
+   "page": "https://pixabay.com/photos/sunrise-cloud-dramatic-tokyo-bay-3897106/",
+   "tags": "sunrise, cloud, dramatic, tokyo bay, nature, sea, ship, morning"
+  },
+  {
+   "file": "s19-1.jpg",
+   "spot": "お台場海浜公園",
+   "order": 0,
+   "pixabayId": 3131977,
+   "url": "https://pixabay.com/get/ga542fca3869408ab7e5f06a03577e55d3d2fe1a0cbaff90bc7153dac78fe79fe13d966351d0334383296932e83f182feb6d89ef481636d6e59cf26f35c31feec_1280.jpg",
+   "page": "https://pixabay.com/photos/tokyo-bridge-rainbow-bridge-japan-3131977/",
+   "tags": "tokyo, bridge, rainbow bridge, japan, skyline, odaiba, statue of liberty, bay, odaiba, odaiba, odaiba, odaiba, odaiba"
+  },
+  {
+   "file": "s19-2.jpg",
+   "spot": "お台場海浜公園",
+   "order": 1,
+   "pixabayId": 1255812,
+   "url": "https://pixabay.com/get/g9c06545f7ee6de1a70835bdf102de9333d16c2d463fc168972379977d6b92b0b73f386e92f108368d836f26eed82aca05341f455bfe749ad90243809cd0aa528_1280.jpg",
+   "page": "https://pixabay.com/photos/night-view-bridge-light-night-1255812/",
+   "tags": "night view, bridge, light, night, light up, city, sea, odaiba, tokyo, japan, rainbow bridge"
+  },
+  {
+   "file": "s20-1.jpg",
+   "spot": "月島もんじゃストリート",
+   "order": 0,
+   "pixabayId": 733188,
+   "url": "https://pixabay.com/get/g148253e44952c304962c9142a01a45e8c40c10aee05a2670703c03c9d6e2dfdc0d4bfabb05ff24c5e865a9831235f28aa95835634d69352741ff254b23e344e0_1280.jpg",
+   "page": "https://pixabay.com/photos/gourmet-vegetarian-diet-banquet-733188/",
+   "tags": "gourmet, vegetarian diet, banquet, food, menu, teppanyaki, teppanyaki, teppanyaki, teppanyaki, teppanyaki, teppanyaki"
+  },
+  {
+   "file": "s20-2.jpg",
+   "spot": "月島もんじゃストリート",
+   "order": 1,
+   "pixabayId": 3295436,
+   "url": "https://pixabay.com/get/g5cf13dc6505d60c919257338dd78262921947b0a98f0a5fb3006d77660ec6848cd00b26a408a4e48c61353b3d5565e99bb69caeb828737e7ce9da27932434608_1280.jpg",
+   "page": "https://pixabay.com/photos/food-people-production-cooking-3295436/",
+   "tags": "food, people, production, cooking, meat, dining, industry, market, oven, seafood, chef, teppanyaki, teppanyaki, teppanyaki, teppanyaki, teppanyaki, teppanyaki"
+  },
+  {
+   "file": "s21-1.jpg",
+   "spot": "清澄白河のロースター",
+   "order": 0,
+   "pixabayId": 4512564,
+   "url": "https://pixabay.com/get/g41291c78f89087e272afb7272ec5138fbe71a7211164e1db5942e5c59cb392de3e732dc6fe5fa4230ab9d1fd78c5150ab6472f3ecb041f2620c0d8a97a388aef_1280.jpg",
+   "page": "https://pixabay.com/photos/coffee-caffeine-organic-background-4512564/",
+   "tags": "coffee, full hd wallpaper, caffeine, organic, cool backgrounds, hd wallpaper, background, wallpaper hd, desktop backgrounds, 4k wallpaper, free wallpaper, 4k wallpaper 1920x1080, beautiful wallpaper, laptop wallpaper, mac wallpaper, free background, windows wallpaper, food, coffee ground, wallpaper 4k, aroma, cafe"
+  },
+  {
+   "file": "s21-2.jpg",
+   "spot": "清澄白河のロースター",
+   "order": 1,
+   "pixabayId": 6003341,
+   "url": "https://pixabay.com/get/g370ea3a5ff41821d48ef6e0bbedd5ba9b8d06cbe68655a44495c5de82b7bb7b9821981c40b27becfe27457799a59f341a0f277763625e2680f3fd63019d4402b_1280.jpg",
+   "page": "https://pixabay.com/photos/coffee-beans-coffee-roaster-6003341/",
+   "tags": "coffee beans, coffee, roaster, roasting, roasted, aromatic, caffeine, beans, food, organic, coffee beans, roaster, roaster, roaster, roaster, roaster, roasting, food"
+  },
+  {
+   "file": "s22-1.jpg",
+   "spot": "清澄庭園",
+   "order": 0,
+   "pixabayId": 10376515,
+   "url": "https://pixabay.com/get/g44eb76edd0d15a29aaa5135597e1fe5bc12e08de95e5d244176214caecfe8a35f264d525be2607cb951a11fbefddb77088533ffe5536dfb32a8096b428812b06_1280.png",
+   "page": "https://pixabay.com/photos/japanese-garden-koi-pond-10376515/",
+   "tags": "japanese garden, koi pond, flower background, wallpaper 4k, free background, wallpaper hd, cool backgrounds, stone bridge, cherry blossoms, zen garden, 4k wallpaper, desktop backgrounds, nature background, peaceful, tranquil, serenity, beautiful nature, morning mist, flower wallpaper, meditation, beautiful wallpaper, hd wallpaper, mac wallpaper, mindfulness, relaxation, nature wallpaper, nature, full hd wallpaper, landscape, laptop wallpaper, flowers, traditional garden, beautiful flowers, background, 4k wallpaper 1920x1080, windows wallpaper, photorealistic, wallpaper, free wallpaper, asian"
+  },
+  {
+   "file": "s22-2.jpg",
+   "spot": "清澄庭園",
+   "order": 1,
+   "pixabayId": 5149400,
+   "url": "https://pixabay.com/get/ge5ecc2b2cd9809d95057f9cd46882263df13587214af0b17ba4b8e26199ca6dce36c040558bbb8937f438402ac2295a673fa097eb9f02efdc7114934812d0643_1280.jpg",
+   "page": "https://pixabay.com/photos/japanese-park-nature-meditation-5149400/",
+   "tags": "japanese, park, nature, meditation, zen, japan, landscape, oriental, lantern, serenity, garden, water, buddhism, asia, pond, lake, stone, symbol, calm, turtle, green calm, green lake, green stone, meditation, meditation, meditation, meditation, meditation, zen, zen, japan, serenity, calm, calm, calm, turtle"
+  },
+  {
+   "file": "s23-1.jpg",
+   "spot": "渋谷スクランブル交差点",
+   "order": 0,
+   "pixabayId": 2328029,
+   "url": "https://pixabay.com/get/gd10cb72a9492575507e77791bd5f2229958d720ade4b2f954ed807f3a97ead2771498467fcb904e1ea69a06044565c5aaf46adf881a30169679c0751c10e481a_1280.jpg",
+   "page": "https://pixabay.com/photos/shibuya-intersection-cityscape-2328029/",
+   "tags": "shibuya, intersection, cityscape, outdoor, building, tokyo, shibuya crossing, japan, street, asia, signboard, advertisement, shibuya, shibuya, shibuya, shibuya, intersection, intersection, tokyo, tokyo, tokyo, tokyo, tokyo, shibuya crossing, shibuya crossing, shibuya crossing"
+  },
+  {
+   "file": "s23-2.jpg",
+   "spot": "渋谷スクランブル交差点",
+   "order": 1,
+   "pixabayId": 4259948,
+   "url": "https://pixabay.com/get/g6f1175635f9d69ad6005efb9af5e35e0d9e7abda38fb2b3e9f59114e347f233f55462e0b5cf69f20c90372782ea033c691174f8465aef59e6758c44180c81de9_1280.jpg",
+   "page": "https://pixabay.com/photos/people-crowd-street-crossing-japan-4259948/",
+   "tags": "people, crowd, street, crossing, japan, tokyo, night, lights, crowd, crowd, crowd, japan, japan, tokyo, tokyo, tokyo, tokyo, tokyo"
+  },
+  {
+   "file": "s24-1.jpg",
+   "spot": "渋谷 奥の立ち食い蕎麦",
+   "order": 0,
+   "pixabayId": 7184637,
+   "url": "https://pixabay.com/get/g2f420589e01014ea70f3348e79bf6c78b5f628cb3cd1daf58d4ba39630a5247f473eaff2d69c82bb5e309e2a8f208736b18f34c51f8cab8724e5fe1842ada75d_1280.jpg",
+   "page": "https://pixabay.com/photos/japanese-meal-japanese-food-7184637/",
+   "tags": "japanese meal, japanese food, traditional, cooking, restaurant, soba, japanese buckwheat noodles, handmade soba, delicious, healthy, eat, meal, mori soba, zaru, japan contest"
+  },
+  {
+   "file": "s24-2.jpg",
+   "spot": "渋谷 奥の立ち食い蕎麦",
+   "order": 1,
+   "pixabayId": 2723846,
+   "url": "https://pixabay.com/get/g1eca7d9ef8c4f8906a6d195a7160486afab03c6d80dc9d90d584ab8fd3cf5ffb4da8847cb062d9bf66ec87d085fe2ee110df055be9eb61c6d799f861af8d1c93_1280.jpg",
+   "page": "https://pixabay.com/photos/ouchi-juku-soba-buckwheat-2723846/",
+   "tags": "ouchi juku, soba, buckwheat, takato soba, takato buckwheat, onions, leek, green onion, onion soba noodles, leek soba noodles, scallion soba noodles, fukushima, 下郷町, japanese white radish, grated daikon radish, seaweed, of, notes"
+  },
+  {
+   "file": "s25-1.jpg",
+   "spot": "明治神宮",
+   "order": 0,
+   "pixabayId": 9615712,
+   "url": "https://pixabay.com/get/gd4e70dc9d282535040c3ecbf3e3aea65c8595b031f582403e92c6545dc9778848b2e6f7551b228376cb315c0f9ccca8e1be9c43124eef8bf13d4ea43052fea17_1280.jpg",
+   "page": "https://pixabay.com/photos/meiji-shrine-tokyo-shinto-shrine-9615712/",
+   "tags": "meiji shrine, tokyo, shinto shrine, meiji, temple, architecture, japanese, traditional, culture, religion, japan"
+  },
+  {
+   "file": "s26-1.jpg",
+   "spot": "代々木公園の日曜マーケット",
+   "order": 0,
+   "pixabayId": 338248,
+   "url": "https://pixabay.com/get/g230bbc99d471950b04299e4566fec44fb4db697c78c7d55f27cae7e126e2c983b43cd3e938dcc96ad55dfc413ea1186f2f23d13ebc7e51d1e97c902b77e29161_1280.jpg",
+   "page": "https://pixabay.com/photos/junk-trinkets-flea-market-were-used-338248/",
+   "tags": "junk, trinkets, flea market, were used, second hand, used, junk, junk, flea market, flea market, flea market, flea market, second hand, second hand, second hand, second hand, second hand"
+  },
+  {
+   "file": "s27-1.jpg",
+   "spot": "下北沢の古着屋通り",
+   "order": 0,
+   "pixabayId": 3739798,
+   "url": "https://pixabay.com/get/ge409558e586d7d43bd471e9261de1fdc2d48e0e3c588c9de929dc8f38d02d3ed5781bba96e8bf0c48d0a3570cd9a5f548408fc03e625a5f7a805574630b94045_1280.jpg",
+   "page": "https://pixabay.com/photos/clothing-thrift-store-shopping-3739798/",
+   "tags": "clothing, thrift store, shopping, garments, hangers, clothes, gray shopping, gray clothes, gray shop, thrift store, thrift store, thrift store, thrift store, thrift store"
+  },
+  {
+   "file": "s27-2.jpg",
+   "spot": "下北沢の古着屋通り",
+   "order": 1,
+   "pixabayId": 5002452,
+   "url": "https://pixabay.com/get/g0f0dd604f96477b92eb6b6f5f9d9217a0df1278d6b00673e3aab0c716ab7eeb92a84479dcde628dfe9ace9ff9e7b90bd1b618c435f453932c0cb49afcc0f69ab_1280.jpg",
+   "page": "https://pixabay.com/photos/flea-market-shoreditch-london-uk-5002452/",
+   "tags": "flea market, shoreditch, london, uk, brick lane, underground, closed, indoors, england, clothing, vintage, shopping, goods, commerce, shirt, tshirt, apparel, urban, winter, 2020, hulki okan tabak, flea market, tshirt, tshirt, tshirt, apparel, apparel, apparel, apparel, apparel"
+  },
+  {
+   "file": "s28-1.jpg",
+   "spot": "下北沢 カレーの路地",
+   "order": 0,
+   "pixabayId": 244291,
+   "url": "https://pixabay.com/get/gadef6affbb139caa95a9e5ee3b79a9e860e61e5b633703510f817afd468f57f4481789a01d8537792a4d4d3aa605ea2cefa728c6ab174ea03b6dda69d4ee58bb_1280.jpg",
+   "page": "https://pixabay.com/photos/rice-beef-wafu-curry-food-meal-244291/",
+   "tags": "rice, beef, wafu curry, food, meal, meat, dinner, cuisine, plate, lunch, dish, asian, japanese, brown meat, brown rice, brown dinner"
+  },
+  {
+   "file": "s28-2.jpg",
+   "spot": "下北沢 カレーの路地",
+   "order": 1,
+   "pixabayId": 7249247,
+   "url": "https://pixabay.com/get/gaad369925c8b1df3b60fdda22b04d9a2ac5863df89e699ee2f1569ac25727daaf3f27510324b28c8f208ad25f62e3ffaaf4eeb6282180849d1d70caaedf40a3e_1280.jpg",
+   "page": "https://pixabay.com/photos/curry-food-dish-meal-cuisine-7249247/",
+   "tags": "curry, food, dish, meal, cuisine, delicious, tasty, dinner, lunch, vegetables, meat, asian, curry, curry, curry, curry, curry, food, dinner"
+  },
+  {
+   "file": "s29-1.jpg",
+   "spot": "吉祥寺 井の頭公園",
+   "order": 0,
+   "pixabayId": 8369207,
+   "url": "https://pixabay.com/get/g7e827fe09bb5c627ae0efc8809441b2754d3e1801259804658cfaa47e9171a12fb9b050123c2e2689bd1d11a1eced02dca18f5efc88f6437928876a59b6d126b_1280.jpg",
+   "page": "https://pixabay.com/photos/boat-people-young-people-the-water-8369207/",
+   "tags": "boat, people, young people, the water, nature, lake, park, the autumn, rowing, relaxation, landscape, sports, willow"
+  },
+  {
+   "file": "s30-1.jpg",
+   "spot": "吉祥寺ハモニカ横丁",
+   "order": 0,
+   "pixabayId": 9349788,
+   "url": "https://pixabay.com/get/gf2fb548235c37ff63edb9d07fbe1016c9a42618354194a746bfd9b5cf3efd5fb64e03286312c09b5f5456db9a44e3251cccaefab47fc9404c162852b16d01357_1280.jpg",
+   "page": "https://pixabay.com/photos/japan-alley-lanterns-nature-kyoto-9349788/",
+   "tags": "japan, alley, lanterns, nature, kyoto, street, city, travel, buildings, architecture, osaka, landscape, japanese"
+  },
+  {
+   "file": "s31-1.jpg",
+   "spot": "三鷹の森ジブリ美術館",
+   "order": 0,
+   "pixabayId": 6919896,
+   "url": "https://pixabay.com/get/gb6521d513c7bfa806265f12c33fab4666141ad3eb3c0d126ca1375f5bd6066663c4b9215828835729f13405e191ca88c42597cbce89d68db9bf880ca8b72f5f1_1280.jpg",
+   "page": "https://pixabay.com/photos/bench-facade-garden-ivy-6919896/",
+   "tags": "bench, facade, garden, ivy, architecture, nature, building, front yard, house"
+  },
+  {
+   "file": "s32-1.jpg",
+   "spot": "新宿御苑",
+   "order": 0,
+   "pixabayId": 1620240,
+   "url": "https://pixabay.com/get/g3d21a1320761c46cb9a4909be175f95e7211aaa9681471a21f70823e04837aa94f3fa3157ee4415aaaa05bbcf9a817914c5a21c6b4b7a133a8e5108b8bca91cd_1280.jpg",
+   "page": "https://pixabay.com/photos/sakura-spring-tokyo-cherry-blossom-1620240/",
+   "tags": "sakura, spring, tokyo, flower wallpaper, cherry, blossom, flower, beautiful flowers, garden, green, flower background, shinjuku gyoen, colorful, pink, natural, park, nature, tree"
+  },
+  {
+   "file": "s33-1.jpg",
+   "spot": "新宿 思い出横丁",
+   "order": 0,
+   "pixabayId": 4807328,
+   "url": "https://pixabay.com/get/g39608ee1d57f51633ba1c651ee7310aa119296691c6feee4a2187e4cb1bc46fe73a9a76fcb9ead6017bc3ef08786c88218ff5b2f770b8347e419ea1bebaddfd5_1280.jpg",
+   "page": "https://pixabay.com/photos/street-kiosk-store-woman-adult-4807328/",
+   "tags": "street, kiosk, store, woman, adult, booth, shinjuku, night, japan, people, old, city, travel, culture, classic, traditional, store, store, store, japan, japan, japan, japan, japan"
+  },
+  {
+   "file": "s33-2.jpg",
+   "spot": "新宿 思い出横丁",
+   "order": 1,
+   "pixabayId": 4807327,
+   "url": "https://pixabay.com/get/ga48388afc72d6a9d792ba907eb521b73635021d24ff24dd922a09334449a77dbc82219e7481d1ac51ca18c74b249580be7f495f1a3e3b07938ce67f1410287bd_1280.jpg",
+   "page": "https://pixabay.com/photos/street-people-night-shinjuku-life-4807327/",
+   "tags": "street, people, night, shinjuku, life, crowd, tokyo, road, city, building, neon, kabukicho, crossing, architecture, kiosk, booth, shop, crowd, tokyo, tokyo, tokyo, tokyo, tokyo, neon"
+  },
+  {
+   "file": "s34-1.jpg",
+   "spot": "都庁展望室",
+   "order": 0,
+   "pixabayId": 9826320,
+   "url": "https://pixabay.com/get/g6655f6265c31ef90bf89132b86b339cf4f320f1f407951da155c723f1e2f784f5226eb69529b1ebf4fac442926851759f1563c4efe05fa878e321cd20dc578bb_1280.jpg",
+   "page": "https://pixabay.com/photos/japan-urban-architecture-building-9826320/",
+   "tags": "japan, urban, architecture, building, tokyo, city, skyline, cityscapes, shibuya"
+  },
+  {
+   "file": "s34-2.jpg",
+   "spot": "都庁展望室",
+   "order": 1,
+   "pixabayId": 8650941,
+   "url": "https://pixabay.com/get/g5059d20a08548f72ca836f17fba5dff53fa3583958ad72d46969f9bae419ccd5ba263f30b9e6e22a890d33e85b493984802eaf3fbc6b40350416fdab48421f0e_1280.jpg",
+   "page": "https://pixabay.com/photos/tokyo-japan-buildings-city-8650941/",
+   "tags": "tokyo, japan, buildings, city, skyscrapers, urban, night, metropolis, lights"
+  },
+  {
+   "file": "s35-1.jpg",
+   "spot": "神楽坂の石畳の路地",
+   "order": 0,
+   "pixabayId": 409993,
+   "url": "https://pixabay.com/get/gbf6c58ebbe43bee50b1182668d8226ecac3390531cf30205f99451a20964253613d43c5f15409ec3a5b4cc02194e4e12c8862d8b960f5d7e5c2156e34b479583_1280.jpg",
+   "page": "https://pixabay.com/photos/street-japan-city-asian-travel-409993/",
+   "tags": "street, japan, city, asian, travel, scene, night, light, road, kyoto, town, life, old, day, evening, canon, kyoto, kyoto, kyoto, kyoto, kyoto"
+  },
+  {
+   "file": "s36-1.jpg",
+   "spot": "赤城神社カフェ",
+   "order": 0,
+   "pixabayId": 5568727,
+   "url": "https://pixabay.com/get/g40b048ab796cafbee3f21079a1af3d9a8fd9c0dfcc5d05e4d3d21aa61c8cc66526e2b75d5182cab4e2f36556154b8b6e9bead84b116662146ce91c1d4f27216e_1280.jpg",
+   "page": "https://pixabay.com/photos/japanese-lantern-shinto-5568727/",
+   "tags": "japanese lantern, shinto, japanese shrine, lantern, lamp, lampion, shrine, light, temple, buddhism, religion, kyoto, japan, asia, temple, kyoto, japan, japan, japan, japan, japan"
+  },
+  {
+   "file": "s37-1.jpg",
+   "spot": "六本木ヒルズ展望台",
+   "order": 0,
+   "pixabayId": 3440762,
+   "url": "https://pixabay.com/get/ga6730711183810fd7eebdf79b8a89d0a26995ebcff3af3771acc278f38ce76f03fffd7c243b3ddc05294e63bb0af01dec02a28111af71d1872055d21d454c1b5_1280.jpg",
+   "page": "https://pixabay.com/photos/night-city-city-at-night-urban-3440762/",
+   "tags": "night, city, city at night, urban, skyline, cityscape, architecture, building, travel, light, skyscraper, evening, landmark, sky, street, metropolis, tower, modern, tourism, waterfront, japan, tokyo, blue, blue sky, night sky, nature, panorama"
+  },
+  {
+   "file": "s38-1.jpg",
+   "spot": "麻布十番の温泉銭湯",
+   "order": 0,
+   "pixabayId": 3148,
+   "url": "https://pixabay.com/get/gd52a9ec9338cf7451248ae67d3606e663e3ff93ebcbe2ca1324676c468934aa41663524dc286e858a6b3113950129256_1280.jpg",
+   "page": "https://pixabay.com/photos/bathtub-bath-tub-bathroom-3148/",
+   "tags": "bathtub, bath, tub, bathroom, apartment, reside, rooms, space, bathtub, bathtub, bathtub, bathtub, bathtub, bathroom"
+  },
+  {
+   "file": "s39-1.jpg",
+   "spot": "東京タワー",
+   "order": 0,
+   "pixabayId": 2138168,
+   "url": "https://pixabay.com/get/g81907d9cdaffe60b554ffd2ed3f367977071a41ec366698f2f23a0fc0273d7bc5fd5dba4800f837fda492d7d37bf7813c5f4fa678c2c29de9bfa8ecdb314d02b_1280.jpg",
+   "page": "https://pixabay.com/photos/tokyo-japan-tokyo-tower-night-2138168/",
+   "tags": "tokyo, japan, tokyo tower, night, night city, the tower, skyscrapers, modern city, the city, architecture, tokyo, tokyo, tokyo, tokyo, tokyo, tokyo tower"
+  },
+  {
+   "file": "s39-2.jpg",
+   "spot": "東京タワー",
+   "order": 1,
+   "pixabayId": 2193354,
+   "url": "https://pixabay.com/get/g811d069a8e796493561fdb9c308830fadecd4b61622d03ef80c9f3e61ea89f40ac9538628bc26ff1246e238133d961fbb77bcded22ded117d90706e9be45c0dd_1280.jpg",
+   "page": "https://pixabay.com/photos/tokyo-japan-city-urban-panorama-2193354/",
+   "tags": "tokyo, japan, city, urban, panorama, night, evening, lights, downtown, cityscape, buildings, skyscrapers, architecture, modern, tower, hdr, tokyo, tokyo, tokyo, tokyo, tokyo"
+  },
+  {
+   "file": "s40-1.jpg",
+   "spot": "芝公園から見る東京タワー",
+   "order": 0,
+   "pixabayId": 881355,
+   "url": "https://pixabay.com/get/g8d87ce08a0bc4fa5cefe4d8432a25842f38044ab11d6a03f1eeb363ce3b466cf6268deb6c6311525713cb09f5a457a7fd53dcae396192740501a97e6283d4326_1280.jpg",
+   "page": "https://pixabay.com/photos/tokyo-tower-tokyo-japan-city-881355/",
+   "tags": "tokyo tower, tokyo, japan, city, cityscape, blue city, tokyo tower, tokyo tower, tokyo tower, tokyo, tokyo, tokyo, tokyo, tokyo"
+  },
+  {
+   "file": "s41-1.jpg",
+   "spot": "品川 水族館",
+   "order": 0,
+   "pixabayId": 3814142,
+   "url": "https://pixabay.com/get/gb7f96d779afde84035dfb7c16db5fd552e840ef125e4bde11106a080cb85d9460c52d268c5bc69f7561bc913054827eacf6a41c772e6229ce4c7ee7d39cef43b_1280.jpg",
+   "page": "https://pixabay.com/photos/jellyfish-aquarium-blue-3814142/",
+   "tags": "jellyfish, aquarium, blue, jellyfish, jellyfish, jellyfish, jellyfish, jellyfish, aquarium"
+  },
+  {
+   "file": "s41-2.jpg",
+   "spot": "品川 水族館",
+   "order": 1,
+   "pixabayId": 7704804,
+   "url": "https://pixabay.com/get/g5f9693441bec718716e9ecf27fe8e5ac6341dff316cbfcf6fd3a9f7fd72ef1f5567295765db6611f0244a84e6c881f0f30879a25162345c8f8bc760eecf1c0db_1280.jpg",
+   "page": "https://pixabay.com/photos/jellyfish-sea-water-aquarium-7704804/",
+   "tags": "jellyfish, sea, water, aquarium, nature, marine, species"
+  },
+  {
+   "file": "s42-1.jpg",
+   "spot": "蔵前のノート屋",
+   "order": 0,
+   "pixabayId": 2325627,
+   "url": "https://pixabay.com/get/g01d6362d61d5e218d438d43e86a1540a0fdf24b1595c53b3c6bd0aabb5eeebd0fc3a31927ddf82cd033592a4b8dc5617d7a45041cf8388084ef9bd8c3dca7a42_1280.jpg",
+   "page": "https://pixabay.com/photos/desk-office-space-workspace-tidy-2325627/",
+   "tags": "desk, office space, workspace, tidy, clean, copy space, flat lay, desk, desk, desk, desk, desk"
+  },
+  {
+   "file": "s42-2.jpg",
+   "spot": "蔵前のノート屋",
+   "order": 1,
+   "pixabayId": 1276784,
+   "url": "https://pixabay.com/get/g4eeb7d53df271e3fd7b964a1d5d3a5e9b33c938fdbdeb31692de86d99248b4e14a8cbc368d6b39895a364ebe8166c77b4647009a1d7ad688630b1cf0158b8dda_1280.jpg",
+   "page": "https://pixabay.com/photos/coffee-notebook-wooden-orange-work-1276784/",
+   "tags": "coffee, notebook, wooden, orange, work, table, creative, notepad, freelancer, cup of coffee, workplace, desk, workspace, brown coffee, brown laptop, brown work, brown table, brown desk, brown creative, brown cup, coffee, work, table, table, desk, desk, desk, desk, desk"
+  },
+  {
+   "file": "s43-1.jpg",
+   "spot": "蔵前 川沿いのホステル",
+   "order": 0,
+   "pixabayId": 182965,
+   "url": "https://pixabay.com/get/g3ff6e6d8f84d64aeff180d87513bb81e928984a9fed9e22de2fff58c124cc3babddeccf11a4236fe4cdeadbc763100b79486461f09bf5c2d619c3cc1adaf55a9_1280.jpg",
+   "page": "https://pixabay.com/photos/beds-youth-hostel-bunk-beds-sleep-182965/",
+   "tags": "beds, youth hostel, bunk beds, sleep, accommodation, bedroom, youth hostel, youth hostel, youth hostel, youth hostel, bunk beds, bunk beds, bunk beds, bunk beds, bunk beds, accommodation, accommodation, accommodation"
+  },
+  {
+   "file": "s43-2.jpg",
+   "spot": "蔵前 川沿いのホステル",
+   "order": 1,
+   "pixabayId": 1872196,
+   "url": "https://pixabay.com/get/g54c8ce68c43cd2b4ac6a515170fc84476fb2356bfce879f2a5c935a659ce791d8066a4757771cdcac4df14787e8f33a8d4f901f0b1d46a6065679baecc970339_1280.jpg",
+   "page": "https://pixabay.com/photos/bedroom-cupboard-bed-room-sofa-1872196/",
+   "tags": "bedroom, cupboard, bed, room, sofa, window, living room, modern, bedroom, bedroom, bedroom, bedroom, room, room, room, room, room, window, living room, living room, living room, living room"
+  },
+  {
+   "file": "s44-1.jpg",
+   "spot": "浅草のゲストハウス",
+   "order": 0,
+   "pixabayId": 1750132,
+   "url": "https://pixabay.com/get/g136139cd6fec965a2949a522d3b420a3fd61c4ffc578b75deec3d89800f1755181970780e352fd5eb10e8a4a82e9e518b193a78917b62a87eb4a5f5ce83ccb0a_1280.jpg",
+   "page": "https://pixabay.com/photos/japan-japanese-style-room-house-1750132/",
+   "tags": "japan, japanese-style room, house, garden, obstacle, tatami, nature, japan garden, pond, k"
+  },
+  {
+   "file": "s44-2.jpg",
+   "spot": "浅草のゲストハウス",
+   "order": 1,
+   "pixabayId": 1750129,
+   "url": "https://pixabay.com/get/gb161d298967ce509228073c1d2bc8f64ce2b31f99c9184b68ebd47ac4373b206de25ed4d7e41cd29d518b31f7bd19c5a415b85f2cd703c91c15f0e68555ba65d_1280.jpg",
+   "page": "https://pixabay.com/photos/japan-japanese-style-room-houses-1750129/",
+   "tags": "japan, japanese-style room, houses, garden, disabilities, tatami mats, japan garden, pond, k, zoom background, brown background, brown house, brown garden, brown room, nature, brown zoom, brown gardening"
+  },
+  {
+   "file": "s45-1.jpg",
+   "spot": "羽田空港 展望デッキ",
+   "order": 0,
+   "pixabayId": 4454338,
+   "url": "https://pixabay.com/get/g8e5d63b139873f7cf1a690b407947adda0ccba99c6d51275fe8f69f9c8a2b44a1e6a6e9e32576edaf4427401d54654e714ea15a4af8bca18015947ac131f6e0e_1280.jpg",
+   "page": "https://pixabay.com/photos/airbus-airplane-jet-flight-airport-4454338/",
+   "tags": "airbus, airplane, jet, flight, airport, airline, transport, travel, airplane, airplane, airplane, airplane, airplane, airport, airport"
+  },
+  {
+   "file": "s45-2.jpg",
+   "spot": "羽田空港 展望デッキ",
+   "order": 1,
+   "pixabayId": 1108580,
+   "url": "https://pixabay.com/get/geaf51f8665368bb8bbc0ab8273b02886976961159c0e53d785f1aa7694f34d765129027b4f725f2c4f791e8e310ddb8438d3e4bf67318abcae8abd2c34c4af48_1280.jpg",
+   "page": "https://pixabay.com/photos/plane-jet-airport-amsterdam-1108580/",
+   "tags": "plane, jet, airport, amsterdam, terminal, observation deck, terrace, aviation, travel, freight, tourism, machine, airliner, turbine, aviation safety, passenger aircraft, schiphol, runway, tarmac, flying"
+  },
+  {
+   "file": "s46-1.jpg",
+   "spot": "高尾山 山頂",
+   "order": 0,
+   "pixabayId": 4751462,
+   "url": "https://pixabay.com/get/g6fffe347b1a415833d7d9c53a50e991083e501959ff2d33e0c81c8424217a834776ab0936a547d675d4dc0585ce69c6455a004fbbb8b6ce6a8fa74ac9ebdadb6_1280.jpg",
+   "page": "https://pixabay.com/photos/mt-fuji-japan-mt-takao-mount-takao-4751462/",
+   "tags": "mt fuji, japan, mt takao, mount takao, mount fuji, hike, sunset, landscape, mountains, twilight, nature, adventure, mountain, tourism, japanese, tokyo, travel, mount takao, mount takao, mount takao, mount takao, mount takao, mount fuji"
+  },
+  {
+   "file": "s46-2.jpg",
+   "spot": "高尾山 山頂",
+   "order": 1,
+   "pixabayId": 5465422,
+   "url": "https://pixabay.com/get/g1998f0b6dfe14322cf8ca4169ab717619cd45517d88886b2741096985982d3379eb6d379a79c5575930c808010482ecdb118a4e43ad5631b07c39875d5851873_1280.jpg",
+   "page": "https://pixabay.com/photos/shrine-shinto-mount-takao-statue-5465422/",
+   "tags": "shrine, shinto, mount takao, statue, sculpture, architecture, antique, monument, art, religion, stone, travel, building, old, history, temple, city, marble, tokyo, japan, canto, honshu, edo, asia, shinto, shinto, shinto, shinto, shinto, mount takao, tokyo, edo, edo"
+  },
+  {
+   "file": "s47-1.jpg",
+   "spot": "高尾山口の団子屋",
+   "order": 0,
+   "pixabayId": 84005,
+   "url": "https://pixabay.com/get/g9286cfcb94c271a64883f12dea17ae312c265c5c914160ec7ee1462c82d588f14824fe806472bb17773bfff7d38429ff_1280.jpg",
+   "page": "https://pixabay.com/photos/mitrashi-dango-food-glazed-plate-84005/",
+   "tags": "mitrashi dango, food, glazed, plate, meal, presentation, close-up, macro"
+  },
+  {
+   "file": "s47-2.jpg",
+   "spot": "高尾山口の団子屋",
+   "order": 1,
+   "pixabayId": 66624,
+   "url": "https://pixabay.com/get/gd9cdc8a5aa854615cd680d9610e7b8ff5bcebb53967ac1ec7d870240124549178403b8c0d628f1ff4b9dd3785cbf5870_1280.jpg",
+   "page": "https://pixabay.com/photos/dumpling-japan-k-tea-66624/",
+   "tags": "dumpling, japan, k, tea"
+  },
+  {
+   "file": "s48-1.jpg",
+   "spot": "奥多摩 川遊びスポット",
+   "order": 0,
+   "pixabayId": 1167456,
+   "url": "https://pixabay.com/get/g5b96fea0966438c355d2b1b8eda17d9e65f21b8609a053d86e6d6b4bb4c13cb6b9dcb15c136a937a971bcf1223df4fd898ecf8f8e8c7a199d305e8e0a5a7c192_1280.jpg",
+   "page": "https://pixabay.com/photos/river-mountain-landscape-fall-1167456/",
+   "tags": "river, mountain, landscape, fall, forest, clear stream, japan, green, natural, shadow, waterfall, flow, water, fresh green, wood, plant, nature"
+  },
+  {
+   "file": "s48-2.jpg",
+   "spot": "奥多摩 川遊びスポット",
+   "order": 1,
+   "pixabayId": 356962,
+   "url": "https://pixabay.com/get/ga37ee9f1c1ead50a4bc9b2936ccef3ce4da4058bd482881c306dce6d6a5d68fdf5c79b2442df3bc18fa5a3e19297f5068d34a6c28aec3b90767fdca98757e014_1280.jpg",
+   "page": "https://pixabay.com/photos/kamikochi-azusa-river-oku-hotaka-356962/",
+   "tags": "kamikochi, azusa river, oku hotaka, japan, kamikochi, kamikochi, kamikochi, kamikochi, kamikochi"
+  },
+  {
+   "file": "s49-1.jpg",
+   "spot": "横浜 赤レンガ倉庫",
+   "order": 0,
+   "pixabayId": 3090014,
+   "url": "https://pixabay.com/get/g02fa14058224a970706801ced7768f32dd75476208c7e3d40d824924b016b9be06fc3cbac6a8dad02c1bd41ba56a9397b238b9609c68648617ab2e951b1dc17f_1280.jpg",
+   "page": "https://pixabay.com/photos/architecture-outdoors-yokohama-3090014/",
+   "tags": "architecture, outdoors, yokohama, horizontal, sky, red brick warehouse, nature, red brick, winter, winter sky"
+  },
+  {
+   "file": "s49-2.jpg",
+   "spot": "横浜 赤レンガ倉庫",
+   "order": 1,
+   "pixabayId": 1766365,
+   "url": "https://pixabay.com/get/g51ad9cf56d1ff33f91af0636d63ed0f40ba3d5b7601ef7598a90f85989c48773906acae246b783bc6d5aab0150697fa65f7fdefd43121b14b11250284e4675ad_1280.jpg",
+   "page": "https://pixabay.com/photos/building-bill-brick-architecture-1766365/",
+   "tags": "building, bill, brick, architecture, red brick warehouse, yokohama, yokohama, yokohama, yokohama, yokohama, yokohama"
+  },
+  {
+   "file": "s49-3.jpg",
+   "spot": "横浜 赤レンガ倉庫",
+   "order": 2,
+   "pixabayId": 1408790,
+   "url": "https://pixabay.com/get/g0ec5d3be8ad6bf05002fc74668309d519e294bef96eb9f64b7804860ca49415ee8ceb036be82a955277cdda7bace6a6b7b84c2ba31c37cacb4c5525d330a6a1a_1280.jpg",
+   "page": "https://pixabay.com/photos/yokohama-minatomirai-landmark-tower-1408790/",
+   "tags": "yokohama, minatomirai, landmark tower, red brick warehouse, port, tanzawa, tanzawa mountains, sea, yokohama, yokohama, yokohama, yokohama, yokohama"
+  },
+  {
+   "file": "s50-1.jpg",
+   "spot": "鎌倉 海が見える坂",
+   "order": 0,
+   "pixabayId": 1790021,
+   "url": "https://pixabay.com/get/gab6a1345879200ce441671b33b3d383329df0337fba906390cf479bd8a2b1610306b4a4225f607927a2acf57c63378a506acca9eeb9d49862ddcf918c7cbad2d_1280.jpg",
+   "page": "https://pixabay.com/photos/engakuji-temple-kamakura-japan-1790021/",
+   "tags": "engakuji, temple, kamakura, japan, roof, temple, temple, kamakura, kamakura, kamakura, kamakura, japan, japan, japan, japan, japan"
+  },
+  {
+   "file": "s50-2.jpg",
+   "spot": "鎌倉 海が見える坂",
+   "order": 1,
+   "pixabayId": 184180,
+   "url": "https://pixabay.com/get/g6078737b12f887b6bcb06718725ca0c2bea001d3064d756539a966ac77e11bf737e5fa2f61ca8219e6767ce52062bfaad33a32d1b54dd3bcdb1b2c1c82870cb0_1280.jpg",
+   "page": "https://pixabay.com/photos/summer-of-shonan-yuigahama-gao-hama-184180/",
+   "tags": "summer of shonan, yuigahama gao hama, sailing"
+  }
+ ]
 }
