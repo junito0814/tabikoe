@@ -6,6 +6,7 @@ import { GoogleMap, type GoogleMapHandle } from "@/components/map/GoogleMap";
 import { boundsOfPoints, rectCorners } from "@/lib/map/fit-bounds";
 import { appendBackHref } from "@/lib/search/list-state";
 import type { SpotCardData } from "@/lib/spots/search-spots";
+import { scrollToCard } from "@/components/map/card-strip";
 
 /**
  * #681: 検索結果の「地図」タブ
@@ -52,9 +53,20 @@ export function SearchMapView({
     mapRef.current?.fitBounds(rectCorners(rect));
   }, [spots]);
 
+  /*
+   * #876（2026-10-07）: ピンを押したとき、**そのカードまで送る**。
+   *
+   * 【初心者向け】この画面は探すモードと違って**吹き出しを出しません**（決定事項 71。
+   * 吹き出しの代わりが下のカード）。ところがピンを押しても地図が寄るだけで、
+   * **下のカードは画面の外のまま**でした。そのため「押しても何も起きない」ように見え、
+   * 実機確認で「探すモードと動きが違う」と指摘されました。
+   * カードまで送れば、押したことと出てきたものが繋がります。
+   */
   const select = (spot: SpotCardData) => {
     setSelectedId(spot.id);
     mapRef.current?.panTo({ lat: spot.lat, lng: spot.lng }, SELECTED_ZOOM);
+    const index = spots.findIndex((item) => item.id === spot.id);
+    if (index >= 0) scrollToCard(stripRef.current, index);
   };
 
   /** カードを右端まで送ったら次を読む（一覧の無限スクロールと同じ考え方） */
@@ -109,8 +121,9 @@ export function SearchMapView({
             key={spot.id}
             data-map-card={spot.id}
             data-selected={spot.id === selectedId ? "true" : undefined}
-            className={`w-[min(260px,78vw)] shrink-0 snap-start rounded-[12px] border bg-surface p-3 shadow-card ${
-              spot.id === selectedId ? "border-accent" : "border-line"
+            /* #876: 選んだカードがひと目で分かるよう、枠を太くする（色だけに頼らない） */
+            className={`w-[min(260px,78vw)] shrink-0 snap-start rounded-[12px] bg-surface p-3 shadow-card ${
+              spot.id === selectedId ? "border-2 border-accent" : "border border-line"
             }`}
           >
             <button type="button" onClick={() => select(spot)} className="block w-full text-left">

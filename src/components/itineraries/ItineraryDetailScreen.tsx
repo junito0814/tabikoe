@@ -306,6 +306,16 @@ export function ItineraryDetailScreen({
               )}
               {isOwner && <MoreMenuItem label="招待" onClick={() => setDialog("invite")} />}
               <MoreMenuItem label="メンバー" onClick={() => setDialog("members")} />
+              {/*
+                * #872（2026-10-07）: 「最新にする」。
+                *
+                * 【初心者向け】ホーム画面から単独のアプリとして開くと**ブラウザの再読み込みがありません**。
+                * 一覧の画面には「引っ張って更新」を付けてありますが（要件 4.5.11 の場面 6）、
+                * **この画面には付けられません** ── 下に引く動きが既に「シートを閉じて地図を出す」の
+                * 意味を持っているためです（要求定義書 改訂 20）。同じ動きに 2 つの意味は持たせられません。
+                * そこで動きがぶつからない「⋯」の中に置きます。メンバーが変えた内容を取り直せます。
+                */}
+              <MoreMenuItem label="最新にする" onClick={() => router.refresh()} />
               {isOwner && <MoreMenuItem label="しおりを削除" danger onClick={() => void deleteItinerary()} />}
             </MoreMenu>
           </div>

@@ -90,6 +90,30 @@ describe("SearchMapView（#681）", () => {
     expect(document.querySelector("[data-map-card='a']")).toHaveAttribute("data-selected", "true");
   });
 
+  /*
+   * #876（2026-10-07）: ピンを押したら、そのカードまで送る。
+   *
+   * 【初心者向け】この画面は吹き出しを出さず、下のカードがその代わり（決定事項 71）。
+   * ところがカードが画面の外のままだと、押しても何も起きていないように見えていた。
+   */
+  it("ピンを押すと、そのカードまで送る（#876）", () => {
+    render(<SearchMapView spots={spots} backHref="/search" hasMore={false} isLoading={false} onLoadMore={vi.fn()} />);
+    // jsdom には scrollIntoView が無いので、呼ばれたことだけ見る
+    const card = document.querySelector("[data-map-card='b']") as HTMLElement;
+    const scrollIntoView = vi.fn();
+    card.scrollIntoView = scrollIntoView;
+    fireEvent.click(screen.getByRole("button", { name: "ピン:b" }));
+    expect(scrollIntoView).toHaveBeenCalledWith({ block: "nearest", inline: "center" });
+  });
+
+  it("選んだカードは枠が太くなる（色だけに頼らない）", () => {
+    render(<SearchMapView spots={spots} backHref="/search" hasMore={false} isLoading={false} onLoadMore={vi.fn()} />);
+    fireEvent.click(screen.getByRole("button", { name: "ピン:b" }));
+    const card = document.querySelector("[data-map-card='b']") as HTMLElement;
+    expect(card.className).toContain("border-2");
+    expect(document.querySelector("[data-map-card='a']")!.className).not.toContain("border-2");
+  });
+
   it("カードから投稿一覧へ行ける（戻り先つき）", () => {
     render(<SearchMapView spots={spots} backHref="/search?pref=東京都" hasMore={false} isLoading={false} onLoadMore={vi.fn()} />);
     expect(screen.getAllByRole("link", { name: "投稿を見る" })[0]).toHaveAttribute(
