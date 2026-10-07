@@ -22,13 +22,20 @@ export interface ProcessedImageUpload {
   resizedPath: string;
 }
 
+/**
+ * #860（2026-10-07）: 受け取るものを `File` から**中身そのもの**（Buffer）にも広げた。
+ *
+ * 【初心者向け】写真は **Vercel の関数を通せなくなりました**（4.5MB を超える本文は捨てられる）。
+ * いまはブラウザが Storage へ直接上げ、サーバーは**Storage から取ってきた中身**を検査します。
+ * 検査の中身（大きさ・形式・EXIF 除去・向き・縮小）は何も変えていません。
+ */
 export async function processAndUploadImage(
   admin: SupabaseClient,
   bucket: string,
   pathPrefix: string,
-  file: File
+  file: File | Buffer
 ): Promise<ProcessedImageUpload> {
-  const buffer = Buffer.from(await file.arrayBuffer());
+  const buffer = Buffer.isBuffer(file) ? file : Buffer.from(await file.arrayBuffer());
 
   if (buffer.byteLength > MAX_FILE_SIZE_BYTES) {
     throw new ImageValidationError("file_too_large");

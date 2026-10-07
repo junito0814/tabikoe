@@ -3,8 +3,8 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getAuthenticatedUser } from "@/lib/auth/get-authenticated-user";
 import { ImageValidationError, processAndUploadImage } from "@/lib/image/process-upload";
-import { isVideoFile, isVideoUploadDisabled, processAndUploadVideo, VideoValidationError } from "@/lib/video/process-video";
 import { POST_MEDIA_BUCKET } from "@/lib/posts/constants";
+import { isOwnTempPath } from "@/lib/posts/upload-slots";
 import { searchMediaPage } from "@/lib/posts/search-photos";
 import { parsePostSearchParams } from "@/lib/posts/search-posts";
 import { parseSpotSort } from "@/lib/spots/search-spots";
@@ -58,35 +58,51 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
 
-  const formData = await request.formData();
-  const files = formData.getAll("photos").filter((file): file is File => file instanceof File);
+  /*
+   * #860（2026-10-07）: ファイルの実体は**もうここを通りません**。
+   *
+   * 【初心者向け】Vercel は約 4.5MB を超えた本文を、関数に渡す前に捨てます（本番で実測）。
+   * そのため 4.5MB〜10MB の写真はここに届かず、投稿できませんでした。
+   * いまはブラウザが署名付き URL で Storage へ直接上げ、ここには**その置き場所だけ**が届きます。
+   * 検査（大きさ・形式・EXIF 除去・向き・縮小）は今までと同じものを、Storage から取った中身に行います。
+   */
+  const body = await request.json().catch(() => ({}));
+  const paths = Array.isArray(body?.paths) ? body.paths.filter((path: unknown): path is string => typeof path === "string") : [];
 
-  if (files.length === 0) {
+  if (paths.length === 0) {
     return NextResponse.json({ error: "photo_required" }, { status: 400 });
+  }
+  // 受け取ったパスを信じない。自分の tmp の下だけを受け付ける
+  if (paths.some((path: string) => !isOwnTempPath(path, user.id))) {
+    return NextResponse.json({ error: "invalid_path" }, { status: 400 });
   }
 
   const admin = createAdminClient();
   const uploaded: { storagePath: string }[] = [];
   const media: { mediaType: "photo" | "video"; storagePath: string; videoPath: string | null; durationSeconds: number | null }[] = [];
 
-  for (const [index, file] of files.entries()) {
+  /** 検査が終わったら必ず消す（落ちたものも残さない） */
+  const cleanUp = async () => {
+    await admin.storage.from(POST_MEDIA_BUCKET).remove(paths).catch(() => undefined);
+  };
+
+  for (const [index, path] of paths.entries()) {
     // 同一投稿内で衝突しないよう、ユーザーID配下にアップロードごとのIDで分ける
     const pathPrefix = `${user.id}/${crypto.randomUUID()}-${index}`;
 
     try {
-      if (isVideoFile(file)) {
-        if (isVideoUploadDisabled()) {
-          return NextResponse.json({ error: "video_upload_unavailable" }, { status: 503 });
-        }
-        const result = await processAndUploadVideo(admin, POST_MEDIA_BUCKET, pathPrefix, file);
-        media.push({ mediaType: "video", storagePath: result.thumbnailPath, videoPath: result.videoPath, durationSeconds: result.durationSeconds });
-      } else {
-        const result = await processAndUploadImage(admin, POST_MEDIA_BUCKET, pathPrefix, file);
-        uploaded.push({ storagePath: result.resizedPath });
-        media.push({ mediaType: "photo", storagePath: result.resizedPath, videoPath: null, durationSeconds: null });
+      const downloaded = await admin.storage.from(POST_MEDIA_BUCKET).download(path);
+      if (downloaded.error || !downloaded.data) {
+        await cleanUp();
+        return NextResponse.json({ error: "upload_not_found" }, { status: 400 });
       }
+      const buffer = Buffer.from(await downloaded.data.arrayBuffer());
+      const result = await processAndUploadImage(admin, POST_MEDIA_BUCKET, pathPrefix, buffer);
+      uploaded.push({ storagePath: result.resizedPath });
+      media.push({ mediaType: "photo", storagePath: result.resizedPath, videoPath: null, durationSeconds: null });
     } catch (error) {
-      if (error instanceof ImageValidationError || error instanceof VideoValidationError) {
+      await cleanUp();
+      if (error instanceof ImageValidationError) {
         return NextResponse.json({ error: error.message }, { status: 400 });
       }
       console.error("[media] upload failed", error);
@@ -94,5 +110,6 @@ export async function POST(request: Request) {
     }
   }
 
+  await cleanUp();
   return NextResponse.json({ photos: uploaded, media }, { status: 201 });
 }
