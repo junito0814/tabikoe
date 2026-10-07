@@ -107,3 +107,79 @@ describe("respondToInvitation", () => {
     expect(await respondToInvitation(done.client, { kind: "itinerary", invitationId: "inv-3", userId: "ai", action: "accept" })).toEqual({ ok: false, error: "not_pending" });
   });
 });
+
+/*
+ * #869（2026-10-07）: しおりの招待で「アルバムにも招待する」。
+ *
+ * 【初心者向け】しおりとアルバムは同じ旅行に紐づくのに、しおりに招待してもアルバムには
+ * 入らず、招待し直す二度手間になっていた（実機確認での指摘）。
+ * ただしアルバムに入ると**その人には非公開の投稿も見える**ので、送る側が決める形にしてある。
+ */
+describe("しおりの招待でアルバムにも入れる（#869）", () => {
+  const future = new Date(Date.now() + 86400000).toISOString();
+  const invitation = (inviteToAlbum: boolean | undefined) => ({
+    id: "inv-9",
+    token: "tok",
+    itinerary_id: "it-1",
+    invitee_user_id: "ai",
+    status: "pending",
+    expires_at: future,
+    revoked_at: null,
+    ...(inviteToAlbum === undefined ? {} : { invite_to_album: inviteToAlbum }),
+  });
+
+  it("送るときの選択を招待の行に覚える（既定は true）", async () => {
+    const on = fakeAdmin({ users: [{ id: "ai", is_deleted: false }], itinerary_members: [] });
+    await sendInAppInvitation(on.client, { kind: "itinerary", targetId: "it-1", inviterId: "me", inviteeId: "ai" });
+    expect(on.inserted[0].row).toMatchObject({ invite_to_album: true });
+
+    const off = fakeAdmin({ users: [{ id: "ai", is_deleted: false }], itinerary_members: [] });
+    await sendInAppInvitation(off.client, { kind: "itinerary", targetId: "it-1", inviterId: "me", inviteeId: "ai", inviteToAlbum: false });
+    expect(off.inserted[0].row).toMatchObject({ invite_to_album: false });
+  });
+
+  it("「参加する」で、しおりと同じ旅行のアルバムにも編集者として入る", async () => {
+    const { client, inserted } = fakeAdmin({
+      itinerary_invitations: [invitation(true)],
+      itineraries: [{ trip_id: "trip-1" }],
+      itinerary_members: [],
+      album_members: [],
+    });
+    const result = await respondToInvitation(client, { kind: "itinerary", invitationId: "inv-9", userId: "ai", action: "accept" });
+    expect(result).toMatchObject({ ok: true, action: "accept" });
+    expect(inserted).toContainEqual({ table: "album_members", row: { trip_id: "trip-1", user_id: "ai", role: "editor" } });
+  });
+
+  it("「アルバムにも招待する」を外して送った招待では、アルバムに入れない", async () => {
+    const { client, inserted } = fakeAdmin({
+      itinerary_invitations: [invitation(false)],
+      itineraries: [{ trip_id: "trip-1" }],
+      itinerary_members: [],
+      album_members: [],
+    });
+    await respondToInvitation(client, { kind: "itinerary", invitationId: "inv-9", userId: "ai", action: "accept" });
+    expect(inserted.some((row) => row.table === "album_members")).toBe(false);
+  });
+
+  it("既にアルバムのメンバーなら何もしない（権限を上げも下げもしない）", async () => {
+    const { client, inserted } = fakeAdmin({
+      itinerary_invitations: [invitation(true)],
+      itineraries: [{ trip_id: "trip-1" }],
+      itinerary_members: [],
+      album_members: [{ user_id: "ai" }],
+    });
+    await respondToInvitation(client, { kind: "itinerary", invitationId: "inv-9", userId: "ai", action: "accept" });
+    expect(inserted.some((row) => row.table === "album_members")).toBe(false);
+  });
+
+  it("列がまだ無い環境（undefined）でも、既定どおりアルバムに入れる", async () => {
+    const { client, inserted } = fakeAdmin({
+      itinerary_invitations: [invitation(undefined)],
+      itineraries: [{ trip_id: "trip-1" }],
+      itinerary_members: [],
+      album_members: [],
+    });
+    await respondToInvitation(client, { kind: "itinerary", invitationId: "inv-9", userId: "ai", action: "accept" });
+    expect(inserted.some((row) => row.table === "album_members")).toBe(true);
+  });
+});

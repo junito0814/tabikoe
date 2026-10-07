@@ -64,7 +64,18 @@ export type SendResult = { ok: true; invitationId: string } | { ok: false; error
 /** アプリ内招待を送る（行を作って宛先に通知）。role はアルバムだけ */
 export async function sendInAppInvitation(
   admin: SupabaseClient,
-  input: { kind: InvitationKind; targetId: string; inviterId: string; inviteeId: string; role?: "editor" | "viewer" },
+  input: {
+    kind: InvitationKind;
+    targetId: string;
+    inviterId: string;
+    inviteeId: string;
+    role?: "editor" | "viewer";
+    /**
+     * #869: しおりの招待のとき、同じ旅行のアルバムにも招待するか（既定は true）。
+     * アルバムに入るとその人の非公開投稿が見えるようになるので、**送る側が決める**（要件 3.11.7）。
+     */
+    inviteToAlbum?: boolean;
+  },
   now: Date = new Date()
 ): Promise<SendResult> {
   const { kind, targetId, inviterId, inviteeId } = input;
@@ -86,6 +97,8 @@ export async function sendInAppInvitation(
     expires_at: computeInvitationExpiry(now).toISOString(),
   };
   if (kind === "album") row.role = input.role ?? "viewer";
+  // #869: しおりだけが持つ。受諾のときに読む
+  if (kind === "itinerary") row.invite_to_album = input.inviteToAlbum ?? true;
   const { data, error } = await admin.from(TABLE[kind]).insert(row).select("id").single();
   if (error || !data) {
     // 部分ユニーク索引（未回答は 1 件）に弾かれた
@@ -103,12 +116,15 @@ export interface InAppInvitationRow {
   invitee_user_id: string | null;
   status: string;
   expires_at: string;
+  /** #869: しおりの招待だけが持つ。受諾時にアルバムにも加えるか（列が無い環境では undefined） */
+  invite_to_album?: boolean | null;
   revoked_at: string | null;
   role?: string;
 }
 
 export async function findInAppInvitation(admin: SupabaseClient, kind: InvitationKind, invitationId: string): Promise<InAppInvitationRow | null> {
-  const columns = `id, token, ${TARGET_COLUMN[kind]}, invitee_user_id, status, expires_at, revoked_at${kind === "album" ? ", role" : ""}`;
+  // #869: しおりは「アルバムにも招待するか」も読む（列が無い環境では undefined のまま）
+  const columns = `id, token, ${TARGET_COLUMN[kind]}, invitee_user_id, status, expires_at, revoked_at${kind === "album" ? ", role" : ", invite_to_album"}`;
   const { data, error } = await admin.from(TABLE[kind]).select(columns).eq("id", invitationId).maybeSingle();
   if (error) throw error;
   if (!data) return null;
@@ -121,6 +137,7 @@ export async function findInAppInvitation(admin: SupabaseClient, kind: Invitatio
     status: row.status as string,
     expires_at: row.expires_at as string,
     revoked_at: (row.revoked_at as string | null) ?? null,
+    invite_to_album: row.invite_to_album as boolean | null | undefined,
     role: row.role as string | undefined,
   };
 }
@@ -160,6 +177,35 @@ export async function respondToInvitation(
     }
   }
   await admin.from(TABLE[kind]).update({ status: "accepted", responded_at: now.toISOString() }).eq("id", invitationId);
+
+  /*
+   * #869（2026-10-07）: しおりの招待で「アルバムにも招待する」が選ばれていたら、
+   * **同じ旅行のアルバムにも**加える（編集者。自分の投稿を足せる。他人の投稿は触れない）。
+   *
+   * 【初心者向け】しおりとアルバムは同じ旅行に紐づいているのに、しおりに招待しても
+   * アルバムには入らず、招待し直す二度手間になっていました（実機確認での指摘）。
+   * **既にアルバムのメンバーなら何もしません**（権限を上げも下げもしない）。
+   */
+  if (kind === "itinerary" && invitation.invite_to_album !== false) {
+    const { data: itinerary } = await admin.from("itineraries").select("trip_id").eq("id", invitation.target_id).maybeSingle();
+    const tripId = (itinerary as { trip_id: string } | null)?.trip_id ?? null;
+    if (tripId) {
+      const { data: albumMember } = await admin.from("album_members").select("user_id").eq("trip_id", tripId).eq("user_id", userId).maybeSingle();
+      if (!albumMember) {
+        const { error: joinError } = await admin.from("album_members").insert({ trip_id: tripId, user_id: userId, role: "editor" });
+        // 23505＝同時に入った（競り合い）。それ以外でも、しおりには入れているので失敗にはしない
+        if (!joinError || joinError.code === "23505") {
+          const { data: albumMembers } = await admin.from("album_members").select("user_id").eq("trip_id", tripId);
+          await createNotificationsForMany(admin, {
+            recipientIds: ((albumMembers ?? []) as { user_id: string }[]).map((row) => row.user_id),
+            actorId: null,
+            type: "album_join",
+            relatedId: tripId,
+          });
+        }
+      }
+    }
+  }
 
   // 参加通知（リンク招待の受諾と同じ）: 本人・オーナー・既存メンバー
   const { data: members } = await admin.from(memberTable).select("user_id").eq(TARGET_COLUMN[kind], invitation.target_id);
