@@ -173,7 +173,7 @@ describe("4-8: アルバムの各操作の待ち表示", () => {
     expect(screen.getByRole("button", { name: "退出しています…" })).toBeInTheDocument();
   });
 
-  it("招待リンクの無効化を押すと「無効化しています…」になる", () => {
+  it("招待リンクの取り消しを押すと「取り消しています…」になる", () => {
     render(
       <AlbumScreen
         album={album("owner")}
@@ -183,8 +183,8 @@ describe("4-8: アルバムの各操作の待ち表示", () => {
       />
     );
     openAlbumDialog("招待");
-    fireEvent.click(screen.getByRole("button", { name: "無効化" }));
-    expect(screen.getByRole("button", { name: "無効化しています…" })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "取り消し" }));
+    expect(screen.getByRole("button", { name: "取り消しています…" })).toBeInTheDocument();
   });
 });
 

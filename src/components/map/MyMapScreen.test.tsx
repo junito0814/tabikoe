@@ -83,12 +83,12 @@ describe("MyMapScreen（SC-12）", () => {
     });
     await waitFor(() => expect(fetchPins).toHaveBeenLastCalledWith("posted", BOUNDS));
 
-    fireEvent.click(screen.getByRole("radio", { name: "保存済みのみ" }));
+    fireEvent.click(screen.getByRole("radio", { name: "行きたいのみ" }));
     await act(async () => {
       await vi.advanceTimersByTimeAsync(400);
     });
     await waitFor(() => expect(fetchPins).toHaveBeenLastCalledWith("saved", BOUNDS));
-    expect(screen.getByRole("radio", { name: "保存済みのみ" })).toHaveAttribute("aria-checked", "true");
+    expect(screen.getByRole("radio", { name: "行きたいのみ" })).toHaveAttribute("aria-checked", "true");
   });
 
   it("投稿済みは posted で投稿詳細へ、保存済みは saved で一覧へ、下書きは draft で続きを書くへ", async () => {

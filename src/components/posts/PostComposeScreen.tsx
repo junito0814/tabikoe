@@ -280,7 +280,7 @@ export function PostComposeScreen({
         return;
       }
       if (response.status === 409) {
-        setErrorMessage(`下書きは${MAX_DRAFTS_PER_USER}件までです。マイページで下書きを整理してください`);
+        setErrorMessage(`下書きは ${MAX_DRAFTS_PER_USER} 件までです。マイページで下書きを整理してください`);
         return;
       }
       if (response.status === 403) {

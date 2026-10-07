@@ -65,7 +65,7 @@ describe("BADGE_CATALOG", () => {
   });
 
   it("badge_type から定義を引ける", () => {
-    expect(findBadgeDefinition("post_count:10")?.label).toBe("投稿10件");
+    expect(findBadgeDefinition("post_count:10")?.label).toBe("投稿10 件");
     expect(findBadgeDefinition("prefecture:沖縄県")?.category).toBe("prefecture");
     expect(findBadgeDefinition("unknown:1")).toBeUndefined();
   });

@@ -2,6 +2,7 @@
 
 import { PinIcon } from "@/components/pins/PinIcon";
 import { DAY_PIN_COLORS } from "@/components/pins/pin-styles";
+import { TERMS } from "@/lib/terms";
 
 /**
  * pin-display-rules-v3 Task2: 地図の凡例
@@ -35,12 +36,12 @@ export function MapLegend({
       : mode === "mymap"
         ? [
             { key: "posted", icon: <PinIcon type="posted" size={16} />, label: "自分の投稿" },
-            { key: "saved", icon: <PinIcon type="saved" size={16} />, label: "保存済み" },
+            { key: "saved", icon: <PinIcon type="saved" size={16} />, label: TERMS.wishlist },
             { key: "draft", icon: <PinIcon type="draft" size={16} />, label: "下書き" },
           ]
         : [
             { key: "post", icon: <PinIcon type="post" size={16} />, label: "みんなの投稿" },
-            { key: "saved", icon: <PinIcon type="saved" size={16} />, label: "保存済み" },
+            { key: "saved", icon: <PinIcon type="saved" size={16} />, label: TERMS.wishlist },
             { key: "draft", icon: <PinIcon type="draft" size={16} />, label: "下書き" },
           ];
 

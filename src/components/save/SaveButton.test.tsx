@@ -47,8 +47,8 @@ describe("SaveButton / SaveSheet", () => {
   it("押すと保存先シート。行きたい・しおりのチェックで API が呼ばれ、Day 選択は既定が日付なし", async () => {
     const api = makeApi();
     render(<SaveButton spotId="s1" initialSaved={false} api={api} />);
-    fireEvent.click(screen.getByRole("button", { name: "保存する" }));
-    expect(await screen.findByRole("dialog", { name: "保存先" })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "行きたい" }));
+    expect(await screen.findByRole("dialog", { name: "行きたい・しおりに入れる" })).toBeInTheDocument();
     expect(await screen.findByText("12 件")).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("checkbox", { name: /行きたいスポット/ }));
@@ -70,13 +70,13 @@ describe("SaveButton / SaveSheet", () => {
     expect(screen.queryByRole("dialog")).toBeNull();
     expect(await screen.findByRole("status")).toHaveTextContent("大阪旅行 に保存しました");
     expect(screen.getByRole("link", { name: "しおりを見る" })).toHaveAttribute("href", "/itineraries/it-1");
-    expect(screen.getByRole("button", { name: "保存済み" })).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByRole("button", { name: "行きたいに入っています（押すと変えられます）" })).toHaveAttribute("aria-pressed", "true");
   });
 
   it("「＋ 新しいしおりを作る」はタイトルだけで作り、そのスポットを入れる", async () => {
     const api = makeApi();
     render(<SaveButton spotId="s1" initialSaved={false} api={api} />);
-    fireEvent.click(screen.getByRole("button", { name: "保存する" }));
+    fireEvent.click(screen.getByRole("button", { name: "行きたい" }));
     fireEvent.click(await screen.findByRole("button", { name: "＋ 新しいしおりを作る" }));
     fireEvent.change(screen.getByRole("textbox", { name: "アルバム名" }), { target: { value: "金沢 日帰り" } });
     fireEvent.click(screen.getByRole("button", { name: "作る" }));
@@ -106,7 +106,7 @@ describe("loading-feedback Task 3: 保存シートは押した瞬間にチェッ
     let resolveToggle: (response: Response) => void = () => {};
     api.toggleWishlist = vi.fn(() => new Promise<Response>((resolve) => { resolveToggle = resolve; }));
     render(<SaveButton spotId="s1" initialSaved={false} api={api} />);
-    fireEvent.click(screen.getByRole("button", { name: "保存する" }));
+    fireEvent.click(screen.getByRole("button", { name: "行きたい" }));
 
     const checkbox = await screen.findByRole("checkbox", { name: /行きたいスポット/ });
     expect(checkbox).not.toBeChecked();
@@ -123,7 +123,7 @@ describe("loading-feedback Task 3: 保存シートは押した瞬間にチェッ
     const api = makeApi();
     api.toggleWishlist = vi.fn(async () => Response.json({ error: "x" }, { status: 500 }));
     render(<SaveButton spotId="s1" initialSaved={false} api={api} />);
-    fireEvent.click(screen.getByRole("button", { name: "保存する" }));
+    fireEvent.click(screen.getByRole("button", { name: "行きたい" }));
 
     const checkbox = await screen.findByRole("checkbox", { name: /行きたいスポット/ });
     fireEvent.click(checkbox);
@@ -137,7 +137,7 @@ describe("loading-feedback Task 3: 保存シートは押した瞬間にチェッ
     const api = makeApi();
     api.itineraries.addSpot = vi.fn(async () => Response.json({ error: "x" }, { status: 500 }));
     render(<SaveButton spotId="s1" initialSaved={false} api={api} />);
-    fireEvent.click(screen.getByRole("button", { name: "保存する" }));
+    fireEvent.click(screen.getByRole("button", { name: "行きたい" }));
 
     const checkbox = await screen.findByRole("checkbox", { name: /大阪旅行/ });
     fireEvent.click(checkbox);
@@ -156,7 +156,7 @@ describe("loading-feedback Task 3: 保存シートは押した瞬間にチェッ
  * シートを閉じたときの「✓ か ＋ か」が、**今の本当の状態**に合うかを見る。
  */
 describe("外したら ＋ に戻る（#758）", () => {
-  const openSheet = () => fireEvent.click(screen.getByRole("button", { name: /保存/ }));
+  const openSheet = () => fireEvent.click(screen.getByRole("button", { name: /行きたい/ }));
   const closeSheet = () => fireEvent.click(document.querySelector("[data-close-button]") as HTMLElement);
 
   it("行きたいを外し、どのしおりにも入っていなければ ＋ に戻る", async () => {
@@ -168,7 +168,7 @@ describe("外したら ＋ に戻る（#758）", () => {
     fireEvent.click(screen.getByRole("checkbox", { name: /行きたい/ })); // 外す
     await waitFor(() => expect(api.toggleWishlist).toHaveBeenCalledWith("s1", false));
     closeSheet();
-    expect(screen.getByRole("button", { name: "保存する" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "行きたい" })).toBeInTheDocument();
   });
 
   it("行きたいを外しても、どれかのしおりに入っていれば ✓ のまま", async () => {
@@ -179,7 +179,7 @@ describe("外したら ＋ に戻る（#758）", () => {
     fireEvent.click(screen.getByRole("checkbox", { name: /行きたい/ }));
     await waitFor(() => expect(api.toggleWishlist).toHaveBeenCalledWith("s1", false));
     closeSheet();
-    expect(screen.getByRole("button", { name: "保存済み" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "行きたいに入っています（押すと変えられます）" })).toBeInTheDocument();
   });
 
   it("しおりから外し、行きたいにも入っていなければ ＋ に戻る", async () => {
@@ -190,6 +190,6 @@ describe("外したら ＋ に戻る（#758）", () => {
     fireEvent.click(screen.getByRole("checkbox", { name: /北海道旅行/ })); // 入っていたので外れる
     await waitFor(() => expect(api.itineraries.removeSpot).toHaveBeenCalled());
     closeSheet();
-    expect(screen.getByRole("button", { name: "保存する" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "行きたい" })).toBeInTheDocument();
   });
 });

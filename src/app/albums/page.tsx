@@ -82,7 +82,7 @@ export default async function AlbumsPage({ searchParams }: { searchParams: Promi
                           {album.isDaily && <span className="ml-1.5 rounded-full bg-tint px-1.5 py-0.5 text-[0.625rem] font-medium text-muted">日常の投稿</span>}
                         </span>
                         <span className="block text-[0.6875rem] text-muted">
-                          {album.postCount}件 ・ {album.memberCount}人 ・ {ALBUM_ROLE_LABELS[album.role]}
+                          {album.postCount} 件 ・ {album.memberCount} 人 ・ {ALBUM_ROLE_LABELS[album.role]}
                         </span>
                       </span>
                     </Link>

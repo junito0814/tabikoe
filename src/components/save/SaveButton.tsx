@@ -5,6 +5,7 @@ import { fetchWithAuthRedirect, UnauthorizedError } from "@/lib/api/fetch-with-a
 import { Toast, type ToastMessage } from "@/components/ui/Toast";
 import { SaveSheet, type SaveSheetApi } from "./SaveSheet";
 import { isSpotSaved } from "@/lib/save/is-spot-saved";
+import { TERMS } from "@/lib/terms";
 
 /**
  * wishlist-v3 Task1 / add-spots Task2: 「＋」（保存ボタン）
@@ -80,7 +81,8 @@ export function SaveButton({
 
   const isChecked = addMode ? added : saved;
   const dimension = size === "sm" ? "h-8 w-8" : "h-9 w-9";
-  const label = addMode ? (added ? "しおりに追加済み（押すと外す）" : "しおりに追加") : isChecked ? "保存済み" : "保存する";
+  // #810: 言葉は「行きたい」に統一（「保存する」「保存済み」とは言わない）
+  const label = addMode ? (added ? "しおりに追加済み（押すと外す）" : "しおりに追加") : isChecked ? `${TERMS.wishlist}に入っています（押すと変えられます）` : TERMS.wishlist;
 
   return (
     <>

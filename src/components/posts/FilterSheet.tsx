@@ -14,6 +14,7 @@ import {
 import type { CostRange, DistanceOption, PeriodOption } from "@/lib/posts/search-posts";
 import type { PostDuration } from "@/lib/posts/constants";
 import type { ListView } from "@/lib/search/list-view";
+import { TERMS } from "@/lib/terms";
 
 /**
  * post-timeline Task2: 絞り込みシート（下から出るパネル）
@@ -337,7 +338,7 @@ function FilterSheetBody<T extends SheetFilters>({
             onClick={() => patch(CLEARED_FILTERS)}
             className="text-[0.75rem] font-medium text-muted underline underline-offset-2"
           >
-            条件をクリア
+            {TERMS.clearFilters}
           </button>
           <button type="submit" className="h-10 rounded-[10px] bg-ink px-4 text-[0.8125rem] font-semibold text-on-ink">
             この条件で表示

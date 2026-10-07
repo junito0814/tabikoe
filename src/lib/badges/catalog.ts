@@ -77,21 +77,21 @@ export const BADGE_CATALOG: readonly BadgeDefinition[] = [
   ...POST_COUNT_THRESHOLDS.map<BadgeDefinition>((threshold) => ({
     type: `post_count:${threshold}`,
     category: "post_count",
-    label: `投稿${threshold}件`,
-    description: `累計${threshold}件の投稿を達成`,
+    label: `投稿${threshold} 件`,
+    description: `累計${threshold} 件の投稿を達成`,
   })),
   ...LIKE_COUNT_THRESHOLDS.map<BadgeDefinition>((threshold) => ({
     type: `like_count:${threshold}`,
     category: "like_count",
-    label: `いいね${threshold}件`,
-    description: `累計${threshold}件のいいねを獲得`,
+    label: `いいね${threshold} 件`,
+    description: `累計${threshold} 件のいいねを獲得`,
   })),
   ...SPOT_REGISTRATION_THRESHOLDS.map<BadgeDefinition>((threshold) => ({
     type: `spot_registration:${threshold}`,
     category: "spot_registration",
-    label: `スポット登録${threshold}件`,
+    label: `スポット登録${threshold} 件`,
     // #680: 「タビコエだけの場所」は廃止したので言い換える（バッジの説明にだけ出る）
-    description: `新しい場所を${threshold}件登録`,
+    description: `新しい場所を${threshold} 件登録`,
   })),
   ...PREFECTURES.map<BadgeDefinition>((prefecture) => ({
     type: `prefecture:${prefecture}`,

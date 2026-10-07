@@ -37,7 +37,7 @@ describe("AdminShell", () => {
       </AdminShell>
     );
     const side = screen.getByRole("navigation", { name: "管理メニュー" });
-    expect(within(side).getByLabelText("3件")).toBeInTheDocument();
+    expect(within(side).getByLabelText("3 件")).toBeInTheDocument();
     expect(within(side).queryByLabelText("0件")).not.toBeInTheDocument();
   });
 
@@ -54,7 +54,7 @@ describe("AdminShell", () => {
     const more = within(bottom).getByRole("link", { name: /その他/ });
     expect(more).toHaveAttribute("href", "/admin/more");
     expect(more).toHaveAttribute("aria-current", "page"); // 規約管理はその他の中
-    expect(within(more).getByLabelText("2件")).toBeInTheDocument();
+    expect(within(more).getByLabelText("2 件")).toBeInTheDocument();
   });
 
   it("上のバーに管理者名とログアウトが出る", () => {

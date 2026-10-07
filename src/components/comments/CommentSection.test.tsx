@@ -109,7 +109,7 @@ describe("CommentSection（v3.2: 返信）", () => {
     fireEvent.click(screen.getByRole("button", { name: "返信をさらに 2 件見る" }));
     expect(replies.querySelectorAll("[data-comment]")).toHaveLength(5);
     // 件数は返信を含む
-    expect(screen.getByRole("heading", { name: /コメント/ })).toHaveTextContent("6件");
+    expect(screen.getByRole("heading", { name: /コメント/ })).toHaveTextContent("6 件");
   });
 
   it("「返信」を押すと @名前 のチップが付き、送信すると parentId 付きで API を呼び、返信の末尾に足される", async () => {

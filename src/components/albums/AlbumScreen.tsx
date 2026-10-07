@@ -20,6 +20,7 @@ import { useConfirm } from "@/components/ui/ConfirmSheet";
 import { BackLink } from "@/components/layout/BackLink";
 import { formatDate, formatDateTime } from "@/lib/format/date-time";
 import { MoreMenu, MoreMenuItem } from "@/components/ui/MoreMenu";
+import { TERMS } from "@/lib/terms";
 
 export interface AlbumInvitation {
   id: string;
@@ -162,7 +163,7 @@ export function AlbumScreen({
           )
         );
       },
-      "招待リンクを無効化できませんでした"
+      "招待リンクを取り消せませんでした"
     );
 
   const handleChangeRole = (userId: string, role: InvitableRole) =>
@@ -302,7 +303,7 @@ export function AlbumScreen({
             </div>
           )}
           <p className="text-[0.6875rem] text-muted">
-            あなたの権限: {ALBUM_ROLE_LABELS[album.viewerRole]} ・ 投稿 {album.posts.length}件 ・ メンバー {members.length}人
+            あなたの権限: {ALBUM_ROLE_LABELS[album.viewerRole]} ・ 投稿 {album.posts.length} 件 ・ メンバー {members.length} 人
           </p>
           <div className="flex flex-wrap gap-2">
             {/* F-RC-05（SC-21）: このアルバムの写真・動画だけを並べて眺める（非公開投稿も含む） */}
@@ -434,10 +435,10 @@ export function AlbumScreen({
                         disabled={busy !== null}
                         className="font-medium text-accent underline underline-offset-2 disabled:opacity-45"
                       >
-                        {busy === `revoke:${invitation.id}` ? "無効化しています…" : "無効化"}
+                        {busy === `revoke:${invitation.id}` ? "取り消しています…" : TERMS.revoke}
                       </button>
                     ) : invitation.status === "revoked" ? (
-                      "無効化済み"
+                      "取り消し済み"
                     ) : (
                       "期限切れ"
                     )}

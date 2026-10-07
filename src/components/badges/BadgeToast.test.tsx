@@ -19,9 +19,9 @@ describe("BadgeToast", () => {
       <BadgeToast badgeTypes={["post_count:1", "prefecture:東京都", "post_count:10"]} autoDismissMs={0} />
     );
     expect(screen.getByRole("status")).toHaveTextContent("3個のバッジを獲得しました");
-    expect(screen.getByText("投稿1件")).toBeInTheDocument();
+    expect(screen.getByText("投稿1 件")).toBeInTheDocument();
     expect(screen.getByText("東京都")).toBeInTheDocument();
-    expect(screen.getByText("投稿10件")).toBeInTheDocument();
+    expect(screen.getByText("投稿10 件")).toBeInTheDocument();
   });
 
   it("カタログに無い badge_type だけなら表示しない", () => {

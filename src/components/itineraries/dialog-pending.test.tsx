@@ -70,9 +70,9 @@ describe("4-7: 招待（InviteDialog）", () => {
     expect(screen.getByRole("button", { name: "発行しています…" })).toBeInTheDocument();
   });
 
-  it("無効化を押すと「無効化しています…」になる", async () => {
+  it("取り消しを押すと「取り消しています…」になる", async () => {
     render(<InviteDialog open itineraryId="it-1" onClose={vi.fn()} api={api} />);
-    fireEvent.click(await screen.findByRole("button", { name: "無効化" }));
-    expect(screen.getByRole("button", { name: "無効化しています…" })).toBeInTheDocument();
+    fireEvent.click(await screen.findByRole("button", { name: "取り消し" }));
+    expect(screen.getByRole("button", { name: "取り消しています…" })).toBeInTheDocument();
   });
 });

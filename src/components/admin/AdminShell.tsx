@@ -118,7 +118,7 @@ function CountBadge({ count, inline = false }: { count: number; inline?: boolean
   if (!text) return null;
   return (
     <span
-      aria-label={`${count}件`}
+      aria-label={`${count} 件`}
       className={`flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-accent px-1 text-[0.625rem] font-bold leading-none text-white ${
         inline ? "" : "absolute -right-2 -top-1"
       }`}

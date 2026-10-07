@@ -82,7 +82,7 @@ export function UnreadBadge({ count }: { count: number }) {
   }
   return (
     <span
-      aria-label={`未読${count}件`}
+      aria-label={`未読 ${count} 件`}
       className="absolute -right-2 -top-1 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-accent px-1 text-[0.625rem] font-bold leading-none text-white"
     >
       {count > 99 ? "99+" : count}

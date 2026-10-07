@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { fetchWithAuthRedirect, UnauthorizedError } from "@/lib/api/fetch-with-auth-redirect";
+import { TERMS } from "@/lib/terms";
 
 /**
  * F-RC-05 Task3: 「行きたい」保存ボタン
@@ -72,7 +73,7 @@ export function WishlistButton({
           strokeLinejoin="round"
         />
       </svg>
-      {saved ? "保存済み" : "行きたい"}
+      {TERMS.wishlist}
     </button>
   );
 }

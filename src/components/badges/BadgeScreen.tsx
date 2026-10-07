@@ -11,11 +11,11 @@ import type { BadgeCategory } from "@/lib/badges/catalog";
  * 表示のみで操作は無いため Server Component。
  */
 const SECTIONS: { category: BadgeCategory; title: string; note: string }[] = [
-  { category: "post_count", title: "投稿数バッジ", note: "累計投稿数 1／10／50／100件" },
-  { category: "like_count", title: "いいね数バッジ", note: "累計獲得いいね数 1／10／50／100／200件" },
+  { category: "post_count", title: "投稿数バッジ", note: "累計投稿数 1／10／50／100 件" },
+  { category: "like_count", title: "いいね数バッジ", note: "累計獲得いいね数 1／10／50／100／200 件" },
   // v3.2（feedback-0919 Task2）
-  { category: "spot_registration", title: "スポット登録バッジ", note: "新しい場所を最初に登録した件数 1／3／5／10／20／30／50件" },
-  { category: "prefecture", title: "都道府県バッジ", note: "各都道府県で1件以上投稿" },
+  { category: "spot_registration", title: "スポット登録バッジ", note: "新しい場所を最初に登録した件数 1／3／5／10／20／30／50 件" },
+  { category: "prefecture", title: "都道府県バッジ", note: "各都道府県で 1 件以上投稿" },
 ];
 
 function formatAcquiredAt(iso: string): string {

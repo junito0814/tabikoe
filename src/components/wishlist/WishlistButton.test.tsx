@@ -18,7 +18,7 @@ describe("WishlistButton", () => {
   it("保存済みの状態では「保存済み」と表示し、アイコンが塗られる", () => {
     render(<WishlistButton spotId="s1" initialSaved submitToggle={vi.fn()} />);
     const button = screen.getByRole("button", { name: "行きたいを解除" });
-    expect(button).toHaveTextContent("保存済み");
+    expect(button).toHaveTextContent("行きたい");
     expect(button).toHaveAttribute("aria-pressed", "true");
     expect(button.querySelector("path")).toHaveAttribute("fill", "currentColor");
   });
@@ -32,7 +32,7 @@ describe("WishlistButton", () => {
 
     fireEvent.click(screen.getByRole("button"));
 
-    await waitFor(() => expect(screen.getByRole("button")).toHaveTextContent("保存済み"));
+    await waitFor(() => expect(screen.getByRole("button")).toHaveTextContent("行きたい"));
     expect(submitToggle).toHaveBeenCalledWith("s1", true);
     expect(onChange).toHaveBeenCalledWith(true);
   });

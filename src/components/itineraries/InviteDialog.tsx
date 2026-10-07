@@ -7,6 +7,7 @@ import { ErrorNotice } from "@/components/notices/ErrorNotice";
 import { UnauthorizedError } from "@/lib/api/fetch-with-auth-redirect";
 import type { ItineraryApi } from "./itinerary-api";
 import { formatDate } from "@/lib/format/date-time";
+import { TERMS } from "@/lib/terms";
 
 /**
  * itinerary-sharing Task2: 「招待」ダイアログ（リンク発行・コピー・無効化。オーナーのみ）
@@ -107,7 +108,7 @@ export function InviteDialog({ open, itineraryId, onClose, api }: { open: boolea
     try {
       const response = await api.revokeInvitation(itineraryId, invitationId);
       if (!response.ok) {
-        setError("無効化できませんでした");
+        setError("取り消せませんでした");
         return;
       }
       setInvitations((current) => (current ?? []).filter((item) => item.id !== invitationId));
@@ -115,7 +116,7 @@ export function InviteDialog({ open, itineraryId, onClose, api }: { open: boolea
       if (latestUrl && invitations?.find((item) => item.id === invitationId && toUrl(item.path) === latestUrl)) setLatestUrl(null);
     } catch (caught) {
       if (caught instanceof UnauthorizedError) return;
-      setError("無効化できませんでした");
+      setError("取り消せませんでした");
     } finally {
       setBusyKey(null);
     }
@@ -172,7 +173,7 @@ export function InviteDialog({ open, itineraryId, onClose, api }: { open: boolea
                 <li key={item.id} className="flex items-center justify-between gap-2 rounded-[8px] border border-line px-3 py-2 text-[0.75rem] text-ink">
                   <span>{formatDate(item.expiresAt)} まで有効</span>
                   <button type="button" onClick={() => void revoke(item.id)} disabled={busy} className="text-[0.75rem] font-medium text-saved underline underline-offset-2 disabled:opacity-45">
-                    {busyKey === `revoke:${item.id}` ? "無効化しています…" : "無効化"}
+                    {busyKey === `revoke:${item.id}` ? "取り消しています…" : TERMS.revoke}
                   </button>
                 </li>
               ))}

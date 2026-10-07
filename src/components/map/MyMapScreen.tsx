@@ -11,11 +11,12 @@ import { GoogleMap, type GoogleMapPin } from "./GoogleMap";
 import { resolveInitialCenter, type InitialCenter } from "./initial-center";
 import { myMapPinHref } from "./my-map-navigation";
 import { MapLegend } from "./MapLegend";
+import { TERMS } from "@/lib/terms";
 
 const MODES: { mode: MyMapMode; label: string }[] = [
   { mode: "both", label: "両方" },
   { mode: "posted", label: "投稿のみ" },
-  { mode: "saved", label: "保存済みのみ" },
+  { mode: "saved", label: `${TERMS.wishlist}のみ` },
 ];
 
 const FETCH_DEBOUNCE_MS = 300;
