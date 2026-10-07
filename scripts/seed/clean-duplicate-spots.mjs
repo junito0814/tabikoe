@@ -10,13 +10,15 @@
 //   止まったまま `seed-tokyo.mjs` を動かすと、同じ名前のスポットが 2 つ並ぶ。
 //
 // このスクリプトの決まり（安全のため、かなり厳しくしてある）
-//   1. 名前が「（seed）」で終わるものだけを見る
+//   1. **seed のスポットだけ**を見る（#776 より前は名前の「（seed）」で見分けていたが、
+//      印を画面から外したので、いまは seed-ids.json の控え＋まだ印が残っている行で見分ける）
 //   2. **同じ名前が 2 つ以上あるときだけ**動く（1 つしかない名前は触らない）
 //   3. そのうち **いちばん新しいものは必ず残す**
 //   4. 古い方も、**投稿が 1 件でもあれば残す**（下書きを含む。消えると取り返せないため）
 //   → 結果として「投稿が無く、同じ名前の新しいものがある古いスポット」だけが消える
 import { createClient } from "@supabase/supabase-js";
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
+import { LEGACY_SEED_SPOT_SUFFIX } from "./seed-data.mjs";
 
 const env = Object.fromEntries(
   readFileSync(new URL("../../.env.local", import.meta.url), "utf8")
@@ -33,10 +35,23 @@ if (!url || !key) throw new Error(".env.local に NEXT_PUBLIC_SUPABASE_URL / SUP
 const admin = createClient(url, key, { auth: { autoRefreshToken: false, persistSession: false } });
 const apply = process.argv.includes("--apply");
 
-const SEED_SPOT_SUFFIX = "（seed）";
-
-const { data: spots, error } = await admin.from("spots").select("id, name, created_at").like("name", `%${SEED_SPOT_SUFFIX}`);
+/*
+ * seed のスポットを集める（#776）。
+ *
+ * 【初心者向け】ここで**名前では選ばない**のが大事。利用者が自分で「東京タワー」を作っていることがあり、
+ * 名前で選ぶと本物まで消す候補に入ってしまう。seed-tokyo.mjs が書き出した id の控えを使う。
+ * 控えが無い古い環境のために、まだ印が残っている行も拾う。
+ */
+const idsPath = new URL("./seed-ids.json", import.meta.url);
+const savedSpotIds = existsSync(idsPath) ? (JSON.parse(readFileSync(idsPath, "utf8")).spotIds ?? []) : [];
+const byId = savedSpotIds.length
+  ? (await admin.from("spots").select("id, name, created_at").in("id", savedSpotIds)).data ?? []
+  : [];
+const { data: byLegacy, error } = await admin.from("spots").select("id, name, created_at").like("name", `%${LEGACY_SEED_SPOT_SUFFIX}`);
 if (error) throw new Error(`spots: ${error.message}`);
+const spotsById = new Map();
+for (const row of [...byId, ...byLegacy]) spotsById.set(row.id, row);
+const spots = [...spotsById.values()];
 console.log(`seed のスポット: ${spots.length} 件`);
 
 // 1・2: 名前ごとにまとめ、2 つ以上あるものだけ
