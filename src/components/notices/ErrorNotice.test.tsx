@@ -43,7 +43,7 @@ describe("UploadNotice", () => {
   it("規定の2つの注意文を表示する", () => {
     render(<UploadNotice />);
     expect(
-      screen.getByText("他人が写り込んだ写真・動画は、本人の同意を得てから投稿してください")
+      screen.getByText("他人が写り込んだ写真は、本人の同意を得てから投稿してください")
     ).toBeInTheDocument();
     expect(
       screen.getByText("個人が特定できる情報（車のナンバー等）が写っていないか確認してください")
