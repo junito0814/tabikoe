@@ -4,11 +4,12 @@ import Link from "next/link";
 import { buildReportHref } from "@/components/reports/report-href";
 import { MoreMenu, MoreMenuItem } from "@/components/ui/MoreMenu";
 import { SaveButton } from "@/components/save/SaveButton";
+import { SpotStatusButtons } from "@/components/spots/SpotStatusButtons";
 import { composeHref } from "@/lib/posts/compose-initial-state";
 import type { PostCardPage } from "@/lib/posts/post-cards";
 import type { SpotMediaPage } from "@/lib/posts/search-photos";
 import { appendBackHref, buildMapHrefWithBack } from "@/lib/search/list-state";
-import { formatStatusLabel, type LatestSpotStatus } from "@/lib/spots/format-status-label";
+import type { LatestSpotStatus } from "@/lib/spots/format-status-label";
 import type { AddModeInfo } from "./AddModeBanner";
 import { PostSearchScreen, type FetchSearchPage } from "./PostSearchScreen";
 import { MapSheetLayout } from "@/components/layout/MapSheetLayout";
@@ -29,6 +30,8 @@ export interface SpotSummary {
   /** #696: 「行きたい」か「しおり」のどちらかに入っているか（どちらでも ✓ を出す） */
   isSaved: boolean;
   latestStatus: LatestSpotStatus | null;
+  /** #875: 自分の報告（「まだあった」を押したかどうか）。ボタンの押された状態に使う */
+  myStatus: LatestSpotStatus | null;
 }
 
 /**
@@ -76,7 +79,6 @@ export function SpotPostListScreen({
   };
   // Bug #471: 上の地図（SC-02）から戻るときも、この一覧の戻り先（検索結果など）を保ったまま戻れるように back を含める
   const listHref = appendBackHref(buildSearchPageHref(initialState, context), back?.href);
-  const statusLabel = formatStatusLabel(spot.latestStatus);
 
   const header = (
     <div className="flex flex-col gap-2">
@@ -84,14 +86,21 @@ export function SpotPostListScreen({
         <span>{spot.prefecture ?? "都道府県未設定"}</span>
         <span aria-hidden>・</span>
         <span>投稿 {spot.postCount} 件</span>
-        {statusLabel && (
-          <>
-            <span aria-hidden>・</span>
-            <span className="font-medium text-done">{statusLabel}</span>
-          </>
-        )}
+        {/*
+          * #875（2026-10-07）: 「9月にまだあった」はここから外した。
+          * すぐ下の「この場所、まだありますか？」が同じ文を出すので、同じ画面に 2 回出ていた。
+          */}
       </p>
       {official}
+      {/*
+        * #875（2026-10-07）: 「この場所、まだありますか？」はここに置く。
+        *
+        * 【初心者向け】以前は投稿詳細にありました。けれどこの報告は `spot_status_reports`
+        * （**スポット単位**・1 人 1 件）に入るもので、**投稿ではなくスポットの情報**です。
+        * 投稿は「ある人が行ったときの話」で、場所がいまもあるかとは別の話なので、
+        * スポットの画面に置くほうが素直です（実機確認での指摘）。
+        */}
+      <SpotStatusButtons spotId={spot.id} initial={{ latest: spot.latestStatus, mine: spot.myStatus }} />
       <div className="flex flex-wrap items-center gap-2">
         <SaveButton
           spotId={spot.id}

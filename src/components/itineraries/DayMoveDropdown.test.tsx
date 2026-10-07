@@ -1,22 +1,21 @@
 import { describe, expect, it } from "vitest";
-import { dayButtonLabel, dayLabel } from "./DayMoveDropdown";
+import { dayLabel } from "./DayMoveDropdown";
 
 /**
- * #753・#871: ボタンの顔だけ「未選択」にする（塊の見出し・トーストは「日付なし」のまま）
- * 出典: 要件定義書 3.11、2026-10-06 の相談
+ * 2026-10-07: Day の言い方を「日付なし」1 つにそろえた。
+ *
+ * 【初心者向け】#753 では行のボタンだけ「Day を決める」、#871 で「未選択」にしていたが、
+ * **同じものを 3 つの言い方で呼ぶ**ことになって、かえって分かりにくかった。
+ * 塊の見出し・移動後のトースト・保存先シートの選択肢・行のボタンの**全部**で `dayLabel` を使う（約束 14）。
+ * 出典: 要件定義書 3.11、2026-10-06・2026-10-07 の相談
  */
-describe("dayButtonLabel（#753）", () => {
-  it("日付なしは「未選択」（#871）", () => {
-    expect(dayButtonLabel(null)).toBe("未選択");
+describe("dayLabel", () => {
+  it("日付なしは「日付なし」", () => {
+    expect(dayLabel(null)).toBe("日付なし");
   });
 
   it("Day が決まっていれば「Day 1」", () => {
-    expect(dayButtonLabel(1)).toBe("Day 1");
-    expect(dayButtonLabel(3)).toBe("Day 3");
-  });
-
-  it("dayLabel 自体は変えない（塊の見出し・移動後のトースト・保存先シートの選択肢で使うため）", () => {
-    expect(dayLabel(null)).toBe("日付なし");
-    expect(dayLabel(2)).toBe("Day 2");
+    expect(dayLabel(1)).toBe("Day 1");
+    expect(dayLabel(3)).toBe("Day 3");
   });
 });

@@ -3,7 +3,8 @@ import { parseSearchState, type SearchContext } from "@/components/posts/post-se
 import type { SpotSummary } from "@/components/posts/SpotPostListScreen";
 import type { AddModeInfo } from "@/components/posts/AddModeBanner";
 import { loadAddMode } from "@/lib/itineraries/add-mode";
-import { findLatestSpotStatuses, type PostCardPage } from "@/lib/posts/post-cards";
+import { type PostCardPage } from "@/lib/posts/post-cards";
+import { getSpotStatus } from "@/lib/spots/status-report";
 import { findSavedSpotIds } from "@/lib/spots/saved-spots";
 import { averageRating } from "@/lib/map/get-map-pins";
 import { parsePostSearchParams, searchPostCards } from "@/lib/posts/search-posts";
@@ -58,7 +59,8 @@ async function loadSpotSummary(admin: SupabaseClient, userId: string, spot: { id
     admin.from("posts").select("rating").eq("spot_id", spot.id).eq("visibility", "public").eq("status", "published").is("hidden_at", null),
     // #696: 「行きたい」だけでなく「しおり」に入っていても保存済みとして ✓ を出す
     findSavedSpotIds(admin, userId, [spot.id]),
-    findLatestSpotStatuses(admin, [spot.id]),
+    // #875: 最新の報告と**自分の報告**の両方（ボタンの押された状態に要る）
+    getSpotStatus(admin, spot.id, userId),
   ]);
   return {
     id: spot.id,
@@ -70,7 +72,8 @@ async function loadSpotSummary(admin: SupabaseClient, userId: string, spot: { id
     postCount: countResult.count ?? 0,
     ratingAverage: averageRating(((ratingResult.data ?? []) as { rating: number | null }[]).map((row) => row.rating)),
     isSaved: saved.has(spot.id),
-    latestStatus: statuses.get(spot.id) ?? null,
+    latestStatus: statuses.latest,
+    myStatus: statuses.mine,
   };
 }
 

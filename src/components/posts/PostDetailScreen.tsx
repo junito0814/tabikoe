@@ -12,7 +12,7 @@ import { MoreMenu, MoreMenuItem } from "@/components/ui/MoreMenu";
 import { useConfirm } from "@/components/ui/ConfirmSheet";
 import { ErrorNotice } from "@/components/notices/ErrorNotice";
 import { useDeletePost } from "@/components/posts/use-delete-post";
-import { SpotStatusButtons } from "@/components/spots/SpotStatusButtons";
+import { formatStatusLabel } from "@/lib/spots/format-status-label";
 import type { CommentPage } from "@/lib/comments/list-comments";
 import type { PostDetailData } from "@/lib/posts/post-detail";
 import { composeHref } from "@/lib/posts/compose-href";
@@ -60,6 +60,8 @@ export function PostDetailScreen({
   const backLabel = back?.label ?? TERMS.seePosts;
   const returnTo = `/posts/${post.id}`;
   const cost = formatCost(post.cost);
+  // #875: 最新の報告（「9月にまだあった」）。報告そのものはスポットの画面で行う
+  const statusLabel = formatStatusLabel(post.spotStatus.latest);
 
   /*
    * #862（2026-10-07）: 削除の確認はアプリ共通のシート（#778）で、**メニューの外**に置く。
@@ -282,13 +284,21 @@ export function PostDetailScreen({
             />
           </div>
 
-          {/* spot-status-report Task2: 「この場所、まだありますか？」（公開投稿のみ。3.5.5） */}
-          {post.canInteract && (
-            <SpotStatusButtons
-              spotId={post.spot.id}
-              initial={post.spotStatus}
-              className="border-t border-line pt-3"
-            />
+          {/*
+            * #875（2026-10-07）: 「この場所、まだありますか？」の**ボタンはここから外した**。
+            *
+            * 【初心者向け】この報告はスポット単位（1 人 1 件）のもので、**投稿ではなく
+            * スポットの情報**です。投稿は「ある人が行ったときの話」で、場所がいまもあるかとは
+            * 別の話なので、報告はスポット別の一覧（SC-04）に置きました。
+            * ここには**最新の報告を出すだけ**にします（要件 3.5.1）。
+            */}
+          {statusLabel && (
+            <p className="border-t border-line pt-3 text-[0.8125rem] text-muted" data-spot-status-label>
+              この場所は <span className="font-medium text-done">{statusLabel}</span>
+              <Link href={appendBackHref(`/spots/${post.spot.id}`, selfHref)} className="ml-2 text-accent underline underline-offset-2">
+                報告する
+              </Link>
+            </p>
           )}
 
           {!post.isOwner && (
