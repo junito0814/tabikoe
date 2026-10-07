@@ -17,7 +17,7 @@
 import { createClient } from "@supabase/supabase-js";
 import { readFileSync, writeFileSync } from "node:fs";
 import { randomUUID } from "node:crypto";
-import { DUMMY_USERS, MY_TRIP_TITLE, SEED_EMAIL_DOMAIN, SPOTS, TRIP_TITLES } from "./seed-data.mjs";
+import { DUMMY_USERS, MY_TRIP_TITLE, SEED_EMAIL_DOMAIN, SPOT_POSTS, SPOTS, TRIP_TITLES } from "./seed-data.mjs";
 
 // ---- .env.local を読む（dotenv を入れていないので自前で） ----
 const env = Object.fromEntries(
@@ -45,20 +45,6 @@ const meEmail = process.argv.includes("--me") ? process.argv[process.argv.indexO
 
 // v3.2 の 7 択（2026-09-22: 旧「それ以上」をやめた。宿泊施設は「宿泊」）
 const DURATIONS = ["30分以内", "1時間以内", "2時間以内", "3時間以内", "半日", "1日"];
-const COMMENTS = [
-  "朝イチで行ったら人が少なくてゆっくり見られた。午後は混むと思う。",
-  "写真で見るより広い。1 時間じゃ足りなかった。",
-  "地元の人に教えてもらった場所。看板が無いので通り過ぎそうになる。",
-  "値段のわりに満足度が高い。現金しか使えないので注意。",
-  "夕方の光がきれい。三脚は使えないので手持ちで。",
-  "雨の日でも楽しめる。屋根がある。",
-  "駅から少し歩くけど、その分静か。",
-  "子ども連れでも大丈夫だった。ベンチが多い。",
-  "行列は 15 分くらい。回転は早い。",
-  "無料。近くのコンビニでコーヒー買って座るのがおすすめ。",
-  "夜のライトアップが良い。20 時までなので早めに。",
-  "店員さんが親切でいろいろ教えてくれた。",
-];
 // #703: 写真は Pixabay から取り、Supabase Storage に入れてからそのパスを保存する。
 // 外部の URL を貼りっぱなしにしない（向こうが変われば本番の見た目も変わるため）。
 // 取得元・取得日・人が写っていないことの確認は photos.json に書いてある。
@@ -66,24 +52,45 @@ const PHOTOS = JSON.parse(readFileSync(new URL("./photos.json", import.meta.url)
 const SEED_PHOTO_PREFIX = "seed/";
 
 /*
- * #777: スポット名 → 使う写真。
+ * #893: スポット名 → そのスポットの写真（1〜3 枚、順番つき）。
  *
- * 【初心者向け】もとは「食べ物のカテゴリなら食べ物の写真、それ以外は風景」を**順ぐりに**割り当てていた。
- * そのせいで「神楽坂の石畳の路地」に厳島神社の海上鳥居が出たり、同じ鳥居が 2 つの投稿に出たりしていた。
- * いまは photos.json に**写真ごとに「どのスポットのものか」**を書いてあり、そこだけを見る。
- *   - **1 投稿 1 枚**（前は 1〜3 枚だった）
- *   - **同じ写真を 2 投稿で使わない**（使ったら usedPhotos に入れて二度と使わない）
- *   - 合うスポットが無い写真（photos.json の spot が null）は使わない
- * 結果として**写真が付かない投稿のほうが多くなる**。これは意図どおりで、
- * 「合わない写真を出すより、何も出さないほうがまし」という判断。
+ * 【初心者向け】#777 までは写真が 16 枚しか無く、「1 投稿 1 枚・使い回さない・合わなければ付けない」
+ * という決まりだったため、**76 投稿のうち 62 件に写真が付いていなかった**。
+ * 提出用のデータとしてそれでは成立しないので、スポット 51 件それぞれに写真を用意した（86 枚）。
+ *
+ *   - **投稿が 1 件だけのスポット** … その投稿にそのスポットの写真を**全部**載せる（＝複数枚の投稿になる）
+ *   - **投稿が 2 件あるスポット** … 1 件目に 1 枚目、2 件目に 2 枚目（同じ写真が 2 投稿に出ない）
+ *
+ * 写真の出どころ・ライセンス・目視確認の記録は photos.json にある。
  */
-const USABLE_PHOTOS = PHOTOS.photos.filter((photo) => photo.spot);
-const PHOTO_BY_SPOT = new Map(USABLE_PHOTOS.map((photo) => [photo.spot, `${SEED_PHOTO_PREFIX}${photo.file}`]));
+const PHOTOS_BY_SPOT = new Map();
+for (const photo of [...PHOTOS.photos].sort((a, b) => a.order - b.order)) {
+  const list = PHOTOS_BY_SPOT.get(photo.spot) ?? [];
+  list.push(`${SEED_PHOTO_PREFIX}${photo.file}`);
+  PHOTOS_BY_SPOT.set(photo.spot, list);
+}
+
+/*
+ * #893: **投稿を作らないスポット**。
+ * 写真とスポットの結び付きが弱い（Pixabay に合う写真が無く、近いものしか用意できなかった）5 件は
+ * 投稿を作らず、地図のピンと「行きたい」の対象としてだけ残す。合わない写真を見せるより、
+ * **その場所の投稿がまだ無い**という状態のほうが正しい。
+ */
+const SPOTS_WITHOUT_POSTS = new Set([
+  "赤城神社カフェ",
+  "代々木公園の日曜マーケット",
+  "麻布十番の温泉銭湯",
+  "築地の卵焼き屋（行列なし）",
+  "神楽坂の石畳の路地",
+]);
+
+/** #893: 2 件目の投稿も作るスポット（スポット投稿一覧に複数件並ぶ様子を見せるため） */
+const SPOTS_WITH_TWO_POSTS = new Set(["東京スカイツリー", "築地場外市場", "渋谷スクランブル交差点", "新宿 思い出横丁"]);
 
 /** 写真を取ってきて Storage に入れる（既に同じ名前があれば上書き）。使うものだけ */
 async function uploadSeedPhotos() {
-  console.log(`写真: Pixabay から ${USABLE_PHOTOS.length} 枚を取って Storage に入れます（使わない ${PHOTOS.photos.length - USABLE_PHOTOS.length} 枚は入れない）`);
-  for (const photo of USABLE_PHOTOS) {
+  console.log(`写真: Pixabay から ${PHOTOS.photos.length} 枚を取って Storage に入れます`);
+  for (const photo of PHOTOS.photos) {
     const response = await fetch(photo.url);
     if (!response.ok) throw new Error(`写真を取れませんでした: ${photo.url}（HTTP ${response.status}）`);
     const body = new Uint8Array(await response.arrayBuffer());
@@ -92,7 +99,7 @@ async function uploadSeedPhotos() {
       .upload(`${SEED_PHOTO_PREFIX}${photo.file}`, body, { contentType: "image/jpeg", upsert: true });
     if (error) throw new Error(`Storage に入れられませんでした: ${photo.file}（${error.message}）`);
   }
-  console.log(`写真: ${USABLE_PHOTOS.length} 枚を入れました（${SEED_PHOTO_PREFIX}）`);
+  console.log(`写真: ${PHOTOS.photos.length} 枚を入れました（${SEED_PHOTO_PREFIX}）`);
 }
 
 // 「自分」のしおり（東京 2 泊 3 日）に入れるスポット（SPOTS の index）
@@ -101,12 +108,12 @@ const MY_ITINERARY = {
   start: "2026-10-10",
   end: "2026-10-12",
   spots: [
-    { i: 0, day: 1, time: "09:30", memo: "朝イチで", checked: true },
+    { i: 0, day: 1, time: "09:30", memo: "朝イチで", checked: false },
     { i: 2, day: 1, time: "11:00", memo: "包丁を見る", checked: true },
     { i: 4, day: 1, time: "14:00", memo: "" , checked: false },
     { i: 3, day: 1, time: null, memo: "夜景", checked: false },
     { i: 14, day: 2, time: "08:00", memo: "朝ごはん", checked: false },
-    { i: 16, day: 2, time: "10:30", memo: "", checked: false },
+    { i: 16, day: 2, time: "10:30", memo: "", checked: true },
     { i: 17, day: 2, time: "13:00", memo: "予約済み", checked: false },
     { i: 23, day: 3, time: "10:00", memo: "", checked: false },
     { i: 26, day: 3, time: null, memo: "日曜なら", checked: false },
@@ -229,23 +236,60 @@ async function main() {
   );
   console.log(`旅行（アルバム）: ${tripRows.length} 件`);
 
-  // 4. 投稿（約 55 件。うち非公開 2 件）。スポットごとに 1 件、10 件に 1 つは 2 件
+  // 4. 投稿（#893: 50 件。うち非公開 2 件）。感想・費用・星は SPOT_POSTS にスポットごとに書いてある
   const postRows = [];
   const photoRows = [];
-  /** #777: 一度使った写真は二度使わない */
-  const usedPhotos = new Set();
+
+  /*
+   * #893: どのスポットに何件の投稿を作るかを**先に決める**。
+   * 先に決めておかないと「このスポットの投稿は 1 件だけか」が分からず、
+   * 「1 件だけなら写真を全部載せる」という割り振りができない。
+   * 「自分」の投稿もここで数に入れる（しおりでチェック済みのスポット）。
+   */
+  const myPostSpotIndexes = MY_ITINERARY.spots.filter((x) => x.checked).map((x) => x.i);
+  const plannedCount = new Map(); // スポット名 -> 投稿の件数
+  for (let i = 0; i < SPOTS.length; i += 1) {
+    const name = SPOTS[i].name;
+    let count = SPOTS_WITHOUT_POSTS.has(name) ? 0 : 1;
+    if (SPOTS_WITH_TWO_POSTS.has(name)) count += 1;
+    if (myPostSpotIndexes.includes(i)) count += 1;
+    plannedCount.set(name, count);
+  }
+
+  /** そのスポットの写真を、順番に切り出していく（使い切ったら空） */
+  const photoQueue = new Map([...PHOTOS_BY_SPOT].map(([name, list]) => [name, [...list]]));
+  /**
+   * 投稿 1 件に載せる写真を取り出す。
+   * 投稿が 1 件しかないスポットは**残り全部**（複数枚の投稿になる）、
+   * 2 件以上あるスポットは 1 枚ずつ（同じ写真が 2 投稿に出ないように）。
+   */
+  function takePhotos(spotName) {
+    const queue = photoQueue.get(spotName) ?? [];
+    if (queue.length === 0) return [];
+    return (plannedCount.get(spotName) ?? 1) <= 1 ? queue.splice(0, queue.length) : queue.splice(0, 1);
+  }
+  function attachPhotos(postId, spotName) {
+    takePhotos(spotName).forEach((path, order) => {
+      photoRows.push({ post_id: postId, media_type: "photo", storage_url: path, display_order: order });
+    });
+  }
+
   let n = 0;
   for (let i = 0; i < spotRows.length; i += 1) {
-    const count = i % 10 === 0 ? 2 : 1; // 51 スポットで 57 件（＋自分の 2 件・下書き 4 件）＝「50 件ほど」
+    const spot = SPOTS[i];
+    if (SPOTS_WITHOUT_POSTS.has(spot.name)) continue;
+    const entries = SPOT_POSTS[spot.name];
+    if (!entries) throw new Error(`SPOT_POSTS に「${spot.name}」がありません（seed-data.mjs）`);
+    const count = SPOTS_WITH_TWO_POSTS.has(spot.name) ? 2 : 1;
     for (let k = 0; k < count; k += 1) {
+      const entry = entries[k];
+      if (!entry) throw new Error(`SPOT_POSTS「${spot.name}」の ${k + 1} 件目がありません`);
       const u = users[(i + k) % users.length];
       const trip = pick(tripOf[u.key], k);
       const created = daysAgo(1 + ((i * 7 + k * 3) % 120));
       const visit = daysAgo(2 + ((i * 7 + k * 3) % 120));
       const id = randomUUID();
       const isPrivate = n === 5 || n === 23;
-      const spot = SPOTS[i];
-      const cost = spot.cat === "自然・景勝地" || spot.cat === "観光スポット" ? (k === 0 ? 0 : null) : 400 + ((i * 137 + k * 50) % 24) * 100;
       postRows.push({
         id,
         user_id: u.id,
@@ -253,10 +297,10 @@ async function main() {
         spot_id: spotRows[i].id,
         category: spot.cat,
         visit_date: ymd(visit),
-        duration: spot.cat === "宿泊施設" ? "宿泊" : pick(DURATIONS, i + k),
-        cost,
-        rating: 3 + ((i + k) % 3),
-        comment: pick(COMMENTS, i * 3 + k),
+        duration: spot.cat === "宿泊施設" ? "宿泊" : entry.d,
+        cost: entry.cost,
+        rating: entry.r,
+        comment: entry.c,
         visibility: isPrivate ? "private" : "public",
         status: "published",
         lat: spot.lat,
@@ -264,43 +308,37 @@ async function main() {
         created_at: created.toISOString(),
         published_at: created.toISOString(),
       });
-      // #777: そのスポットの写真があり、まだどの投稿にも使っていなければ 1 枚だけ付ける
-      const photo = PHOTO_BY_SPOT.get(spot.name);
-      if (photo && !usedPhotos.has(photo)) {
-        usedPhotos.add(photo);
-        photoRows.push({ post_id: id, media_type: "photo", storage_url: photo, display_order: 0 });
-      }
+      attachPhotos(id, spot.name);
       n += 1;
     }
   }
-  // 自分の公開投稿（しおりの Day 1 の 2 件。自動チェックの見た目に合わせる）
-  for (const s of MY_ITINERARY.spots.filter((x) => x.checked)) {
+  // 自分の公開投稿（しおりでチェック済みのスポット。自動チェックの見た目に合わせる）
+  const MY_COMMENTS = [
+    "しおりに入れておいた順にそのまま回れた。次は朝をもっと早くしたい。",
+    "歩きどおしだったが、このへんは一本道なので迷わなかった。昼を挟むとちょうどいい。",
+  ];
+  for (const [k, sp] of MY_ITINERARY.spots.filter((x) => x.checked).entries()) {
     const id = randomUUID();
-    const created = daysAgo(3);
+    const created = daysAgo(3 + k);
     postRows.push({
       id,
       user_id: me.id,
       trip_id: myTripId,
-      spot_id: spotRows[s.i].id,
-      category: SPOTS[s.i].cat,
+      spot_id: spotRows[sp.i].id,
+      category: SPOTS[sp.i].cat,
       visit_date: ymd(created),
       duration: "1時間以内",
       cost: 800,
       rating: 4,
-      comment: "しおりどおりに回れた。次は朝もっと早く来たい。",
+      comment: MY_COMMENTS[k % MY_COMMENTS.length],
       visibility: "public",
       status: "published",
-      lat: SPOTS[s.i].lat,
-      lng: SPOTS[s.i].lng,
+      lat: SPOTS[sp.i].lat,
+      lng: SPOTS[sp.i].lng,
       created_at: created.toISOString(),
       published_at: created.toISOString(),
     });
-    // #777: 自分の投稿も同じ決まり（そのスポットの写真が余っていれば 1 枚だけ）
-    const myPhoto = PHOTO_BY_SPOT.get(SPOTS[s.i].name);
-    if (myPhoto && !usedPhotos.has(myPhoto)) {
-      usedPhotos.add(myPhoto);
-      photoRows.push({ post_id: id, media_type: "photo", storage_url: myPhoto, display_order: 0 });
-    }
+    attachPhotos(id, SPOTS[sp.i].name);
   }
   // 自分の下書き 4 件
   for (const [k, d] of MY_DRAFTS.entries()) {
@@ -326,7 +364,10 @@ async function main() {
   }
   await must(admin.from("posts").insert(postRows), "posts");
   await must(admin.from("post_photos").insert(photoRows), "post_photos");
+  const withoutPhoto = postRows.filter((p) => p.status === "published" && !photoRows.some((ph) => ph.post_id === p.id));
+  if (withoutPhoto.length > 0) throw new Error(`写真が付いていない公開投稿が ${withoutPhoto.length} 件あります（#893 の受入条件に反する）`);
   console.log(`投稿: ${postRows.length} 件（下書き ${MY_DRAFTS.length}、非公開 2）、写真: ${photoRows.length} 枚`);
+  console.log(`  うち写真が 2 枚以上の投稿: ${new Set(photoRows.map((p) => p.post_id)).size === photoRows.length ? 0 : postRows.filter((p) => photoRows.filter((ph) => ph.post_id === p.id).length >= 2).length} 件`);
 
   // 5. いいね・コメント・まだあった報告（公開投稿にだけ）
   const published = postRows.filter((p) => p.status === "published" && p.visibility === "public");
