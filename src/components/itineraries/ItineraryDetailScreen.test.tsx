@@ -1,7 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 
-vi.mock("next/navigation", () => ({ useRouter: () => ({ push: vi.fn(), refresh: vi.fn() }) }));
+const refresh = vi.fn();
+vi.mock("next/navigation", () => ({ useRouter: () => ({ push: vi.fn(), refresh }) }));
 
 /*
  * 2026-09-30（#632 の続き）: このファイルは待ちの多いテストが並んでいて、209 ファイルを
@@ -470,7 +471,7 @@ describe("見出しの作り直し（#757・#762）", () => {
     render(<ItineraryDetailScreen initial={data} viewerId="me" api={makeApi(data)} />);
     fireEvent.click(screen.getByRole("button", { name: "その他" }));
     const labels = screen.getAllByRole("menuitem").map((item) => item.textContent);
-    expect(labels).toEqual(["アルバム", "招待", "メンバー", "しおりを削除"]);
+    expect(labels).toEqual(["アルバム", "招待", "メンバー", "最新にする", "しおりを削除"]);
   });
 
   it("#762: 投稿が 0 件なら「アルバム」は出さない。見出しにもボタンを残さない", () => {
@@ -581,5 +582,22 @@ describe("ALL の並び（#759）", () => {
         .getAllByRole("option")
         .map((option) => option.textContent)
     ).toEqual(["Day 1", "Day 2", "Day 3", "日付なし"]);
+  });
+});
+
+/*
+ * #872（2026-10-07）: しおり詳細を手元から最新にする手段。
+ *
+ * 【初心者向け】この画面には「引っ張って更新」を付けられない。
+ * 下に引く動きが既に「シートを閉じて地図を出す」の意味を持っているため（要求定義書 改訂 20）。
+ * 動きがぶつからない「⋯」の中に置く。
+ */
+describe("最新にする（#872）", () => {
+  it("「⋯」の中に「最新にする」があり、押すと取り直す", () => {
+    refresh.mockClear();
+    render(<ItineraryDetailScreen initial={detail()} viewerId="me" api={makeApi(detail())} />);
+    fireEvent.click(screen.getByRole("button", { name: "その他" }));
+    fireEvent.click(screen.getByRole("menuitem", { name: "最新にする" }));
+    expect(refresh).toHaveBeenCalled();
   });
 });

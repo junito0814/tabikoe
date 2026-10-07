@@ -226,33 +226,37 @@ export function NotificationListScreen({
                       data-announcement={item.id}
                       data-new={item.isNew ? "true" : undefined}
                       data-unread={item.isRead ? undefined : "true"}
-                      className={`flex w-full items-start gap-3 rounded-[12px] border bg-surface p-3 text-left ${
-                        item.isRead ? "border-line" : "border-accent shadow-card"
+                      /*
+                        * #873（2026-10-07）: 個人向け通知と**同じ形**にそろえた。
+                        *
+                        * 【初心者向け】ここだけスピーカーの絵・大きな「お知らせ」の札・青い枠・影が付いていて、
+                        * 同じ一覧の中で浮いていました（実機確認での指摘）。
+                        * 並べる要素も順番も個人向け通知（`NotificationBody`）に合わせ、
+                        * 「お知らせ」であることは**日時の行の小さな文字**で伝えます。
+                        */
+                      className={`flex w-full items-start gap-3 rounded-[12px] border border-line bg-surface p-3 text-left ${
+                        item.isRead ? "" : "shadow-card"
                       }`}
                     >
-                      {/* #754: 個人向け通知と同じ青い丸。既読なら場所だけ空けて並びをそろえる */}
-                      <span className={`mt-1.5 h-2 w-2 shrink-0 rounded-full ${item.isRead ? "bg-transparent" : "bg-accent"}`} aria-hidden />
-                      <span className="mt-0.5 shrink-0" aria-hidden>
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-                          <path d="M4 10v4a1 1 0 0 0 1 1h3l6 4V5L8 9H5a1 1 0 0 0-1 1z" stroke="var(--accent)" strokeWidth="1.8" strokeLinejoin="round" />
-                          <path d="M17 9a4 4 0 0 1 0 6" stroke="var(--accent)" strokeWidth="1.8" strokeLinecap="round" />
-                        </svg>
+                      {/* 個人向け通知と同じ丸（大きさ・色・位置） */}
+                      <span className="mt-1 shrink-0" aria-hidden>
+                        <span className={`block h-2.5 w-2.5 rounded-full ${item.isRead ? "bg-line" : "bg-accent"}`} />
                       </span>
                       <span className="min-w-0 flex-1">
-                        <span className="flex items-center gap-1.5 text-[0.6875rem]">
-                          <span className="rounded-full bg-accent px-2 py-0.5 font-semibold text-white">お知らせ</span>
+                        <span className={`block text-[0.8125rem] ${item.isRead ? "text-ink" : "font-semibold text-ink"}`}>
+                          {item.title}
+                          {!item.isRead && <span className="sr-only">（未読）</span>}
+                        </span>
+                        <span className="mt-0.5 block text-[0.6875rem] text-muted">
+                          お知らせ ・ {formatDateTime(item.publishedAt)}
+                          {/* #754: 公開から 7 日以内で、まだ読んでいないものだけ「新着」と言う */}
                           {item.isNew && (
-                            <span className="inline-flex items-center gap-0.5 font-bold text-accent" data-new-badge>
-                              <svg width="12" height="12" viewBox="0 0 24 24" aria-hidden>
-                                <path d="M12 2l2.9 6.6 7.1.7-5.4 4.8 1.6 7L12 17.5 5.8 21l1.6-7L2 9.3l7.1-.7z" fill="currentColor" />
-                              </svg>
+                            <span className="ml-1 font-bold text-accent" data-new-badge>
                               NEW
                             </span>
                           )}
-                          <span className="ml-auto text-muted">{formatDateTime(item.publishedAt)}</span>
                         </span>
-                        <span className="mt-1 block truncate text-[0.8125rem] font-semibold text-ink">{item.title}</span>
-                        <span className="mt-0.5 line-clamp-2 block text-[0.75rem] leading-[1.6] text-muted">{item.body}</span>
+                        <span className="mt-1 line-clamp-2 block text-[0.75rem] leading-[1.6] text-muted">{item.body}</span>
                       </span>
                     </button>
                   </li>

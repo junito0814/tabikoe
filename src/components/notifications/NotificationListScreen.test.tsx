@@ -46,14 +46,21 @@ function openNotification(id: string) {
 }
 
 describe("NotificationListScreen（SC-14）", () => {
-  it("お知らせには「お知らせ」ラベルが付き、新着はアイコン＋NEW の文字で強調される", () => {
+  /*
+   * #873（2026-10-07）: お知らせの行を**個人向け通知と同じ形**にそろえた。
+   * スピーカーの絵・大きな札・青い枠をやめ、「お知らせ」は日時の行の小さな文字にした。
+   */
+  it("お知らせは個人向け通知と同じ形で、日時の行に「お知らせ」が付く。新着は NEW", () => {
     render(<NotificationListScreen initialPage={{ items, nextOffset: null }} api={api()} />);
-    expect(screen.getAllByText("お知らせ")).toHaveLength(2);
     const fresh = document.querySelector("[data-announcement='a-new']")!;
     const old = document.querySelector("[data-announcement='a-old']")!;
+    // 日時と同じ行に「お知らせ」。大きな札（白抜きの丸い札）ではない
+    expect(fresh.textContent).toContain("お知らせ ・ ");
     expect(fresh.querySelector("[data-new-badge]")).toHaveTextContent("NEW");
-    expect(fresh.querySelector("[data-new-badge] svg")).not.toBeNull();
     expect(old.querySelector("[data-new-badge]")).toBeNull();
+    // 個人向け通知と同じ枠（青い枠・スピーカーの絵を使わない）
+    expect(fresh.className).toContain("border-line");
+    expect(fresh.querySelector("svg")).toBeNull();
   });
 
   /**
