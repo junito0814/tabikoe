@@ -20,6 +20,7 @@ import { buildComposePayload, type UploadedMedia } from "./compose-payload";
 import { POSTING_RESTRICTED_ERROR, postingRestrictedMessage } from "@/lib/moderation/posting-restriction";
 import { BackLink } from "@/components/layout/BackLink";
 import { suggestedCategory } from "@/lib/posts/suggested-category";
+import { uploadPostMedia } from "@/lib/posts/upload-media";
 
 const MAX_PHOTO_SIZE_BYTES = 10 * 1024 * 1024;
 const MAX_VIDEO_SIZE_BYTES = 100 * 1024 * 1024;
@@ -503,11 +504,8 @@ export function PostComposeScreen({
 
 /** 本番で使う API 呼び出し。テストではこのオブジェクトを差し替える */
 const defaultApi: ComposeApi = {
-  upload: (files) => {
-    const formData = new FormData();
-    files.forEach((file) => formData.append("photos", file));
-    return fetchWithAuthRedirect("/api/posts/photos", { method: "POST", body: formData });
-  },
+  // #860: ブラウザから Storage へ直接上げる（Vercel は 4.5MB を超える本文を関数に渡さないため）
+  upload: (files) => uploadPostMedia(files),
   create: (payload) =>
     fetchWithAuthRedirect("/api/posts", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) }),
   update: (postId, payload) =>
