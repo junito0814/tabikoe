@@ -91,6 +91,15 @@ export async function saveLegalDraft(
   if (input.id) {
     const current = await getLegalDocumentById(admin, input.id);
     if (!current) return { ok: false, error: "not_found" };
+    /*
+     * #889（2026-10-07）: **種類が食い違う id は受け付けない。**
+     *
+     * 【初心者向け】ここが無いと、「利用規約の下書きの id」に個人情報保護方針の本文を
+     * 書き込めてしまいます（実際に画面の不具合でそれが起きました）。
+     * 画面側も直しましたが、**API は画面を信じてはいけません** ── 別の経路から
+     * 同じことが起きます。あるかどうかを伝えないよう、not_found として断ります。
+     */
+    if (current.kind !== input.kind) return { ok: false, error: "not_found" };
     if (current.status !== "draft") return { ok: false, error: "not_draft" };
     const { error } = await admin
       .from("legal_documents")

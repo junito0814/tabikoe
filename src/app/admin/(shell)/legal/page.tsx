@@ -35,5 +35,14 @@ export default async function AdminLegalPage({ searchParams }: PageProps<"/admin
   if (!loaded) {
     return <ErrorNotice message={ERROR_MESSAGES.dbLoadFailure} retryable className="w-full" />;
   }
-  return <LegalAdminScreen kind={kind} draft={loaded.draft} versions={loaded.versions.versions} totalUsers={loaded.versions.totalUsers} />;
+  /*
+   * #889（2026-10-07）: `key` に種類を入れて、タブを切り替えたら部品を作り直す。
+   *
+   * 【初心者向け】タブは `<Link>` なので、**同じページの中で URL だけが変わります**。
+   * `LegalAdminScreen` は編集中の値を `useState` で持っており、`useState` の初期値は
+   * **いちばん最初しか見ません**。そのため利用規約から個人情報保護方針へ移っても
+   * **中身が利用規約のまま**で、そのまま保存すると利用規約のほうが上書きされていました。
+   * `key` が変わると React は部品ごと作り直すので、その種類の下書きが初期値になります。
+   */
+  return <LegalAdminScreen key={kind} kind={kind} draft={loaded.draft} versions={loaded.versions.versions} totalUsers={loaded.versions.totalUsers} />;
 }
