@@ -13,6 +13,7 @@ import { graphemeLength } from "@/lib/text/grapheme-length";
 import { POSTING_RESTRICTED_ERROR, postingRestrictedMessage } from "@/lib/moderation/posting-restriction";
 import { useConfirm } from "@/components/ui/ConfirmSheet";
 import { formatDateTime } from "@/lib/format/date-time";
+import { Sheet } from "@/components/ui/Sheet";
 import { useKeyboardInset } from "@/lib/ui/use-keyboard-inset";
 
 export interface CommentApi {
@@ -56,6 +57,16 @@ export function CommentSection({
   const [comments, setComments] = useState<CommentData[]>(initialPage.comments);
   const [nextOffset, setNextOffset] = useState<number | null>(initialPage.nextOffset);
   const [totalCount, setTotalCount] = useState(initialPage.totalCount);
+  /*
+   * #874（2026-10-07）: コメントは「コメント N 件」を押すと**下から出るシート**で読み書きする。
+   *
+   * 【初心者向け】以前は投稿詳細の本文の下にそのまま並べていたので、
+   *   - 読むには**いちばん下まで送る**必要があった（投稿が 1 件のスポットでは届かないこともあった。#867）
+   *   - 書くにも同じだけ送る必要があった
+   * Instagram と同じように、どこからでもボタン 1 つで開くようにします。
+   * 閉じ方（取っ手・Android の戻るキー）はアプリの他のシートと同じです（#796・#804）。
+   */
+  const [isOpen, setIsOpen] = useState(false);
   const [draft, setDraft] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
@@ -175,15 +186,7 @@ export function CommentSection({
     }
   };
 
-  return (
-    /* #803: 下に固定した入力欄のぶん、いちばん下のコメントが隠れないよう余白を取る */
-    <section aria-labelledby="comments-heading" className="flex flex-col gap-3 pb-24">
-      {confirmSheet}
-      <h2 id="comments-heading" className="text-[0.875rem] font-bold text-ink">
-        コメント <span className="text-[0.75rem] font-medium text-muted">{totalCount} 件</span>
-      </h2>
-
-      {canComment ? (
+  const form = canComment ? (
         /*
           * #803（2026-10-06）: 入力欄を**画面の下に固定**した。
           *
@@ -194,9 +197,14 @@ export function CommentSection({
           */
         <form
           onSubmit={handleSubmit}
-          style={keyboardInset > 0 ? { bottom: keyboardInset } : undefined}
+          /*
+            * #803: 入力欄は読むところより**下**（読んでから書く）。
+            * #874: シートの footer に入れたので、画面に貼り付ける（fixed）必要が無くなった。
+            * キーボードが出たときは、その高さぶん下に余白を足して押し上げる（`use-keyboard-inset`）。
+            */
+          style={keyboardInset > 0 ? { paddingBottom: keyboardInset } : undefined}
           data-comment-form
-          className="fixed inset-x-0 bottom-0 z-30 flex flex-col gap-1.5 border-t border-line bg-surface px-4 pb-[max(10px,env(safe-area-inset-bottom))] pt-2.5 [body:has([data-menu-bar])_&]:bottom-[60px] md:[body:has([data-menu-bar])_&]:bottom-0 md:[body:has([data-menu-bar])_&]:left-[200px]"
+          className="flex flex-col gap-1.5"
         >
           {replyTo && (
             <div className="flex items-center gap-2 text-[0.75rem]" data-reply-to={replyTo.id}>
@@ -244,10 +252,12 @@ export function CommentSection({
             </button>
           </div>
         </form>
-      ) : (
-        <p className="text-[0.75rem] text-muted">非公開の投稿にはコメントできません</p>
-      )}
+  ) : (
+    <p className="text-[0.75rem] text-muted">非公開の投稿にはコメントできません</p>
+  );
 
+  const list = (
+    <>
       {errorMessage && <ErrorNotice message={errorMessage} />}
 
       {comments.length === 0 ? (
@@ -311,7 +321,35 @@ export function CommentSection({
           {isLoadingMore ? "読み込み中…" : "もっと見る"}
         </button>
       )}
-    </section>
+    </>
+  );
+
+  return (
+    <>
+      {confirmSheet}
+      {/*
+        * #874: 本文の下に並べるのをやめ、ここは「コメント N 件」の入口だけにする。
+        * 押すと下からシートで開く（Instagram と同じ）。
+        */}
+      <button
+        type="button"
+        onClick={() => setIsOpen(true)}
+        data-open-comments
+        className="tap-target flex w-fit items-center gap-1.5 rounded-full border border-line bg-surface px-4 text-[0.8125rem] font-semibold text-ink"
+      >
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden>
+          <path d="M20 12a8 8 0 1 1-3.1-6.3M20 5v4h-4" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" opacity="0" />
+          <path d="M4 5h16v11H9l-5 4V5z" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round" />
+        </svg>
+        {/* 文字そのものは flex の隙間が効かないので、span に入れて離す */}
+        <span>コメント</span>
+        <span className="font-medium text-muted">{totalCount} 件</span>
+      </button>
+
+      <Sheet open={isOpen} title="コメント" onClose={() => setIsOpen(false)} footer={form}>
+        {list}
+      </Sheet>
+    </>
   );
 }
 

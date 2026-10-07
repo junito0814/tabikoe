@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { act, fireEvent, render, screen } from "@testing-library/react";
+import { __resetOverlayStackForTest } from "@/lib/ui/use-close-on-back";
 import { Sheet } from "./Sheet";
 
 /**
@@ -104,6 +105,8 @@ describe("シートの取っ手（#804）", () => {
  * 出典: Issue #796「Bug 4: Android の戻るキーでシートが閉じず、画面ごと戻る」
  */
 describe("戻るキーでシートだけ閉じる（#796）", () => {
+  beforeEach(() => __resetOverlayStackForTest());
+
   let pushState: ReturnType<typeof vi.spyOn>;
   let back: ReturnType<typeof vi.spyOn>;
 

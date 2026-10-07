@@ -60,7 +60,8 @@ describe("PostDetailScreen（SC-05）", () => {
     // 組み込み: 保存（＋）・いいね・コメント欄
     expect(screen.getByRole("button", { name: "行きたい" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "いいねする" })).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: /コメント/ })).toBeInTheDocument();
+    // #874: コメントは下から出るシート。本文の下にあるのは「コメント N 件」の入口だけ
+    expect(document.querySelector("[data-open-comments]")).toBeInTheDocument();
   });
 
   it("v3.0/v3.1: 見出しはスポット名でスポット別一覧へのリンク。上 1/3 の地図・自分も投稿する", () => {
@@ -160,6 +161,8 @@ describe("PostDetailScreen（SC-05）", () => {
     render(<PostDetailScreen post={{ ...post, visibility: "private", canInteract: false, isOwner: true }} initialComments={noComments} />);
     expect(screen.queryByRole("button", { name: "いいねする" })).toBeNull();
     expect(screen.getByText("非公開")).toBeInTheDocument();
+    // #874: 書けない理由はシートを開いたときに出る
+    fireEvent.click(document.querySelector("[data-open-comments]") as HTMLElement);
     expect(screen.getByText("非公開の投稿にはコメントできません")).toBeInTheDocument();
   });
 
@@ -176,7 +179,8 @@ describe("PostDetailScreen（SC-05）", () => {
       await new Promise((r) => setTimeout(r, 20));
     });
     expect(screen.queryByRole("status", { name: "コメントを読み込んでいます" })).toBeNull();
-    expect(screen.getByRole("heading", { name: /コメント/ })).toBeInTheDocument();
+    // #874: コメントは下から出るシート。本文の下にあるのは「コメント N 件」の入口だけ
+    expect(document.querySelector("[data-open-comments]")).toBeInTheDocument();
   });
 
   it("strike-system Task 3: 自動で非公開になった投稿は本人に「確認中」と出る", () => {
