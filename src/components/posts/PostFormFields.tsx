@@ -261,23 +261,32 @@ export function PostFormFields({
         </div>
       </div>
 
-      {/* 写真・動画: 選んだその場にサムネイル */}
+      {/*
+        * 写真: 選んだその場にサムネイル。
+        *
+        * 2026-10-07: 「写真・動画」→「写真」にした（#861）。
+        *
+        * 【初心者向け】動画は作ってありますが**止めてあります**（`VIDEO_UPLOAD_DISABLED=1`）。
+        * 「動画」と書いてあると、選べると思って動画を選び、投稿のところで初めて断られます。
+        * **いま出せないものは書かない**ほうが親切なので、受け付ける種類（`accept`）からも外しました。
+        * 動画を有効にするときに、ここの言葉と `accept` を一緒に戻します（手順は #861）。
+        */}
       <div className="flex flex-col gap-1.5">
-        <span className="text-[0.75rem] font-medium text-muted">写真・動画 *</span>
+        <span className="text-[0.75rem] font-medium text-muted">写真 *</span>
         <SelectedMediaThumbnails
           items={mediaItems}
           onRemove={onRemoveMedia}
           removingKey={removingMediaKey}
           onAdd={onAddMedia}
-          addLabel="写真・動画を追加"
+          addLabel="写真を追加"
         />
         <input
           ref={fileInputRef}
           type="file"
-          accept="image/jpeg,image/png,video/mp4,video/quicktime,.mov"
+          accept="image/jpeg,image/png"
           multiple
           onChange={onFilesSelected}
-          aria-label="写真・動画を選択"
+          aria-label="写真を選択"
           className="sr-only"
         />
         <UploadNotice compact />

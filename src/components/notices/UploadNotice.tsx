@@ -26,7 +26,8 @@ export function UploadNotice({ compact = false }: { compact?: boolean }) {
   }
   return (
     <ul className="list-disc space-y-1 pl-4 text-[0.6875rem] leading-[1.6] text-muted">
-      <li>他人が写り込んだ写真・動画は、本人の同意を得てから投稿してください</li>
+      {/* 2026-10-07: 動画は提出後に回したので「写真」だけにする（#861） */}
+      <li>他人が写り込んだ写真は、本人の同意を得てから投稿してください</li>
       <li>個人が特定できる情報（車のナンバー等）が写っていないか確認してください</li>
     </ul>
   );

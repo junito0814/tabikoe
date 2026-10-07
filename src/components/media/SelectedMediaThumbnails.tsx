@@ -40,7 +40,7 @@ export function SelectedMediaThumbnails({
 }) {
   if (items.length === 0 && !onAdd) return null;
   return (
-    <ul className="flex gap-2 overflow-x-auto pb-1" aria-label="選択中の写真・動画">
+    <ul className="flex gap-2 overflow-x-auto pb-1" aria-label="選択中の写真">
       {items.map((item) => (
         <li
           key={item.key}

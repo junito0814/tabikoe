@@ -44,7 +44,7 @@ async function fillRequired() {
   fireEvent.change(screen.getByLabelText("カテゴリ *"), { target: { value: "グルメ" } });
   fireEvent.change(screen.getByLabelText("滞在時間 *"), { target: { value: "1時間以内" } });
   fireEvent.click(screen.getByRole("radio", { name: "4" }));
-  const input = screen.getByLabelText("写真・動画を選択") as HTMLInputElement;
+  const input = screen.getByLabelText("写真を選択") as HTMLInputElement;
   const file = new File(["x"], "a.jpg", { type: "image/jpeg" });
   await act(async () => {
     fireEvent.change(input, { target: { files: [file] } });

@@ -22,8 +22,8 @@ import { BackLink } from "@/components/layout/BackLink";
 import { suggestedCategory } from "@/lib/posts/suggested-category";
 import { uploadPostMedia } from "@/lib/posts/upload-media";
 
+/* 2026-10-07: 動画は提出後に回したので、ここで見るのは写真の分だけ（#861） */
 const MAX_PHOTO_SIZE_BYTES = 10 * 1024 * 1024;
-const MAX_VIDEO_SIZE_BYTES = 100 * 1024 * 1024;
 const ALLOWED_PHOTO_TYPES = ["image/jpeg", "image/png"];
 
 /** 保存済み投稿（編集・下書きの続き）の初期値 */
@@ -144,7 +144,7 @@ export function PostComposeScreen({
     if (resolveTimer.current) clearTimeout(resolveTimer.current);
   }, []);
 
-  // ---- 写真・動画 ----
+  // ---- 写真（動画は提出後。#861）----
   const [files, setFiles] = useState<File[]>([]);
   const [existingPhotos, setExistingPhotos] = useState(existing?.photos ?? []);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -180,16 +180,23 @@ export function PostComposeScreen({
     const selected = Array.from(event.target.files ?? []);
     event.target.value = "";
     setErrorMessage(null);
+    /*
+     * 2026-10-07: 動画は提出後に回したので、ここでも写真だけを見る（#861）。
+     *
+     * 【初心者向け】ファイルを選ぶ欄（`accept`）からも動画を外しましたが、
+     * **`accept` は「おすすめ」でしかなく、端末によっては別のものも選べます**。
+     * ここで断っておかないと、サーバーまで行ってから断られることになります。
+     */
     for (const file of selected) {
       if (isVideoFile(file)) {
-        if (file.size > MAX_VIDEO_SIZE_BYTES) {
-          setErrorMessage("動画は1点あたり100MB以内にしてください");
-          return;
-        }
-      } else if (!ALLOWED_PHOTO_TYPES.includes(file.type)) {
-        setErrorMessage("写真はJPEGまたはPNG、動画はMP4またはMOVのみアップロードできます");
+        setErrorMessage("動画は近日対応します。いまは写真だけ投稿できます");
         return;
-      } else if (file.size > MAX_PHOTO_SIZE_BYTES) {
+      }
+      if (!ALLOWED_PHOTO_TYPES.includes(file.type)) {
+        setErrorMessage("写真は JPEG か PNG だけ投稿できます");
+        return;
+      }
+      if (file.size > MAX_PHOTO_SIZE_BYTES) {
         setErrorMessage("写真は1点あたり10MB以内にしてください");
         return;
       }
@@ -234,14 +241,14 @@ export function PostComposeScreen({
     if (files.length === 0) return [];
     const response = await api.upload(files);
     if (!response.ok) {
-      setErrorMessage(response.status === 503 ? "動画のアップロードは現在利用できません" : "写真・動画のアップロードに失敗しました");
+      setErrorMessage("写真のアップロードに失敗しました");
       return null;
     }
     const uploaded = (await response.json()) as { media: UploadedMedia[] };
     if (targetPostId) {
       const attach = await api.attachMedia(targetPostId, uploaded.media);
       if (!attach.ok) {
-        setErrorMessage("写真・動画の追加に失敗しました");
+        setErrorMessage("写真の追加に失敗しました");
         return null;
       }
       setExistingPhotos((current) => [

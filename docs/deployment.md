@@ -28,7 +28,7 @@
 | `GOOGLE_PLACES_API_KEY` | 同上 | サーバーのみ |
 | `GOOGLE_GEOCODING_API_KEY` | 同上 | サーバーのみ |
 | `GOOGLE_ROUTES_API_KEY` | 同上 | サーバーのみ。探すモードの車・電車・バスの所要時間（要件定義書 6.7）。無くても動く（直線距離の計算に切り替わる） |
-| `VIDEO_UPLOAD_DISABLED` | `1`（当面） | 動画の変換に使う ffmpeg はサーバーレスでの実績が無いため、まずは止めて出す。写真は影響なし |
+| `VIDEO_UPLOAD_DISABLED` | `1`（**提出後まで**） | **動画は提出（2026-10-07）後に回す**（#861）。止めている理由は ffmpeg ではなく **Vercel が約 4.5MB を超えた本文を関数に渡さない**こと（本番で実測）。100MB の動画はそもそも処理に届かない。写真は #860 で直したので影響なし |
 
 `.env.local` の値をそのまま貼る。値はどこにも書き残さない。
 
@@ -95,4 +95,4 @@ node scripts/admin-mfa-reset.mjs <メールアドレス>
 
 - `SUPABASE_SECRET_KEY` を漏らさない。Vercel の環境変数は Production / Preview / Development を分けて設定できる。
 - ステージングと本番で Supabase プロジェクトは同じものを使う（データも同じ）。ダミーデータは `[seed]` の目印付きで、`node scripts/seed/clean-seed.mjs` で消せる。
-- 動画の投稿は `VIDEO_UPLOAD_DISABLED=1` の間は 503 を返す（画面にはその旨が出る）。
+- 動画の投稿は `VIDEO_UPLOAD_DISABLED=1` の間は受け付けない。**2026-10-07 以降、投稿画面は「写真」とだけ書き、ファイル選択からも動画を外してある**ので、そもそも選べない（#861）。有効にするときは、画面の言葉・`accept`・サーバーの受付を一緒に戻す。
