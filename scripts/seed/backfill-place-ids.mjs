@@ -22,22 +22,13 @@
 //
 // 【初心者向け】判断を `.ts` から読み込んでいるのは、**画面と同じ決まりを 2 か所に書かない**ため（約束 14）。
 // Node 24 は型注釈を読み飛ばせるので、`.mjs` から `.ts` をそのまま import できます。
-import { createClient } from "@supabase/supabase-js";
-import { readFileSync } from "node:fs";
+import { connect } from "../supabase-target.mjs";
 import { matchesSpot, withoutSeedMarker } from "../../src/lib/spots/place-id-match.ts";
 
-const env = Object.fromEntries(
-  readFileSync(new URL("../../.env.local", import.meta.url), "utf8")
-    .split("\n")
-    .filter((line) => line.includes("=") && !line.trim().startsWith("#"))
-    .map((line) => {
-      const i = line.indexOf("=");
-      return [line.slice(0, i).trim(), line.slice(i + 1).trim().replace(/^"|"$/g, "")];
-    })
-);
+const { admin, env } = await connect();
+
 const apiKey = env.GOOGLE_PLACES_API_KEY;
-if (!apiKey) throw new Error(".env.local に GOOGLE_PLACES_API_KEY が要ります");
-const admin = createClient(env.NEXT_PUBLIC_SUPABASE_URL, env.SUPABASE_SECRET_KEY, { auth: { persistSession: false } });
+if (!apiKey) throw new Error(".env.local に GOOGLE_PLACES_API_KEY がありません");
 
 const apply = process.argv.includes("--apply");
 

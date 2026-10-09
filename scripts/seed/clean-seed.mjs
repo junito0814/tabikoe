@@ -22,20 +22,11 @@
 //      （投稿は spot_id が on delete restrict なので、先に 1・2 で投稿を消してから）
 //   4. 自分宛の通知のうち related_id が消えたものを削除
 //   あなたの seed 以外のデータ（自分で作った投稿・旅行・行きたい）には触らない。
-import { createClient } from "@supabase/supabase-js";
+import { connect } from "../supabase-target.mjs";
 import { existsSync, readFileSync } from "node:fs";
 import { LEGACY_SEED_SPOT_SUFFIX, LEGACY_SEED_TAG, SEED_EMAIL_DOMAIN } from "./seed-data.mjs";
 
-const env = Object.fromEntries(
-  readFileSync(new URL("../../.env.local", import.meta.url), "utf8")
-    .split("\n")
-    .filter((line) => line.includes("=") && !line.trim().startsWith("#"))
-    .map((line) => {
-      const i = line.indexOf("=");
-      return [line.slice(0, i).trim(), line.slice(i + 1).trim().replace(/^"|"$/g, "")];
-    })
-);
-const admin = createClient(env.NEXT_PUBLIC_SUPABASE_URL, env.SUPABASE_SECRET_KEY, { auth: { autoRefreshToken: false, persistSession: false } });
+const { admin } = await connect();
 
 const apply = process.argv.includes("--apply");
 

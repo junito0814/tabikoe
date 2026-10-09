@@ -13,20 +13,11 @@
 //   **外すのと同時に id を scripts/seed/seed-ids.json に書き出します**。
 //   あとで `clean-seed.mjs` がその file を読んで、seed だけを消せるようにしておくためです。
 //   （名前で消すのは危険: 利用者が自分で「東京タワー」を作っていることがあり、本物まで消えます）
-import { createClient } from "@supabase/supabase-js";
+import { connect } from "../supabase-target.mjs";
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { LEGACY_SEED_SPOT_SUFFIX, LEGACY_SEED_TAG, SEED_EMAIL_DOMAIN } from "./seed-data.mjs";
 
-const env = Object.fromEntries(
-  readFileSync(new URL("../../.env.local", import.meta.url), "utf8")
-    .split("\n")
-    .filter((line) => line.includes("=") && !line.trim().startsWith("#"))
-    .map((line) => {
-      const i = line.indexOf("=");
-      return [line.slice(0, i).trim(), line.slice(i + 1).trim().replace(/^"|"$/g, "")];
-    })
-);
-const admin = createClient(env.NEXT_PUBLIC_SUPABASE_URL, env.SUPABASE_SECRET_KEY, { auth: { persistSession: false } });
+const { admin, target } = await connect();
 const apply = process.argv.includes("--apply");
 const idsPath = new URL("./seed-ids.json", import.meta.url);
 
@@ -74,7 +65,7 @@ writeFileSync(
     {
       note: "seed の行の id。clean-seed.mjs が読む。環境ごとに違うので git には入れない",
       writtenAt: new Date().toISOString(),
-      supabaseUrl: env.NEXT_PUBLIC_SUPABASE_URL,
+      supabaseUrl: target.url,
       userIds: merge(before.userIds, users.map((u) => u.id)),
       spotIds: merge(before.spotIds, spots.map((s) => s.id)),
       tripIds: merge(before.tripIds, trips.map((t) => t.id)),

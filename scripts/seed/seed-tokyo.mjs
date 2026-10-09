@@ -14,25 +14,13 @@
 //   #776 より前は**名前に印**（スポット名の末尾「（seed）」、ユーザー名の先頭「[seed] 」）を付けていたが、
 //   それが画面に出ていた（発表のときに見える）ので付けるのをやめた。代わりが seed-ids.json。
 //   名前で消すのは危険: 利用者が自分で「東京タワー」を作っていることがあり、**本物まで消える**。
-import { createClient } from "@supabase/supabase-js";
+import { connect } from "../supabase-target.mjs";
 import { readFileSync, writeFileSync } from "node:fs";
 import { randomUUID } from "node:crypto";
 import { DUMMY_USERS, MY_TRIP_TITLE, SEED_EMAIL_DOMAIN, SPOT_POSTS, SPOTS, TRIP_TITLES } from "./seed-data.mjs";
 
 // ---- .env.local を読む（dotenv を入れていないので自前で） ----
-const env = Object.fromEntries(
-  readFileSync(new URL("../../.env.local", import.meta.url), "utf8")
-    .split("\n")
-    .filter((line) => line.includes("=") && !line.trim().startsWith("#"))
-    .map((line) => {
-      const i = line.indexOf("=");
-      return [line.slice(0, i).trim(), line.slice(i + 1).trim().replace(/^"|"$/g, "")];
-    })
-);
-const url = env.NEXT_PUBLIC_SUPABASE_URL;
-const key = env.SUPABASE_SECRET_KEY;
-if (!url || !key) throw new Error(".env.local に NEXT_PUBLIC_SUPABASE_URL / SUPABASE_SECRET_KEY が要ります");
-const admin = createClient(url, key, { auth: { autoRefreshToken: false, persistSession: false } });
+const { admin, target } = await connect();
 
 // #703: スポットの Place ID（node scripts/seed/resolve-place-ids.mjs で作る）
 const PLACE_IDS = JSON.parse(readFileSync(new URL("./place-ids.json", import.meta.url), "utf8"));
@@ -43,8 +31,6 @@ const meEmail = process.argv.includes("--me") ? process.argv[process.argv.indexO
 
 
 
-// v3.2 の 7 択（2026-09-22: 旧「それ以上」をやめた。宿泊施設は「宿泊」）
-const DURATIONS = ["30分以内", "1時間以内", "2時間以内", "3時間以内", "半日", "1日"];
 // #703: 写真は Pixabay から取り、Supabase Storage に入れてからそのパスを保存する。
 // 外部の URL を貼りっぱなしにしない（向こうが変われば本番の見た目も変わるため）。
 // 取得元・取得日・人が写っていないことの確認は photos.json に書いてある。
@@ -446,7 +432,7 @@ async function main() {
       {
         note: "seed-tokyo.mjs が入れた行の id。clean-seed.mjs が読む。環境ごとに違うので git には入れない",
         writtenAt: new Date().toISOString(),
-        supabaseUrl: url,
+        supabaseUrl: target.url,
         userIds: users.map((u) => u.id),
         spotIds: spotRows.map((s) => s.id),
         tripIds: tripRows.map((t) => t.id),
