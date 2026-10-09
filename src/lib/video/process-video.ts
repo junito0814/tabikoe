@@ -4,38 +4,58 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { promisify } from "node:util";
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { isVideoFile } from "./media-kind";
+
+export { isVideoFile };
 
 /**
- * post-creation-v3 Task4: 動画（MP4／MOV）の受付・変換・サムネイル生成
- * 出典: docs/tasks/posts/post-creation-v3/04-video-mov-support.md
- *       要件定義書 v3.0 3.3.1・5.4（動画は MP4 か iPhone 標準の MOV、100MB・1 分以内、MOV は MP4 に変換）
+ * post-creation-v3 Task4 / #861: 動画の受付（検査・メタデータ除去・サムネイル）
+ * 出典: Issue #861「動画の投稿を有効にする」
+ *       要件定義書 5.4（30 秒・50MB・中身が H.264 なら MP4／MOV のどちらでも）
  *
- * 【初心者向け】動画は sharp（画像ライブラリ）では扱えないので、ffmpeg（コマンドラインの動画処理ツール）を
- * 子プロセスとして起動する。`ffmpeg-static` パッケージが実行ファイルを同梱している。流れは
- *   ①一時ファイルに書く → ②ffmpeg で長さを調べる（1 分超は拒否）→ ③先頭フレームを JPEG で切り出す →
- *   ④MP4 に変換（MOV のとき。MP4 はメタデータだけ除去して再パック）→ ⑤2 つを Storage に上げる → ⑥一時ファイルを消す
- * 位置情報などのメタデータは `-map_metadata -1` で落とす（5.4）。
+ * 【初心者向け】ここがやること・やらないことがはっきり変わりました（2026-10-09）。
  *
- * ffmpeg が Vercel のサーバーレス関数で動くかは要件定義書 9 章 #5・#8 の検証事項。動かない場合は
- * `VIDEO_UPLOAD_DISABLED=1` で受付を止められる（呼び出し側で 503 を返す）。
+ * ~~MOV を MP4 に変換する~~ → **変換しません。**
+ *   変換は 1 分の動画で 60〜75 CPU 秒かかり、Vercel の 60 秒に収まりません（2026-10-07 に実測）。
+ *   代わりに「**見る人全員が再生できる形かどうか**」を確かめて、だめなら理由を添えて断ります。
+ *
+ * **なぜ容器（MP4／MOV）の名前では判断できないのか。**
+ *   iPhone は HEVC という形式の映像を `.mp4` にも `.mov` にも書き出します。つまり拡張子は
+ *   中身を保証しません。そして **iPhone の Safari は HEVC を再生できる**ので、
+ *   「上げた人のブラウザで再生できたか」で判断しても、Android の Chrome で見ている人には
+ *   再生できない動画が通ってしまいます。**中身を見るしかありません。**
+ *
+ * この 1 回の取り回しで 3 つを済ませます（どれも映像には触らないので 0.2 CPU 秒ほど）。
+ *   ① 中身のコーデックと長さを調べる（H.264 以外・30 秒超は断る）
+ *   ② 入れ物だけ作り直して、位置情報などのメタデータを落とす（`-c copy -map_metadata -1`）
+ *   ③ 先頭フレームを JPEG で切り出す
+ *
+ * ②を譲らない理由: 写真では「撮影場所を除去して保存する」と定めています（要件 5.4）。
+ * 動画だけ残すと、利用者への約束が崩れます。iPhone の動画には実際に GPS が入ります。
  */
 const execFileAsync = promisify(execFile);
 
-export const MAX_VIDEO_SIZE_BYTES = 100 * 1024 * 1024;
-export const MAX_VIDEO_DURATION_SECONDS = 60;
-import { isVideoFile } from "./media-kind";
-export { isVideoFile };
+/** 1 点あたりの上限（要件 5.4。2026-10-09 に 100MB から下げた） */
+export const MAX_VIDEO_SIZE_BYTES = 50 * 1024 * 1024;
+/** 再生時間の上限（要件 5.4。2026-10-09 に 1 分から下げた。超える動画はブラウザ側で切り取る） */
+export const MAX_VIDEO_DURATION_SECONDS = 30;
+/**
+ * 受け付ける映像のコーデック。
+ * ffmpeg は H.264 を `h264` と報告する。HEVC は `hevc`、VP9 は `vp9` など。
+ */
+export const ALLOWED_VIDEO_CODEC = "h264";
 
 export class VideoValidationError extends Error {}
 
 export interface ProcessedVideoUpload {
   /** サムネイル（先頭フレーム、JPEG）のパス。post_photos.storage_url に入れる */
   thumbnailPath: string;
-  /** MP4 本体のパス。post_photos.video_url に入れる */
+  /** 動画本体のパス。post_photos.video_url に入れる */
   videoPath: string;
   durationSeconds: number;
 }
 
+/** 受付を止めているか（本番で動画を出す前に外す。docs/deployment.md） */
 export function isVideoUploadDisabled(): boolean {
   return process.env.VIDEO_UPLOAD_DISABLED === "1";
 }
@@ -47,58 +67,99 @@ async function ffmpegPath(): Promise<string> {
   return path;
 }
 
-/** `ffmpeg -i` の stderr から Duration: HH:MM:SS.ss を読む（ffprobe を同梱しないため） */
-export function parseDurationSeconds(ffmpegStderr: string): number | null {
-  const match = /Duration:\s*(\d+):(\d+):(\d+(?:\.\d+)?)/.exec(ffmpegStderr);
-  if (!match) return null;
-  return Number(match[1]) * 3600 + Number(match[2]) * 60 + Number(match[3]);
+/**
+ * `ffmpeg -i` が出す情報から、長さと映像のコーデックを読む（純粋関数。約束 13）。
+ *
+ * 【初心者向け】`ffprobe`（情報を調べる専用の道具）は同梱していないので、`ffmpeg -i` に
+ * 出力先を与えず実行したときの「説明文」を読みます。ffmpeg はこのとき 0 以外で終わるので、
+ * 呼び出し側は例外の中の stderr を拾います。
+ *
+ *   Duration: 00:00:12.34, start: 0.000000, bitrate: 1234 kb/s
+ *     Stream #0:0(und): Video: h264 (High) (avc1 / 0x31637661), yuv420p, 1920x1080, ...
+ *     Stream #0:0(und): Video: hevc (Main) (hvc1 / 0x31637668), yuv420p, 1920x1080, ...
+ */
+export function parseVideoInfo(ffmpegStderr: string): { durationSeconds: number | null; videoCodec: string | null } {
+  const duration = /Duration:\s*(\d+):(\d+):(\d+(?:\.\d+)?)/.exec(ffmpegStderr);
+  const codec = /Stream #\d+:\d+(?:\([^)]*\))?:\s*Video:\s*([a-zA-Z0-9_]+)/.exec(ffmpegStderr);
+  return {
+    durationSeconds: duration ? Number(duration[1]) * 3600 + Number(duration[2]) * 60 + Number(duration[3]) : null,
+    videoCodec: codec ? codec[1].toLowerCase() : null,
+  };
 }
 
-async function probeDuration(ffmpeg: string, inputPath: string): Promise<number> {
-  // 出力先を指定せず情報だけ出させる。ffmpeg は非 0 終了するので stderr を拾う
+/** 長さと形式の判断（純粋関数。ここだけをテストすれば足りる） */
+export function checkVideo(info: { durationSeconds: number | null; videoCodec: string | null }): { ok: true; durationSeconds: number } | { ok: false; error: string } {
+  if (info.videoCodec === null || info.durationSeconds === null) return { ok: false, error: "unsupported_format" };
+  // 中身で判断する。容器（MP4／MOV）の名前では保証にならない
+  if (info.videoCodec !== ALLOWED_VIDEO_CODEC) return { ok: false, error: "unsupported_codec" };
+  if (info.durationSeconds > MAX_VIDEO_DURATION_SECONDS) return { ok: false, error: "video_too_long" };
+  return { ok: true, durationSeconds: info.durationSeconds };
+}
+
+async function probe(ffmpeg: string, inputPath: string): Promise<{ durationSeconds: number | null; videoCodec: string | null }> {
   try {
-    await execFileAsync(ffmpeg, ["-hide_banner", "-i", inputPath], { maxBuffer: 4 * 1024 * 1024 });
-    return 0;
+    const { stderr } = await execFileAsync(ffmpeg, ["-hide_banner", "-i", inputPath], { maxBuffer: 4 * 1024 * 1024 });
+    return parseVideoInfo(stderr);
   } catch (error) {
-    const stderr = (error as { stderr?: string }).stderr ?? "";
-    const duration = parseDurationSeconds(stderr);
-    if (duration === null) throw new VideoValidationError("unsupported_format");
-    return duration;
+    // 出力先を与えていないので ffmpeg は必ず 0 以外で終わる。説明文は stderr にある
+    return parseVideoInfo((error as { stderr?: string }).stderr ?? "");
   }
 }
 
+/**
+ * 動画を受け取り、検査 → メタデータ除去 → サムネイル → Storage へ。
+ *
+ * @param body 動画の中身（Storage から降ろしたもの）
+ * @param isQuickTime 入れ物が MOV か（ffmpeg に拡張子で中身を推測させるため。判断そのものには使わない）
+ */
 export async function processAndUploadVideo(
   admin: SupabaseClient,
   bucket: string,
   pathPrefix: string,
-  file: File
+  body: Buffer,
+  isQuickTime: boolean
 ): Promise<ProcessedVideoUpload> {
-  if (!isVideoFile(file)) throw new VideoValidationError("unsupported_format");
-  if (file.size > MAX_VIDEO_SIZE_BYTES) throw new VideoValidationError("file_too_large");
+  if (body.byteLength > MAX_VIDEO_SIZE_BYTES) throw new VideoValidationError("file_too_large");
 
   const ffmpeg = await ffmpegPath();
   const workDir = await mkdtemp(join(tmpdir(), "tabikoe-video-"));
-  const isMov = file.type === "video/quicktime" || /\.mov$/i.test(file.name);
-  const inputPath = join(workDir, isMov ? "input.mov" : "input.mp4");
+  const inputPath = join(workDir, isQuickTime ? "input.mov" : "input.mp4");
   const thumbPath = join(workDir, "thumb.jpg");
   const outputPath = join(workDir, "output.mp4");
 
   try {
-    await writeFile(inputPath, Buffer.from(await file.arrayBuffer()));
+    await writeFile(inputPath, body);
 
-    const duration = await probeDuration(ffmpeg, inputPath);
-    if (duration > MAX_VIDEO_DURATION_SECONDS) throw new VideoValidationError("video_too_long");
+    const checked = checkVideo(await probe(ffmpeg, inputPath));
+    if (!checked.ok) throw new VideoValidationError(checked.error);
 
-    // ③ 先頭フレーム（長辺 1200px）
-    await execFileAsync(ffmpeg, ["-hide_banner", "-y", "-ss", "0", "-i", inputPath, "-frames:v", "1", "-vf", "scale='min(1200,iw)':-2", thumbPath]);
+    /*
+     * 先頭フレーム。0 秒ちょうどは真っ黒なことがあるので少しだけ進めてから取る。
+     * 長辺 1200px は写真の縮小画像（5.4）と揃えてある。
+     */
+    await execFileAsync(ffmpeg, [
+      "-hide_banner", "-y",
+      "-ss", checked.durationSeconds >= 1 ? "0.5" : "0",
+      "-i", inputPath,
+      "-frames:v", "1",
+      "-vf", "scale='min(1200,iw)':-2",
+      thumbPath,
+    ]);
 
-    // ④ MOV は H.264/AAC の MP4 に変換。MP4 はコピーで再パック。どちらもメタデータ（位置情報）を除去
-    const convertArgs = isMov
-      ? ["-c:v", "libx264", "-preset", "veryfast", "-crf", "23", "-c:a", "aac", "-movflags", "+faststart"]
-      : ["-c", "copy", "-movflags", "+faststart"];
-    await execFileAsync(ffmpeg, ["-hide_banner", "-y", "-i", inputPath, "-map_metadata", "-1", ...convertArgs, outputPath]);
+    /*
+     * 入れ物だけ作り直す。`-c copy` は**映像と音をそのまま写す**という意味で、作り直さないので速い。
+     * `-map_metadata -1` で位置情報などのメタデータを落とし、`+faststart` で
+     * 再生に必要な情報を先頭へ移す（最後まで落とさなくても再生が始まる）。
+     */
+    await execFileAsync(ffmpeg, [
+      "-hide_banner", "-y",
+      "-i", inputPath,
+      "-map_metadata", "-1",
+      "-c", "copy",
+      "-movflags", "+faststart",
+      outputPath,
+    ]);
 
-    // ⑤ Storage へ
     const [thumb, video] = await Promise.all([readFile(thumbPath), readFile(outputPath)]);
     const thumbnailPath = `${pathPrefix}-thumb.jpg`;
     const videoPath = `${pathPrefix}.mp4`;
@@ -109,7 +170,7 @@ export async function processAndUploadVideo(
     if (thumbResult.error) throw thumbResult.error;
     if (videoResult.error) throw videoResult.error;
 
-    return { thumbnailPath, videoPath, durationSeconds: Math.round(duration) };
+    return { thumbnailPath, videoPath, durationSeconds: Math.round(checked.durationSeconds) };
   } finally {
     await rm(workDir, { recursive: true, force: true });
   }
