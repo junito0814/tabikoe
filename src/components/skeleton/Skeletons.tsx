@@ -599,3 +599,151 @@ export function ItineraryDetailSkeleton() {
     </div>
   );
 }
+
+/*
+ * #900（2026-10-09）: `loading.tsx` が無い画面のための骨組み。
+ *
+ * 【初心者向け】`loading.tsx` が無い画面では、Next.js は**前の画面を出したまま**次の HTML を待つ。
+ * 白くはならないが、利用者には「押したのに何も起きない」と見える。本番で測ると、冷えた状態から
+ * 立ち上がるのに 2.44 秒かかっていた（温まっていれば 0.21 秒）。その間ずっと無反応に見えていた。
+ *
+ * 作るときの決まりは 4.5.11 の「**骨組みは本物と同じ形にする**」。
+ * ずれていると、読み込みが終わった瞬間に画面が動く（しおり・通知・マイページで実際に起きた）。
+ * 下の部品はどれも、本物の `className` を見ながら幅・高さ・間隔を合わせてある。
+ */
+
+/**
+ * #900: 速いときは出さず、遅いときだけ出す包み。
+ *
+ * 【初心者向け】要件 4.5.11 は、ホーム・地図・あしあと・通報に骨組みを「置かない」と決めていた。
+ * 理由は「待ちがほぼ無く、置くと一瞬ちらつく」。**温まっているときはそのとおり**で、
+ * 0.21 秒で消える骨組みは出た瞬間に消えるので目障りなだけ。
+ *
+ * ところが本番で測ると、**冷えた関数は立ち上がりに 2.44 秒**かかっていた。その間ずっと
+ * 前の画面のままで、「押しても何も起きない」と見えていた。
+ *
+ * そこで最初の 0.18 秒は透明にして、それを過ぎたら現れるようにした（globals.css の
+ * `.skeleton-delayed`）。速ければ見えないまま消え、遅ければちゃんと出る。JavaScript は要らない。
+ */
+export function DelayedSkeleton({ children }: { children: ReactNode }) {
+  return <div className="skeleton-delayed">{children}</div>;
+}
+
+/** SC-00 検索トップ（ホーム）。空のグラデーション地に、ロゴ・検索窓・ボタン 2 つ */
+export function SearchTopSkeleton() {
+  return (
+    <SkeletonExit>
+      <div
+        role="status"
+        aria-busy
+        aria-label="読み込んでいます"
+        className="bg-sky flex min-h-[calc(100dvh-60px)] flex-col items-center justify-center gap-7 px-6 md:min-h-dvh"
+      >
+        {/* ロゴ（64px）とサービス名 */}
+        <div className="flex flex-col items-center gap-3">
+          <SkeletonBlock className="h-16 w-16 rounded-full" />
+          <SkeletonBlock className="h-6 w-28" />
+        </div>
+        {/* 検索窓と、「近くのスポットを探す」「ここを投稿」。どれも本物と同じ 52px・全角丸 */}
+        <div className="flex w-full max-w-[360px] flex-col gap-3">
+          <SkeletonBlock className="h-[52px] w-full rounded-full" />
+          <SkeletonBlock className="h-[52px] w-full rounded-full" />
+          <SkeletonBlock className="h-[52px] w-full rounded-full" />
+        </div>
+      </div>
+    </SkeletonExit>
+  );
+}
+
+/**
+ * SC-02 マップ。画面いっぱいの地図に、戻る・凡例・現在地・「ここに投稿」が重なる。
+ *
+ * 【初心者向け】重ねる部品は `bg-surface`（白い面）にする。`SkeletonBlock` の既定は
+ * `bg-tint`（淡い面）で、地図の下地（`--map-placeholder`）と明るさが近く、**見えなかった**。
+ * 骨組みは「何が来るか」を見せるものなので、見えなければ役目を果たさない（要件 4.5.11）。
+ */
+export function MapScreenSkeleton() {
+  return (
+    <SkeletonExit>
+      <div role="status" aria-busy aria-label="読み込んでいます" className="relative h-[calc(100dvh-60px)] w-full md:h-dvh">
+        <div aria-hidden className="skeleton-block h-full w-full bg-map-placeholder" />
+        {/* 上段: 戻る（左）と凡例（右）。本物は p-3 の中で gap-2 で並ぶ */}
+        <div className="absolute inset-x-0 top-0 flex items-start gap-2 p-3">
+          <SkeletonBlock className="h-8 w-24 rounded-full bg-surface" />
+          <SkeletonBlock className="ml-auto h-8 w-32 rounded-full bg-surface" />
+        </div>
+        {/* 右下: 現在地（40px の丸）と「ここに投稿」。本物は right-3 / bottom-4 で縦に並ぶ */}
+        <div className="absolute bottom-4 right-3 flex flex-col items-end gap-2">
+          <SkeletonBlock className="h-10 w-10 rounded-full bg-surface" />
+          <SkeletonBlock className="h-10 w-32 rounded-full bg-surface" />
+        </div>
+      </div>
+    </SkeletonExit>
+  );
+}
+
+/** 規約・個人情報保護方針（SC-29）。見出しと本文が縦に長く続く */
+export function LegalDocumentSkeleton() {
+  return (
+    <SkeletonExit>
+      <div className="flex min-h-screen flex-col bg-app px-4 py-4">
+        <div role="status" aria-busy aria-label="読み込んでいます" className="mx-auto flex w-full max-w-[560px] flex-col gap-4">
+          <TopBarSkeleton backLabel="戻る" right={false} />
+          <SkeletonBlock className="h-7 w-48" />
+          <SkeletonBlock className="h-3 w-32" />
+          <div className="mt-2 flex flex-col gap-6">
+            {[0, 1, 2, 3].map((section) => (
+              <div key={section} className="flex flex-col gap-2">
+                <SkeletonBlock className="h-5 w-40" />
+                <SkeletonBlock className="h-3 w-full" />
+                <SkeletonBlock className="h-3 w-full" />
+                <SkeletonBlock className="h-3 w-4/5" />
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </SkeletonExit>
+  );
+}
+
+/** 入力欄が並ぶ画面（通報・スポットの修正）。見出し＋項目＋送信ボタン */
+export function FormScreenSkeleton({ backLabel, title, fields = 4 }: { backLabel?: string | null; title?: string | null; fields?: number }) {
+  return (
+    <SkeletonExit>
+      <div className="flex min-h-screen flex-col bg-app px-4 py-4">
+        <div role="status" aria-busy aria-label="読み込んでいます" className="mx-auto flex w-full max-w-[560px] flex-col gap-4">
+          <TopBarSkeleton backLabel={backLabel} title={title} right={false} />
+          {Array.from({ length: fields }, (_, index) => (
+            <div key={index} className="flex flex-col gap-1.5">
+              <SkeletonBlock className="h-3 w-24" />
+              <SkeletonBlock className="h-11 w-full rounded-[10px]" />
+            </div>
+          ))}
+          <SkeletonBlock className="mt-2 h-[52px] w-full rounded-[10px]" />
+        </div>
+      </div>
+    </SkeletonExit>
+  );
+}
+
+/** 他の人のプロフィール（SC-07 の公開側）。アイコン・名前・数字・投稿の列 */
+export function PublicProfileSkeleton() {
+  return (
+    <SkeletonExit>
+      <div className="flex min-h-screen flex-col bg-app px-4 py-4">
+        <div role="status" aria-busy aria-label="読み込んでいます" className="mx-auto flex w-full max-w-[560px] flex-col gap-4">
+          <TopBarSkeleton backLabel="戻る" />
+          <div className="flex items-center gap-3">
+            <SkeletonBlock className="h-16 w-16 rounded-full" />
+            <div className="flex flex-1 flex-col gap-2">
+              <SkeletonBlock className="h-5 w-32" />
+              <SkeletonBlock className="h-3 w-24" />
+            </div>
+          </div>
+          <CardListSkeleton count={3} />
+        </div>
+      </div>
+    </SkeletonExit>
+  );
+}

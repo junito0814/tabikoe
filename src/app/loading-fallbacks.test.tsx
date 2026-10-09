@@ -47,21 +47,53 @@ describe("Task 5: 足した受け皿", () => {
     expect(source).not.toMatch(/className="[^"]*animate-pulse/);
   });
 
-  it("要件 4.5.11 の表で「置かない」とした画面には置いていない", () => {
-    // ホーム・地図・あしあと・通報・スポットの写真一覧は待ちがほぼ無く、置くと一瞬ちらつく。
-    // ディレクトリは実在するので「その中に loading.tsx が無い」ことが確かめられる
-    const notPlaced = [
-      ["src/app", "ホーム（SC-00）"],
-      ["src/app/map", "地図（SC-02）"],
-      ["src/app/mymap", "あしあと"],
-      ["src/app/report", "通報"],
-      ["src/app/spots/[id]/photos", "スポットの写真一覧"],
-    ];
+  /*
+   * #900（2026-10-09）: ~~ホーム・地図・あしあと・通報には置かない~~ → **置くことにした。**
+   *
+   * 【初心者向け】「待ちがほぼ無い」という前提が間違っていた。本番で測ると、冷えた関数が
+   * 立ち上がるのに **2.44 秒**かかっていた（温まっていれば 0.21 秒）。その間ずっと前の画面のままで、
+   * 利用者には「押しても何も起きない」と見えていた。
+   *
+   * ただし「ちらつく」という元の指摘は正しかったので、**遅れて出す**ようにした（`DelayedSkeleton`）。
+   * 残るのは「他の画面へ送るだけ」の画面だけ ── 骨組みを出す意味が無いので置かない。
+   */
+  it("他の画面へ送るだけの画面には置かない", () => {
+    const notPlaced = [["src/app/spots/[id]/photos", "スポットの写真一覧（redirect するだけ）"]];
     for (const [dir, label] of notPlaced) {
       // ディレクトリ自体はあること（パスの打ち間違いでこのテストが空振りしないように）
       expect(existsSync(dir), `${label} のディレクトリ（${dir}）が無い`).toBe(true);
       expect(existsSync(`${dir}/loading.tsx`), `${label} に loading.tsx が置かれている`).toBe(false);
     }
+  });
+
+  it("#900 で足した画面に置いてある", () => {
+    const placed = [
+      ["src/app", "ホーム（SC-00）"],
+      ["src/app/map", "地図（SC-02）"],
+      ["src/app/mymap", "あしあと"],
+      ["src/app/report", "通報"],
+      ["src/app/login", "ログイン"],
+      ["src/app/terms", "利用規約"],
+      ["src/app/privacy", "個人情報保護方針"],
+      ["src/app/users/[id]", "他の人のプロフィール"],
+      ["src/app/mypage/drafts", "下書き"],
+      ["src/app/albums/[id]/photos", "アルバムの写真一覧"],
+      ["src/app/posts/[id]/edit", "投稿の編集"],
+      ["src/app/spots/[id]/edit", "スポットの修正"],
+    ];
+    for (const [dir, label] of placed) {
+      expect(existsSync(`${dir}/loading.tsx`), `${label}（${dir}）に loading.tsx が無い`).toBe(true);
+    }
+  });
+
+  it("#900 で足した受け皿は、速いときに出ないよう遅らせてある", () => {
+    for (const path of globSync("src/app/**/loading.tsx")) {
+      const source = readFileSync(path, "utf8");
+      if (!source.includes("#900")) continue; // 既存の 17 枚は対象外
+      expect(source, `${path} が DelayedSkeleton で包まれていない`).toContain("<DelayedSkeleton>");
+    }
+    // 動きの定義が消えていないこと
+    expect(readFileSync("src/app/globals.css", "utf8")).toContain(".skeleton-delayed");
   });
 
   it("管理画面には置いていない（2026-09-30 に保留。要件 9 章 No.14）", () => {
@@ -70,9 +102,9 @@ describe("Task 5: 足した受け皿", () => {
     expect(existsSync("src/app/admin/(shell)/loading.tsx")).toBe(false);
   });
 
-  it("受け皿は全部で 17 枚（既存 10 ＋ 7）", () => {
+  it("受け皿は全部で 29 枚（既存 17 ＋ #900 の 12）", () => {
     // 数を書いておくと、うっかり増やした・消したときに気づける
     const all = globSync("src/app/**/loading.tsx");
-    expect(all.sort()).toHaveLength(17);
+    expect(all.sort()).toHaveLength(29);
   });
 });

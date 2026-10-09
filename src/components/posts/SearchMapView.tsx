@@ -142,7 +142,7 @@ export function SearchMapView({
             </button>
             <Link
               href={appendBackHref(`/spots/${spot.id}`, backHref)}
-              prefetch={false}
+              prefetch={false} /* #900: 切ったまま。地図の下に横並びになるカードで、流し見される（押される率が低い） */
               className="mt-1.5 inline-block text-[0.75rem] font-semibold text-accent"
             >
               投稿を見る

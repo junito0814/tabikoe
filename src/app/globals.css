@@ -301,6 +301,11 @@ body {
  * 時間を 0 にすると、ブラウザの既定（瞬時に入れ替わる）と同じになる。
  */
 @media (prefers-reduced-motion: reduce) {
+  /* 遅れて出すこと自体は残す（ちらつき防止のため）。ふわっと出る動きだけやめる */
+  .skeleton-delayed {
+    animation: skeleton-appear 0s linear 0.18s both;
+  }
+
   ::view-transition-old(*),
   ::view-transition-new(*),
   ::view-transition-group(*) {
@@ -342,6 +347,34 @@ body {
 @keyframes skeleton-shimmer {
   to {
     transform: translateX(100%);
+  }
+}
+
+/*
+  #900（2026-10-09）: **遅れて出てくる骨組み。**
+
+  【初心者向け】要件 4.5.11 は、ホーム・地図・あしあと・通報に骨組みを「置かない」と決めていた。
+  理由は「待ちがほぼ無く、置くと一瞬ちらつく」。これは**温まっているときは正しい** ──
+  0.21 秒で消える骨組みは、出た瞬間に消えるので目障りなだけ。
+
+  ところが本番で測ると、**冷えた関数は立ち上がりに 2.44 秒**かかっていた。
+  その間ずっと前の画面のままで、利用者には「押しても何も起きない」と見えていた。
+
+  そこで「速いときは出さない、遅いときは出す」にした。最初の 0.18 秒は透明のままにし、
+  それを過ぎたら現れる。**JavaScript は要らない**（アニメーションの遅延だけ）。
+    - 0.21 秒で返ってきた → 骨組みはほぼ見えないまま消える（ちらつかない）
+    - 2.44 秒かかった     → 0.18 秒後に骨組みが出て、何かが起きていると伝わる
+*/
+.skeleton-delayed {
+  animation: skeleton-appear 0.12s ease-out 0.18s both;
+}
+
+@keyframes skeleton-appear {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
   }
 }
 

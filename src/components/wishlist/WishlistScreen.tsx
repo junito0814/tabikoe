@@ -161,7 +161,7 @@ export function WishlistScreen({
             <ul className="mt-3 flex flex-col gap-2.5">
               {items.map((item) => (
                 <li key={item.spotId} className="flex items-center gap-3 rounded-[12px] border border-line bg-surface p-2.5" data-wishlist-item={item.spotId}>
-                  <Link href={appendBackHref(`/spots/${item.spotId}`, selfHref)} prefetch={false} className="flex min-w-0 flex-1 items-center gap-3">
+                  <Link href={appendBackHref(`/spots/${item.spotId}`, selfHref)} className="flex min-w-0 flex-1 items-center gap-3">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
                       src={item.thumbnailUrl}
