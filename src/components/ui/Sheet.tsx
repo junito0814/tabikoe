@@ -36,7 +36,7 @@ export function Sheet({
 }) {
   const titleId = useId();
   useCloseOnBack(open, onClose);
-  const { offset, handleProps } = usePullToClose(onClose);
+  const { offset, handleProps, contentProps } = usePullToClose(onClose);
   useEffect(() => {
     if (!open) return;
     const onKeyDown = (event: KeyboardEvent) => {
@@ -82,7 +82,10 @@ export function Sheet({
           {/* #712: 文字の「閉じる」をやめ、右上の × に揃えた（要件 4.5.13） */}
           <CloseButton onClick={onClose} />
         </div>
-        <div className="flex-1 overflow-y-auto px-4 pb-4">{children}</div>
+        {/* #885: 中身のどこからでも下にスライドして閉じられる（いちばん上にいるときだけ引き始める） */}
+        <div {...contentProps} className="flex-1 overflow-y-auto px-4 pb-4">
+          {children}
+        </div>
         {footer && <div className="border-t border-line px-4 py-3 pb-[max(12px,env(safe-area-inset-bottom))]">{footer}</div>}
       </div>
     </div>,

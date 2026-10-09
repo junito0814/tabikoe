@@ -33,7 +33,7 @@ const comment = (id: string, isMine: boolean, overrides: Partial<CommentData> = 
 });
 
 const api = (overrides: Partial<CommentApi> = {}): CommentApi => ({
-  fetchPage: vi.fn(async () => ({ comments: [], nextOffset: null, totalCount: 0 })),
+  fetchPage: vi.fn(async () => ({ comments: [], nextOffset: null, totalCount: 0 , viewerAvatarUrl: null})),
   submit: vi.fn(async () => Response.json({ comment: comment("new", true) }, { status: 201 })),
   remove: vi.fn(async () => Response.json({ deleted: true })),
   ...overrides,
@@ -46,7 +46,7 @@ describe("CommentSection", () => {
         postId="p1"
         canComment
         returnTo="/posts/p1"
-        initialPage={{ comments: [comment("mine", true), comment("theirs", false)], nextOffset: null, totalCount: 2 }}
+        initialPage={{ comments: [comment("mine", true), comment("theirs", false)], nextOffset: null, totalCount: 2 , viewerAvatarUrl: null}}
         api={api()}
       />
     );
@@ -57,13 +57,13 @@ describe("CommentSection", () => {
   });
 
   it("「もっと見る」で次のページのコメントが追加表示される", async () => {
-    const fetchPage = vi.fn(async () => ({ comments: [comment("c21", false)], nextOffset: null, totalCount: 21 }));
+    const fetchPage = vi.fn(async () => ({ comments: [comment("c21", false)], nextOffset: null, totalCount: 21 , viewerAvatarUrl: null}));
     renderOpen(
       <CommentSection
         postId="p1"
         canComment
         returnTo="/posts/p1"
-        initialPage={{ comments: [comment("c1", false)], nextOffset: 20, totalCount: 21 }}
+        initialPage={{ comments: [comment("c1", false)], nextOffset: 20, totalCount: 21 , viewerAvatarUrl: null}}
         api={api({ fetchPage })}
       />
     );
@@ -76,7 +76,7 @@ describe("CommentSection", () => {
   it("投稿すると先頭に追加され、入力欄が空になる", async () => {
     const submit = vi.fn(async () => Response.json({ comment: comment("new", true) }, { status: 201 }));
     renderOpen(
-      <CommentSection postId="p1" canComment returnTo="/posts/p1" initialPage={{ comments: [], nextOffset: null, totalCount: 0 }} api={api({ submit })} />
+      <CommentSection postId="p1" canComment returnTo="/posts/p1" initialPage={{ comments: [], nextOffset: null, totalCount: 0 , viewerAvatarUrl: null}} api={api({ submit })} />
     );
     const textarea = screen.getByRole("textbox", { name: "コメント本文" });
     fireEvent.change(textarea, { target: { value: "こんにちは" } });
@@ -88,7 +88,7 @@ describe("CommentSection", () => {
 
   it("4,000文字を超えると投稿ボタンが無効になり残数が負で表示される", () => {
     renderOpen(
-      <CommentSection postId="p1" canComment returnTo="/posts/p1" initialPage={{ comments: [], nextOffset: null, totalCount: 0 }} api={api()} />
+      <CommentSection postId="p1" canComment returnTo="/posts/p1" initialPage={{ comments: [], nextOffset: null, totalCount: 0 , viewerAvatarUrl: null}} api={api()} />
     );
     fireEvent.change(screen.getByRole("textbox", { name: "コメント本文" }), { target: { value: "あ".repeat(4001) } });
     expect(screen.getByRole("button", { name: "コメントする" })).toBeDisabled();
@@ -98,7 +98,7 @@ describe("CommentSection", () => {
 
   it("非公開投稿ではフォームを出さない", () => {
     renderOpen(
-      <CommentSection postId="p1" canComment={false} returnTo="/posts/p1" initialPage={{ comments: [], nextOffset: null, totalCount: 0 }} api={api()} />
+      <CommentSection postId="p1" canComment={false} returnTo="/posts/p1" initialPage={{ comments: [], nextOffset: null, totalCount: 0 , viewerAvatarUrl: null}} api={api()} />
     );
     expect(screen.queryByRole("textbox")).toBeNull();
     expect(screen.getByText("非公開の投稿にはコメントできません")).toBeInTheDocument();
@@ -112,10 +112,11 @@ describe("CommentSection（v3.2: 返信）", () => {
     });
 
   it("返信は親の下に字下げして並び「@名前 への返信」が付く。3 件を超えると「返信をさらに N 件見る」", () => {
-    renderOpen(<CommentSection postId="p1" initialPage={{ comments: [withReplies(5)], nextOffset: null, totalCount: 6 }} canComment returnTo="/posts/p1" api={api()} />);
+    renderOpen(<CommentSection postId="p1" initialPage={{ comments: [withReplies(5)], nextOffset: null, totalCount: 6 , viewerAvatarUrl: null}} canComment returnTo="/posts/p1" api={api()} />);
     const replies = document.querySelector("[data-replies='root']") as HTMLElement;
     expect(replies.querySelectorAll("[data-comment]")).toHaveLength(3);
-    expect(replies.querySelectorAll("[data-reply-to-name]")[0]).toHaveTextContent("@だれか への返信");
+    // #885: 本文と同じ行の先頭に「@名前」を置く形にした（「への返信」の文字は外した）
+    expect(replies.querySelectorAll("[data-reply-to-name]")[0]).toHaveTextContent("@だれか");
     fireEvent.click(screen.getByRole("button", { name: "返信をさらに 2 件見る" }));
     expect(replies.querySelectorAll("[data-comment]")).toHaveLength(5);
     // 件数は返信を含む
@@ -125,16 +126,16 @@ describe("CommentSection（v3.2: 返信）", () => {
 
   it("「返信」を押すと @名前 のチップが付き、送信すると parentId 付きで API を呼び、返信の末尾に足される", async () => {
     const submit = vi.fn(async () => Response.json({ comment: comment("new", true, { parentId: "root", replyToName: "だれか" }) }, { status: 201 }));
-    renderOpen(<CommentSection postId="p1" initialPage={{ comments: [comment("root", false)], nextOffset: null, totalCount: 1 }} canComment returnTo="/posts/p1" api={api({ submit })} />);
-    fireEvent.click(screen.getAllByRole("button", { name: "返信" })[0]);
+    renderOpen(<CommentSection postId="p1" initialPage={{ comments: [comment("root", false)], nextOffset: null, totalCount: 1 , viewerAvatarUrl: null}} canComment returnTo="/posts/p1" api={api({ submit })} />);
+    fireEvent.click(screen.getAllByRole("button", { name: "返信する" })[0]);
     expect(document.querySelector("[data-reply-to='root']")).toHaveTextContent("@だれか");
     fireEvent.change(screen.getByLabelText("コメント本文"), { target: { value: "私は 30 分待ちました" } });
-    fireEvent.click(screen.getByRole("button", { name: "返信する" }));
+    fireEvent.click(screen.getByRole("button", { name: "返信を送る" }));
     await waitFor(() => expect(submit).toHaveBeenCalledWith("p1", "私は 30 分待ちました", "root"));
     await waitFor(() => expect(document.querySelector("[data-replies='root'] [data-comment='new']")).toBeInTheDocument());
     expect(document.querySelector("[data-reply-to]")).toBeNull();
     // × で返信モードを解除できる
-    fireEvent.click(screen.getAllByRole("button", { name: "返信" })[0]);
+    fireEvent.click(screen.getAllByRole("button", { name: "返信する" })[0]);
     fireEvent.click(screen.getByRole("button", { name: "返信をやめる" }));
     expect(document.querySelector("[data-reply-to]")).toBeNull();
   });
@@ -142,7 +143,7 @@ describe("CommentSection（v3.2: 返信）", () => {
   it("返信がある親を削除すると「削除されたコメント」の枠が残り、返信は読める", async () => {
     const remove = vi.fn(async () => Response.json({ deleted: true, keptFrame: true }));
     const root = comment("root", true, { replies: [comment("r1", false, { parentId: "root", replyToName: "わたし" })] });
-    renderOpen(<CommentSection postId="p1" initialPage={{ comments: [root], nextOffset: null, totalCount: 2 }} canComment returnTo="/posts/p1" api={api({ remove })} />);
+    renderOpen(<CommentSection postId="p1" initialPage={{ comments: [root], nextOffset: null, totalCount: 2 , viewerAvatarUrl: null}} canComment returnTo="/posts/p1" api={api({ remove })} />);
     fireEvent.click(screen.getAllByRole("button", { name: "このコメントを削除" })[0]);
     await acceptConfirm(); // #778: 確認はアプリ共通のシート（window.confirm ではない）
     await waitFor(() => expect(remove).toHaveBeenCalledWith("root"));
@@ -158,7 +159,7 @@ describe("CommentSection（v3.2: 返信）", () => {
  */
 describe("コメント欄（#772・#803）", () => {
   const show = () =>
-    renderOpen(<CommentSection postId="p1" canComment returnTo="/posts/p1" initialPage={{ comments: [], nextOffset: null, totalCount: 0 }} api={api()} />);
+    renderOpen(<CommentSection postId="p1" canComment returnTo="/posts/p1" initialPage={{ comments: [], nextOffset: null, totalCount: 0 , viewerAvatarUrl: null}} api={api()} />);
 
   it("#772: 空のときは文字数を出さない", () => {
     show();
@@ -192,11 +193,11 @@ describe("コメント欄（#772・#803）", () => {
         postId="p1"
         canComment
         returnTo="/posts/p1"
-        initialPage={{ comments: [comment("c1", true)], nextOffset: null, totalCount: 1 }}
+        initialPage={{ comments: [comment("c1", true)], nextOffset: null, totalCount: 1 , viewerAvatarUrl: null}}
         api={api()}
       />
     );
-    fireEvent.click(screen.getAllByRole("button", { name: "返信" })[0]);
+    fireEvent.click(screen.getAllByRole("button", { name: "返信する" })[0]);
     const form = document.querySelector("[data-comment-form]") as HTMLElement;
     expect(form.querySelector("[data-reply-to]")).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "返信をやめる" }));
@@ -208,5 +209,54 @@ describe("コメント欄（#772・#803）", () => {
     const submit = screen.getByRole("button", { name: "コメントする" });
     expect(submit.className).toContain("rounded-full");
     expect(submit.querySelector("svg")).toBeInTheDocument();
+  });
+});
+
+/**
+ * #885（2026-10-09）: 並べ方を Instagram に寄せた（要件 3.5.3）。
+ *
+ * 見た目そのものは機械で測れないので、ここで見るのは**決まりとして書いたこと**だけ。
+ *   - アイコンの大きさ（24px / 返信は 19px）
+ *   - 名前と本文が同じ行に続く
+ *   - 入力欄の左に自分のアイコンが出る
+ */
+describe("コメントの並べ方（#885）", () => {
+  const page = (viewerAvatarUrl: string | null) => ({
+    comments: [
+      {
+        ...comment("root", false),
+        replies: [{ ...comment("r1", false, { parentId: "root", replyToName: "だれか" }) }],
+      },
+    ],
+    nextOffset: null,
+    totalCount: 2,
+    viewerAvatarUrl,
+  });
+
+  it("アイコンは 24px、返信は 19px", () => {
+    renderOpen(<CommentSection postId="p1" initialPage={page(null)} canComment returnTo="/posts/p1" api={api()} />);
+    const root = document.querySelector("[data-comment='root'] img") as HTMLImageElement;
+    const reply = document.querySelector("[data-comment='r1'] img") as HTMLImageElement;
+    expect(root.className).toContain("h-6 w-6");
+    expect(reply.className).toContain("h-[19px] w-[19px]");
+  });
+
+  it("名前と本文が同じ段落に並ぶ（枠で囲んで 2 段にしない）", () => {
+    renderOpen(<CommentSection postId="p1" initialPage={page(null)} canComment returnTo="/posts/p1" api={api()} />);
+    const line = document.querySelector("[data-comment='root'] p") as HTMLElement;
+    expect(line).toHaveTextContent("だれか");
+    expect(line).toHaveTextContent("本文root");
+  });
+
+  it("入力欄の左に自分のアイコンが出る", () => {
+    renderOpen(<CommentSection postId="p1" initialPage={page("/me.png")} canComment returnTo="/posts/p1" api={api()} />);
+    const form = document.querySelector("[data-comment-form]") as HTMLElement;
+    expect(form.querySelector("img")).toHaveAttribute("src", "/me.png");
+  });
+
+  it("自分のアイコンが取れなければ既定のアイコンにする（入力欄は出す）", () => {
+    renderOpen(<CommentSection postId="p1" initialPage={page(null)} canComment returnTo="/posts/p1" api={api()} />);
+    const form = document.querySelector("[data-comment-form]") as HTMLElement;
+    expect(form.querySelector("img")).toHaveAttribute("src", "/default-avatar.svg");
   });
 });

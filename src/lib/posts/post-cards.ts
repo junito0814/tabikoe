@@ -4,7 +4,10 @@ import { createPostPhotoUrls } from "@/lib/posts/signed-url";
 // #696: 「保存済み」は「行きたい」と「しおり」の両方を見る（判断は 1 か所にまとめた）
 import { findSavedSpotIds } from "@/lib/spots/saved-spots";
 import { DEACTIVATED_DISPLAY_NAME, DEFAULT_AVATAR_URL } from "@/lib/users/constants";
-import { unescapeHtml } from "@/lib/comments/validate-comment";
+// #885: 切り出し方は src/lib/comments/comment-excerpt.ts へ移した（ブラウザからも読むため）。
+// 既にここから読んでいる場所があるので、再輸出して壊さない
+import { commentExcerpt } from "@/lib/comments/comment-excerpt";
+export { commentExcerpt };
 import { walkMinutesBetween } from "@/lib/geo/walk-minutes";
 import type { MediaItem } from "@/components/media/MediaGrid";
 
@@ -291,9 +294,7 @@ function commentAuthorName(user: { display_name: string | null; is_deleted: bool
 }
 
 /** コメント本文の冒頭 1 行（保存時の HTML エスケープを戻す） */
-export function commentExcerpt(body: string): string {
-  return unescapeHtml(body).split(/\r?\n/)[0]?.trim() ?? "";
-}
+
 
 /** v3.0（spot-status-report Task3）: スポットごとの最新の「まだあった」報告。取れなくても一覧は出す */
 export async function findLatestSpotStatuses(

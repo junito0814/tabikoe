@@ -1,6 +1,8 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
+import { CommentSection, type CommentApi } from "@/components/comments/CommentSection";
 import { CommentIcon } from "@/components/ui/LineIcons";
 import { appendBackHref } from "@/lib/search/list-state";
 import { LikeButton } from "@/components/likes/LikeButton";
@@ -46,6 +48,8 @@ export function PostCard({
   showSpotName = true,
   showSaveButton = true,
   addMode = null,
+  canComment = true,
+  commentApi,
 }: {
   post: PostCardData;
   /** 今の一覧 URL（/search?…）。Bug #469: 投稿詳細に `back=` で渡し、詳細の戻るがこの一覧に戻るようにする */
@@ -56,7 +60,22 @@ export function PostCard({
   showSaveButton?: boolean;
   /** 追加モード中: 「＋」でしおりに直接追加する（add-spots Task2） */
   addMode?: AddModeInfo | null;
+  /**
+   * #885: コメントを書けるか。
+   *
+   * 【初心者向け】非公開の投稿にはコメント欄を出さない（要件 3.3.6）。
+   * いまカードが並ぶ画面（検索結果・スポット別・他の人のプロフィール）は**公開投稿だけ**を
+   * 出しているので既定は true。非公開を混ぜる画面ができたら、そこで false を渡すこと。
+   */
+  canComment?: boolean;
+  /** 差し替え口（単体テスト用）。渡さなければ本物の API を使う */
+  commentApi?: CommentApi;
 }) {
+  /* #885: シートの開閉と、閉じたあとに更新される件数・プレビュー */
+  const [commentsOpen, setCommentsOpen] = useState(false);
+  const [commentCount, setCommentCount] = useState(post.commentCount);
+  const [latestComment, setLatestComment] = useState(post.latestComment);
+
   const visit = formatVisitDate(post.visitDate);
   const cost = formatCost(post.cost);
   const statusLabel = formatStatusLabel(post.latestStatus);
@@ -124,14 +143,21 @@ export function PostCard({
 
       <div className="flex items-center gap-2 border-t border-line pt-2">
         <LikeButton postId={post.id} initialLiked={post.viewerHasLiked} initialCount={post.likeCount} className="h-8" />
-        <Link
-          href={`/posts/${post.id}#comments`} prefetch={false}
-          aria-label={`コメント ${post.commentCount} 件`}
+        {/*
+          #885（2026-10-09）: ~~押すと投稿詳細へ画面ごと移る~~ → **その場で下からシートが出る**。
+          一覧を見ながらコメントを読みたいのに、1 件読むたびに往復していた（実機確認での指摘）。
+          カードの本文・写真を押したときは今までどおり投稿詳細へ行く（カード全体は「詳細へ」）。
+        */}
+        <button
+          type="button"
+          onClick={() => setCommentsOpen(true)}
+          aria-label={`コメント ${commentCount} 件`}
+          data-open-comments
           className="inline-flex h-8 items-center gap-1 rounded-full px-2 text-[0.75rem] text-muted"
         >
           <CommentIcon />
-          {post.commentCount}
-        </Link>
+          {commentCount}
+        </button>
         <span className="ml-auto" />
         {/* #692: スポット別の一覧では出さない（保存先はスポット単位なので、見出しの「＋」1 つで足りる） */}
         {showSaveButton && (
@@ -145,15 +171,34 @@ export function PostCard({
       </div>
 
       {/* v3.2（feedback-0919 Task5）: 最新のコメント 1 件のプレビューと「コメント N 件をすべて見る」（コメントがあるときだけ） */}
-      {/* #900: 下の 2 本は切ったまま。行き先はカード本体と同じ /posts/[id] なので、本体の先読みで既に温まっている */}
-      {post.latestComment && (
-        <Link href={`/posts/${post.id}#comments`} prefetch={false} className="flex flex-col gap-0.5 text-[0.75rem]" data-comment-preview>
+      {/* #885: ここも投稿詳細へ移らず、同じシートを開く */}
+      {latestComment && (
+        <button type="button" onClick={() => setCommentsOpen(true)} className="flex flex-col gap-0.5 text-left text-[0.75rem]" data-comment-preview>
           <span className="truncate">
-            <span className="font-semibold text-ink">{post.latestComment.authorName}</span> <span className="text-ink">{post.latestComment.excerpt}</span>
+            <span className="font-semibold text-ink">{latestComment.authorName}</span> <span className="text-ink">{latestComment.excerpt}</span>
           </span>
-          <span className="text-muted">コメント {post.commentCount} 件をすべて見る</span>
-        </Link>
+          <span className="text-muted">コメント {commentCount} 件をすべて見る</span>
+        </button>
       )}
+
+      {/*
+        #885: コメントのシート。**開くまで何も取りに行かない**（`initialPage={null}`）。
+        カードが 20 枚並ぶ画面で全部のコメントを先に読むと 20 回の問い合わせになり、
+        しかもほとんどは開かれないため。閉じたときに件数とプレビューを受け取って、カードの表示を直す。
+      */}
+      <CommentSection
+        postId={post.id}
+        initialPage={null}
+        canComment={canComment}
+        {...(commentApi ? { api: commentApi } : {})}
+        returnTo={backHref ?? `/posts/${post.id}`}
+        open={commentsOpen}
+        onOpenChange={setCommentsOpen}
+        onSummaryChange={(summary) => {
+          setCommentCount(summary.count);
+          setLatestComment(summary.latest);
+        }}
+      />
     </article>
   );
 }

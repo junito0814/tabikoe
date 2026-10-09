@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useState, type FormEvent } from "react";
+import { useCallback, useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
 import Link from "next/link";
 import { ErrorNotice } from "@/components/notices/ErrorNotice";
 import { ERROR_MESSAGES } from "@/components/notices/error-messages";
@@ -9,7 +9,9 @@ import { TrashButton } from "@/components/ui/TrashButton";
 import { fetchWithAuthRedirect, UnauthorizedError } from "@/lib/api/fetch-with-auth-redirect";
 import { MAX_COMMENT_LENGTH } from "@/lib/comments/constants";
 import type { CommentData, CommentPage } from "@/lib/comments/list-comments";
+import { DEFAULT_AVATAR_URL } from "@/lib/users/constants";
 import { graphemeLength } from "@/lib/text/grapheme-length";
+import { commentExcerpt } from "@/lib/comments/comment-excerpt";
 import { POSTING_RESTRICTED_ERROR, postingRestrictedMessage } from "@/lib/moderation/posting-restriction";
 import { useConfirm } from "@/components/ui/ConfirmSheet";
 import { formatDateTime } from "@/lib/format/date-time";
@@ -45,18 +47,39 @@ export function CommentSection({
   canComment,
   returnTo,
   api = defaultApi,
+  open,
+  onOpenChange,
+  onSummaryChange,
 }: {
   postId: string;
-  initialPage: CommentPage;
+  /**
+   * 1 ページ目。**null なら「まだ読んでいない」** で、シートを開いたときに取りに行く（#885）。
+   *
+   * 【初心者向け】一覧の画面では投稿カードが 20 枚並ぶ。全部のコメントを先に読むと
+   * 20 回の問い合わせになり、しかもほとんどは開かれない。開いたときだけ読む。
+   */
+  initialPage: CommentPage | null;
   canComment: boolean;
   /** 通報画面からの戻り先 */
   returnTo: string;
   /** 差し替え口（単体テスト用） */
   api?: CommentApi;
+  /**
+   * #885: 外から開け閉めする（カードの「コメント」を押して開くとき）。
+   * 渡さなければ、今までどおり自分の「コメント N 件」ボタンを出して自分で開け閉めする。
+   */
+  open?: boolean;
+  onOpenChange?: (next: boolean) => void;
+  /** #885: シートを閉じたときに、件数と最新のコメントを呼び出し元へ返す（カードの表示を更新するため） */
+  onSummaryChange?: (summary: { count: number; latest: { authorName: string; excerpt: string } | null }) => void;
 }) {
-  const [comments, setComments] = useState<CommentData[]>(initialPage.comments);
-  const [nextOffset, setNextOffset] = useState<number | null>(initialPage.nextOffset);
-  const [totalCount, setTotalCount] = useState(initialPage.totalCount);
+  const [comments, setComments] = useState<CommentData[]>(initialPage?.comments ?? []);
+  const [nextOffset, setNextOffset] = useState<number | null>(initialPage?.nextOffset ?? null);
+  const [totalCount, setTotalCount] = useState(initialPage?.totalCount ?? 0);
+  const [viewerAvatarUrl, setViewerAvatarUrl] = useState<string | null>(initialPage?.viewerAvatarUrl ?? null);
+  /** #885: まだ 1 ページ目を読んでいないか（initialPage が null で渡されたとき） */
+  const [isLoadingFirstPage, setIsLoadingFirstPage] = useState(false);
+  const loadedRef = useRef(initialPage !== null);
   /*
    * #874（2026-10-07）: コメントは「コメント N 件」を押すと**下から出るシート**で読み書きする。
    *
@@ -66,7 +89,20 @@ export function CommentSection({
    * Instagram と同じように、どこからでもボタン 1 つで開くようにします。
    * 閉じ方（取っ手・Android の戻るキー）はアプリの他のシートと同じです（#796・#804）。
    */
-  const [isOpen, setIsOpen] = useState(false);
+  /*
+   * #885: 開け閉めは「外から渡されたらそれに従い、渡されなければ自分で持つ」。
+   * 投稿詳細は自分で持ち（今までどおり）、一覧のカードは外から開ける。
+   */
+  const [ownOpen, setOwnOpen] = useState(false);
+  const isControlled = open !== undefined;
+  const isOpen = isControlled ? open : ownOpen;
+  const setIsOpen = useCallback(
+    (next: boolean) => {
+      if (!isControlled) setOwnOpen(next);
+      onOpenChange?.(next);
+    },
+    [isControlled, onOpenChange]
+  );
   const [draft, setDraft] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
@@ -78,6 +114,51 @@ export function CommentSection({
   const [replyTo, setReplyTo] = useState<{ id: string; rootId: string; name: string } | null>(null);
   /** v3.2: 返信を全部開いた親コメントの ID */
   const [expandedRoots, setExpandedRoots] = useState<Set<string>>(new Set());
+
+  /*
+   * #885: 開いたときに 1 ページ目を取る（`initialPage` が null で渡されたとき＝一覧のカードから開いたとき）。
+   * 一度読んだら二度は読まない（`loadedRef`）。失敗しても開いたままにし、中に断りを出す。
+   */
+  useEffect(() => {
+    if (!isOpen || loadedRef.current || isLoadingFirstPage) return;
+    loadedRef.current = true;
+    setIsLoadingFirstPage(true);
+    void (async () => {
+      try {
+        const page = await api.fetchPage(postId, 0);
+        setComments(page.comments);
+        setNextOffset(page.nextOffset);
+        setTotalCount(page.totalCount);
+        setViewerAvatarUrl(page.viewerAvatarUrl);
+      } catch (error) {
+        if (error instanceof UnauthorizedError) return;
+        loadedRef.current = false; // 次に開いたらもう一度試す
+        setErrorMessage(ERROR_MESSAGES.dbLoadFailure);
+      } finally {
+        setIsLoadingFirstPage(false);
+      }
+    })();
+  }, [isOpen, isLoadingFirstPage, api, postId]);
+
+  /*
+   * #885: 閉じたときに、件数と最新のコメントを呼び出し元へ返す。
+   *
+   * 【初心者向け】一覧のカードは「コメント 2 件」と最新の 1 件を出している。シートで書いたのに
+   * 閉じたらカードが古いままだと辻褄が合わない。最新の 1 件は**返信も含めていちばん新しいもの**で、
+   * 抜き出し方はサーバーと同じ `commentExcerpt` を使う（約束 14: 同じものを 2 か所に書かない）。
+   */
+  const wasOpenRef = useRef(isOpen);
+  useEffect(() => {
+    const justClosed = wasOpenRef.current && !isOpen;
+    wasOpenRef.current = isOpen;
+    if (!justClosed || !onSummaryChange) return;
+    const all = comments.flatMap((comment) => (comment.deleted ? comment.replies : [comment, ...comment.replies]));
+    const newest = all.reduce<CommentData | null>((best, one) => (best === null || one.createdAt > best.createdAt ? one : best), null);
+    onSummaryChange({
+      count: totalCount,
+      latest: newest ? { authorName: newest.author.displayName, excerpt: commentExcerpt(newest.body) } : null,
+    });
+  }, [isOpen, comments, totalCount, onSummaryChange]);
 
   const remaining = MAX_COMMENT_LENGTH - graphemeLength(draft);
   // #803: キーボードが出ている間は、その高さぶん入力欄を持ち上げる
@@ -207,14 +288,15 @@ export function CommentSection({
           className="flex flex-col gap-1.5"
         >
           {replyTo && (
-            <div className="flex items-center gap-2 text-[0.75rem]" data-reply-to={replyTo.id}>
-              <span className="inline-flex items-center gap-1 rounded-full bg-tint px-2 py-0.5 font-semibold text-accent">
-                @{replyTo.name}
-                <button type="button" onClick={() => setReplyTo(null)} aria-label="返信をやめる" className="ml-0.5 text-muted">
-                  ×
-                </button>
-              </span>
-              <span className="text-muted">への返信</span>
+            /* #885: 入力欄のすぐ上に、枠つきで「@名前 への返信」。× でやめる */
+            <div
+              className="flex items-center justify-between gap-2 rounded-[8px] border border-accent px-2 py-1 text-[0.6875rem] font-medium text-accent"
+              data-reply-to={replyTo.id}
+            >
+              <span>@{replyTo.name} への返信</span>
+              <button type="button" onClick={() => setReplyTo(null)} aria-label="返信をやめる" className="tap-target text-accent">
+                ×
+              </button>
             </div>
           )}
           {/*
@@ -227,6 +309,9 @@ export function CommentSection({
             </span>
           )}
           <div className="flex items-end gap-2">
+            {/* #885: 誰として書くかが分かるよう、入力欄の左に自分のアイコンを出す */}
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={viewerAvatarUrl ?? DEFAULT_AVATAR_URL} alt="" className="mb-1 h-6 w-6 shrink-0 rounded-full object-cover" />
             <textarea
               value={draft}
               onChange={(event) => setDraft(event.target.value)}
@@ -238,7 +323,8 @@ export function CommentSection({
             <button
               type="submit"
               disabled={!canSubmit}
-              aria-label={replyTo ? "返信する" : "コメントする"}
+              /* #885: 1 件ごとの「返信する」と名前がぶつかるので、送信側は「返信を送る」にする（読み上げで区別が付かなくなるため） */
+              aria-label={replyTo ? "返信を送る" : "コメントする"}
               className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-accent text-white disabled:cursor-not-allowed disabled:opacity-45"
             >
               {isSubmitting ? (
@@ -260,16 +346,19 @@ export function CommentSection({
     <>
       {errorMessage && <ErrorNotice message={errorMessage} />}
 
-      {comments.length === 0 ? (
+      {isLoadingFirstPage ? (
+        <p className="py-6 text-center text-[0.75rem] text-muted">読み込み中…</p>
+      ) : comments.length === 0 ? (
         <p className="py-6 text-center text-[0.75rem] text-muted">まだコメントはありません</p>
       ) : (
-        <ul className="flex flex-col gap-2">
+        /* #885: 枠と左の罫線をやめた。返信は親の本文の下に入れ子で置き、アイコンのぶんだけ字下げされる */
+        <ul className="flex flex-col gap-3">
           {comments.map((comment) => {
             const expanded = expandedRoots.has(comment.id);
             const visibleReplies = expanded ? comment.replies : comment.replies.slice(0, REPLIES_PREVIEW_COUNT);
             const hiddenCount = comment.replies.length - visibleReplies.length;
             return (
-              <li key={comment.id} className="rounded-[10px] border border-line bg-surface p-3" data-comment={comment.id}>
+              <li key={comment.id} data-comment={comment.id}>
                 <CommentItem
                   comment={comment}
                   canReply={canComment}
@@ -277,34 +366,36 @@ export function CommentSection({
                   returnTo={returnTo}
                   onDelete={handleDelete}
                   onReply={() => setReplyTo({ id: comment.id, rootId: comment.id, name: comment.author.displayName })}
-                />
-                {comment.replies.length > 0 && (
-                  <ul className="mt-2 flex flex-col gap-2 border-l-2 border-line pl-3" data-replies={comment.id}>
-                    {visibleReplies.map((reply) => (
-                      <li key={reply.id} data-comment={reply.id}>
-                        <CommentItem
-                          comment={reply}
-                          canReply={canComment}
-                          pendingDeleteId={pendingDeleteId}
-                          returnTo={returnTo}
-                          onDelete={handleDelete}
-                          onReply={() => setReplyTo({ id: reply.id, rootId: comment.id, name: reply.author.displayName })}
-                        />
-                      </li>
-                    ))}
-                    {hiddenCount > 0 && (
-                      <li>
-                        <button
-                          type="button"
-                          onClick={() => setExpandedRoots((current) => new Set(current).add(comment.id))}
-                          className="text-[0.75rem] font-semibold text-accent"
-                        >
-                          返信をさらに {hiddenCount} 件見る
-                        </button>
-                      </li>
-                    )}
-                  </ul>
-                )}
+                >
+                  {comment.replies.length > 0 && (
+                    <ul className="mt-2 flex flex-col gap-2" data-replies={comment.id}>
+                      {visibleReplies.map((reply) => (
+                        <li key={reply.id} data-comment={reply.id}>
+                          <CommentItem
+                            comment={reply}
+                            canReply={canComment}
+                            pendingDeleteId={pendingDeleteId}
+                            returnTo={returnTo}
+                            onDelete={handleDelete}
+                            onReply={() => setReplyTo({ id: reply.id, rootId: comment.id, name: reply.author.displayName })}
+                            small
+                          />
+                        </li>
+                      ))}
+                      {hiddenCount > 0 && (
+                        <li>
+                          <button
+                            type="button"
+                            onClick={() => setExpandedRoots((current) => new Set(current).add(comment.id))}
+                            className="text-[0.6875rem] font-semibold text-muted"
+                          >
+                            返信をさらに {hiddenCount} 件見る
+                          </button>
+                        </li>
+                      )}
+                    </ul>
+                  )}
+                </CommentItem>
               </li>
             );
           })}
@@ -330,7 +421,9 @@ export function CommentSection({
       {/*
         * #874: 本文の下に並べるのをやめ、ここは「コメント N 件」の入口だけにする。
         * 押すと下からシートで開く（Instagram と同じ）。
+        * #885: 外から開け閉めするとき（一覧のカード）は、入口を呼び出し元が持つのでここには出さない。
         */}
+      {!isControlled && (
       <button
         type="button"
         onClick={() => setIsOpen(true)}
@@ -345,6 +438,7 @@ export function CommentSection({
         <span>コメント</span>
         <span className="font-medium text-muted">{totalCount} 件</span>
       </button>
+      )}
 
       <Sheet open={isOpen} title="コメント" onClose={() => setIsOpen(false)} footer={form}>
         {list}
@@ -353,7 +447,19 @@ export function CommentSection({
   );
 }
 
-/** 1 件分（最上位でも返信でも同じ）。返信なら先頭に「@名前 への返信」。削除済みの枠は本文の代わりに案内だけ */
+/**
+ * 1 件分（最上位でも返信でも同じ）。返信なら本文の先頭に「@名前」。
+ *
+ * #885（2026-10-09）: **枠をやめ、丸いアイコンの列と本文の列の 2 列**にした（要件 3.5.3）。
+ *
+ * 【初心者向け】それまでは 1 件ずつ枠で囲み、上に「アイコン・名前・日時」の行、下に本文、
+ * という 2 段でした。枠と余白で 1 件が縦に大きく、同じ高さに 2〜3 件しか入りません。
+ * Instagram は枠を使わず、**アイコンの列が 1 件の区切り**になっています。
+ *   - アイコンは 24px（返信は 19px）。名前の添え物ではなく、**誰が書いたか**が先に目に入る
+ *   - **名前と本文が同じ行から続く**（「**みさき** 昼前が空いてるよ」）
+ *   - 日時と「返信する」は**本文のすぐ下**に小さく（右端に離さない）
+ *   - 1 件ごとの区切り線は引かない
+ */
 function CommentItem({
   comment,
   canReply,
@@ -361,6 +467,8 @@ function CommentItem({
   returnTo,
   onDelete,
   onReply,
+  small = false,
+  children,
 }: {
   comment: CommentData;
   canReply: boolean;
@@ -368,31 +476,50 @@ function CommentItem({
   returnTo: string;
   onDelete: (commentId: string) => void;
   onReply: () => void;
+  /** 返信（アイコンを一回り小さくする） */
+  small?: boolean;
+  /** この本文の下に字下げして入るもの（返信の列） */
+  children?: ReactNode;
 }) {
   if (comment.deleted) {
     return (
-      <p className="text-[0.75rem] text-muted" data-deleted-comment>
-        削除されたコメント
-      </p>
+      <div className="flex items-start gap-2">
+        <span aria-hidden className={`${small ? "h-[19px] w-[19px]" : "h-6 w-6"} shrink-0 rounded-full bg-tint`} />
+        <div className="min-w-0 flex-1">
+          <p className="text-[0.75rem] text-muted" data-deleted-comment>
+            削除されたコメント
+          </p>
+          {children}
+        </div>
+      </div>
     );
   }
   return (
-    <>
-      <div className="mb-1 flex items-center gap-2 text-[0.6875rem] text-muted">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={comment.author.avatarUrl} alt="" className="h-5 w-5 rounded-full object-cover" />
-        {comment.author.isDeleted ? (
-          <span>{comment.author.displayName}</span>
-        ) : (
-          <Link href={`/users/${comment.author.id}`} className="font-medium text-ink">
-            {comment.author.displayName}
-          </Link>
-        )}
-        <span>・{formatDateTime(comment.createdAt)}</span>
-        <span className="ml-auto flex items-center gap-3">
+    <div className="flex items-start gap-2">
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img src={comment.author.avatarUrl} alt="" className={`${small ? "h-[19px] w-[19px]" : "h-6 w-6"} shrink-0 rounded-full object-cover`} />
+      <div className="min-w-0 flex-1">
+        {/* 名前と本文を同じ行から続ける。本文は改行を活かすが、名前の直後から始まる */}
+        <p className="whitespace-pre-wrap break-words text-[0.8125rem] leading-[1.6] text-ink">
+          {comment.author.isDeleted ? (
+            <span className="font-bold">{comment.author.displayName}</span>
+          ) : (
+            <Link href={`/users/${comment.author.id}`} className="font-bold text-ink">
+              {comment.author.displayName}
+            </Link>
+          )}{" "}
+          {comment.parentId && comment.replyToName && (
+            <span className="font-semibold text-accent" data-reply-to-name>
+              @{comment.replyToName}{" "}
+            </span>
+          )}
+          {comment.body}
+        </p>
+        <div className="mt-0.5 flex items-center gap-3 text-[0.625rem] text-muted">
+          <span>{formatDateTime(comment.createdAt)}</span>
           {canReply && (
-            <button type="button" onClick={onReply} className="tap-target text-[0.6875rem] font-medium text-ink underline underline-offset-2" data-reply-button>
-              返信
+            <button type="button" onClick={onReply} className="tap-target font-medium text-muted" data-reply-button>
+              返信する
             </button>
           )}
           {comment.isMine ? (
@@ -401,20 +528,15 @@ function CommentItem({
               label="このコメントを削除"
               disabled={pendingDeleteId !== null}
               busy={pendingDeleteId === comment.id}
-              className="h-7 w-7"
+              className="h-6 w-6"
             />
           ) : (
-            <ReportLink targetType="comment" targetId={comment.id} returnTo={returnTo} className="text-[0.6875rem]" />
+            <ReportLink targetType="comment" targetId={comment.id} returnTo={returnTo} className="text-[0.625rem]" />
           )}
-        </span>
+        </div>
+        {children}
       </div>
-      {comment.parentId && comment.replyToName && (
-        <p className="mb-0.5 text-[0.6875rem] font-medium text-accent" data-reply-to-name>
-          @{comment.replyToName} への返信
-        </p>
-      )}
-      <p className="whitespace-pre-wrap break-words text-[0.8125rem] leading-[1.7] text-ink">{comment.body}</p>
-    </>
+    </div>
   );
 }
 

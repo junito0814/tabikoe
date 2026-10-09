@@ -43,10 +43,12 @@ function fakeAdmin(all: CommentRow[]) {
     return resolve({ data: sorted.slice(from, to + 1), error: null, count: sorted.length });
   };
   return {
-    from: (table: string) =>
-      table === "blocks"
-        ? { select: () => ({ or: async () => ({ data: [], error: null }) }) }
-        : q,
+    from: (table: string) => {
+      if (table === "blocks") return { select: () => ({ or: async () => ({ data: [], error: null }) }) };
+      // #885: 見ている人のアイコン（入力欄の左に出すもの）
+      if (table === "users") return { select: () => ({ eq: () => ({ maybeSingle: async () => ({ data: { avatar_url: "/me.png" }, error: null }) }) }) };
+      return q;
+    },
   } as unknown as SupabaseClient;
 }
 

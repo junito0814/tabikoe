@@ -37,6 +37,15 @@ export interface CommentPage {
   nextOffset: number | null;
   /** 返信を含む総件数 */
   totalCount: number;
+  /**
+   * #885: 見ている人（これから書く人）のアイコン。入力欄の左に出す。
+   *
+   * 【初心者向け】なぜ `CommentPage` に入れるのか。別の props にすると、コメント欄を描く
+   * すべての画面（投稿詳細・スポット別一覧・みんなの投稿・近くのコエ・マイページ・アルバム）に
+   * **同じものを渡して回る**ことになる。1 ページ目を取るときに一緒に返せば、受け取る側は
+   * 今までどおり `initialPage` を渡すだけで済む。取れなくても画面は出す（既定のアイコンにする）。
+   */
+  viewerAvatarUrl: string | null;
 }
 
 export interface CommentRow {
@@ -110,12 +119,15 @@ export function buildCommentPage(
   offset: number,
   totalTopCount: number,
   totalCount: number,
-  replyRows: CommentRow[] = []
+  replyRows: CommentRow[] = [],
+  /** #885: 見ている人のアイコン。取れなければ null（画面側で既定のアイコンにする） */
+  viewerAvatarUrl: string | null = null
 ): CommentPage {
   return {
     comments: buildCommentTree(topRows, replyRows, viewerId),
     nextOffset: offset + topRows.length < totalTopCount ? offset + topRows.length : null,
     totalCount,
+    viewerAvatarUrl,
   };
 }
 
@@ -145,10 +157,12 @@ export async function listComments(
       .order("created_at", { ascending: false })
       .range(offset, offset + limit - 1)
   );
-  const [topResult, totalResult] = await Promise.all([
+  // #885: 見ている人のアイコンも一緒に取る（入力欄の左に出す）。並列なので往復は増えない
+  const [topResult, totalResult, viewerResult] = await Promise.all([
     topQuery,
     // 返信を含む総件数（削除済みの枠は数えない）
     excludeBlocked(admin.from("comments").select("id", { count: "exact", head: true }).eq("post_id", postId).is("hidden_at", null).is("deleted_at", null)),
+    admin.from("users").select("avatar_url").eq("id", viewerId).maybeSingle(),
   ]);
   if (topResult.error) throw topResult.error;
   const topRows = (topResult.data ?? []) as unknown as CommentRow[];
@@ -170,5 +184,6 @@ export async function listComments(
     replyRows = (replyResult.data ?? []) as unknown as CommentRow[];
   }
 
-  return buildCommentPage(topRows, viewerId, offset, topResult.count ?? 0, totalResult.count ?? 0, replyRows);
+  const viewerAvatarUrl = (viewerResult.data as { avatar_url?: string | null } | null)?.avatar_url ?? null;
+  return buildCommentPage(topRows, viewerId, offset, topResult.count ?? 0, totalResult.count ?? 0, replyRows, viewerAvatarUrl);
 }
