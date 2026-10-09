@@ -174,7 +174,21 @@ Supabase 側で手作業が要るのは次の 3 つ（SQL では入らない）�
 
 1. **Authentication → Sign In / Providers → Google** … 本番と同じ Client ID / Secret を入れる
 2. **Authentication → URL Configuration** … Site URL `http://localhost:3000`、Redirect URLs に `http://localhost:3000/**` と `https://*.vercel.app/**`
-3. **Google Cloud → 認証情報 → 承認済みのリダイレクト URI** … `https://<新しい ref>.supabase.co/auth/v1/callback` を**追加**する（既存は消さない）
+3. **Google Cloud → 認証情報** … 開発用は**専用の OAuth クライアント**を作り（例: `tabikoe-dev`）、その
+   **承認済みのリダイレクト URI** に `https://<新しい ref>.supabase.co/auth/v1/callback` を入れる。
+   その Client ID / Secret を 1 の欄に入れる。**本番のクライアントには触らない**
+   - 2026-10-09 に、開発用 Supabase へ**本番と同じ Client ID** を入れてしまい、Google に本番の
+     クライアントとして要求が飛んで `redirect_uri_mismatch` になった。クライアントを分けること
+   - 同じ Google Cloud プロジェクトの中にあれば、**同意画面（公開済み）は共用**なので追加の公開手続きは要らない
+
+そのあと、自分を管理者にする（**画面からは付けられない**。要件 3.10.1）。
+
+```bash
+node scripts/grant-admin.mjs you@example.com --apply     # 開発用。先に一度ログインしておくこと
+```
+
+印を付けただけでは入れない。`/admin` を開くと認証アプリ（TOTP）の登録へ誘導されるので、6 桁まで通す。
+**この操作は画面を通らないので操作の記録（3.10.12）に残らない。** 誰にいつ付けたかは別に控える。
 
 > **バケットの設定は手でやらない。** 大きさ上限・受付形式はマイグレーションに書いてある（#896）。
 > 管理画面で直すとコードとズレて、作り直したときに再現できなくなる。
