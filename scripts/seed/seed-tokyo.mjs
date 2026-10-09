@@ -20,7 +20,7 @@ import { randomUUID } from "node:crypto";
 import { DUMMY_USERS, MY_TRIP_TITLE, SEED_EMAIL_DOMAIN, SPOT_POSTS, SPOTS, TRIP_TITLES } from "./seed-data.mjs";
 
 // ---- .env.local を読む（dotenv を入れていないので自前で） ----
-const { admin, target } = await connect();
+const { admin, env, target } = await connect();
 
 // #703: スポットの Place ID（node scripts/seed/resolve-place-ids.mjs で作る）
 const PLACE_IDS = JSON.parse(readFileSync(new URL("./place-ids.json", import.meta.url), "utf8"));
@@ -73,17 +73,47 @@ const SPOTS_WITHOUT_POSTS = new Set([
 /** #893: 2 件目の投稿も作るスポット（スポット投稿一覧に複数件並ぶ様子を見せるため） */
 const SPOTS_WITH_TWO_POSTS = new Set(["東京スカイツリー", "築地場外市場", "渋谷スクランブル交差点", "新宿 思い出横丁"]);
 
-/** 写真を取ってきて Storage に入れる（既に同じ名前があれば上書き）。使うものだけ */
+/*
+ * #896: 写真を取ってきて Storage に入れる。
+ *
+ * 【初心者向け】なぜ「取り直す」処理が要るのか。
+ *   photos.json に控えてある URL（Pixabay の largeImageURL）は、**しばらくすると無効になります**。
+ *   2026-10-07 に書き出した URL が、2026-10-09 には HTTP 400 を返すようになっていました。
+ *   一方 **写真の id（pixabayId）は変わりません**。そこで、控えの URL をまず試し、
+ *   だめなら id から今の URL を聞き直します。これで何か月あとでも seed を流し直せます。
+ */
+async function fetchPixabayUrlById(id) {
+  const key = env.PIXABAY_API_KEY;
+  if (!key) throw new Error(".env.local に PIXABAY_API_KEY がありません（写真の URL を取り直すのに要ります）");
+  const response = await fetch(`https://pixabay.com/api/?key=${key}&id=${id}`);
+  if (!response.ok) throw new Error(`Pixabay に聞けませんでした: id=${id}（HTTP ${response.status}）`);
+  const body = await response.json();
+  const hit = body.hits?.[0];
+  if (!hit?.largeImageURL) throw new Error(`Pixabay に id=${id} の写真がありません（取り下げられた可能性）`);
+  return hit.largeImageURL;
+}
+
+/** 控えの URL → だめなら id から取り直し。中身（Uint8Array）を返す */
+async function downloadSeedPhoto(photo) {
+  const first = await fetch(photo.url).catch(() => null);
+  if (first?.ok) return new Uint8Array(await first.arrayBuffer());
+  const fresh = await fetchPixabayUrlById(photo.pixabayId);
+  const retry = await fetch(fresh);
+  if (!retry.ok) throw new Error(`写真を取れませんでした: ${photo.file}（HTTP ${retry.status}）`);
+  return new Uint8Array(await retry.arrayBuffer());
+}
+
 async function uploadSeedPhotos() {
   console.log(`写真: Pixabay から ${PHOTOS.photos.length} 枚を取って Storage に入れます`);
+  let done = 0;
   for (const photo of PHOTOS.photos) {
-    const response = await fetch(photo.url);
-    if (!response.ok) throw new Error(`写真を取れませんでした: ${photo.url}（HTTP ${response.status}）`);
-    const body = new Uint8Array(await response.arrayBuffer());
+    const body = await downloadSeedPhoto(photo);
     const { error } = await admin.storage
       .from("post-media")
       .upload(`${SEED_PHOTO_PREFIX}${photo.file}`, body, { contentType: "image/jpeg", upsert: true });
     if (error) throw new Error(`Storage に入れられませんでした: ${photo.file}（${error.message}）`);
+    done += 1;
+    if (done % 20 === 0) console.log(`  ${done} / ${PHOTOS.photos.length} 枚`);
   }
   console.log(`写真: ${PHOTOS.photos.length} 枚を入れました（${SEED_PHOTO_PREFIX}）`);
 }
