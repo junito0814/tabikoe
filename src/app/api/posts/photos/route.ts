@@ -1,3 +1,4 @@
+import { unstable_rethrow } from "next/navigation";
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -105,6 +106,9 @@ export async function POST(request: Request) {
       if (error instanceof ImageValidationError) {
         return NextResponse.json({ error: error.message }, { status: 400 });
       }
+      // #895: Next.js の内部的な合図（redirect / notFound など）は、記録する前に投げ直す。
+      // 握りつぶすと転送が黙って効かなくなる。API の口でも決まりを揃える
+      unstable_rethrow(error);
       console.error("[media] upload failed", error);
       return NextResponse.json({ error: "upload_failed" }, { status: 500 });
     }

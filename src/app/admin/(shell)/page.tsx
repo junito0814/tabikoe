@@ -1,3 +1,4 @@
+import { unstable_rethrow } from "next/navigation";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { ErrorNotice } from "@/components/notices/ErrorNotice";
 import { ERROR_MESSAGES } from "@/components/notices/error-messages";
@@ -19,6 +20,9 @@ export default async function AdminDashboardPage() {
   try {
     data = await loadAdminDashboard(createAdminClient());
   } catch (error) {
+        // #895: Next.js の内部的な合図（redirect / notFound / cookies など）は投げ直す。
+    // 握りつぶすと、ビルドログが赤字で埋まったり、転送が黙って効かなくなったりする
+    unstable_rethrow(error);
     console.error("[admin] ダッシュボードの集計に失敗しました:", error instanceof Error ? error.message : error);
     data = null;
   }

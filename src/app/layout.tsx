@@ -1,3 +1,4 @@
+import { unstable_rethrow } from "next/navigation";
 import type { Metadata, Viewport } from "next";
 import { geistSans, geistMono } from "./fonts";
 import { AppMenuBar } from "@/components/layout/AppMenuBar";
@@ -140,6 +141,24 @@ async function getMenuBarUser() {
   try {
     return await getAuthUserFromClaims(await createClient());
   } catch (error) {
+    /*
+     * #895（2026-10-09）: Next.js の**内部的な合図**は、ここで握りつぶさずに投げ直す。
+     *
+     * 【初心者向け】`cookies()` を使っている画面を Next.js が「静的に作れるか」試すとき、
+     * `DYNAMIC_SERVER_USAGE` という合図を**例外の形で**投げてくる。これはエラーではなく
+     * 「このページは毎回サーバーで描くものだ」と伝えるための仕組み。
+     *
+     * それをこの `catch` が拾って `console.error` に流していたため、**ビルドのたびに
+     * ページ数ぶんの赤字**がログに並んでいた（2026-10-09 時点で 18 個）。成功しているのに
+     * 失敗に見えるので、本物の失敗がその中に埋もれる。実際、本番の再デプロイのときに
+     * これを失敗と判断して原因の調査に時間を使った。
+     *
+     * `unstable_rethrow` は Next.js が用意している公式の口で、`notFound()`・`redirect()`・
+     * `permanentRedirect()` と、`cookies`/`headers`/`searchParams` の合図をまとめて投げ直す。
+     * 自前で `digest` を見るより取りこぼしが無い。
+     * （同梱ドキュメント: node_modules/next/dist/docs/01-app/03-api-reference/04-functions/unstable_rethrow.md）
+     */
+    unstable_rethrow(error);
     console.error("[layout] ログイン状態を確認できませんでした:", error);
     return null;
   }

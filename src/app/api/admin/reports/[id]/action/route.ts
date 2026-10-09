@@ -1,3 +1,4 @@
+import { unstable_rethrow } from "next/navigation";
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -139,6 +140,9 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
       });
     } catch (error) {
       // ストライクが付かなくても対応自体は済んでいる。記録に残して続ける
+      // #895: Next.js の内部的な合図（redirect / notFound など）は、記録する前に投げ直す。
+      // 握りつぶすと転送が黙って効かなくなる。API の口でも決まりを揃える
+      unstable_rethrow(error);
       console.error("[admin] ストライクを付けられませんでした:", error instanceof Error ? error.message : error);
     }
   }
