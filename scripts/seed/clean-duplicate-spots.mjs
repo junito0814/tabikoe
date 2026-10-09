@@ -16,23 +16,11 @@
 //   3. そのうち **いちばん新しいものは必ず残す**
 //   4. 古い方も、**投稿が 1 件でもあれば残す**（下書きを含む。消えると取り返せないため）
 //   → 結果として「投稿が無く、同じ名前の新しいものがある古いスポット」だけが消える
-import { createClient } from "@supabase/supabase-js";
+import { connect } from "../supabase-target.mjs";
 import { existsSync, readFileSync } from "node:fs";
 import { LEGACY_SEED_SPOT_SUFFIX } from "./seed-data.mjs";
 
-const env = Object.fromEntries(
-  readFileSync(new URL("../../.env.local", import.meta.url), "utf8")
-    .split("\n")
-    .filter((line) => line.includes("=") && !line.trim().startsWith("#"))
-    .map((line) => {
-      const i = line.indexOf("=");
-      return [line.slice(0, i).trim(), line.slice(i + 1).trim().replace(/^"|"$/g, "")];
-    })
-);
-const url = env.NEXT_PUBLIC_SUPABASE_URL;
-const key = env.SUPABASE_SECRET_KEY;
-if (!url || !key) throw new Error(".env.local に NEXT_PUBLIC_SUPABASE_URL / SUPABASE_SECRET_KEY が要ります");
-const admin = createClient(url, key, { auth: { autoRefreshToken: false, persistSession: false } });
+const { admin } = await connect();
 const apply = process.argv.includes("--apply");
 
 /*

@@ -16,19 +16,9 @@
 //   3. 表示名が「[撮影] 絞り込み」の利用者の投稿 … 中身が「大阪城 その1」のような確認用。
 //      **アカウントそのものは消さない**（本人のものなので）
 //   4. 投稿が 1 件も無い、名前が重複したスポット … 同じ場所が 2 つ地図に出てしまうため、空のほうを消す
-import { createClient } from "@supabase/supabase-js";
-import { readFileSync } from "node:fs";
+import { connect } from "../supabase-target.mjs";
 
-const env = Object.fromEntries(
-  readFileSync(new URL("../../.env.local", import.meta.url), "utf8")
-    .split("\n")
-    .filter((line) => line.includes("=") && !line.trim().startsWith("#"))
-    .map((line) => {
-      const i = line.indexOf("=");
-      return [line.slice(0, i).trim(), line.slice(i + 1).trim().replace(/^"|"$/g, "")];
-    })
-);
-const admin = createClient(env.NEXT_PUBLIC_SUPABASE_URL, env.SUPABASE_SECRET_KEY, { auth: { autoRefreshToken: false, persistSession: false } });
+const { admin } = await connect();
 const apply = process.argv.includes("--apply");
 
 /** 動作確認で作られたと分かっている名前。ここに無いものは消さない */

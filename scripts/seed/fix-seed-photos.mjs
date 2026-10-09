@@ -17,20 +17,11 @@
 //   なので**直したあとは写真が付かない投稿のほうが多くなる**。これは意図どおり。
 //
 // seed の投稿かどうかは seed-ids.json のスポット id で見分ける（#776 と同じ）。
-import { createClient } from "@supabase/supabase-js";
+import { connect } from "../supabase-target.mjs";
 import { existsSync, readFileSync } from "node:fs";
 import { LEGACY_SEED_SPOT_SUFFIX } from "./seed-data.mjs";
 
-const env = Object.fromEntries(
-  readFileSync(new URL("../../.env.local", import.meta.url), "utf8")
-    .split("\n")
-    .filter((line) => line.includes("=") && !line.trim().startsWith("#"))
-    .map((line) => {
-      const i = line.indexOf("=");
-      return [line.slice(0, i).trim(), line.slice(i + 1).trim().replace(/^"|"$/g, "")];
-    })
-);
-const admin = createClient(env.NEXT_PUBLIC_SUPABASE_URL, env.SUPABASE_SECRET_KEY, { auth: { persistSession: false } });
+const { admin } = await connect();
 const apply = process.argv.includes("--apply");
 
 const PHOTOS = JSON.parse(readFileSync(new URL("./photos.json", import.meta.url), "utf8"));

@@ -64,3 +64,40 @@ describe("マイグレーションの権限", () => {
     expect(harden).toContain("service_role");
   });
 });
+
+/**
+ * #896（2026-10-09）: Storage のバケットの設定も、画面ではなくマイグレーションで決める。
+ *
+ * 【初心者向け】なぜこれが要るのか。
+ *   `post-media` の「100MB まで」「JPEG/PNG/MP4/MOV だけ」という決まりは、長いあいだ
+ *   **Supabase の管理画面で手作業**で入れられていて、コードのどこにもありませんでした。
+ *   表の形と違い、バケットの設定は画面から変えられてしまうので、つい手で済ませてしまいます。
+ *
+ *   困るのは**プロジェクトを作り直したとき**です。マイグレーションを全部流しても、
+ *   このバケットだけ設定が違うものができ、「開発では 100MB の動画が上がるのに本番では弾かれる」
+ *   （またはその逆）が起きます。Issue #896 で開発用の Supabase を分けるにあたって実際に見つかりました。
+ */
+describe("Storage のバケットの決まりがコードに残っている（#896）", () => {
+  it("マイグレーションで作ったバケットには、大きさ上限と受付形式の指定がある（制限しないならそう書く）", () => {
+    const created = [...all.matchAll(/insert\s+into\s+storage\.buckets[\s\S]*?values\s*\(\s*'([\w-]+)'/gi)].map((m) => m[1]);
+    expect(created.length, "バケットを作るマイグレーションが読み取れていない").toBeGreaterThan(0);
+    for (const bucket of created) {
+      // 作成時に書いてあっても、あとから update で入れてあってもよい。どこかに必ず書いてあること
+      const declared = new RegExp(`'${bucket}'[\\s\\S]{0,800}?(file_size_limit|allowed_mime_types)|((file_size_limit|allowed_mime_types)[\\s\\S]{0,800}?'${bucket}')`, "i");
+      expect(
+        declared.test(all),
+        `バケット「${bucket}」の上限・受付形式がマイグレーションに無い。管理画面で手作業にせず、` +
+          `制限するならその値を、制限しないなら null を理由つきで書く`
+      ).toBe(true);
+    }
+  });
+
+  it("post-media は要件定義書 5.4 のとおり（100MB・JPEG/PNG/MP4/MOV）", () => {
+    const limits = readFileSync(`${DIR}/20261009000001_post_media_bucket_limits.sql`, "utf8");
+    expect(limits).toContain("'post-media'");
+    expect(limits, "100MB（要件 5.4 の動画の上限）").toContain("104857600");
+    for (const mime of ["image/jpeg", "image/png", "video/mp4", "video/quicktime"]) {
+      expect(limits, mime).toContain(mime);
+    }
+  });
+});

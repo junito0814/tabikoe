@@ -12,8 +12,7 @@
 //
 // この操作は画面を通らないので、操作の記録（admin_actions）には残らない。
 // 誰のを・いつ消したかは別に残すこと（要件 3.10.1 の運用手順と同じ扱い）。
-import { createClient } from "@supabase/supabase-js";
-import { readFileSync } from "node:fs";
+import { connect } from "./supabase-target.mjs";
 import { createInterface } from "node:readline/promises";
 import { formatFactorLine, isConfirmed, nothingToDeleteMessage, parseArgs } from "./admin-mfa-reset.lib.mjs";
 
@@ -25,23 +24,7 @@ if (!parsed.ok) {
 const { email } = parsed;
 
 // .env.local から読む。値は画面にも変数名以外の形でも出さない（AGENTS.md 21）
-const env = Object.fromEntries(
-  readFileSync(new URL("../.env.local", import.meta.url), "utf8")
-    .split("\n")
-    .filter((line) => line.includes("=") && !line.trim().startsWith("#"))
-    .map((line) => {
-      const i = line.indexOf("=");
-      return [line.slice(0, i).trim(), line.slice(i + 1).trim().replace(/^"|"$/g, "")];
-    })
-);
-if (!env.NEXT_PUBLIC_SUPABASE_URL || !env.SUPABASE_SECRET_KEY) {
-  console.error(".env.local に NEXT_PUBLIC_SUPABASE_URL と SUPABASE_SECRET_KEY が要ります");
-  process.exit(1);
-}
-
-const admin = createClient(env.NEXT_PUBLIC_SUPABASE_URL, env.SUPABASE_SECRET_KEY, {
-  auth: { autoRefreshToken: false, persistSession: false },
-});
+const { admin } = await connect();
 
 // ① メールアドレスから利用者を引く
 const { data: user, error: userError } = await admin
