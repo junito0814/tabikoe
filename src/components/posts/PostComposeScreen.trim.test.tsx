@@ -45,14 +45,30 @@ const api: ComposeApi = {
 
 const initial = buildComposeInitialState({ lat: "35.6", lng: "139.7", from: "current" });
 
-/** 72 秒の動画を選ぶ */
-async function pickLongVideo() {
+/** 動画と写真をまとめて選ぶ（既定は 72 秒の動画 1 本） */
+async function pick(files: File[] = [new File([new Uint8Array(1000)], "long.mp4", { type: "video/mp4" })]) {
   render(<PostComposeScreen initial={initial} api={api} videoUploadDisabled={false} />);
   const input = screen.getByLabelText("写真を選択") as HTMLInputElement;
-  const video = new File([new Uint8Array(1000)], "long.mp4", { type: "video/mp4" });
   await act(async () => {
-    fireEvent.change(input, { target: { files: [video] } });
+    fireEvent.change(input, { target: { files } });
   });
+}
+
+const pickLongVideo = () => pick();
+const longVideo = (name: string) => new File([new Uint8Array(1000)], name, { type: "video/mp4" });
+const photo = (name: string) => new File([new Uint8Array(10)], name, { type: "image/jpeg" });
+const outside = () => screen.getAllByRole("button", { name: /を外す$/ });
+
+/**
+ * 「この範囲にする」が押せるようになるまで待ってから押す。
+ *
+ * 【初心者向け】見出しは**読み込み中にも出ています**。見出しを見て押すと、
+ * まだ押せないボタンを押して何も起きないことがあります（全体実行のときだけ落ちました）。
+ * 範囲の数字は読み込みが済んでから出るので、そちらを待ちます。
+ */
+async function applyRange() {
+  await screen.findByText(/を切り取ります/);
+  fireEvent.click(screen.getByRole("button", { name: "この範囲にする" }));
 }
 
 beforeEach(() => {
@@ -72,7 +88,7 @@ describe("長い動画を選んだとき（要件 4.5.17）", () => {
 
   it("切り取れたら、そのファイルを添付する", async () => {
     await pickLongVideo();
-    fireEvent.click(await screen.findByRole("button", { name: "この範囲にする" }));
+    await applyRange();
     await waitFor(() => expect(screen.queryByText("切り取る範囲を選ぶ")).toBeNull());
     // 選んだものが 1 つ入る（サムネイルの「外す」ボタンで数える）
     expect(await screen.findByRole("button", { name: /を外す$/ })).toBeTruthy();
@@ -91,11 +107,43 @@ describe("長い動画を選んだとき（要件 4.5.17）", () => {
     const trimVideo = vi.mocked((await import("@/lib/video/trim-video")).trimVideo);
     trimVideo.mockResolvedValueOnce(broken);
     await pickLongVideo();
-    fireEvent.click(await screen.findByRole("button", { name: "この範囲にする" }));
+    await applyRange();
 
     expect(await screen.findByText(/この端末では動画を切り取れませんでした/)).toBeTruthy();
     // 添付はされない
     expect(screen.queryByRole("button", { name: /を外す$/ })).toBeNull();
+  });
+
+  it("長い動画が 2 本あっても、どちらも取りこぼさない（1 本ずつ切り取る）", async () => {
+    await pick([longVideo("a.mp4"), longVideo("b.mp4")]);
+
+    // 1 本目。残りがあることを見出しで伝える
+    expect(await screen.findByText("切り取る範囲を選ぶ（あと 2 本）")).toBeTruthy();
+    await applyRange();
+
+    // 続けて 2 本目が出る（閉じて終わりにしない）
+    expect(await screen.findByText("切り取る範囲を選ぶ")).toBeTruthy();
+    await applyRange();
+
+    await waitFor(() => expect(screen.queryByText(/切り取る範囲を選ぶ/)).toBeNull());
+    expect(outside()).toHaveLength(2);
+  });
+
+  it("長い動画の後ろに選んだ写真も消えない", async () => {
+    await pick([longVideo("a.mp4"), photo("b.jpg")]);
+    // 写真は切り取りを待たずに先に入る
+    expect(outside()).toHaveLength(1);
+    await applyRange();
+    await waitFor(() => expect(outside()).toHaveLength(2));
+  });
+
+  it("切り取りをやめたら、残りを取り込まないことを言う（黙って消さない）", async () => {
+    await pick([longVideo("a.mp4"), longVideo("b.mp4")]);
+    await screen.findByText("切り取る範囲を選ぶ（あと 2 本）");
+    fireEvent.click(screen.getAllByRole("button", { name: "閉じる" })[0]);
+
+    expect(await screen.findByText(/残り 1 本の動画は取り込んでいません/)).toBeTruthy();
+    expect(screen.queryByText(/切り取る範囲を選ぶ/)).toBeNull();
   });
 
   it("30 秒以内の動画では、シートを出さずにそのまま添付する", async () => {

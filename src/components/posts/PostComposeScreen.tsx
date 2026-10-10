@@ -181,10 +181,10 @@ export function PostComposeScreen({
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [confirmingHome, setConfirmingHome] = useState(false);
   /*
-   * #861（2026-10-10）: 30 秒を超える動画を選んだときに出す切り取りのシート（要件 4.5.17）。
-   * 長さは選んだ時点で測ってあるので、シートに渡して測り直さない。
+   * #861（2026-10-10）: 30 秒を超える動画の**待ち列**。先頭から 1 本ずつ切り取ってもらう
+   * （要件 4.5.17）。長さは選んだ時点で測ってあるので、シートに渡して測り直さない。
    */
-  const [trimming, setTrimming] = useState<{ file: File; durationSeconds: number } | null>(null);
+  const [trimQueue, setTrimQueue] = useState<{ file: File; durationSeconds: number }[]>([]);
   const [sheetExpanded, setSheetExpanded] = useState(false);
   const sheetDrag = useSheetDrag(
     (snap) => setSheetExpanded(snap === "expand"),
@@ -208,6 +208,14 @@ export function PostComposeScreen({
     setErrorMessage(null);
 
     const accepted: File[] = [];
+    /*
+     * 30 秒を超えた動画は**いったん列に並べ**、あとで 1 本ずつ切り取ってもらう。
+     *
+     * 【初心者向け】ここを「見つけたらすぐシートを開いて `return`」にすると、
+     * **その後ろに選んだぶんが黙って消えます**（3 本選んで 1 本目が長いと、2・3 本目が無かったことになる）。
+     * 写真は枚数に上限がないので（要件 3.3.1）、長い動画が 2 本以上あるのはふつうに起こります。
+     */
+    const queue: { file: File; durationSeconds: number }[] = [];
     for (const file of selected) {
       const isVideo = isVideoFile(file);
       const durationSeconds = isVideo ? await readVideoDuration(file) : null;
@@ -225,17 +233,32 @@ export function PostComposeScreen({
         return;
       }
       if (decision.kind === "needs_trim") {
-        /*
-         * 30 秒を超えている。**断らずに切り取りのシートへ送る**（要件 4.5.17）。
-         * ここまでに選んだぶんは先に入れておく（切り取りの結果はシートから戻ってくる）。
-         */
-        if (accepted.length > 0) setFiles((current) => [...current, ...accepted]);
-        setTrimming({ file, durationSeconds: decision.durationSeconds });
-        return;
+        queue.push({ file, durationSeconds: decision.durationSeconds });
+        continue;
       }
       accepted.push(file);
     }
-    setFiles((current) => [...current, ...accepted]);
+    // 切り取りの要らないものは先に入れる（切り取ったものはシートから戻ってくる）
+    if (accepted.length > 0) setFiles((current) => [...current, ...accepted]);
+    if (queue.length > 0) setTrimQueue(queue);
+  };
+
+  /** 列の先頭を 1 本切り終えた（または諦めた）ので、次へ進む */
+  const advanceTrimQueue = (trimmed: File | null) => {
+    if (trimmed) setFiles((current) => [...current, trimmed]);
+    setTrimQueue((current) => current.slice(1));
+  };
+
+  /**
+   * 切り取りをやめた・できなかった。**残りも取り込まないことを必ず言う**。
+   * 黙って列を捨てると、選んだはずの動画が理由も分からず消える。
+   */
+  const abandonTrimQueue = (message: string | null) => {
+    const remaining = trimQueue.length - 1;
+    const tail = remaining > 0 ? `${remaining} 本の動画は取り込んでいません` : "";
+    if (message) setErrorMessage(tail ? `${message}（残り ${tail}）` : message);
+    else if (tail) setErrorMessage(`動画の切り取りをやめました。残り ${tail}`);
+    setTrimQueue([]);
   };
 
   const handleRemoveMedia = async (key: string) => {
@@ -549,19 +572,16 @@ export function PostComposeScreen({
         * #861: 切り取りのシート（要件 4.5.17）。30 秒を超える動画を選んだときだけ出る。
         * 切り取れたら添付し、切り取れなかったら**その理由を投稿画面に出して**この動画は受け付けない。
         */}
-      {trimming && (
+      {trimQueue.length > 0 && (
         <VideoTrimSheet
-          file={trimming.file}
-          durationSeconds={trimming.durationSeconds}
-          onTrimmed={(trimmed) => {
-            setTrimming(null);
-            setFiles((current) => [...current, trimmed]);
-          }}
-          onGiveUp={(message) => {
-            setTrimming(null);
-            setErrorMessage(message);
-          }}
-          onClose={() => setTrimming(null)}
+          // 動画が変わったら作り直す（前の動画の帯の位置や読み込みを持ち越さない）
+          key={`${trimQueue[0].file.name}:${trimQueue[0].file.size}:${trimQueue.length}`}
+          file={trimQueue[0].file}
+          durationSeconds={trimQueue[0].durationSeconds}
+          remaining={trimQueue.length}
+          onTrimmed={advanceTrimQueue}
+          onGiveUp={abandonTrimQueue}
+          onClose={() => abandonTrimQueue(null)}
         />
       )}
     </div>

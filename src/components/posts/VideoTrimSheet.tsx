@@ -39,6 +39,7 @@ type Phase =
 export function VideoTrimSheet({
   file,
   durationSeconds,
+  remaining = 1,
   onTrimmed,
   onGiveUp,
   onClose,
@@ -49,6 +50,11 @@ export function VideoTrimSheet({
   file: File;
   /** 元の動画の長さ（秒）。投稿画面が選んだ時点で測っているので、測り直さない */
   durationSeconds: number;
+  /**
+   * この動画を含め、あと何本切り取ってもらうか。
+   * 2 本以上なら見出しに「あと N 本」と出す ── 終わったと思って閉じられるのを防ぐ。
+   */
+  remaining?: number;
   /** 切り取れた。このファイルを添付する */
   onTrimmed: (trimmed: File) => void;
   /** 切り取れなかった。受け取った文を投稿画面に出して、この動画は受け付けない */
@@ -217,7 +223,7 @@ export function VideoTrimSheet({
   return (
     <Sheet
       open
-      title="切り取る範囲を選ぶ"
+      title={remaining > 1 ? `切り取る範囲を選ぶ（あと ${remaining} 本）` : "切り取る範囲を選ぶ"}
       onClose={phase.kind === "trimming" ? () => undefined : onClose}
       footer={
         phase.kind === "trimming" ? (

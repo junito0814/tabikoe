@@ -59,19 +59,67 @@ async function encodeFixtures() {
     "-c:a", "aac", "-b:a", "24k", "-ac", "1", "-ar", "22050",
     "-movflags", "+faststart", "-t", "40", plainPath,
   ]);
-  await execFileAsync(ffmpeg, ["-hide_banner", "-y", "-i", plainPath, "-c", "copy", "-metadata:s:v:0", "rotate=90", rotatedPath]);
   const toFile = async (path: string, name: string) => {
     const bytes = await readFile(path);
     return new File([new Uint8Array(bytes)], name, { type: "video/mp4" });
   };
   plain = await toFile(plainPath, "plain.mp4");
+  await writeFile(rotatedPath, await rotateNinetyDegrees(await readFile(plainPath)));
   rotated = await toFile(rotatedPath, "rotated.mp4");
+}
+
+/**
+ * 「90 度回した」動画を作る（iPhone の縦撮りに相当）。
+ *
+ * 【初心者向け】ffmpeg に回転を書かせない理由。
+ *   `-metadata rotate=90` は版によって扱いが変わり、**作ったつもりで回っていない**ことがあります
+ *   （素材が回っていなければ、この見張りは何も見張れません）。
+ *   回転は `tkhd` という箱の中の **36 バイトの行列**なので、そこを直に書き換えます。
+ *   箱の場所は mp4box に教えてもらうので、当て推量ではありません。
+ */
+async function rotateNinetyDegrees(bytes: Buffer): Promise<Buffer> {
+  const { createFile, MP4BoxBuffer } = await import("mp4box");
+  const file = createFile();
+  let movie: { videoTracks: { id: number }[] } | undefined;
+  file.onReady = (info) => {
+    movie = info;
+  };
+  const copy = Buffer.from(bytes);
+  file.appendBuffer(MP4BoxBuffer.fromArrayBuffer(copy.buffer.slice(copy.byteOffset, copy.byteOffset + copy.byteLength), 0));
+  file.flush();
+  if (!movie) throw new Error("素材を読めなかった");
+  const tkhd = file.getTrackById(movie.videoTracks[0].id).tkhd;
+  if (tkhd.start === undefined) throw new Error("tkhd の位置が分からなかった");
+  /*
+   * tkhd の並び: 大きさ 4 ＋ 種類 4 ＋ 版と旗 4 ＋ 作成 ＋ 更新 ＋ 軌道 ID 4 ＋ 予備 4 ＋ 長さ
+   *   ＋ 予備 8 ＋ 層 2 ＋ 組 2 ＋ 音量 2 ＋ 予備 2 → ここから行列 36 バイト。
+   * 「作成・更新・長さ」は**版 1 だと 8 バイトずつ**になるので、版を読んでから数える。
+   */
+  const version = copy.readUInt8(tkhd.start + 8);
+  const matrixAt = tkhd.start + (version === 1 ? 60 : 48);
+  const rotate90 = [0, 65536, 0, -65536, 0, 0, 0, 0, 1073741824];
+  for (let i = 0; i < rotate90.length; i++) copy.writeInt32BE(rotate90[i], matrixAt + i * 4);
+  return copy;
 }
 
 beforeAll(async () => {
   workDir = await mkdtemp(join(tmpdir(), "tabikoe-trim-test-"));
   await encodeFixtures();
 }, 120000);
+
+/** 出来上がりの映像の回転（tkhd の matrix）を mp4box で読む */
+async function readTrackMatrix(output: File) {
+  const { createFile, MP4BoxBuffer } = await import("mp4box");
+  const parsed = createFile();
+  let movie: { videoTracks: { matrix: ArrayLike<number> }[] } | undefined;
+  parsed.onReady = (info) => {
+    movie = info;
+  };
+  parsed.appendBuffer(MP4BoxBuffer.fromArrayBuffer(await output.arrayBuffer(), 0));
+  parsed.flush();
+  if (!movie) throw new Error("出来上がりを読めなかった");
+  return movie.videoTracks[0].matrix;
+}
 
 /** 切り取った結果をファイルに落として ffmpeg に読ませる */
 async function probeTrimmed(output: File, name: string) {
@@ -124,11 +172,21 @@ describe("trimVideo", () => {
   }, 60000);
 
   it("回転の情報を保つ ── 縦撮りが横向きになってはいけない", async () => {
+    /*
+     * 【初心者向け】なぜ ffmpeg の文字ではなく、箱の中身を直接見るのか。
+     *   はじめは `ffmpeg -i` が出す「rotation of 90 degrees」を読んでいましたが、
+     *   **ffmpeg の版で出力が変わり、CI（7.0）だけ赤くなりました**。
+     *   確かめたいのは「元の回転が出来上がりに写っているか」なので、
+     *   mp4box で**両方の行列（matrix）を読んで比べます**。版に左右されません。
+     */
     const loaded = await loadVideoForTrim(rotated);
-    const range = planTrim({ keyframeTimes: loaded.keyframeTimes, durationSeconds: loaded.durationSeconds, wantStartSeconds: 5 });
-    const info = await probeTrimmed(await trimVideo(loaded, range), "out-rotated.mp4");
+    const sourceMatrix = Array.from(loaded.source.video.matrix);
+    // 90 度回転は単位行列ではない（素材が本当に回っていることの確認）
+    expect(sourceMatrix).not.toEqual([65536, 0, 0, 0, 65536, 0, 0, 0, 1073741824]);
 
-    expect(info.stderr).toMatch(/rotation of 90/);
+    const range = planTrim({ keyframeTimes: loaded.keyframeTimes, durationSeconds: loaded.durationSeconds, wantStartSeconds: 5 });
+    const output = await trimVideo(loaded, range);
+    expect(Array.from(await readTrackMatrix(output))).toEqual(sourceMatrix);
   }, 60000);
 
   it("最後まで崩れずに再生できる", async () => {
