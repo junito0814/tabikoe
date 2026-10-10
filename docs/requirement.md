@@ -1981,9 +1981,59 @@ Tailwind の `animate-pulse` は **2 秒かけて**透明度を 1 → 0.5 → 1 
 | Service Specific Terms §3 Google ID Caching | 許されているのは「**ID 値**」だけ。例として **`place_id`**（Places・Directions・Geolocation・Routes） |
 | [Geocoding API の方針](https://developers.google.com/maps/documentation/geocoding/policies) | 「**place ID はキャッシュの制限から除外される。無期限に保存してよい**」。座標・住所は保存不可 |
 
-~~規約は「座標（lat/lng）も 30 日まで」としている（Geocoding API の条項）~~ → **2026-10-04 に訂正。これは誤りだった。** 「30 日」の表は **Address Validation API 専用**の条項で、Places・Geocoding には無い。**Places と Geocoding には「30 日なら保存してよい」という逃げ道は無く、保存してよいのは `place_id` だけ**。
+~~規約は「座標（lat/lng）も 30 日まで」としている（Geocoding API の条項）~~
+~~→ **2026-10-04 に訂正。これは誤りだった。** 「30 日」の表は **Address Validation API 専用**の条項で、Places・Geocoding には無い。**Places と Geocoding には「30 日なら保存してよい」という逃げ道は無く、保存してよいのは `place_id` だけ**。~~
+~~**よって、いまの `spots` は規約に反している。** `name`（Places の表示名）・`lat`／`lng`（Places の座標）・`prefecture`（Geocoding 由来）を無期限に保存しており、どれも許されていない。~~
 
-**よって、いまの `spots` は規約に反している。** `name`（Places の表示名）・`lat`／`lng`（Places の座標）・`prefecture`（Geocoding 由来）を無期限に保存しており、どれも許されていない。
+→ **2026-10-11（#919）に再訂正。上の「訂正」そのものが誤りだった。**
+Service Specific Terms の本文を取ってきて読み直したところ、**Places にも Geocoding にも条項があった**
+（2026-10-04 の調査では Address Validation の表しか見つけられていなかった）。原文は次のとおり。
+
+| 条項 | 原文（2026-10-11 に [Maps Service Specific Terms](https://cloud.google.com/maps-platform/terms/maps-service-terms) から取得） |
+|---|---|
+| **§14.3 Places API（Legacy and New）Caching** | "Customer may temporarily cache latitude and longitude values from the Places API for **up to 30 consecutive calendar days**, after which Customer must delete the cached latitude and longitude values." |
+| **§6.3.1 Geocoding API Caching** | "Customer may temporarily cache latitude (lat) and longitude (lng) values from the Geocoding API for **up to 30 consecutive calendar days**…" |
+| **§6.3.2 Geocoding API Caching** | "Customer may **indefinitely** cache latitude (lat), longitude (lng), formatted_address, and **the structured address values** from the Geocoding API **solely to support the direct, End User facing functionality of the Customer Application that initiated the request** (e.g., displaying the address of a location in a weather application, **associating location data with a photograph**), only where the cache is not used as a replacement for making an additional call to the Services. **Cached data must be logically isolated to the specific End User it is associated with and must not be used across multiple End Users.**" |
+| **§3 General: Google ID Caching** | "Customer may cache the Google ID values… For example, Customer may cache (a) `place_id` from Places API, Directions API, Geolocation API and Routes API…" |
+
+**つまり「保存してよいのは `place_id` だけ」も誤り。** 座標は 30 日まで保存してよく、
+**Geocoding の住所の構成要素（都道府県を含む）は、2 つの条件つきで無期限に保存してよい**。
+
+**2026-10-11 時点の `spots` の判断（#919）**
+
+| 列 | 出どころ | 規約上の扱い | 判断 |
+|---|---|---|---|
+| `place_id` | Places | §3 General で**無期限に保存してよい** | ✅ 問題なし |
+| `lat` / `lng` | **Google ではなく、利用者が確定した時点の地図の中心**（#700） | Google Maps Content ではない。仮に Places 由来でも §14.3 で 30 日 | ✅ 問題なし |
+| `prefecture` | Geocoding の逆引き（`administrative_area_level_1`） | §6.3.2 で**無期限に保存してよい**。ただし条件が 2 つ | ⚠️ **条件の片方を満たしていない**（下記） |
+| `name`（`source='places'`） | Places の候補から入る（利用者が直せる。#700） | 名前を保存してよいという条項は**無い**。本文 §3.2.3 (a) (iii) は「業者名をコピーして保存すること」を禁止の例に挙げている | ⚠️ **6.2 の方針（利用者が確定した値）に頼っている**（下記） |
+
+**`prefecture` が満たせていない条件** ── §6.3.2 は「無期限に保存してよい」と言う代わりに
+**"logically isolated to the specific End User … must not be used across multiple End Users"** を求めている。
+タビコエの `prefecture` は**共有のスポットの行**に 1 つだけ持ち、**全員が都道府県の絞り込みに使う**（3.3.5・F-BG）。
+**利用者ごとに分かれていないので、この条項には乗れない。**
+（もう片方の条件「そのリクエストを出したアプリの利用者向け機能のためだけ」は満たしている。
+§6.3.2 の例に挙がっている "associating location data with a photograph" は、まさに投稿に場所を結びつけるタビコエの使い方。）
+
+**`name` の扱いは 2026-10-04 の判断のまま** ── 名前を保存してよいという条項は無い。頼れるのは
+「**利用者が確認して確定した値は利用者のデータ**」という考え方（Address Validation の表からの類推）だけで、
+Places・Geocoding に明文は無い。**ここは「大丈夫」と言い切れない。**
+
+**言い切れないものを言い切らない** ── 私（Claude）は法律の専門家ではなく、
+**2026-10-04 に一度、条項を読み落として誤った結論を書いている**（上の取り消し線）。
+確実にするには **Google のサポートへ問い合わせる**しかない。#919 の受入条件もそうしている。
+
+**直し方の候補（2026-10-11 時点。どれも未着手）**
+
+| 案 | 中身 | 規約上の引っかかり |
+|---|---|---|
+| A | 何もしない。6.2 の方針（利用者が確定した値）で通す | 明文が無い。問い合わせるまで灰色のまま |
+| B | `prefecture` を**座標から自前で**判定する（県境のデータを持つ） | 座標は利用者が決めた地図の中心なので Google Maps Content ではない。**ただし本文 §3.2.3 (c) (iv) は「Places API の緯度経度を点と多角形の内外判定に使う」ことを禁止の例に挙げている**ので、座標の出どころを `source='places'` と混ぜないこと |
+| C | `prefecture` を保存せず、必要なときに毎回引く | 一覧の絞り込みで毎回引くことになり、無料枠（月 10,000 回）では足りない |
+| D | `name` を表示のたびに `place_id` から引き直す | 一覧 1 画面で 20 回。6.2 で「一覧には出せない」と結論した話と同じ |
+
+**急ぎではない理由** ── 提出済みの本番は `submission` ブランチで動いており、この件で壊れることはない。
+評価期間中に触る方が危ない。**まず問い合わせ、答えが来てから直す。**
 
 **「利用者が確認して確定した値」はどうか** ── Places の条項には書かれていない。ただし Address Validation API の表には「30 日を過ぎたら (a) 削除するか (b) **利用者の確認・修正を通じて提供された利用者のデータで置き換える**」とある。**Google 自身が「利用者が確認した値は利用者のデータになる」という考え方を（別の API の文脈で）採っている**。Places に同じ条項は無いので**類推**だが、投稿画面では利用者が地図でピンを確認して確定している（3.3.5）ため、この考え方に乗るのが現実的（6.2 の方針）。
 
@@ -2014,6 +2064,7 @@ Tailwind の `animate-pulse` は **2 秒かけて**透明度を 1 → 0.5 → 1 
 | 用途 | スポット登録時の逆ジオコーディング（都道府県判定）、検索トップで候補に無い文字列を決定したときの座標化（v3.0で追加） |
 | 呼び出し元 | Route Handlers。逆ジオコーディングはスポット登録時に一度だけ、座標化は検索の決定時に実行する |
 | 認証 | サーバー用APIキー |
+| 保存 | `spots.prefecture` に 1 回だけ保存する。**規約上の扱いは 6.2 に書いた**（2026-10-11・#919）。Service Specific Terms §6.3.2 は住所の構成要素を無期限に保存してよいとしているが、「**利用者ごとに分離されていること**」を求めており、共有のスポットの行に持つタビコエはその条件を満たしていない |
 
 ### 6.4 OAuth連携
 
