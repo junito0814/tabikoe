@@ -40,11 +40,10 @@ async function describeFile(path: string): Promise<string> {
 }
 
 /** 実物の ffmpeg が出した説明文（`beforeAll` で作る） */
-const real: { h264?: string; hevc?: string; version?: string } = {};
+const real: { h264?: string; hevc?: string } = {};
 
 beforeAll(async () => {
   const ffmpeg = await ffmpegPath();
-  real.version = (await execFileAsync(ffmpeg, ["-version"])).stdout.split("\n")[0];
   const workDir = await mkdtemp(join(tmpdir(), "tabikoe-probe-test-"));
   const common = ["-hide_banner", "-y", "-f", "lavfi", "-i", "testsrc=size=160x120:rate=10:duration=3"];
   const h264Path = join(workDir, "h264.mp4");
@@ -56,8 +55,14 @@ beforeAll(async () => {
 }, 120000);
 
 describe("実物の ffmpeg の出力を読む（#913）", () => {
-  it("同梱しているのは ffmpeg 6 系 ── この版はストリーム ID を括弧で入れる", () => {
-    expect(real.version).toMatch(/ffmpeg version 6\./);
+  /*
+   * 【初心者向け】ここで版番号そのものを見てはいけません。
+   *   `ffmpeg-static` が入れてくる実行ファイルは**環境で違います**
+   *   （手元の macOS は 6.0、CI の Linux は 7.0.2 でした。実際に CI で赤くなって気づきました）。
+   *   大事なのは版番号ではなく「**ストリーム ID の括弧が出る形になっている**」ことなので、
+   *   見るのはそちらだけにします。
+   */
+  it("ストリームの行にストリーム ID の括弧が出る ── #913 で読めなくなっていた形", () => {
     expect(real.h264).toMatch(/Stream #0:0\[0x\d+\]/);
   });
 
