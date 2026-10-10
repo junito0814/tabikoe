@@ -14,7 +14,7 @@
 //   `clean` で**その行だけ**を消せます。seed で入れた本物のダミーデータは残ります。
 //
 //   **本番では走りません**（supabase-target.mjs の既定が開発用で、ここでも念のため確かめています）。
-import { connect } from "./scripts/supabase-target.mjs";
+import { connect } from "./supabase-target.mjs";
 import { randomUUID } from "node:crypto";
 
 const { admin, target } = await connect();
