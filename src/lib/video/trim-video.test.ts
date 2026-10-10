@@ -46,6 +46,14 @@ let workDir = "";
 let plain: File;
 /** 上と同じ中身に「90 度回転」を書き込んだもの（iPhone の縦撮りに相当） */
 let rotated: File;
+/**
+ * 読む量を数えるための、少し大きい素材（数 MB）。
+ *
+ * 【初心者向け】`plain` は 191KB しかなく、**1 回の読み込みに収まってしまう**ので
+ * 「全部は読まない」を見張れません（実際そう書いて赤くなりました）。
+ * 1MB ずつ読む作りなので、それより十分大きいものが要ります。
+ */
+let heavy: File;
 
 async function encodeFixtures() {
   const ffmpeg = await ffmpegPath();
@@ -66,6 +74,16 @@ async function encodeFixtures() {
   plain = await toFile(plainPath, "plain.mp4");
   await writeFile(rotatedPath, await rotateNinetyDegrees(await readFile(plainPath)));
   rotated = await toFile(rotatedPath, "rotated.mp4");
+
+  // 40 秒・640×480・高めのビットレート。目次は末尾（`+faststart` を付けない＝ iPhone と同じ）
+  const heavyPath = join(workDir, "heavy.mp4");
+  await execFileAsync(ffmpeg, [
+    "-hide_banner", "-y",
+    "-f", "lavfi", "-i", "testsrc=size=640x480:rate=30:duration=40",
+    "-c:v", "libx264", "-preset", "ultrafast", "-b:v", "3M", "-g", "60", "-pix_fmt", "yuv420p",
+    "-an", "-t", "40", heavyPath,
+  ]);
+  heavy = await toFile(heavyPath, "heavy.mp4");
 }
 
 /**
@@ -127,6 +145,62 @@ async function probeTrimmed(output: File, name: string) {
   await writeFile(path, Buffer.from(await output.arrayBuffer()));
   return probe(path);
 }
+
+/**
+ * 読んだバイト数を数える File。
+ * `slice()` と `arrayBuffer()` を包んで、**どれだけ読んだか**を記録する。
+ */
+function countingFile(file: File) {
+  const counter = { read: 0 };
+  const wrap = (inner: Blob): Blob =>
+    ({
+      size: inner.size,
+      slice: (start?: number, end?: number) => wrap(inner.slice(start, end)),
+      arrayBuffer: async () => {
+        counter.read += inner.size;
+        return inner.arrayBuffer();
+      },
+    }) as unknown as Blob;
+  const counted = wrap(file) as File;
+  Object.defineProperty(counted, "name", { value: file.name });
+  Object.defineProperty(counted, "type", { value: file.type });
+  return { file: counted, counter };
+}
+
+describe("読む量（#923）", () => {
+  it("目次を読むのに、ファイル全部を読まない", async () => {
+    const { file, counter } = countingFile(heavy);
+    const loaded = await loadVideoForTrim(file);
+
+    expect(loaded.durationSeconds).toBeCloseTo(40, 1);
+    /*
+     * 目次（moov）はファイルの末尾にある（iPhone のカメラと同じ）。
+     * mp4box が「次はどこ」と教えてくれるので、頭と末尾だけ読めば足りる。
+     */
+    expect(counter.read).toBeLessThan(heavy.size * 0.5);
+  }, 60000);
+
+  it("切り取るとき、写すところだけ読む", async () => {
+    const loaded = await loadVideoForTrim(heavy);
+    const { file, counter } = countingFile(heavy);
+    // 読み込み済みの目次はそのままに、読み直す先だけ数える File に差し替える
+    (loaded.source as { source: File }).source = file;
+
+    const range = planTrim({ keyframeTimes: loaded.keyframeTimes, durationSeconds: loaded.durationSeconds, wantStartSeconds: 5 });
+    await trimVideo(loaded, range);
+
+    // 40 秒のうち 30 秒ぶん。全部読んでいたら 100% になる
+    expect(counter.read).toBeGreaterThan(0);
+    expect(counter.read).toBeLessThan(heavy.size * 0.95);
+  }, 60000);
+
+  it("読み込みの進み具合を伝える", async () => {
+    const seen: number[] = [];
+    await loadVideoForTrim(plain, { onProgress: (ratio) => seen.push(ratio) });
+    expect(seen.at(-1)).toBe(1);
+    expect([...seen].sort((a, b) => a - b)).toEqual(seen);
+  }, 60000);
+});
 
 describe("loadVideoForTrim", () => {
   it("長さとキーフレームの位置を読む", async () => {

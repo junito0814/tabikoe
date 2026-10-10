@@ -61,12 +61,16 @@ export interface LoadedVideo {
 }
 
 interface TrimSource {
-  buffer: ArrayBuffer;
+  /** 元のファイル。切り取るときに**要る範囲だけ**を読み直す */
+  source: File;
   file: ISOFile;
   info: Movie;
   video: Track;
   audio: Track | undefined;
 }
+
+/** 目次を探すときに 1 回で読む大きさ */
+export const INDEX_CHUNK_BYTES = 1024 * 1024;
 
 /** mp4box は 300KB ほどあるので、切り取りの画面に来てから読み込む */
 async function loadMp4Box() {
@@ -80,33 +84,79 @@ async function loadMp4Box() {
 /**
  * 動画を読み、長さとキーフレームの位置を調べる。
  *
- * 【初心者向け】`appendBuffer` に中身を渡して `flush()` を呼ぶと、`onReady` で
- * 目次（どのコマがどこにあるか）が分かります。この時点では**コマの中身は読んでいません**。
+ * 【初心者向け】**ファイル全部は読みません。** 要るのは「目次」（`moov`）だけで、
+ *   映像の中身（`mdat`）は切り取るときまで要りません。
+ *
+ *   困るのは、**目次がどこにあるか決まっていない**ことです。iPhone のカメラは
+ *   **末尾**に置きます（撮り終わるまで中身の大きさが分からないため）。
+ *   そこで mp4box に少しずつ渡します。`appendBuffer` は「**次はどこを読めばよいか**」を
+ *   返すので、そこへ飛んで読み直します。中身はまたがずに済みます。
+ *
+ * **測った差**（26.2MB・120 秒・目次は末尾、2026-10-10）:
+ *   全部読む **26.2MB** → 必要なところだけ **1.1MB（2 回）**。**読む量が 4%**。
+ *   実機の動画は数百 MB になるので、ここが待ち時間のほとんどでした（#923）。
  */
-export async function loadVideoForTrim(file: File): Promise<LoadedVideo> {
-  const { createFile, MP4BoxBuffer } = await loadMp4Box();
-  const buffer = await file.arrayBuffer();
-
-  /*
-   * 【初心者向け】なぜ入れ物（`ready`）に入れるのか。
-   *   `onReady` は関数の中で代入するので、TypeScript は「代入されない」と見なします。
-   *   ひとつの object に入れておくと、その思い込みを避けられます。
-   */
+async function readIndex(
+  file: File,
+  createFile: (typeof import("mp4box"))["createFile"],
+  MP4BoxBuffer: (typeof import("mp4box"))["MP4BoxBuffer"],
+  onProgress?: (ratio: number) => void
+): Promise<{ isoFile: ISOFile; movie: Movie }> {
   const ready: { movie?: Movie } = {};
-  let isoFile: ISOFile;
-  try {
-    isoFile = createFile();
-    isoFile.onReady = (movie) => {
-      ready.movie = movie;
-    };
-    isoFile.appendBuffer(MP4BoxBuffer.fromArrayBuffer(buffer, 0));
-    isoFile.flush();
-  } catch {
-    throw new TrimError("unsupported");
+  const isoFile = createFile();
+  isoFile.onReady = (movie) => {
+    ready.movie = movie;
+  };
+
+  let next = 0;
+  let readBytes = 0;
+  while (ready.movie === undefined && next < file.size) {
+    const end = Math.min(next + INDEX_CHUNK_BYTES, file.size);
+    const part = await file.slice(next, end).arrayBuffer();
+    readBytes += end - next;
+    const nextPosition = isoFile.appendBuffer(MP4BoxBuffer.fromArrayBuffer(part, next));
+    /*
+     * `appendBuffer` が「次はここ」と返す。進まないときは、
+     * まだ足りないだけなので続きを読む（無限に回らないよう必ず前へ出す）。
+     */
+    next = nextPosition > next ? nextPosition : end;
+    onProgress?.(Math.min(0.99, readBytes / Math.max(file.size, 1)));
   }
-  // `onReady` は `flush()` の中で呼ばれる。呼ばれていなければ moov が読めていない
+  isoFile.flush();
+
   const movie = ready.movie;
   if (movie === undefined) throw new TrimError("unsupported");
+  return { isoFile, movie };
+}
+
+export async function loadVideoForTrim(file: File, options: { onProgress?: (ratio: number) => void } = {}): Promise<LoadedVideo> {
+  const { createFile, MP4BoxBuffer } = await loadMp4Box();
+
+  let isoFile: ISOFile;
+  let movie: Movie;
+  try {
+    ({ isoFile, movie } = await readIndex(file, createFile, MP4BoxBuffer, options.onProgress));
+  } catch (error) {
+    if (error instanceof TrimError && error.code !== "unsupported") throw error;
+    /*
+     * 少しずつ読む方法で目次が見つからなかったときの保険。
+     * **今までどおり全部読んで**やり直す（#923 で速くしたが、確実さは落とさない）。
+     */
+    const ready: { movie?: Movie } = {};
+    try {
+      isoFile = createFile();
+      isoFile.onReady = (parsed) => {
+        ready.movie = parsed;
+      };
+      isoFile.appendBuffer(MP4BoxBuffer.fromArrayBuffer(await file.arrayBuffer(), 0));
+      isoFile.flush();
+    } catch {
+      throw new TrimError("unsupported");
+    }
+    if (ready.movie === undefined) throw new TrimError("unsupported");
+    movie = ready.movie;
+  }
+  options.onProgress?.(1);
 
   const video = movie.videoTracks[0];
   if (!video) throw new TrimError("no_video_track");
@@ -125,8 +175,64 @@ export async function loadVideoForTrim(file: File): Promise<LoadedVideo> {
     keyframeTimes,
     width: video.track_width,
     height: video.track_height,
-    source: { buffer, file: isoFile, info: movie, video, audio: movie.audioTracks[0] },
+    source: { source: file, file: isoFile, info: movie, video, audio: movie.audioTracks[0] },
   };
+}
+
+/**
+ * 読み込んだバイトの範囲。
+ *
+ * 【初心者向け】ファイル全部ではなく、**切り取るコマが入っている範囲だけ**を読みます。
+ * `at()` はファイル全体での位置を渡すと、読み込んだ範囲の中の該当部分を返します。
+ */
+interface LoadedBytes {
+  start: number;
+  buffer: ArrayBuffer;
+  at(offset: number, size: number): Uint8Array<ArrayBuffer>;
+}
+
+function loadedBytes(start: number, buffer: ArrayBuffer): LoadedBytes {
+  return {
+    start,
+    buffer,
+    at(offset, size) {
+      return new Uint8Array(buffer, offset - start, size);
+    },
+  };
+}
+
+/**
+ * どこまで写すか（この番号の手前まで）。
+ *
+ * **30 秒の線をまたぐコマは入れない。** 入れると長さが 30 秒を超え、サーバーに
+ * `video_too_long` で断られる（実際に 30.4 秒になって気づいた）。
+ * 見るのは**再生の時刻（cts）**で、記録の時刻ではない ── 動画の長さは
+ * 「いちばん後ろに映るコマの終わり」で決まるため。
+ */
+function endIndexWithin(
+  samples: readonly Sample[],
+  firstIndex: number,
+  span: { subtractSeconds: number; ctsShiftSeconds: number; windowSeconds: number },
+  timescale: number
+): number {
+  const base = span.subtractSeconds * timescale;
+  const ctsShift = span.ctsShiftSeconds * timescale;
+  for (let i = firstIndex; i < samples.length; i++) {
+    const sample = samples[i];
+    if ((sample.cts - base + ctsShift + sample.duration) / sample.timescale > span.windowSeconds + 0.0001) return i;
+  }
+  return samples.length;
+}
+
+/** 写すコマが入っているバイトの範囲を数える（ここだけ読めばよい） */
+function byteRangeOf(samples: readonly { offset: number; size: number }[], from: number, to: number): { start: number; end: number } {
+  let start = Infinity;
+  let end = 0;
+  for (let i = from; i < to && i < samples.length; i++) {
+    start = Math.min(start, samples[i].offset);
+    end = Math.max(end, samples[i].offset + samples[i].size);
+  }
+  return { start: start === Infinity ? 0 : start, end };
 }
 
 /** 新しい入れ物に写すとき、サンプル記述（avcC / esds など）をそのまま持っていく */
@@ -177,10 +283,10 @@ function findKeyframeIndex(samples: readonly Sample[], startSeconds: number): nu
 function copySamples(
   isoFile: ISOFile,
   output: ISOFile,
-  sourceBuffer: ArrayBuffer,
+  bytes: LoadedBytes,
   track: Track,
   outputTrackId: number,
-  span: { subtractSeconds: number; ctsShiftSeconds: number; windowSeconds: number; firstIndex: number },
+  span: { subtractSeconds: number; ctsShiftSeconds: number; firstIndex: number; endIndex: number },
   options: { onSample?: () => void; isCancelled?: () => boolean }
 ): number {
   const samples = isoFile.getTrackSamplesInfo(track.id);
@@ -188,12 +294,10 @@ function copySamples(
   const base = span.subtractSeconds * track.timescale;
   const ctsShift = span.ctsShiftSeconds * track.timescale;
   let copied = 0;
-  for (let i = span.firstIndex; i < samples.length; i++) {
+  for (let i = span.firstIndex; i < span.endIndex; i++) {
     if (options.isCancelled?.()) throw new TrimError("cancelled");
     const sample: Sample = samples[i];
-    // またぐコマは入れない（再生の時刻で見る）
-    if ((sample.cts - base + ctsShift + sample.duration) / sample.timescale > span.windowSeconds + 0.0001) break;
-    output.addSample(outputTrackId, new Uint8Array(sourceBuffer, sample.offset, sample.size), {
+    output.addSample(outputTrackId, bytes.at(sample.offset, sample.size), {
       duration: sample.duration,
       cts: Math.round(sample.cts - base + ctsShift),
       dts: Math.round(sample.dts - base),
@@ -221,7 +325,7 @@ export async function trimVideo(
   options: { onProgress?: (ratio: number) => void; isCancelled?: () => boolean } = {}
 ): Promise<File> {
   const { createFile } = await loadMp4Box();
-  const { buffer, file: isoFile, video, audio } = loaded.source;
+  const { source: sourceFile, file: isoFile, video, audio } = loaded.source;
 
   let output: ISOFile;
   let videoTrackId: number | undefined;
@@ -301,34 +405,51 @@ export async function trimVideo(
      */
     const ctsLeadSeconds = (firstVideoSample.cts - firstVideoSample.dts) / firstVideoSample.timescale;
 
-    const copiedVideo = copySamples(isoFile, output, buffer, video, videoTrackId, { subtractSeconds: baseSeconds, ctsShiftSeconds: 0, windowSeconds: TRIM_WINDOW_SECONDS, firstIndex: firstVideoIndex }, { onSample, isCancelled: options.isCancelled });
+    const videoSpan = { subtractSeconds: baseSeconds, ctsShiftSeconds: 0, windowSeconds: TRIM_WINDOW_SECONDS };
+    const videoEnd = endIndexWithin(videoSamples, firstVideoIndex, videoSpan, video.timescale);
+
+    /*
+     * 音は**起点以降の最初のコマ**から写す（起点より前から写すと時刻が負になる）。
+     * 起点をまたぐコマを飛ばすぶん、音の出だしが 1 コマ（AAC なら 20〜50 ミリ秒）遅れるが、
+     * これは耳では分からない差。
+     *
+     * 映す時刻だけ `ctsLeadSeconds` ぶん後ろへずらす ── こうすると音も映像と同じだけ
+     * 後ろにずれ、両者の関係が元のまま保たれる。
+     *
+     * 【初心者向け】なぜ「引く量」ではなく「映す時刻」をずらすのか。
+     *   MP4 の目次は**各コマの長さ**を並べたもので、最初のコマは必ず 0 からになります。
+     *   「この軌道は 0.2 秒あとから始まる」は目次には書けず、`mp4box.js` が書ける形では
+     *   **映す時刻のずれ（cts − dts）**だけが残ります。そこへ入れます。
+     */
+    const audioSpan = { subtractSeconds: baseSeconds, ctsShiftSeconds: ctsLeadSeconds, windowSeconds: TRIM_WINDOW_SECONDS };
+    const audioSamples = audio ? isoFile.getTrackSamplesInfo(audio.id) : [];
+    const firstAudioIndex = audio ? audioSamples.findIndex((sample) => sample.dts / sample.timescale >= baseSeconds - 0.0001) : -1;
+    const audioEnd = firstAudioIndex >= 0 ? endIndexWithin(audioSamples, firstAudioIndex, audioSpan, audio!.timescale) : 0;
+
+    /*
+     * ここで初めてファイルを読む ── **写すコマが入っている範囲だけ**。
+     *
+     * 【初心者向け】いままでは全部読んでいました（#923）。写すのはひと続きの範囲なので、
+     * その範囲だけ読めば足ります。測ったところ 26.2MB の動画で **6.5MB**（25%）でした。
+     */
+    const videoRange = byteRangeOf(videoSamples, firstVideoIndex, videoEnd);
+    const audioRange = firstAudioIndex >= 0 ? byteRangeOf(audioSamples, firstAudioIndex, audioEnd) : { start: Infinity, end: 0 };
+    const start = Math.min(videoRange.start, audioRange.start);
+    const end = Math.max(videoRange.end, audioRange.end);
+    if (!(end > start)) throw new TrimError("failed");
+    const bytes = loadedBytes(start, await sourceFile.slice(start, end).arrayBuffer());
+
+    const copiedVideo = copySamples(isoFile, output, bytes, video, videoTrackId, { ...videoSpan, firstIndex: firstVideoIndex, endIndex: videoEnd }, { onSample, isCancelled: options.isCancelled });
     if (copiedVideo === 0) throw new TrimError("failed");
 
-    if (audio && audioTrackId !== undefined) {
-      /*
-       * 音は**起点以降の最初のコマ**から写す（起点より前から写すと時刻が負になる）。
-       * 起点をまたぐコマを飛ばすぶん、音の出だしが 1 コマ（AAC なら 20〜50 ミリ秒）遅れるが、
-       * これは耳では分からない差。
-       *
-       * 映す時刻だけ `ctsLeadSeconds` ぶん後ろへずらす ── こうすると音も映像と同じだけ
-       * 後ろにずれ、両者の関係が元のまま保たれる。
-       *
-       * 【初心者向け】なぜ「引く量」ではなく「映す時刻」をずらすのか。
-       *   MP4 の目次は**各コマの長さ**を並べたもので、最初のコマは必ず 0 からになります。
-       *   「この軌道は 0.2 秒あとから始まる」は目次には書けず、`mp4box.js` が書ける形では
-       *   **映す時刻のずれ（cts − dts）**だけが残ります。そこへ入れます。
-       */
-      const audioSamples = isoFile.getTrackSamplesInfo(audio.id);
-      const firstAudioIndex = audioSamples.findIndex((sample) => sample.dts / sample.timescale >= baseSeconds - 0.0001);
-      if (firstAudioIndex >= 0) {
-        copySamples(isoFile, output, buffer, audio, audioTrackId, { subtractSeconds: baseSeconds, ctsShiftSeconds: ctsLeadSeconds, windowSeconds: TRIM_WINDOW_SECONDS, firstIndex: firstAudioIndex }, { onSample, isCancelled: options.isCancelled });
-      }
+    if (audio && audioTrackId !== undefined && firstAudioIndex >= 0) {
+      copySamples(isoFile, output, bytes, audio, audioTrackId, { ...audioSpan, firstIndex: firstAudioIndex, endIndex: audioEnd }, { onSample, isCancelled: options.isCancelled });
     }
     options.onProgress?.(1);
 
     const stream = output.getBuffer();
-    const bytes = (stream as unknown as { buffer?: ArrayBuffer }).buffer ?? (stream as unknown as ArrayBuffer);
-    return new File([bytes], "trimmed.mp4", { type: "video/mp4" });
+    const written = (stream as unknown as { buffer?: ArrayBuffer }).buffer ?? (stream as unknown as ArrayBuffer);
+    return new File([written], "trimmed.mp4", { type: "video/mp4" });
   } catch (error) {
     if (error instanceof TrimError) throw error;
     throw new TrimError("failed");
