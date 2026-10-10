@@ -12,6 +12,8 @@ import { MAX_DRAFTS_PER_USER, type PostCategory, type PostDuration, type PostVis
 import type { NearbySpot } from "@/lib/spots/nearby";
 import type { RegisteredSpot } from "@/lib/spots/types";
 import { isVideoFile } from "@/lib/video/media-kind";
+import { readVideoDuration } from "@/lib/video/read-duration";
+import { decideMedia, formatSeconds } from "@/lib/posts/accept-media";
 import { EMPTY_POST_FORM_VALUES, isPostFormComplete, PostFormFields, type PostFormValues } from "./PostFormFields";
 import { PostLocationMap } from "./PostLocationMap";
 import { useSheetDrag } from "@/components/layout/use-sheet-drag";
@@ -23,9 +25,6 @@ import { suggestedCategory } from "@/lib/posts/suggested-category";
 import { uploadPostMedia } from "@/lib/posts/upload-media";
 import { uploadErrorMessage } from "@/lib/posts/upload-error-message";
 
-/* 2026-10-07: 動画は提出後に回したので、ここで見るのは写真の分だけ（#861） */
-const MAX_PHOTO_SIZE_BYTES = 10 * 1024 * 1024;
-const ALLOWED_PHOTO_TYPES = ["image/jpeg", "image/png"];
 
 /** 保存済み投稿（編集・下書きの続き）の初期値 */
 export interface ExistingPostValues {
@@ -64,6 +63,7 @@ export interface ComposeApi {
  *   - フォームを上に引くと全画面（地図は隠れる）、下に引くと 1：2 に戻る。パソコン幅では左右 1：2
  */
 export function PostComposeScreen({
+  videoUploadDisabled = true,
   initial,
   existing = null,
   api = defaultApi,
@@ -73,6 +73,13 @@ export function PostComposeScreen({
   postingRestrictedUntil = null,
   spotCategory = null,
 }: {
+  /**
+   * #861: 動画の受付を止めているか。**既定は止めている**（docs/deployment.md の
+   * `VIDEO_UPLOAD_DISABLED`）。実機で確かめて本番で有効にするとき、ここに false を渡す。
+   *
+   * 【初心者向け】サーバーの環境変数はブラウザからは読めないので、props で渡す形にしている。
+   */
+  videoUploadDisabled?: boolean;
   initial: ComposeInitialState;
   /**
    * #794（2026-10-06）: このスポットの代表カテゴリ（サーバーが `resolveSpotCategory` で出す）。
@@ -177,32 +184,47 @@ export function PostComposeScreen({
     () => setSheetExpanded((current) => !current)
   );
 
-  const handleFilesSelected = (event: React.ChangeEvent<HTMLInputElement>) => {
+  /*
+   * #861（2026-10-09）: 選んだ瞬間に、長さと大きさを見る。
+   *
+   * 【初心者向け】`accept` 属性は「おすすめ」でしかなく、端末によっては別のものも選べます。
+   * ここで断っておかないと、**50MB を送り終えてから**サーバーに断られることになります。
+   *
+   * 動画の長さは `<video>` に渡すだけで分かります（数十ミリ秒、通信なし）。
+   * **形式（コーデック）はここで見ません** ── `.mp4` の中に HEVC が入っていることがあり、
+   * iPhone の Safari は HEVC を再生できるので、上げる人の端末では「再生できた」ことになります。
+   * 見る人全員が再生できるかは、サーバーが中身を見て決めます（要件 5.4）。
+   */
+  const handleFilesSelected = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const selected = Array.from(event.target.files ?? []);
     event.target.value = "";
     setErrorMessage(null);
-    /*
-     * 2026-10-07: 動画は提出後に回したので、ここでも写真だけを見る（#861）。
-     *
-     * 【初心者向け】ファイルを選ぶ欄（`accept`）からも動画を外しましたが、
-     * **`accept` は「おすすめ」でしかなく、端末によっては別のものも選べます**。
-     * ここで断っておかないと、サーバーまで行ってから断られることになります。
-     */
+
+    const accepted: File[] = [];
     for (const file of selected) {
-      if (isVideoFile(file)) {
-        setErrorMessage("動画は近日対応します。いまは写真だけ投稿できます");
+      const isVideo = isVideoFile(file);
+      const durationSeconds = isVideo ? await readVideoDuration(file) : null;
+      const decision = decideMedia({
+        isVideo,
+        type: file.type,
+        sizeBytes: file.size,
+        durationSeconds,
+        videoDisabled: videoUploadDisabled,
+        // 切り取りはまだ無いので、長い動画は案内して断る（要件 4.5.17 の逃げ道）
+        canTrim: false,
+      });
+      if (decision.kind === "reject") {
+        setErrorMessage(decision.message);
         return;
       }
-      if (!ALLOWED_PHOTO_TYPES.includes(file.type)) {
-        setErrorMessage("写真は JPEG か PNG だけ投稿できます");
+      if (decision.kind === "needs_trim") {
+        // ここへ来るのは canTrim が true のときだけ。切り取りを入れたらこの枝を使う
+        setErrorMessage(`この動画は ${formatSeconds(decision.durationSeconds)} です。30 秒以内にしてから選び直してください`);
         return;
       }
-      if (file.size > MAX_PHOTO_SIZE_BYTES) {
-        setErrorMessage("写真は1点あたり10MB以内にしてください");
-        return;
-      }
+      accepted.push(file);
     }
-    setFiles((current) => [...current, ...selected]);
+    setFiles((current) => [...current, ...accepted]);
   };
 
   const handleRemoveMedia = async (key: string) => {

@@ -5,6 +5,7 @@ import { join } from "node:path";
 import { promisify } from "node:util";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { isVideoFile } from "./media-kind";
+import { ALLOWED_VIDEO_CODEC, MAX_VIDEO_DURATION_SECONDS, MAX_VIDEO_SIZE_BYTES } from "./limits";
 
 export { isVideoFile };
 
@@ -35,15 +36,11 @@ export { isVideoFile };
  */
 const execFileAsync = promisify(execFile);
 
-/** 1 点あたりの上限（要件 5.4。2026-10-09 に 100MB から下げた） */
-export const MAX_VIDEO_SIZE_BYTES = 50 * 1024 * 1024;
-/** 再生時間の上限（要件 5.4。2026-10-09 に 1 分から下げた。超える動画はブラウザ側で切り取る） */
-export const MAX_VIDEO_DURATION_SECONDS = 30;
-/**
- * 受け付ける映像のコーデック。
- * ffmpeg は H.264 を `h264` と報告する。HEVC は `hevc`、VP9 は `vp9` など。
+/*
+ * 上限は limits.ts にある（ブラウザ側の検査・切り取りの画面からも読むため）。
+ * ここから再輸出して、既にこのファイルから読んでいる場所を壊さない。
  */
-export const ALLOWED_VIDEO_CODEC = "h264";
+export { ALLOWED_VIDEO_CODEC, MAX_VIDEO_DURATION_SECONDS, MAX_VIDEO_SIZE_BYTES } from "./limits";
 
 export class VideoValidationError extends Error {}
 
