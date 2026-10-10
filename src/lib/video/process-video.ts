@@ -71,13 +71,20 @@ async function ffmpegPath(): Promise<string> {
  * 出力先を与えず実行したときの「説明文」を読みます。ffmpeg はこのとき 0 以外で終わるので、
  * 呼び出し側は例外の中の stderr を拾います。
  *
+ * 読む行は、同梱の ffmpeg 6.0 では次の形です（#913 で実物に合わせました）。
+ *
  *   Duration: 00:00:12.34, start: 0.000000, bitrate: 1234 kb/s
- *     Stream #0:0(und): Video: h264 (High) (avc1 / 0x31637661), yuv420p, 1920x1080, ...
- *     Stream #0:0(und): Video: hevc (Main) (hvc1 / 0x31637668), yuv420p, 1920x1080, ...
+ *     Stream #0:0[0x1](und): Video: h264 (High) (avc1 / 0x31637661), yuv420p(progressive), 1920x1080, ...
+ *     Stream #0:0[0x1](und): Video: hevc (Main) (hvc1 / 0x31637668), yuv420p(progressive), 1920x1080, ...
+ *
+ * **`[0x1]` はストリーム ID で、ffmpeg 5 以降で付くようになりました。**
+ * #910 ではこれが無い形（ffmpeg 4 系）だけを想定していたため、
+ * **正しい H.264 の動画でも必ず「形式が不明」になっていました**（#913）。
+ * 括弧の中身は版によって変わりうるので、`[...]` も `(...)` も**あれば読み飛ばす**形にしています。
  */
 export function parseVideoInfo(ffmpegStderr: string): { durationSeconds: number | null; videoCodec: string | null } {
   const duration = /Duration:\s*(\d+):(\d+):(\d+(?:\.\d+)?)/.exec(ffmpegStderr);
-  const codec = /Stream #\d+:\d+(?:\([^)]*\))?:\s*Video:\s*([a-zA-Z0-9_]+)/.exec(ffmpegStderr);
+  const codec = /Stream #\d+:\d+(?:\[[^\]]*\])?(?:\([^)]*\))?:\s*Video:\s*([a-zA-Z0-9_]+)/.exec(ffmpegStderr);
   return {
     durationSeconds: duration ? Number(duration[1]) * 3600 + Number(duration[2]) * 60 + Number(duration[3]) : null,
     videoCodec: codec ? codec[1].toLowerCase() : null,
