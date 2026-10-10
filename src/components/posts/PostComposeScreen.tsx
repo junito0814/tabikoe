@@ -13,7 +13,7 @@ import type { NearbySpot } from "@/lib/spots/nearby";
 import type { RegisteredSpot } from "@/lib/spots/types";
 import { isVideoFile } from "@/lib/video/media-kind";
 import { readVideoDuration } from "@/lib/video/read-duration";
-import { decideMedia, formatSeconds } from "@/lib/posts/accept-media";
+import { decideMedia } from "@/lib/posts/accept-media";
 import { EMPTY_POST_FORM_VALUES, isPostFormComplete, PostFormFields, type PostFormValues } from "./PostFormFields";
 import { PostLocationMap } from "./PostLocationMap";
 import { useSheetDrag } from "@/components/layout/use-sheet-drag";
@@ -24,6 +24,8 @@ import { BackLink } from "@/components/layout/BackLink";
 import { suggestedCategory } from "@/lib/posts/suggested-category";
 import { uploadPostMedia } from "@/lib/posts/upload-media";
 import { uploadErrorMessage } from "@/lib/posts/upload-error-message";
+import { canTrimVideo } from "@/lib/video/trim-video";
+import { VideoTrimSheet } from "./VideoTrimSheet";
 
 
 /** 保存済み投稿（編集・下書きの続き）の初期値 */
@@ -178,6 +180,11 @@ export function PostComposeScreen({
   const [removingMediaKey, setRemovingMediaKey] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [confirmingHome, setConfirmingHome] = useState(false);
+  /*
+   * #861（2026-10-10）: 30 秒を超える動画を選んだときに出す切り取りのシート（要件 4.5.17）。
+   * 長さは選んだ時点で測ってあるので、シートに渡して測り直さない。
+   */
+  const [trimming, setTrimming] = useState<{ file: File; durationSeconds: number } | null>(null);
   const [sheetExpanded, setSheetExpanded] = useState(false);
   const sheetDrag = useSheetDrag(
     (snap) => setSheetExpanded(snap === "expand"),
@@ -210,16 +217,20 @@ export function PostComposeScreen({
         sizeBytes: file.size,
         durationSeconds,
         videoDisabled: videoUploadDisabled,
-        // 切り取りはまだ無いので、長い動画は案内して断る（要件 4.5.17 の逃げ道）
-        canTrim: false,
+        // 端末が切り取りの仕組みを持っているか。無ければ長い動画は案内して断る（要件 4.5.17 の逃げ道）
+        canTrim: canTrimVideo(),
       });
       if (decision.kind === "reject") {
         setErrorMessage(decision.message);
         return;
       }
       if (decision.kind === "needs_trim") {
-        // ここへ来るのは canTrim が true のときだけ。切り取りを入れたらこの枝を使う
-        setErrorMessage(`この動画は ${formatSeconds(decision.durationSeconds)} です。30 秒以内にしてから選び直してください`);
+        /*
+         * 30 秒を超えている。**断らずに切り取りのシートへ送る**（要件 4.5.17）。
+         * ここまでに選んだぶんは先に入れておく（切り取りの結果はシートから戻ってくる）。
+         */
+        if (accepted.length > 0) setFiles((current) => [...current, ...accepted]);
+        setTrimming({ file, durationSeconds: decision.durationSeconds });
         return;
       }
       accepted.push(file);
@@ -533,6 +544,25 @@ export function PostComposeScreen({
             </div>
           </div>
         </div>
+      )}
+      {/*
+        * #861: 切り取りのシート（要件 4.5.17）。30 秒を超える動画を選んだときだけ出る。
+        * 切り取れたら添付し、切り取れなかったら**その理由を投稿画面に出して**この動画は受け付けない。
+        */}
+      {trimming && (
+        <VideoTrimSheet
+          file={trimming.file}
+          durationSeconds={trimming.durationSeconds}
+          onTrimmed={(trimmed) => {
+            setTrimming(null);
+            setFiles((current) => [...current, trimmed]);
+          }}
+          onGiveUp={(message) => {
+            setTrimming(null);
+            setErrorMessage(message);
+          }}
+          onClose={() => setTrimming(null)}
+        />
       )}
     </div>
   );
