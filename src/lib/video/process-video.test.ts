@@ -1,14 +1,81 @@
-import { describe, expect, it } from "vitest";
+import { execFile } from "node:child_process";
+import { mkdtemp } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { promisify } from "node:util";
+import { beforeAll, describe, expect, it } from "vitest";
 import { ALLOWED_VIDEO_CODEC, checkVideo, isVideoFile, MAX_VIDEO_DURATION_SECONDS, parseVideoInfo } from "./process-video";
 
 /**
  * 出典: Issue #861「動画の投稿を有効にする」単体テスト
  *       要件定義書 5.4（30 秒・50MB・中身が H.264 なら MP4／MOV のどちらでも）
  *
- * 【初心者向け】ここが見ているのは「**見る人全員が再生できる形か**」の判断だけです。
- * ffmpeg を実際に動かす部分はここでは試せない（実行ファイルが要る）ので、
- * **ffmpeg が出す説明文を読んで判断する純粋関数**を切り出してテストしています（約束 13）。
+ * 【初心者向け】ここが見ているのは「**見る人全員が再生できる形か**」の判断です。
+ *
+ * #913（2026-10-10）までは、入力が**手で書いた文字列**だけでした。
+ * そのため「テストは緑なのに、実物の ffmpeg の出力は読めていない」状態に気づけませんでした
+ * （ffmpeg 6 はストリームの行に `[0x1]` を入れるので、一致しなくなっていた）。
+ *
+ * いまは**同梱の ffmpeg で実際に動画を作り、その出力をそのまま読ませます**。
+ * 手で書いた文字列は「古い版の形でも読める」ことの確認として残しています。
  */
+const execFileAsync = promisify(execFile);
+
+async function ffmpegPath(): Promise<string> {
+  const mod = (await import("ffmpeg-static")) as unknown as { default?: string } | string;
+  const path = typeof mod === "string" ? mod : mod.default;
+  if (!path) throw new Error("ffmpeg binary not found");
+  return path;
+}
+
+/** 出力先を与えずに `ffmpeg -i` を呼び、説明文（stderr）を取る。`process-video.ts` の `probe` と同じ手 */
+async function describeFile(path: string): Promise<string> {
+  const ffmpeg = await ffmpegPath();
+  try {
+    const { stderr } = await execFileAsync(ffmpeg, ["-hide_banner", "-i", path], { maxBuffer: 4 * 1024 * 1024 });
+    return stderr;
+  } catch (error) {
+    return (error as { stderr?: string }).stderr ?? "";
+  }
+}
+
+/** 実物の ffmpeg が出した説明文（`beforeAll` で作る） */
+const real: { h264?: string; hevc?: string; version?: string } = {};
+
+beforeAll(async () => {
+  const ffmpeg = await ffmpegPath();
+  real.version = (await execFileAsync(ffmpeg, ["-version"])).stdout.split("\n")[0];
+  const workDir = await mkdtemp(join(tmpdir(), "tabikoe-probe-test-"));
+  const common = ["-hide_banner", "-y", "-f", "lavfi", "-i", "testsrc=size=160x120:rate=10:duration=3"];
+  const h264Path = join(workDir, "h264.mp4");
+  const hevcPath = join(workDir, "hevc.mp4");
+  await execFileAsync(ffmpeg, [...common, "-c:v", "libx264", "-crf", "40", "-pix_fmt", "yuv420p", h264Path]);
+  await execFileAsync(ffmpeg, [...common, "-c:v", "libx265", "-crf", "40", "-pix_fmt", "yuv420p", "-tag:v", "hvc1", hevcPath]);
+  real.h264 = await describeFile(h264Path);
+  real.hevc = await describeFile(hevcPath);
+}, 120000);
+
+describe("実物の ffmpeg の出力を読む（#913）", () => {
+  it("同梱しているのは ffmpeg 6 系 ── この版はストリーム ID を括弧で入れる", () => {
+    expect(real.version).toMatch(/ffmpeg version 6\./);
+    expect(real.h264).toMatch(/Stream #0:0\[0x\d+\]/);
+  });
+
+  it("実物の H.264 を読み、サーバーが受け付ける", () => {
+    const info = parseVideoInfo(real.h264 ?? "");
+    expect(info.videoCodec).toBe("h264");
+    expect(info.durationSeconds).toBeCloseTo(3, 1);
+    expect(checkVideo(info)).toEqual({ ok: true, durationSeconds: info.durationSeconds });
+  });
+
+  it("実物の HEVC を読み、サーバーが断る ── 要件 5.4 の保証を測って示す", () => {
+    const info = parseVideoInfo(real.hevc ?? "");
+    expect(info.videoCodec).toBe("hevc");
+    // 入れ物は .mp4 で、タグも hvc1。**中身を見ないと分からない**ことの実例
+    expect(real.hevc).toMatch(/hvc1/);
+    expect(checkVideo(info)).toEqual({ ok: false, error: "unsupported_codec" });
+  });
+});
 describe("isVideoFile", () => {
   it("MP4 と MOV（quicktime）だけを動画として扱う", () => {
     expect(isVideoFile(new File([""], "a.mp4", { type: "video/mp4" }))).toBe(true);
@@ -19,7 +86,8 @@ describe("isVideoFile", () => {
   });
 });
 
-describe("parseVideoInfo（ffmpeg の説明文を読む）", () => {
+describe("parseVideoInfo（古い版の形でも読める）", () => {
+  // ffmpeg 4 系の形（ストリーム ID の括弧が無い）
   const h264 = `
   Duration: 00:00:12.34, start: 0.000000, bitrate: 1234 kb/s
     Stream #0:0(und): Video: h264 (High) (avc1 / 0x31637661), yuv420p, 1920x1080, 1200 kb/s
