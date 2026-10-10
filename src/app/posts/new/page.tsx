@@ -4,6 +4,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { requireUserOrRedirect } from "@/lib/auth/require-user-or-redirect";
 import { buildComposeInitialState, type ComposeQuery } from "@/lib/posts/compose-initial-state";
 import { loadExistingPostForCompose, loadSpotForCompose, loadItineraryForCompose, loadSpotCategoryForCompose } from "@/lib/posts/load-compose-data";
+import { isVideoUploadDisabled } from "@/lib/video/process-video";
 import { PostComposeScreen } from "@/components/posts/PostComposeScreen";
 import { getPostingRestrictionUntil } from "@/lib/moderation/posting-restriction";
 import { ContentEnter } from "@/components/transitions/Reveal";
@@ -40,7 +41,7 @@ export default async function NewPostPage({
   if (query.draft) {
     const [existing, postingRestrictedUntil] = await Promise.all([loadExistingPostForCompose(admin, query.draft, user.id), restrictedUntilPromise]);
     if (!existing || existing.status !== "draft") notFound();
-    return <PostComposeScreen initial={buildComposeInitialState(query)} existing={existing} postingRestrictedUntil={postingRestrictedUntil} />;
+    return <PostComposeScreen videoUploadDisabled={isVideoUploadDisabled()} initial={buildComposeInitialState(query)} existing={existing} postingRestrictedUntil={postingRestrictedUntil} />;
   }
 
   const [spot, itinerary, spotCategory, postingRestrictedUntil] = await Promise.all([
@@ -53,7 +54,7 @@ export default async function NewPostPage({
   const initial = buildComposeInitialState(query, { spot, itinerary });
   return (
     <ContentEnter>
-      <PostComposeScreen initial={initial} spotCategory={spotCategory} postingRestrictedUntil={postingRestrictedUntil} />
+      <PostComposeScreen videoUploadDisabled={isVideoUploadDisabled()} initial={initial} spotCategory={spotCategory} postingRestrictedUntil={postingRestrictedUntil} />
     </ContentEnter>
   );
 }

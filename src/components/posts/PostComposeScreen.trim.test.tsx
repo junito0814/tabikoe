@@ -48,7 +48,8 @@ const initial = buildComposeInitialState({ lat: "35.6", lng: "139.7", from: "cur
 /** 動画と写真をまとめて選ぶ（既定は 72 秒の動画 1 本） */
 async function pick(files: File[] = [new File([new Uint8Array(1000)], "long.mp4", { type: "video/mp4" })]) {
   render(<PostComposeScreen initial={initial} api={api} videoUploadDisabled={false} />);
-  const input = screen.getByLabelText("写真を選択") as HTMLInputElement;
+  // 動画を受け付けているときは言葉が変わる（#861）
+  const input = screen.getByLabelText("写真・動画を選択") as HTMLInputElement;
   await act(async () => {
     fireEvent.change(input, { target: { files } });
   });
