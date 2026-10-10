@@ -39,7 +39,7 @@ const post: PostDetailData = {
   spotStatus: { latest: null, mine: null },
 };
 
-const noComments = { comments: [], nextOffset: null, totalCount: 0 };
+const noComments = { comments: [], nextOffset: null, totalCount: 0 , viewerAvatarUrl: null};
 
 describe("PostDetailScreen（SC-05）", () => {
   it("投稿の全項目（スポット名・カテゴリ・日付・滞在時間・費用・星評価・写真・動画・感想・投稿者・投稿日時）を表示する", () => {

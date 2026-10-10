@@ -99,7 +99,8 @@ describe("PostSearchScreen（SC-04 タイムライン）", () => {
     // v3.2: コメントが無ければプレビューは出ない
     expect(document.querySelector("[data-comment-preview]")).toBeNull();
     expect(screen.getByRole("button", { name: "行きたい" })).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "コメント 3 件" })).toHaveAttribute("href", "/posts/p1#comments");
+    // #885: 投稿詳細へのリンクではなく、その場でシートを開くボタンになった
+    expect(screen.getByRole("button", { name: "コメント 3 件" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "たこ焼き〇〇の写真 1" })).toHaveAttribute("href", "/posts/p1"); // v3.1: カードの写真は投稿詳細へ直接
   });
 
@@ -218,13 +219,15 @@ describe("PostSearchScreen（SC-04 タイムライン）", () => {
 });
 
 describe("PostCard（v3.2: コメントのプレビュー）", () => {
-  it("コメントがあれば最新 1 件と「コメント N 件をすべて見る」が出て、投稿詳細のコメント欄へのリンク", () => {
+  it("コメントがあれば最新 1 件と「コメント N 件をすべて見る」が出て、押すとその場でシートが開く（#885）", () => {
     const item = card("p1", { commentCount: 3, latestComment: { authorName: "けんた", excerpt: "行列すごかった" } });
     render(<PostSearchScreen context={{ destination: { kind: "spot", spotId: "spot-1" } }} initialState={EMPTY_SEARCH_STATE} initialPage={{ posts: [item], nextOffset: null }} title="たこ焼き〇〇" backHref="/" backLabel="ホーム" />);
     const preview = document.querySelector("[data-comment-preview]") as HTMLElement;
     expect(preview).toHaveTextContent("けんた 行列すごかった");
     expect(preview).toHaveTextContent("コメント 3 件をすべて見る");
-    expect(preview).toHaveAttribute("href", "/posts/p1#comments");
+    // #885: 画面ごと移らず、その場でシートが開く
+    expect(preview.tagName).toBe("BUTTON");
+    expect(preview).not.toHaveAttribute("href");
   });
 });
 

@@ -50,7 +50,7 @@ export default async function PostDetailPage({
   let failed = false;
   // performance Task2: コメント 1 ページ目は待たずに Promise のまま画面へ渡し、本文の後から流し込む。
   // 失敗しても本文は出す（コメント欄は空。取り直しは画面側の「もっと見る」に任せる）
-  const emptyComments: CommentPage = { comments: [], nextOffset: null, totalCount: 0 };
+  const emptyComments: CommentPage = { comments: [], nextOffset: null, totalCount: 0 , viewerAvatarUrl: null};
   const comments: Promise<CommentPage> = listComments(admin, user.id, id, 0).catch(() => emptyComments);
   try {
     post = await getPostDetail(admin, user.id, id);

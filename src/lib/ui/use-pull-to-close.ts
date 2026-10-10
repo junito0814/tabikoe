@@ -21,6 +21,18 @@ export function shouldCloseByPull(deltaY: number): boolean {
 }
 
 /**
+ * #885: 中身の上で引き始めてよいか。
+ *
+ * 【初心者向け】中身がスクロールできるとき、途中で下に引くと**一覧が動かなくなります**
+ * （シートが付いてきてしまい、スクロールできない）。**いちばん上にいるときだけ**
+ * 引き始めてよいことにします。iOS の跳ね返りで `scrollTop` が負になることがあるので「0 以下」で見ます
+ * （`pull-to-refresh-state.ts` の `canStartPull` と同じ考え方）。
+ */
+export function canPullFromContent(scrollTop: number): boolean {
+  return scrollTop <= 0;
+}
+
+/**
  * 引いている間にシートをどれだけ下げるか。
  * 上に引いても動かさない（シートは上には伸びない）。「視差効果を減らす」人には動きを付けない。
  */
@@ -35,15 +47,45 @@ export function usePullToClose(onClose: () => void) {
 
   const reducedMotion = () => (typeof window === "undefined" || typeof window.matchMedia !== "function" ? true : window.matchMedia("(prefers-reduced-motion: reduce)").matches);
 
+  const begin = (event: ReactPointerEvent<HTMLElement>) => {
+    if (event.button !== 0) return;
+    startRef.current = { y: event.clientY, id: event.pointerId };
+    event.currentTarget.setPointerCapture?.(event.pointerId);
+  };
+
   return {
     /** シート本体に当てる style（引いている間だけ下がる） */
     offset,
-    handleProps: {
+    /**
+     * #885: **中身のどこからでも**下にスライドして閉じる。
+     * 取っ手を掴まなくてよくなるぶん、スクロールと取り合わないよう
+     * 「いちばん上にいるときだけ」引き始める。
+     */
+    contentProps: {
       onPointerDown: (event: ReactPointerEvent<HTMLElement>) => {
-        if (event.button !== 0) return;
-        startRef.current = { y: event.clientY, id: event.pointerId };
-        event.currentTarget.setPointerCapture?.(event.pointerId);
+        if (!canPullFromContent(event.currentTarget.scrollTop)) return;
+        begin(event);
       },
+      onPointerMove: (event: ReactPointerEvent<HTMLElement>) => {
+        const start = startRef.current;
+        if (!start || start.id !== event.pointerId) return;
+        setOffset(pullOffset(event.clientY - start.y, reducedMotion()));
+      },
+      onPointerUp: (event: ReactPointerEvent<HTMLElement>) => {
+        const start = startRef.current;
+        startRef.current = null;
+        setOffset(0);
+        if (!start || start.id !== event.pointerId) return;
+        event.currentTarget.releasePointerCapture?.(event.pointerId);
+        if (shouldCloseByPull(event.clientY - start.y)) onClose();
+      },
+      onPointerCancel: () => {
+        startRef.current = null;
+        setOffset(0);
+      },
+    },
+    handleProps: {
+      onPointerDown: begin,
       onPointerMove: (event: ReactPointerEvent<HTMLElement>) => {
         const start = startRef.current;
         if (!start || start.id !== event.pointerId) return;
