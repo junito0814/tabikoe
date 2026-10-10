@@ -21,6 +21,7 @@ import { POSTING_RESTRICTED_ERROR, postingRestrictedMessage } from "@/lib/modera
 import { BackLink } from "@/components/layout/BackLink";
 import { suggestedCategory } from "@/lib/posts/suggested-category";
 import { uploadPostMedia } from "@/lib/posts/upload-media";
+import { uploadErrorMessage } from "@/lib/posts/upload-error-message";
 
 /* 2026-10-07: 動画は提出後に回したので、ここで見るのは写真の分だけ（#861） */
 const MAX_PHOTO_SIZE_BYTES = 10 * 1024 * 1024;
@@ -241,7 +242,13 @@ export function PostComposeScreen({
     if (files.length === 0) return [];
     const response = await api.upload(files);
     if (!response.ok) {
-      setErrorMessage("写真のアップロードに失敗しました");
+      /*
+       * #861: **何が悪くてどう直すか**を出す。
+       * それまでは理由を問わず「写真のアップロードに失敗しました」の 1 文だったので、
+       * 利用者には次に何をすればよいか分からなかった（とくに動画の形式は、設定を変えれば直せる）。
+       */
+      const data = (await response.json().catch(() => ({}))) as { error?: string };
+      setErrorMessage(uploadErrorMessage(data.error));
       return null;
     }
     const uploaded = (await response.json()) as { media: UploadedMedia[] };

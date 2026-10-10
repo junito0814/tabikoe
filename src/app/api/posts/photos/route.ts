@@ -6,6 +6,7 @@ import { getAuthenticatedUser } from "@/lib/auth/get-authenticated-user";
 import { ImageValidationError, processAndUploadImage } from "@/lib/image/process-upload";
 import { POST_MEDIA_BUCKET } from "@/lib/posts/constants";
 import { isOwnTempPath } from "@/lib/posts/upload-slots";
+import { isVideoUploadDisabled, processAndUploadVideo, VideoValidationError } from "@/lib/video/process-video";
 import { searchMediaPage } from "@/lib/posts/search-photos";
 import { parsePostSearchParams } from "@/lib/posts/search-posts";
 import { parseSpotSort } from "@/lib/spots/search-spots";
@@ -98,12 +99,32 @@ export async function POST(request: Request) {
         return NextResponse.json({ error: "upload_not_found" }, { status: 400 });
       }
       const buffer = Buffer.from(await downloaded.data.arrayBuffer());
-      const result = await processAndUploadImage(admin, POST_MEDIA_BUCKET, pathPrefix, buffer);
-      uploaded.push({ storagePath: result.resizedPath });
-      media.push({ mediaType: "photo", storagePath: result.resizedPath, videoPath: null, durationSeconds: null });
+
+      /*
+       * #861（2026-10-09）: 動画か写真かで分ける。
+       *
+       * 【初心者向け】ブラウザは**上げた置き場所だけ**を伝えてくるので、ここで中身を見ます。
+       * 入れ物の種類（MIME）は Storage が持っているものを使いますが、**判断には使いません** ──
+       * `.mp4` の中に HEVC が入っていることがあるためです。実際のコーデックは ffmpeg で見ます。
+       */
+      const contentType = downloaded.data.type || "";
+      if (contentType.startsWith("video/")) {
+        if (isVideoUploadDisabled()) {
+          await cleanUp();
+          return NextResponse.json({ error: "video_disabled" }, { status: 503 });
+        }
+        const result = await processAndUploadVideo(admin, POST_MEDIA_BUCKET, pathPrefix, buffer, contentType === "video/quicktime");
+        // 一覧・詳細はサムネイルを出し、押したら本体を再生する（要件 4.5.1）
+        uploaded.push({ storagePath: result.thumbnailPath });
+        media.push({ mediaType: "video", storagePath: result.thumbnailPath, videoPath: result.videoPath, durationSeconds: result.durationSeconds });
+      } else {
+        const result = await processAndUploadImage(admin, POST_MEDIA_BUCKET, pathPrefix, buffer);
+        uploaded.push({ storagePath: result.resizedPath });
+        media.push({ mediaType: "photo", storagePath: result.resizedPath, videoPath: null, durationSeconds: null });
+      }
     } catch (error) {
       await cleanUp();
-      if (error instanceof ImageValidationError) {
+      if (error instanceof ImageValidationError || error instanceof VideoValidationError) {
         return NextResponse.json({ error: error.message }, { status: 400 });
       }
       // #895: Next.js の内部的な合図（redirect / notFound など）は、記録する前に投げ直す。
