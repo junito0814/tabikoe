@@ -1,3 +1,4 @@
+import { unstable_rethrow } from "next/navigation";
 import { AdminShell } from "@/components/admin/AdminShell";
 import { countAdminBadges } from "@/lib/admin/badge-counts";
 import { getAuthUserFromClaims } from "@/lib/auth/auth-user";
@@ -36,6 +37,9 @@ async function loadShellData() {
     ]);
     return { adminName: profile.data?.display_name ?? "管理者", badges };
   } catch (error) {
+        // #895: Next.js の内部的な合図（redirect / notFound / cookies など）は投げ直す。
+    // 握りつぶすと、ビルドログが赤字で埋まったり、転送が黙って効かなくなったりする
+    unstable_rethrow(error);
     console.error("[admin/layout] メニューの件数を取得できませんでした:", error);
     return { adminName: "管理者", badges: { reports: 0, hidden: 0 } };
   }

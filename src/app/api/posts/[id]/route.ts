@@ -1,3 +1,4 @@
+import { unstable_rethrow } from "next/navigation";
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -232,6 +233,9 @@ export async function PATCH(
       const awarded = await evaluatePostBadges(admin, user.id, prefecture);
       newBadges = awarded.map((type) => ({ type, label: findBadgeDefinition(type)?.label ?? type }));
     } catch (error) {
+      // #895: Next.js の内部的な合図（redirect / notFound など）は、記録する前に投げ直す。
+      // 握りつぶすと転送が黙って効かなくなる。API の口でも決まりを揃える
+      unstable_rethrow(error);
       console.error("[badges] evaluatePostBadges failed (post update)", error);
     }
   }

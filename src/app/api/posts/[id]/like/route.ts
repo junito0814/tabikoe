@@ -1,3 +1,4 @@
+import { unstable_rethrow } from "next/navigation";
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -61,6 +62,9 @@ export async function POST(_request: Request, { params }: { params: Promise<{ id
       const total = await countReceivedLikes(admin, target.post.user_id);
       await awardLikeCountBadgeIfEligible(admin, target.post.user_id, total);
     } catch (badgeError) {
+      // #895: Next.js の内部的な合図（redirect / notFound など）は、記録する前に投げ直す。
+      // 握りつぶすと転送が黙って効かなくなる。API の口でも決まりを揃える
+      unstable_rethrow(error);
       console.error("[badges] awardLikeCountBadgeIfEligible failed", badgeError);
     }
   }
