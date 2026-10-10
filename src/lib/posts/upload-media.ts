@@ -15,7 +15,7 @@ import { fetchWithAuthRedirect } from "@/lib/api/fetch-with-auth-redirect";
  *
  * 2 を Vercel に通していたのが元の作りで、**4.5MB を超えると関数に届かず**投稿できませんでした。
  */
-export async function uploadPostMedia(files: File[]): Promise<Response> {
+export async function uploadPostMedia(files: File[], options: { onProgress?: (done: number, total: number) => void } = {}): Promise<Response> {
   const slotResponse = await fetchWithAuthRedirect("/api/posts/media/upload-url", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -25,16 +25,32 @@ export async function uploadPostMedia(files: File[]): Promise<Response> {
   const { bucket, slots } = (await slotResponse.json()) as { bucket: string; slots: { path: string; token: string }[] };
 
   const storage = createClient().storage.from(bucket);
-  for (const [index, file] of files.entries()) {
-    const slot = slots[index];
-    const { error } = await storage.uploadToSignedUrl(slot.path, slot.token, file);
-    if (error) {
-      /*
-       * ここで失敗するのは、通信が切れたか、バケットの決まり（100MB・jpeg/png/mp4/quicktime）に
-       * 合わないものを選んだとき。画面に出す言葉はサーバー側と揃えたいので、同じ形で返す。
-       */
-      return Response.json({ error: "upload_failed" }, { status: 400 });
-    }
+  /*
+   * #923（2026-10-10）: **まとめて送る。**
+   *
+   * 【初心者向け】ここは 1 枚ずつ順番に送っていました（`for` の中で `await`）。
+   * 3 枚あれば 3 回ぶん待つことになります。置き場所はそれぞれ別なのでぶつかりません。
+   * まとめて送れば、いちばん遅い 1 枚ぶんの時間で終わります。
+   *
+   * 進み具合も伝えます。動画は大きく、**止まって見える時間が長い**ためです（要件 4.5.11）。
+   */
+  let done = 0;
+  options.onProgress?.(0, files.length);
+  const results = await Promise.all(
+    files.map(async (file, index) => {
+      const slot = slots[index];
+      const { error } = await storage.uploadToSignedUrl(slot.path, slot.token, file);
+      done++;
+      options.onProgress?.(done, files.length);
+      return error;
+    })
+  );
+  if (results.some((error) => error)) {
+    /*
+     * ここで失敗するのは、通信が切れたか、バケットの決まり（100MB・jpeg/png/mp4/quicktime）に
+     * 合わないものを選んだとき。画面に出す言葉はサーバー側と揃えたいので、同じ形で返す。
+     */
+    return Response.json({ error: "upload_failed" }, { status: 400 });
   }
 
   return fetchWithAuthRedirect("/api/posts/photos", {

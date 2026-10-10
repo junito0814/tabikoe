@@ -48,8 +48,19 @@ export function SelectedMediaThumbnails({
           data-selected-media={item.key}
           data-removing={removingKey === item.key ? "" : undefined}
         >
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={item.url} alt={item.alt} className="h-full w-full object-cover" />
+          {/*
+            * #923（2026-10-10）: 動画のときは `<video>` で先頭の絵を出す。
+            *
+            * 【初心者向け】ここは `<img>` 1 つでした。`<img>` は動画を描けないので、
+            * **絵が出ないまま読み込みだけ走ります**（しかも選んだ動画は数百 MB になりえます）。
+            * `preload="metadata"` にすると、ブラウザは**先頭のごく一部だけ**読んで 1 コマ目を出します。
+            */}
+          {item.mediaType === "video" ? (
+            <video src={item.url} preload="metadata" muted playsInline aria-label={item.alt} className="h-full w-full object-cover" />
+          ) : (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={item.url} alt={item.alt} className="h-full w-full object-cover" />
+          )}
           {item.mediaType === "video" && (
             <span className="pointer-events-none absolute inset-0 flex items-center justify-center" data-video-overlay>
               <svg width="28" height="28" viewBox="0 0 40 40" aria-hidden>

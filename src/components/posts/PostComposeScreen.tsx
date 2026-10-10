@@ -39,7 +39,7 @@ export interface ExistingPostValues {
 }
 
 export interface ComposeApi {
-  upload: (files: File[]) => Promise<Response>;
+  upload: (files: File[], onProgress?: (done: number, total: number) => void) => Promise<Response>;
   create: (payload: unknown) => Promise<Response>;
   update: (postId: string, payload: unknown) => Promise<Response>;
   attachMedia: (postId: string, media: UploadedMedia[]) => Promise<Response>;
@@ -176,6 +176,11 @@ export function PostComposeScreen({
    * 「下書きに保存」は写真・動画のアップロードを含むので最も長く待つのに、文言が変わらなかった（要件 4.5.11）
    */
   const [submittingStatus, setSubmittingStatus] = useState<"draft" | "published" | null>(null);
+  /**
+   * #923: 送っている最中の進み具合（何点目か）。
+   * 動画は大きく、「送信中...」のままでは**止まって見える**（要件 4.5.11）。
+   */
+  const [uploadProgress, setUploadProgress] = useState<{ done: number; total: number } | null>(null);
   /** 消している最中の写真。二重に押せないようにし、押したことが分かるように薄くする */
   const [removingMediaKey, setRemovingMediaKey] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -296,7 +301,9 @@ export function PostComposeScreen({
   /** 新しく選んだファイルをアップロードし、既存投稿があれば紐づける。戻り値は新規作成に渡す media */
   const uploadPendingFiles = async (targetPostId: string | null): Promise<UploadedMedia[] | null> => {
     if (files.length === 0) return [];
-    const response = await api.upload(files);
+    setUploadProgress({ done: 0, total: files.length });
+    const response = await api.upload(files, (done, total) => setUploadProgress({ done, total }));
+    setUploadProgress(null);
     if (!response.ok) {
       /*
        * #861: **何が悪くてどう直すか**を出す。
@@ -523,7 +530,13 @@ export function PostComposeScreen({
             disabled={!canPublish}
             className="h-12 flex-1 rounded-[10px] bg-accent text-[0.9375rem] font-semibold text-white disabled:cursor-not-allowed disabled:opacity-45"
           >
-            {submittingStatus === "published" ? "送信中..." : isEditingPublished ? "更新する" : "投稿する"}
+            {submittingStatus === "published"
+              ? uploadProgress
+                ? `送っています ${uploadProgress.done}/${uploadProgress.total}`
+                : "送信中..."
+              : isEditingPublished
+                ? "更新する"
+                : "投稿する"}
           </button>
           {!isEditingPublished && (
             <button
@@ -592,7 +605,7 @@ export function PostComposeScreen({
 /** 本番で使う API 呼び出し。テストではこのオブジェクトを差し替える */
 const defaultApi: ComposeApi = {
   // #860: ブラウザから Storage へ直接上げる（Vercel は 4.5MB を超える本文を関数に渡さないため）
-  upload: (files) => uploadPostMedia(files),
+  upload: (files, onProgress) => uploadPostMedia(files, { onProgress }),
   create: (payload) =>
     fetchWithAuthRedirect("/api/posts", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) }),
   update: (postId, payload) =>
