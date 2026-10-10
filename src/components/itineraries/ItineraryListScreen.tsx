@@ -80,7 +80,7 @@ export function ItineraryListScreen({
                 return (
                   <li key={item.id} data-itinerary-group={group}>
                     <article className="rounded-[12px] border border-line bg-surface p-3 shadow-card">
-                      <Link href={`/itineraries/${item.id}`} prefetch={false} className="flex flex-col gap-1">
+                      <Link href={`/itineraries/${item.id}`} className="flex flex-col gap-1">
                         <span className="flex items-center justify-between gap-2">
                           <span className="min-w-0 truncate text-[0.9375rem] font-bold text-ink">{item.title}</span>
                           <span className="flex shrink-0 items-center gap-1 text-[0.6875rem] text-muted">

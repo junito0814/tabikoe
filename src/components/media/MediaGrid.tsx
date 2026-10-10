@@ -59,7 +59,7 @@ function MediaCell({
   );
   if (href) {
     return (
-      <Link href={href} prefetch={false} aria-label={item.alt} className={`relative block h-full w-full overflow-hidden bg-line ${className ?? ""}`}>
+      <Link href={href} prefetch={false} /* #900: 切ったまま。1 画面に何十枚も並び、押しても多くはモーダルが開くだけで画面が変わらない */ aria-label={item.alt} className={`relative block h-full w-full overflow-hidden bg-line ${className ?? ""}`}>
         {inner}
       </Link>
     );

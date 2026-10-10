@@ -363,7 +363,7 @@ export function NotificationListScreen({
                 {open.kind === "notification" && open.href && (
                   <Link
                     href={appendBackHref(open.href, "/notifications")}
-                    prefetch={false}
+                   
                     className="h-10 rounded-[10px] bg-accent text-center text-[0.8125rem] font-bold leading-10 text-white"
                   >
                     {open.invitation ? "招待を見る" : "この投稿を見る"}

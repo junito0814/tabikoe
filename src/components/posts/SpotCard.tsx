@@ -26,8 +26,20 @@ export function SpotCard({ spot, addMode = null, backHref = null }: { spot: Spot
 
   return (
     <article className="relative flex flex-col gap-2 rounded-[12px] border border-line bg-surface p-3 shadow-card" data-spot-card={spot.id}>
-{/* performance Task1: 一覧のカードは先読みしない（1 画面で何十本も裏で走り、関所と Supabase を叩くため） */}
-      <Link href={href} prefetch={false} className="flex flex-col gap-2">
+      {/*
+        ~~performance Task1: 一覧のカードは先読みしない（1 画面で何十本も裏で走り、関所と Supabase を叩くため）~~
+        → **2026-10-09 に取り消し（#900）。**
+
+        【初心者向け】先読みを切ると、押した**その瞬間に初めて**サーバーへ行くことになる。
+        本番で測ると、冷えた関数が立ち上がるのに **2.44 秒**かかっていた（温まっていれば 0.21 秒）。
+        利用者にはこれが「押しても 2 秒待たされる」として出ていた。
+
+        既定（`prefetch` を書かない）に戻すと、動的な画面では「**`loading.tsx` の手前まで**」だけを
+        先読みする（同梱ドキュメント: node_modules/next/dist/docs/01-app/03-api-reference/02-components/link.md）。
+        **データ全部は取りに行かない**ので、切った当時に心配した重さにはならない。
+        関所（proxy.ts）も先読みの要求を見分けて軽く済ませている。
+      */}
+      <Link href={href} className="flex flex-col gap-2">
         <h3 className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-0.5 pr-10 text-[0.9375rem] font-bold leading-tight text-ink">
           <span className="min-w-0 truncate">{spot.name}</span>
         </h3>

@@ -73,14 +73,29 @@ export function PostCard({
 
       {showSpotName && (
         <h3 className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-0.5 text-[0.9375rem] font-bold leading-tight text-ink">
+          {/*
+            #900: ここは**切ったまま**にする。カード 1 枚の中の小さな文字リンクで、
+            押される率がカード本体より低い。1 画面に何十本も並ぶので、先読みの数に見合わない。
+            カード本体（SpotCard）と「コメント N 件」は既定に戻してある。
+          */}
           <Link href={`/search?spot=${post.spotId}`} prefetch={false} className="min-w-0 truncate">
             {post.spotName}
           </Link>
         </h3>
       )}
 
-{/* performance Task1: 一覧のカードは先読みしない（1 画面で何十本も裏で走り、関所と Supabase を叩くため） */}
-      <Link href={appendBackHref(`/posts/${post.id}`, backHref)} prefetch={false} className="flex flex-col gap-1.5">
+      {/*
+        ~~performance Task1: 一覧のカードは先読みしない~~ → **2026-10-09 に取り消し（#900）。**
+
+        【初心者向け】切っていたのは「1 画面で何十本も裏で走り、関所と Supabase を叩く」ため。
+        だが動的な画面の先読みは「**`loading.tsx` の手前まで**」しか取りに行かない。
+        つまり**ページのデータ取得は走らない**ので、Supabase は叩かれない。関所（proxy.ts）も
+        先読みの要求を見分けて軽く済ませている（proxy.ts:104）。
+
+        そして 20 枚のカードはどれも**同じ関数**（/posts/[id]）を温める。1 本目で立ち上がれば
+        残りは温かいまま。本番で測った「冷えた状態の 2.44 秒」を、**押す前に**済ませられる。
+      */}
+      <Link href={appendBackHref(`/posts/${post.id}`, backHref)} className="flex flex-col gap-1.5">
         {post.commentExcerpt && <p className="line-clamp-2 text-[0.8125rem] leading-[1.6] text-ink">{post.commentExcerpt}</p>}
         <p className="flex flex-wrap items-center gap-x-2.5 gap-y-0.5 text-[0.75rem] text-muted">
           {/* #692: 「星4」の文字は外し、★ の数だけで出す（読み上げ用の名前は残す） */}
@@ -130,6 +145,7 @@ export function PostCard({
       </div>
 
       {/* v3.2（feedback-0919 Task5）: 最新のコメント 1 件のプレビューと「コメント N 件をすべて見る」（コメントがあるときだけ） */}
+      {/* #900: 下の 2 本は切ったまま。行き先はカード本体と同じ /posts/[id] なので、本体の先読みで既に温まっている */}
       {post.latestComment && (
         <Link href={`/posts/${post.id}#comments`} prefetch={false} className="flex flex-col gap-0.5 text-[0.75rem]" data-comment-preview>
           <span className="truncate">
