@@ -5,6 +5,15 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ErrorNotice } from "@/components/notices/ErrorNotice";
 import { useObjectUrls, type SelectedMedia } from "@/components/media/SelectedMediaThumbnails";
+import { MediaModal } from "@/components/media/MediaModal";
+import {
+  existingMediaKey,
+  newMediaKey,
+  parseMediaKey,
+  startIndexOf,
+  toModalItems,
+  trimEntryLabel,
+} from "@/lib/posts/selected-media";
 import { fetchWithAuthRedirect, UnauthorizedError } from "@/lib/api/fetch-with-auth-redirect";
 import type { LatLng } from "@/components/map/initial-center";
 import type { ComposeInitialState } from "@/lib/posts/compose-initial-state";
@@ -25,6 +34,7 @@ import { suggestedCategory } from "@/lib/posts/suggested-category";
 import { uploadPostMedia } from "@/lib/posts/upload-media";
 import { uploadErrorMessage } from "@/lib/posts/upload-error-message";
 import { canTrimVideo } from "@/lib/video/trim-video";
+import { TRIM_FALLBACK_MESSAGE } from "@/lib/video/trim-plan";
 import { VideoTrimSheet } from "./VideoTrimSheet";
 
 
@@ -160,9 +170,9 @@ export function PostComposeScreen({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const objectUrls = useObjectUrls(files);
   const mediaItems: SelectedMedia[] = [
-    ...existingPhotos.map((photo) => ({ key: `existing:${photo.id}`, url: photo.url, mediaType: photo.mediaType, alt: "投稿済みの写真" })),
+    ...existingPhotos.map((photo) => ({ key: existingMediaKey(photo.id), url: photo.url, mediaType: photo.mediaType, alt: "投稿済みの写真" })),
     ...objectUrls.map((entry, index) => ({
-      key: `new:${index}`,
+      key: newMediaKey(index),
       url: entry.url,
       mediaType: isVideoFile(entry.file) ? ("video" as const) : ("photo" as const),
       alt: entry.file.name,
@@ -190,6 +200,33 @@ export function PostComposeScreen({
    * （要件 4.5.17）。長さは選んだ時点で測ってあるので、シートに渡して測り直さない。
    */
   const [trimQueue, setTrimQueue] = useState<{ file: File; durationSeconds: number }[]>([]);
+  /**
+   * #927（2026-10-11）: いまモーダルで大きく見ているサムネイル（要件 4.5.1）。
+   * 外した直後などで並びから消えていたら、`startIndexOf` が `null` を返して開かない。
+   */
+  const [openedMediaKey, setOpenedMediaKey] = useState<string | null>(null);
+  /**
+   * #927: モーダルの「切り取る」から開いたときの対象。待ち列（`trimQueue`）とは別にする
+   * ── 列は**足す**ための仕組みで、こちらは**選び直す**（元のファイルと差し替える）ため。
+   */
+  const [retrimTarget, setRetrimTarget] = useState<{ index: number; file: File; durationSeconds: number } | null>(null);
+  /*
+   * #927: 動画の長さの控え。「切り取る（いまは 0:18）」に使う。
+   *
+   * 【初心者向け】なぜ File を鍵にするのか。
+   *   長さは選んだ時点でもう測っています（`readVideoDuration`）。これを**番号**で覚えると
+   *   **1 枚外した途端にずれます**（後ろの番号が 1 つ繰り上がる）。
+   *   そこで **File そのものを鍵**にします。外したぶんの控えは残りますが、
+   *   1 回の投稿で選ぶ本数ぶんなので放っておきます。
+   *
+   * 【初心者向け】なぜ `useRef` ではなく `useState` なのか。
+   *   画面を描くときに読む値（ボタンの文）なので、ref に入れてはいけません。
+   *   ref は描き終わったあとに書き換えても画面が追いつかず、React の決まりでも
+   *   描いている間に読むことを禁じています。
+   */
+  const [videoDurations, setVideoDurations] = useState<ReadonlyMap<File, number>>(() => new Map());
+  const rememberDuration = (file: File, durationSeconds: number) =>
+    setVideoDurations((current) => new Map(current).set(file, durationSeconds));
   const [sheetExpanded, setSheetExpanded] = useState(false);
   const sheetDrag = useSheetDrag(
     (snap) => setSheetExpanded(snap === "expand"),
@@ -241,6 +278,8 @@ export function PostComposeScreen({
         queue.push({ file, durationSeconds: decision.durationSeconds });
         continue;
       }
+      // #927: 長さを控える（「切り取る（いまは 0:18）」に使う。測り直さない）
+      if (isVideo && durationSeconds !== null) rememberDuration(file, durationSeconds);
       accepted.push(file);
     }
     // 切り取りの要らないものは先に入れる（切り取ったものはシートから戻ってくる）
@@ -249,9 +288,22 @@ export function PostComposeScreen({
   };
 
   /** 列の先頭を 1 本切り終えた（または諦めた）ので、次へ進む */
-  const advanceTrimQueue = (trimmed: File | null) => {
-    if (trimmed) setFiles((current) => [...current, trimmed]);
+  const advanceTrimQueue = (trimmed: File | null, durationSeconds?: number) => {
+    if (trimmed) {
+      if (durationSeconds !== undefined) rememberDuration(trimmed, durationSeconds);
+      setFiles((current) => [...current, trimmed]);
+    }
     setTrimQueue((current) => current.slice(1));
+  };
+
+  /**
+   * #927: モーダルの「切り取る」で選び直した。**元のファイルと差し替える**
+   * （列のときのように足すと、同じ動画が 2 本並ぶ）。
+   */
+  const replaceTrimmedFile = (index: number, trimmed: File, durationSeconds: number) => {
+    rememberDuration(trimmed, durationSeconds);
+    setFiles((current) => current.map((file, i) => (i === index ? trimmed : file)));
+    setRetrimTarget(null);
   };
 
   /**
@@ -267,12 +319,15 @@ export function PostComposeScreen({
   };
 
   const handleRemoveMedia = async (key: string) => {
-    if (key.startsWith("new:")) {
-      const index = Number(key.slice(4));
-      setFiles((current) => current.filter((_, i) => i !== index));
+    const parsed = parseMediaKey(key);
+    if (parsed === null) return;
+    // 外したものを大きく見たままにしない
+    if (openedMediaKey === key) setOpenedMediaKey(null);
+    if (parsed.kind === "new") {
+      setFiles((current) => current.filter((_, i) => i !== parsed.index));
       return;
     }
-    const photoId = key.slice("existing:".length);
+    const photoId = parsed.id;
     if (!existing || removingMediaKey !== null) return;
     setRemovingMediaKey(key);
     try {
@@ -292,6 +347,36 @@ export function PostComposeScreen({
     } finally {
       setRemovingMediaKey(null);
     }
+  };
+
+  /*
+   * #927: モーダルを開く位置と、「切り取る」の入口。
+   *
+   * 「切り取る」は**これから足す動画だけ**に出す。すでに上がっている動画には出さない
+   * ── 手元にファイルが無く、切り取るには落とし直すことになる（上がっている動画は
+   * サーバーが 30 秒以内しか受け付けていないので、切る必要もない。要件 5.4）。
+   */
+  const modalStartIndex = startIndexOf(mediaItems, openedMediaKey);
+  const trimEntryFor = (() => {
+    const parsed = openedMediaKey === null ? null : parseMediaKey(openedMediaKey);
+    if (parsed === null || parsed.kind !== "new") return null;
+    const file = files[parsed.index];
+    if (!file || !isVideoFile(file) || !canTrimVideo()) return null;
+    return { index: parsed.index, file, durationSeconds: videoDurations.get(file) ?? null };
+  })();
+
+  /**
+   * 「切り取る」を押した。長さが控えに無いときだけ測り直す
+   * （切り取りのシートは「始める前に断る」ために長さが要る）。
+   */
+  const openRetrim = async (entry: { index: number; file: File; durationSeconds: number | null }) => {
+    const durationSeconds = entry.durationSeconds ?? (await readVideoDuration(entry.file));
+    if (durationSeconds === null) {
+      setErrorMessage(TRIM_FALLBACK_MESSAGE);
+      return;
+    }
+    setOpenedMediaKey(null);
+    setRetrimTarget({ index: entry.index, file: entry.file, durationSeconds });
   };
 
   // ---- 保存 ----
@@ -450,6 +535,7 @@ export function PostComposeScreen({
               values={values}
               onChange={updateValues}
               videoUploadDisabled={videoUploadDisabled}
+              onOpenMedia={setOpenedMediaKey}
               /*
                 * #794: 既存のスポットに投稿するときだけ「おすすめ」を 1 つ出す。
                 *
@@ -583,6 +669,29 @@ export function PostComposeScreen({
         </div>
       )}
       {/*
+        * #927（2026-10-11）: 選んだものをタップして大きく見る（要件 4.5.1・決定事項 90）。
+        *
+        * 投稿詳細で動いているモーダルをそのまま呼ぶ（約束 14）。左右の送り・端で止まる・
+        * × で閉じる・Android の戻るキーは、その部品に元から入っている。
+        * **「外す」はここに置かない** ── 外すのはサムネイルの「×」の 1 か所に保つ（決定事項 80）。
+        */}
+      {modalStartIndex !== null && (
+        <MediaModal
+          items={toModalItems(mediaItems)}
+          startIndex={modalStartIndex}
+          onClose={() => setOpenedMediaKey(null)}
+          renderInfo={trimEntryFor === null ? undefined : () => (
+            <button
+              type="button"
+              onClick={() => void openRetrim(trimEntryFor)}
+              className="h-11 w-full rounded-[10px] border border-line bg-surface text-[0.875rem] font-semibold text-ink"
+            >
+              {trimEntryLabel(trimEntryFor.durationSeconds)}
+            </button>
+          )}
+        />
+      )}
+      {/*
         * #861: 切り取りのシート（要件 4.5.17）。30 秒を超える動画を選んだときだけ出る。
         * 切り取れたら添付し、切り取れなかったら**その理由を投稿画面に出して**この動画は受け付けない。
         */}
@@ -596,6 +705,23 @@ export function PostComposeScreen({
           onTrimmed={advanceTrimQueue}
           onGiveUp={abandonTrimQueue}
           onClose={() => abandonTrimQueue(null)}
+        />
+      )}
+      {/*
+        * #927: モーダルの「切り取る」から開いたとき。待ち列が出ている間は出さない
+        * （シートが 2 枚重なると、どちらを操作しているのか分からなくなる）。
+        */}
+      {trimQueue.length === 0 && retrimTarget && (
+        <VideoTrimSheet
+          key={`retrim:${retrimTarget.index}:${retrimTarget.file.name}:${retrimTarget.file.size}`}
+          file={retrimTarget.file}
+          durationSeconds={retrimTarget.durationSeconds}
+          onTrimmed={(trimmed, durationSeconds) => replaceTrimmedFile(retrimTarget.index, trimmed, durationSeconds)}
+          onGiveUp={(message) => {
+            setErrorMessage(message);
+            setRetrimTarget(null);
+          }}
+          onClose={() => setRetrimTarget(null)}
         />
       )}
     </div>

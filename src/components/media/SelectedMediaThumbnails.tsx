@@ -20,12 +20,45 @@ export interface SelectedMedia {
  * 一時 URL はメモリを使うので、不要になったら `revokeObjectURL` で解放する（useEffect の cleanup）。
  * 保存済みの写真（編集時）は署名付き URL をそのまま渡す。
  */
+/**
+ * サムネイルの絵そのもの（写真なら `<img>`、動画なら 1 コマ目と再生の印）。
+ *
+ * #923（2026-10-10）: 動画のときは `<video>` で先頭の絵を出す。
+ *   【初心者向け】ここは `<img>` 1 つでした。`<img>` は動画を描けないので、
+ *   **絵が出ないまま読み込みだけ走ります**（しかも選んだ動画は数百 MB になりえます）。
+ *   `preload="metadata"` にすると、ブラウザは**先頭のごく一部だけ**読んで 1 コマ目を出します。
+ *
+ * #927（2026-10-11）: 押せるとき（`<button>` の中）と押せないときで**同じ絵**を使うため、
+ *   ここに切り出した（約束 14: 同じものを 2 か所に書かない）。
+ */
+function MediaFace({ item }: { item: SelectedMedia }) {
+  return (
+    <>
+      {item.mediaType === "video" ? (
+        <video src={item.url} preload="metadata" muted playsInline aria-label={item.alt} className="h-full w-full object-cover" />
+      ) : (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img src={item.url} alt={item.alt} className="h-full w-full object-cover" />
+      )}
+      {item.mediaType === "video" && (
+        <span className="pointer-events-none absolute inset-0 flex items-center justify-center" data-video-overlay>
+          <svg width="28" height="28" viewBox="0 0 40 40" aria-hidden>
+            <circle cx="20" cy="20" r="18" fill="rgba(0,0,0,0.45)" />
+            <path d="M16 13l12 7-12 7z" fill="#fff" />
+          </svg>
+        </span>
+      )}
+    </>
+  );
+}
+
 export function SelectedMediaThumbnails({
   items,
   onRemove,
   onAdd,
   addLabel = "追加",
   removingKey = null,
+  onOpen,
 }: {
   items: SelectedMedia[];
   onRemove: (key: string) => void;
@@ -37,11 +70,18 @@ export function SelectedMediaThumbnails({
   /** 「＋」を押したときの処理（file input を開く）。無ければ「＋」を出さない */
   onAdd?: () => void;
   addLabel?: string;
+  /**
+   * #927（2026-10-11）: サムネイルを押したときの処理（モーダルで大きく見る。要件 4.5.1）。
+   * 渡さなければ押せないまま（これまでどおり）。
+   */
+  onOpen?: (key: string) => void;
 }) {
   if (items.length === 0 && !onAdd) return null;
   return (
     <ul className="flex gap-2 overflow-x-auto pb-1" aria-label="選択中の写真">
-      {items.map((item) => (
+      {items.map((item) => {
+        const thumbnail = <MediaFace item={item} />;
+        return (
         <li
           key={item.key}
           className={`relative h-20 w-20 shrink-0 overflow-hidden rounded-[8px] bg-line ${removingKey === item.key ? "opacity-40" : ""}`}
@@ -49,25 +89,26 @@ export function SelectedMediaThumbnails({
           data-removing={removingKey === item.key ? "" : undefined}
         >
           {/*
-            * #923（2026-10-10）: 動画のときは `<video>` で先頭の絵を出す。
+            * #927（2026-10-11）: 押すとモーダルで大きく見られる（要件 4.5.1）。
             *
-            * 【初心者向け】ここは `<img>` 1 つでした。`<img>` は動画を描けないので、
-            * **絵が出ないまま読み込みだけ走ります**（しかも選んだ動画は数百 MB になりえます）。
-            * `preload="metadata"` にすると、ブラウザは**先頭のごく一部だけ**読んで 1 コマ目を出します。
+            * 【初心者向け】なぜ `<button>` で包むのか。
+            *   `<li>` に onClick を付けても、キーボードでは辿れず読み上げも押せると言いません。
+            *   **押せるものは押せる部品にする**（要件 7.7）。
+            *   「×」はこの下の別のボタンなので、重ならないように `inset-0` のこちらを先に描き、
+            *   「×」を後ろ（＝上）に置いています。
             */}
-          {item.mediaType === "video" ? (
-            <video src={item.url} preload="metadata" muted playsInline aria-label={item.alt} className="h-full w-full object-cover" />
+          {onOpen ? (
+            <button
+              type="button"
+              onClick={() => onOpen(item.key)}
+              aria-label={`${item.alt}を大きく見る`}
+              className="absolute inset-0 h-full w-full"
+              data-selected-media-open={item.key}
+            >
+              {thumbnail}
+            </button>
           ) : (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={item.url} alt={item.alt} className="h-full w-full object-cover" />
-          )}
-          {item.mediaType === "video" && (
-            <span className="pointer-events-none absolute inset-0 flex items-center justify-center" data-video-overlay>
-              <svg width="28" height="28" viewBox="0 0 40 40" aria-hidden>
-                <circle cx="20" cy="20" r="18" fill="rgba(0,0,0,0.45)" />
-                <path d="M16 13l12 7-12 7z" fill="#fff" />
-              </svg>
-            </span>
+            thumbnail
           )}
           <button
             type="button"
@@ -79,7 +120,8 @@ export function SelectedMediaThumbnails({
             ×
           </button>
         </li>
-      ))}
+        );
+      })}
       {onAdd && (
         <li className="shrink-0">
           <button

@@ -103,6 +103,7 @@ export function PostFormFields({
   onRemoveMedia,
   removingMediaKey = null,
   onAddMedia,
+  onOpenMedia,
   fileInputRef,
   onFilesSelected,
   fetchTripSuggestions,
@@ -124,6 +125,8 @@ export function PostFormFields({
   spotField: React.ReactNode;
   mediaItems: SelectedMedia[];
   onRemoveMedia: (key: string) => void;
+  /** #927: サムネイルを押したとき（モーダルで大きく見る。要件 4.5.1） */
+  onOpenMedia?: (key: string) => void;
   /** loading-feedback Task 3: 消している最中の写真 */
   removingMediaKey?: string | null;
   onAddMedia: () => void;
@@ -282,6 +285,7 @@ export function PostFormFields({
           onRemove={onRemoveMedia}
           removingKey={removingMediaKey}
           onAdd={onAddMedia}
+          onOpen={onOpenMedia}
           addLabel={videoUploadDisabled ? "写真を追加" : "写真・動画を追加"}
         />
         <input
