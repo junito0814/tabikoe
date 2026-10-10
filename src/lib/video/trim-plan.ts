@@ -10,8 +10,24 @@ import { MAX_VIDEO_DURATION_SECONDS, MAX_VIDEO_SIZE_BYTES } from "@/lib/video/li
  *   いちばん間違えたくない部分だけをここへ出し、数字だけでテストできるようにしました。
  */
 
-/** 切り取る長さは 30 秒で固定（要件 4.5.17: つまみは開始位置だけを決める） */
+/**
+ * 切り取れる長さの上限。サーバーが受け付ける上限と同じ（要件 5.4）。
+ *
+ * ~~2026-10-10: 長さは 30 秒で固定（つまみは開始位置だけを決める）~~
+ * → **2026-10-11（#928）に廃止**。両端を動かして**長さも自分で決める**ようにした
+ *   （iPhone の写真アプリと同じ作法）。この値は「ここまで」の意味に変わった。
+ */
 export const TRIM_WINDOW_SECONDS = MAX_VIDEO_DURATION_SECONDS;
+
+/**
+ * 切り取れる長さの下限（#928）。
+ *
+ * 【初心者向け】なぜ下限が要るのか。
+ *   つまみを重ねると長さ 0 になり、**コマが 1 枚も入っていない動画**が出来ます。
+ *   出来上がったものは再生できず、何が悪いのか利用者には分かりません。
+ *   「1 秒より短くはできない」と決めて、つまみの段階で止めます。
+ */
+export const MIN_TRIM_SECONDS = 1;
 
 /**
  * 切り取る前の動画の大きさの上限。
@@ -31,7 +47,12 @@ export const MAX_TRIM_SOURCE_BYTES = 300 * 1024 * 1024;
  */
 export const TRIM_ESTIMATE_MARGIN = 1.3;
 
-/** つまみを動かせる右端。これより後ろから 30 秒は取れない */
+/**
+ * **最長（30 秒）を取るときの**始まりの右端。これより後ろから 30 秒は取れない。
+ *
+ * #928 以降、つまみはここより後ろへも動かせる（長さが短くなるだけ）。
+ * この関数は「初めの範囲」を決めるときと、長さ 30 秒のときの限界を知るのに使う。
+ */
 export function maxStartSeconds(durationSeconds: number): number {
   return Math.max(0, durationSeconds - TRIM_WINDOW_SECONDS);
 }
@@ -79,6 +100,70 @@ export function planTrim(input: { keyframeTimes: readonly number[]; durationSeco
   return { startSeconds, endSeconds: Math.min(startSeconds + TRIM_WINDOW_SECONDS, input.durationSeconds) };
 }
 
+/** 選んでいる長さ（秒） */
+export function trimLengthSeconds(range: TrimRange): number {
+  return range.endSeconds - range.startSeconds;
+}
+
+/**
+ * #928: **始まりのつまみ**を動かす。
+ *
+ * 始まりはキーフレームへ寄せる（そこからしか画質を落とさずに切れない）。
+ * 終わりは動かさない ── ただし長さが 1〜30 秒から外れるときだけ、終わりも連れて動かす。
+ *
+ * 【初心者向け】なぜ「寄せる前に収める」のか。
+ *   先に寄せると、寄せ先が終わりを越えてしまうことがあります（長さが負になる）。
+ *   **動かせる範囲へ収める → 寄せる → もう一度収める**の順にします。
+ */
+export function moveStart(input: {
+  keyframeTimes: readonly number[];
+  durationSeconds: number;
+  current: TrimRange;
+  wantStartSeconds: number;
+}): TrimRange {
+  const limit = Math.max(0, input.current.endSeconds - MIN_TRIM_SECONDS);
+  const clamped = Math.min(Math.max(input.wantStartSeconds, 0), Math.max(limit, 0));
+  const candidates = input.keyframeTimes.filter((time) => time >= 0 && time <= limit + 0.001);
+  const startSeconds = snapToKeyframe(candidates, clamped);
+  // 長すぎるときだけ終わりを引き寄せる（始まりを動かして 30 秒を超えることがある）
+  const endSeconds = Math.min(input.current.endSeconds, startSeconds + TRIM_WINDOW_SECONDS);
+  return { startSeconds, endSeconds };
+}
+
+/**
+ * #928: **終わりのつまみ**を動かす。
+ *
+ * 終わりは**どこでも止められる**（キーフレームへ寄せない）。終わりのコマは丸ごと入れるか
+ * 入れないかだけなので、出発点である必要がないためです。
+ */
+export function moveEnd(input: { durationSeconds: number; current: TrimRange; wantEndSeconds: number }): TrimRange {
+  const start = input.current.startSeconds;
+  const lowest = start + MIN_TRIM_SECONDS;
+  const highest = Math.min(input.durationSeconds, start + TRIM_WINDOW_SECONDS);
+  return { startSeconds: start, endSeconds: Math.min(Math.max(input.wantEndSeconds, lowest), highest) };
+}
+
+/**
+ * #928: **真ん中を掴んで範囲ごと動かす**（iPhone の写真アプリと同じ）。
+ *
+ * **長さを変えない**のが肝です。始まりをキーフレームへ寄せたぶん、終わりも同じだけ動かします
+ * （寄せて長さが変わると、掴んで動かしただけで長さが勝手に伸び縮みして気持ちが悪い）。
+ * 端に当たったら、そこで止まります。
+ */
+export function moveWindow(input: {
+  keyframeTimes: readonly number[];
+  durationSeconds: number;
+  current: TrimRange;
+  wantStartSeconds: number;
+}): TrimRange {
+  const length = trimLengthSeconds(input.current);
+  const limit = Math.max(0, input.durationSeconds - length);
+  const clamped = Math.min(Math.max(input.wantStartSeconds, 0), limit);
+  const candidates = input.keyframeTimes.filter((time) => time >= 0 && time <= limit + 0.001);
+  const startSeconds = snapToKeyframe(candidates, clamped);
+  return { startSeconds, endSeconds: Math.min(startSeconds + length, input.durationSeconds) };
+}
+
 /** 見込みの大きさ。元の動画が一定の画質だと仮定した、ざっくりした値 */
 export function estimateTrimmedBytes(sourceBytes: number, durationSeconds: number, windowSeconds: number = TRIM_WINDOW_SECONDS): number {
   if (durationSeconds <= 0) return sourceBytes;
@@ -103,10 +188,10 @@ export function checkTrimFeasible(input: { sourceBytes: number; durationSeconds:
 }
 
 /**
- * 切り取った結果が短くなりすぎていないかを見る余裕（秒）。
+ * 切り取った結果が、選んだ長さからどれだけずれていいか（秒）。
  *
- * ぴったり 30 秒にはなりません。最後のコマが 30 秒の線をまたぐときは**入れない**ので
- * （またぐと 30 秒を超えてサーバーに断られる）、コマ 1 枚ぶんだけ短くなります。
+ * ぴったりにはなりません。最後のコマが線をまたぐときは**入れない**ので
+ * （またぐと長くなり、30 秒を超えればサーバーに断られる）、コマ 1 枚ぶんだけ短くなります。
  */
 export const TRIM_LENGTH_TOLERANCE_SECONDS = 1.5;
 
@@ -126,6 +211,14 @@ export type TrimmedOutputCheck =
 export function checkTrimmedOutput(input: { durationSeconds: number | null; sizeBytes: number; expectedSeconds: number }): TrimmedOutputCheck {
   if (input.durationSeconds === null) return { ok: false, reason: "unreadable" };
   if (input.durationSeconds > MAX_VIDEO_DURATION_SECONDS) return { ok: false, reason: "too_long" };
+  /*
+   * #928: **選んだ長さと合っているか**を見る。
+   *
+   * 長さが 30 秒固定だったときは「30 秒に近いか」だけ見ていればよかったが、
+   * 自分で決められるようになったので、**選んだより長く出来てしまった場合**も
+   * つかまえる必要がある（5 秒を選んだのに 20 秒出来たら、それは切れていない）。
+   */
+  if (input.durationSeconds > input.expectedSeconds + TRIM_LENGTH_TOLERANCE_SECONDS) return { ok: false, reason: "too_long" };
   if (input.durationSeconds < input.expectedSeconds - TRIM_LENGTH_TOLERANCE_SECONDS) return { ok: false, reason: "too_short" };
   if (input.sizeBytes > MAX_VIDEO_SIZE_BYTES) return { ok: false, reason: "too_large" };
   return { ok: true, durationSeconds: input.durationSeconds };

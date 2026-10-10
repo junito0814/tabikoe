@@ -1,7 +1,7 @@
 "use client";
 
 import type { ISOFile, Movie, Sample, Track } from "mp4box";
-import { TRIM_WINDOW_SECONDS, type TrimRange } from "@/lib/video/trim-plan";
+import { type TrimRange } from "@/lib/video/trim-plan";
 
 /**
  * #861 / 要件定義書 4.5.17（2026-10-10）: 動画を**作り直さずに**切り取る。
@@ -405,7 +405,16 @@ export async function trimVideo(
      */
     const ctsLeadSeconds = (firstVideoSample.cts - firstVideoSample.dts) / firstVideoSample.timescale;
 
-    const videoSpan = { subtractSeconds: baseSeconds, ctsShiftSeconds: 0, windowSeconds: TRIM_WINDOW_SECONDS };
+    /*
+     * #928: 写す長さは**選ばれた範囲**から取る（30 秒固定をやめた）。
+     *
+     * 【初心者向け】なぜ `range.endSeconds - range.startSeconds` ではないのか。
+     *   実際の起点は `baseSeconds`（本当のキーフレームの時刻）で、選ばれた `startSeconds` と
+     *   1 コマずれていることがあります。**終わりの時刻を合わせたい**ので、
+     *   起点からの長さに直します。
+     */
+    const windowSeconds = Math.max(0, range.endSeconds - baseSeconds);
+    const videoSpan = { subtractSeconds: baseSeconds, ctsShiftSeconds: 0, windowSeconds };
     const videoEnd = endIndexWithin(videoSamples, firstVideoIndex, videoSpan, video.timescale);
 
     /*
@@ -421,7 +430,7 @@ export async function trimVideo(
      *   「この軌道は 0.2 秒あとから始まる」は目次には書けず、`mp4box.js` が書ける形では
      *   **映す時刻のずれ（cts − dts）**だけが残ります。そこへ入れます。
      */
-    const audioSpan = { subtractSeconds: baseSeconds, ctsShiftSeconds: ctsLeadSeconds, windowSeconds: TRIM_WINDOW_SECONDS };
+    const audioSpan = { subtractSeconds: baseSeconds, ctsShiftSeconds: ctsLeadSeconds, windowSeconds };
     const audioSamples = audio ? isoFile.getTrackSamplesInfo(audio.id) : [];
     const firstAudioIndex = audio ? audioSamples.findIndex((sample) => sample.dts / sample.timescale >= baseSeconds - 0.0001) : -1;
     const audioEnd = firstAudioIndex >= 0 ? endIndexWithin(audioSamples, firstAudioIndex, audioSpan, audio!.timescale) : 0;

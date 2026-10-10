@@ -5,7 +5,7 @@ import { join } from "node:path";
 import { promisify } from "node:util";
 import { beforeAll, describe, expect, it } from "vitest";
 import { checkVideo, parseVideoInfo } from "./process-video";
-import { planTrim, TRIM_WINDOW_SECONDS } from "./trim-plan";
+import { checkTrimmedOutput, moveEnd, planTrim, trimLengthSeconds, TRIM_WINDOW_SECONDS } from "./trim-plan";
 import { loadVideoForTrim, trimVideo, TrimError } from "./trim-video";
 
 /**
@@ -233,6 +233,39 @@ describe("trimVideo", () => {
     expect(info.durationSeconds!).toBeGreaterThan(TRIM_WINDOW_SECONDS - 0.5);
     // サーバーが受け付けるか（ここが赤なら、切り取れても投稿できない）
     expect(checkVideo(info)).toEqual({ ok: true, durationSeconds: info.durationSeconds });
+  }, 60000);
+
+  /**
+   * #928（2026-10-11）: 長さを自分で決められるようにしたので、**選んだ長さで出来る**ことを
+   * 本物の MP4 で確かめる（受入条件）。ここが通らないと、画面で 5 秒を選んでも 30 秒出来てしまう。
+   */
+  it("選んだ長さで切れる（30 秒固定ではない）", async () => {
+    const loaded = await loadVideoForTrim(plain);
+    const start = planTrim({ keyframeTimes: loaded.keyframeTimes, durationSeconds: loaded.durationSeconds, wantStartSeconds: 6 });
+    // 6 秒から 5 秒だけ（終わりのつまみを引き寄せた状態）
+    const range = moveEnd({ durationSeconds: loaded.durationSeconds, current: start, wantEndSeconds: start.startSeconds + 5 });
+    expect(trimLengthSeconds(range)).toBeCloseTo(5, 5);
+
+    const info = await probeTrimmed(await trimVideo(loaded, range), "out-5s.mp4");
+    expect(info.durationSeconds).not.toBeNull();
+    // 1 コマぶんの誤差は許す（最後のコマが線をまたぐときは入れない）
+    expect(info.durationSeconds!).toBeGreaterThan(4.5);
+    expect(info.durationSeconds!).toBeLessThan(5.3);
+    // 出来上がりの検査（画面が使っているもの）も通る
+    expect(checkTrimmedOutput({ durationSeconds: info.durationSeconds, sizeBytes: 1000, expectedSeconds: 5 }).ok).toBe(true);
+    expect(checkVideo(info)).toEqual({ ok: true, durationSeconds: info.durationSeconds });
+  }, 60000);
+
+  /** 下限（1 秒）でも壊れないこと ── つまみを一番狭くしたときに作られるもの */
+  it("1 秒でも再生できるものが出来る", async () => {
+    const loaded = await loadVideoForTrim(plain);
+    const start = planTrim({ keyframeTimes: loaded.keyframeTimes, durationSeconds: loaded.durationSeconds, wantStartSeconds: 10 });
+    const range = moveEnd({ durationSeconds: loaded.durationSeconds, current: start, wantEndSeconds: start.startSeconds + 1 });
+    const info = await probeTrimmed(await trimVideo(loaded, range), "out-1s.mp4");
+    expect(info.durationSeconds).not.toBeNull();
+    expect(info.durationSeconds!).toBeGreaterThan(0.5);
+    expect(info.durationSeconds!).toBeLessThan(1.3);
+    expect(info.videoCodec).toBe("h264");
   }, 60000);
 
   it("作り直さない ── 映像は H.264 のまま、音も残る", async () => {

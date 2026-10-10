@@ -142,7 +142,8 @@ describe("動画のときの「切り取る」", () => {
     await act(async () => {
       fireEvent.click(screen.getByRole("button", { name: "切り取る（いまは 0:18）" }));
     });
-    await screen.findByText(/を切り取ります/);
+    // #928: つまみが出たら、帯は使える（文字は「0:00 〜 0:30」と長さに分かれた）
+  await screen.findByRole("slider", { name: "切り取りの始まり" });
     await act(async () => {
       fireEvent.click(screen.getByRole("button", { name: "この範囲にする" }));
     });
@@ -156,7 +157,8 @@ describe("動画のときの「切り取る」", () => {
     await act(async () => {
       fireEvent.click(screen.getByRole("button", { name: "切り取る（いまは 0:18）" }));
     });
-    await screen.findByText(/を切り取ります/);
+    // #928: つまみが出たら、帯は使える（文字は「0:00 〜 0:30」と長さに分かれた）
+  await screen.findByRole("slider", { name: "切り取りの始まり" });
     await act(async () => {
       fireEvent.click(screen.getByRole("button", { name: "この範囲にする" }));
     });

@@ -6,7 +6,12 @@ import {
   formatMegabytes,
   MAX_TRIM_SOURCE_BYTES,
   maxStartSeconds,
+  MIN_TRIM_SECONDS,
+  moveEnd,
+  moveStart,
+  moveWindow,
   planTrim,
+  trimLengthSeconds,
   snapToKeyframe,
   TRIM_FALLBACK_MESSAGE,
   TRIM_WINDOW_SECONDS,
@@ -162,5 +167,108 @@ describe("formatMegabytes", () => {
 
   it("0 でも「0MB」とは言わない", () => {
     expect(formatMegabytes(0)).toBe("0.1MB");
+  });
+});
+
+/**
+ * #928 / 要件 4.5.17（2026-10-11）: 両端を動かし、長さも自分で決める。
+ *
+ * 【初心者向け】ここで固めたいのは**つまみの行き止まり**です。
+ *   長さ 0 の動画や 30 秒を超える動画が作られると、
+ *   出来上がってから「再生できない」「サーバーに断られる」と分かることになります。
+ *   指で触る部分はテストしにくいので、**どこで止まるか**だけをここで決めています。
+ */
+describe("両端つまみ（#928）", () => {
+  const everyTwo = [0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30, 32, 34, 36, 38, 40, 42, 44, 46, 48, 50];
+
+  describe("始まりを動かす", () => {
+    it("キーフレームへ寄せ、終わりは動かさない", () => {
+      const range = moveStart({ keyframeTimes: everyTwo, durationSeconds: 72, current: { startSeconds: 0, endSeconds: 20 }, wantStartSeconds: 5.1 });
+      expect(range).toEqual({ startSeconds: 6, endSeconds: 20 });
+    });
+
+    it("**終わりの 1 秒前で止まる**（長さ 0 の動画を作らない）", () => {
+      const range = moveStart({ keyframeTimes: everyTwo, durationSeconds: 72, current: { startSeconds: 0, endSeconds: 10 }, wantStartSeconds: 30 });
+      expect(trimLengthSeconds(range)).toBeGreaterThanOrEqual(MIN_TRIM_SECONDS);
+      expect(range.endSeconds).toBe(10);
+    });
+
+    it("左へ動かして 30 秒を超えるときは、終わりも連れて動く", () => {
+      const range = moveStart({ keyframeTimes: everyTwo, durationSeconds: 72, current: { startSeconds: 40, endSeconds: 60 }, wantStartSeconds: 20 });
+      expect(range.startSeconds).toBe(20);
+      expect(trimLengthSeconds(range)).toBe(30);
+    });
+
+    it("0 より前へは行かない", () => {
+      expect(moveStart({ keyframeTimes: everyTwo, durationSeconds: 72, current: { startSeconds: 10, endSeconds: 30 }, wantStartSeconds: -8 }).startSeconds).toBe(0);
+    });
+  });
+
+  describe("終わりを動かす", () => {
+    it("**キーフレームへ寄せない**（終わりのコマは出発点である必要がない）", () => {
+      const range = moveEnd({ durationSeconds: 72, current: { startSeconds: 10, endSeconds: 40 }, wantEndSeconds: 23.4 });
+      expect(range).toEqual({ startSeconds: 10, endSeconds: 23.4 });
+    });
+
+    it("始まりの 1 秒後で止まる", () => {
+      const range = moveEnd({ durationSeconds: 72, current: { startSeconds: 10, endSeconds: 40 }, wantEndSeconds: 10.2 });
+      expect(range.endSeconds).toBe(11);
+    });
+
+    it("**30 秒を超えない**（超えるとサーバーが断る）", () => {
+      const range = moveEnd({ durationSeconds: 72, current: { startSeconds: 10, endSeconds: 20 }, wantEndSeconds: 70 });
+      expect(range.endSeconds).toBe(40);
+      expect(trimLengthSeconds(range)).toBe(30);
+    });
+
+    it("動画の終わりより後ろへは行かない", () => {
+      const range = moveEnd({ durationSeconds: 25, current: { startSeconds: 10, endSeconds: 20 }, wantEndSeconds: 99 });
+      expect(range.endSeconds).toBe(25);
+    });
+  });
+
+  describe("真ん中を掴んで動かす", () => {
+    it("**長さを変えずに**動く（寄せたぶんは終わりも動く）", () => {
+      const range = moveWindow({ keyframeTimes: everyTwo, durationSeconds: 72, current: { startSeconds: 10, endSeconds: 25 }, wantStartSeconds: 31.2 });
+      expect(range.startSeconds).toBe(32);
+      expect(trimLengthSeconds(range)).toBe(15);
+    });
+
+    it("右端に当たったら止まる（長さは保つ）", () => {
+      const range = moveWindow({ keyframeTimes: everyTwo, durationSeconds: 50, current: { startSeconds: 0, endSeconds: 20 }, wantStartSeconds: 48 });
+      expect(range.endSeconds).toBeLessThanOrEqual(50);
+      expect(trimLengthSeconds(range)).toBe(20);
+    });
+
+    it("左端に当たったら止まる", () => {
+      expect(moveWindow({ keyframeTimes: everyTwo, durationSeconds: 50, current: { startSeconds: 10, endSeconds: 20 }, wantStartSeconds: -5 })).toEqual({
+        startSeconds: 0,
+        endSeconds: 10,
+      });
+    });
+  });
+
+  describe("どこを触っても壊れない", () => {
+    /*
+     * 【初心者向け】つまみは指で動かすので、**ありえない値**が入ってきます
+     * （画面の外・負の数・動画より後ろ）。1 つずつ試すときりがないので、
+     * 100 通り試して「長さは 1〜30 秒、範囲は動画の中」だけを見張ります。
+     */
+    it("長さは 1〜30 秒、範囲は動画の中に収まる", () => {
+      let range = { startSeconds: 0, endSeconds: 30 };
+      const durationSeconds = 72;
+      for (let i = 0; i < 100; i++) {
+        const want = ((i * 37) % 160) - 40;
+        range = i % 3 === 0
+          ? moveStart({ keyframeTimes: everyTwo, durationSeconds, current: range, wantStartSeconds: want })
+          : i % 3 === 1
+            ? moveEnd({ durationSeconds, current: range, wantEndSeconds: want })
+            : moveWindow({ keyframeTimes: everyTwo, durationSeconds, current: range, wantStartSeconds: want });
+        expect(range.startSeconds).toBeGreaterThanOrEqual(0);
+        expect(range.endSeconds).toBeLessThanOrEqual(durationSeconds);
+        expect(trimLengthSeconds(range)).toBeGreaterThanOrEqual(MIN_TRIM_SECONDS - 0.0001);
+        expect(trimLengthSeconds(range)).toBeLessThanOrEqual(30.0001);
+      }
+    });
   });
 });
