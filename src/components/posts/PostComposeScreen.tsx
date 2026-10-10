@@ -442,6 +442,7 @@ export function PostComposeScreen({
             <PostFormFields
               values={values}
               onChange={updateValues}
+              videoUploadDisabled={videoUploadDisabled}
               /*
                 * #794: 既存のスポットに投稿するときだけ「おすすめ」を 1 つ出す。
                 *

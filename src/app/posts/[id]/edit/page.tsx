@@ -4,6 +4,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { requireUserOrRedirect } from "@/lib/auth/require-user-or-redirect";
 import { buildComposeInitialState } from "@/lib/posts/compose-initial-state";
 import { loadExistingPostForCompose } from "@/lib/posts/load-compose-data";
+import { isVideoUploadDisabled } from "@/lib/video/process-video";
 import { PostComposeScreen } from "@/components/posts/PostComposeScreen";
 
 // #785: ブラウザのタブ名（「投稿を編集 | タビコエ」）
@@ -32,5 +33,5 @@ export default async function EditPostPage({
   // 下書きは /posts/new?draft= で開く（「続きを書く」）
   if (existing.status === "draft") notFound();
 
-  return <PostComposeScreen initial={buildComposeInitialState({})} existing={existing} />;
+  return <PostComposeScreen videoUploadDisabled={isVideoUploadDisabled()} initial={buildComposeInitialState({})} existing={existing} />;
 }

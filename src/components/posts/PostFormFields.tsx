@@ -97,6 +97,7 @@ function StarRating({
 export function PostFormFields({
   values,
   onChange,
+  videoUploadDisabled = true,
   spotField,
   mediaItems,
   onRemoveMedia,
@@ -114,6 +115,11 @@ export function PostFormFields({
    * `lib/posts/suggested-category.ts` が済ませてあるので、ここは**あれば出す**だけ。
    */
   suggestedCategory?: PostCategory | null;
+  /**
+   * #861: 動画の受付を止めているか。止めている間は「写真」とだけ書き、
+   * ファイル選択からも動画を外す（出せないものを書かない）。
+   */
+  videoUploadDisabled?: boolean;
   /** スポット名欄（SpotField）。親が地図の状態と合わせて渡す */
   spotField: React.ReactNode;
   mediaItems: SelectedMedia[];
@@ -264,32 +270,30 @@ export function PostFormFields({
       {/*
         * 写真: 選んだその場にサムネイル。
         *
-        * 2026-10-07: 「写真・動画」→「写真」にした（#861）。
-        *
-        * 【初心者向け】動画は作ってありますが**止めてあります**（`VIDEO_UPLOAD_DISABLED=1`）。
-        * 「動画」と書いてあると、選べると思って動画を選び、投稿のところで初めて断られます。
-        * **いま出せないものは書かない**ほうが親切なので、受け付ける種類（`accept`）からも外しました。
-        * 動画を有効にするときに、ここの言葉と `accept` を一緒に戻します（手順は #861）。
+        * 2026-10-07: 「写真・動画」→「写真」にした（#861）。出せないものを書くと、
+        *   選べると思って動画を選び、投稿のところで初めて断られていたため。
+        * **2026-10-10: 戻した（#861）。** ブラウザ側の切り取り（#916）まで入ったので、受け付けを開ける。
+        *   `videoUploadDisabled` が true のときは、選んだ時点で `decideMedia` が断る。
         */}
       <div className="flex flex-col gap-1.5">
-        <span className="text-[0.75rem] font-medium text-muted">写真 *</span>
+        <span className="text-[0.75rem] font-medium text-muted">{videoUploadDisabled ? "写真 *" : "写真・動画 *"}</span>
         <SelectedMediaThumbnails
           items={mediaItems}
           onRemove={onRemoveMedia}
           removingKey={removingMediaKey}
           onAdd={onAddMedia}
-          addLabel="写真を追加"
+          addLabel={videoUploadDisabled ? "写真を追加" : "写真・動画を追加"}
         />
         <input
           ref={fileInputRef}
           type="file"
-          accept="image/jpeg,image/png"
+          accept={videoUploadDisabled ? "image/jpeg,image/png" : "image/jpeg,image/png,video/mp4,video/quicktime,.mov"}
           multiple
           onChange={onFilesSelected}
-          aria-label="写真を選択"
+          aria-label={videoUploadDisabled ? "写真を選択" : "写真・動画を選択"}
           className="sr-only"
         />
-        <UploadNotice compact />
+        <UploadNotice compact videoEnabled={!videoUploadDisabled} />
       </div>
 
       {/* 感想（2 行から伸びる）と公開設定（ラベル行の右端） */}
