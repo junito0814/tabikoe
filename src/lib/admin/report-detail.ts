@@ -39,7 +39,7 @@ export async function getReportDetail(admin: SupabaseClient, reportId: string): 
   const { data, error } = await admin
     .from("reports")
     .select(
-      "id, reporter_id, target_type, target_id, reason, detail, status, created_at, resolved_by, resolved_at, resolution_note"
+      "id, reporter_id, target_type, target_id, reason, detail, status, created_at, resolved_by, resolved_at, resolution_note, jev_urgency, jev_reason, jev_confidence"
     )
     .eq("id", reportId)
     .maybeSingle();
@@ -53,6 +53,15 @@ export async function getReportDetail(admin: SupabaseClient, reportId: string): 
     reporterId: data.reporter_id,
     targetType: data.target_type,
     targetId: data.target_id,
+    // #892: 詳細でも同じ見立てを使えるようにしておく（画面に出すかは別の判断）
+    jev:
+      data.jev_urgency === null && data.jev_reason === null
+        ? null
+        : {
+            urgency: data.jev_urgency === null ? null : Number(data.jev_urgency),
+            reason: (data.jev_reason as string | null) ?? null,
+            confidence: data.jev_confidence === null ? null : Number(data.jev_confidence),
+          },
     reason: data.reason,
     detail: data.detail,
     status: data.status,

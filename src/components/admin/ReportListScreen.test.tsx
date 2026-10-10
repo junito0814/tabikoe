@@ -44,18 +44,25 @@ describe("ReportListScreen（SC-18 一覧）", () => {
     });
   });
 
-  it("各行は通報詳細へのリンク", () => {
+  it("各行から通報詳細へ開ける", () => {
     render(
       <ReportListScreen
         initialPage={{
           reports: [
-            { id: "r1", targetType: "post", targetId: "p1", reason: "spam", detail: null, status: "unconfirmed", createdAt: "2026-09-14T00:00:00Z", resolvedAt: null, resolutionNote: null },
+            { id: "r1", targetType: "post", targetId: "p1", reason: "spam", detail: null, status: "unconfirmed", createdAt: "2026-09-14T00:00:00Z", resolvedAt: null, resolutionNote: null, jev: null },
           ],
           nextOffset: null,
         }}
         fetchReports={vi.fn()}
       />
     );
-    expect(document.querySelector("[data-report='r1']")).toHaveAttribute("href", "/admin/reports/r1");
+    /*
+     * #892（決定事項 89・2026-10-11）: カードから**表**に戻した。
+     * 以前は行そのものがリンクだったが、表では**行の中の「開く」**がリンクになる
+     * （`<tr>` を `<a>` で包めないため）。
+     */
+    const row = document.querySelector("[data-report='r1']");
+    expect(row).not.toBeNull();
+    expect(row!.querySelector("a")).toHaveAttribute("href", "/admin/reports/r1");
   });
 });

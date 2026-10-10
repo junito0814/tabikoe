@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useMemo, useState, type FormEvent } from "react";
 import Link from "next/link";
 import { ErrorNotice } from "@/components/notices/ErrorNotice";
 import { ERROR_MESSAGES } from "@/components/notices/error-messages";
@@ -20,6 +20,18 @@ import {
 } from "@/lib/admin/report-filters";
 import { buildReportListParams, EMPTY_REPORT_LIST_STATE, type ReportListState } from "./report-list-query";
 import { formatDateTime } from "@/lib/format/date-time";
+import { differsFromReporter, formatUrgency, shouldShowReason, urgencyLevel, type UrgencyLevel } from "@/lib/jev/triage-report";
+import { oldestOpenDays } from "@/lib/jev/triage-report";
+
+/** 「未対応」とみなす状態（要件 3.8.1） */
+const OPEN_STATUSES: string[] = ["unconfirmed", "in_review"];
+
+/** 緊急度の札の色。赤（すぐ）・橙（早め）・灰（急がない） */
+function urgencyChip(level: UrgencyLevel): string {
+  if (level === "high") return "bg-saved text-white";
+  if (level === "mid") return "bg-star text-ink";
+  return "bg-tint text-muted";
+}
 
 export type FetchReports = (params: URLSearchParams) => Promise<{ reports: ReportListItem[]; nextOffset: number | null }>;
 
@@ -50,6 +62,18 @@ export function ReportListScreen({
   const [nextOffset, setNextOffset] = useState(initialPage.nextOffset);
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  /*
+   * #892: いちばん古い「未対応」が何日前か。
+   *
+   * 【初心者向け】いま画面に出ている通報だけを見ます。**全件を数えません**。
+   * 1 ページ目の末尾より古いものはまだ取っていませんが、
+   * 「古いものがある」と気づかせるにはこれで足ります（数えるために全件を引くのは重い）。
+   */
+  const oldestDays = useMemo(
+    () => oldestOpenDays(reports.filter((r) => OPEN_STATUSES.includes(r.status)).map((r) => r.createdAt), new Date()),
+    [reports]
+  );
 
   // replace=true は 1 ページ目から入れ替え、false は末尾に継ぎ足す（もっと見る）
   const load = async (state: ReportListState, offset: number, replace: boolean) => {
@@ -121,6 +145,19 @@ export function ReportListScreen({
             通報日（まで）
             <input type="date" value={draft.to} onChange={(e) => setDraft({ ...draft, to: e.target.value })} className={`${selectClass} mt-0.5 block`} />
           </label>
+          {/* #892（決定事項 89）: 既定は Jev の緊急度が高い順。古い順も残す */}
+          <label className="text-[0.6875rem] text-muted">
+            並び
+            <select
+              value={draft.sort ?? "urgency"}
+              onChange={(e) => setDraft({ ...draft, sort: e.target.value as ReportListState["sort"] })}
+              className={`${selectClass} mt-0.5 block`}
+            >
+              <option value="urgency">緊急度が高い順</option>
+              <option value="newest">新しい順</option>
+              <option value="oldest">古い順</option>
+            </select>
+          </label>
           <button type="submit" disabled={isLoading} className="h-9 rounded-[8px] bg-ink px-4 text-[0.75rem] font-semibold text-on-ink disabled:opacity-45">
             絞り込む
           </button>
@@ -131,28 +168,101 @@ export function ReportListScreen({
 
         {errorMessage && <ErrorNotice message={errorMessage} onRetry={() => void load(applied, 0, true)} />}
 
+        {/*
+          * #892（決定事項 89・2026-10-11）: 古い通報が埋もれないように。
+          *
+          * 【初心者向け】並びを「緊急度が高い順」にしたので、**古いものが後ろに回ります**。
+          * もとの「古い順」には「放置しない」という目的があったので、その目的だけをここで守ります。
+          */}
+        {oldestDays !== null && oldestDays >= 1 && applied.sort !== "oldest" && (
+          <p className="flex flex-wrap items-center gap-2 rounded-[10px] border border-accent bg-tint px-3 py-2 text-[0.75rem] text-ink">
+            <span>
+              最も古い未対応は <b className="font-bold">{oldestDays} 日前</b>です
+            </span>
+            <button
+              type="button"
+              onClick={() => {
+                const next = { ...applied, sort: "oldest" as const };
+                setDraft(next);
+                setApplied(next);
+                void load(next, 0, true);
+              }}
+              className="font-semibold text-accent underline underline-offset-2"
+            >
+              古い順で見る
+            </button>
+          </p>
+        )}
+
         {reports.length === 0 && !isLoading ? (
           <p className="py-12 text-center text-[0.8125rem] text-muted">該当する通報はありません</p>
         ) : (
-          <ul className="flex flex-col gap-2">
-            {reports.map((report) => (
-              <li key={report.id}>
-                <Link
-                  href={`/admin/reports/${report.id}`}
-                  className="flex flex-col gap-1 rounded-[12px] border border-line bg-surface p-3 text-[0.75rem]"
-                  data-report={report.id}
-                >
-                  <span className="flex flex-wrap items-center gap-2">
-                    <span className="rounded-full bg-tint px-2 py-0.5 font-semibold text-accent">{REPORT_STATUS_LABELS[report.status]}</span>
-                    <span className="font-semibold text-ink">{REPORT_TARGET_LABELS[report.targetType]}</span>
-                    <span className="text-ink">{REPORT_REASON_LABELS[report.reason]}</span>
-                    <span className="ml-auto text-[0.6875rem] text-muted">{formatDateTime(report.createdAt)}</span>
-                  </span>
-                  {report.detail && <span className="line-clamp-2 text-muted">{report.detail}</span>}
-                </Link>
-              </li>
-            ))}
-          </ul>
+          /*
+           * #892: カードから**表**に戻した。
+           *
+           * 【初心者向け】ワイヤーフレームも管理画面のキャンバスも、SC-18 は**最初から表**でした。
+           * カードで実装されていたほうがズレていたので、この機会に戻しています。
+           * 表のほうが、**通報理由と Jev の見立てが隣どうしに並ぶ**ので、食い違いが一目で分かります。
+           */
+          <div className="overflow-x-auto rounded-[12px] border border-line bg-surface">
+            <table className="w-full min-w-[720px] border-collapse text-[0.75rem]">
+              <thead>
+                <tr className="border-b border-line text-left text-[0.6875rem] text-muted">
+                  <th className="px-3 py-2 font-medium">緊急度</th>
+                  <th className="px-3 py-2 font-medium">状態</th>
+                  <th className="px-3 py-2 font-medium">対象</th>
+                  <th className="px-3 py-2 font-medium">通報理由</th>
+                  <th className="px-3 py-2 font-medium">Jev の見立て</th>
+                  <th className="px-3 py-2 font-medium">通報者のメモ</th>
+                  <th className="px-3 py-2 font-medium">通報日</th>
+                  <th className="px-3 py-2 font-medium" />
+                </tr>
+              </thead>
+              <tbody>
+                {reports.map((report) => {
+                  const show = report.jev !== null && shouldShowReason(report.jev);
+                  const differs = report.jev !== null && differsFromReporter(report.reason, report.jev);
+                  const urgency = report.jev?.urgency ?? null;
+                  return (
+                    <tr key={report.id} className="border-b border-line last:border-0" data-report={report.id}>
+                      <td className="px-3 py-2.5">
+                        {urgency === null ? (
+                          <span className="text-muted">―</span>
+                        ) : (
+                          <span className={`rounded-full px-2 py-0.5 font-bold tabular-nums ${urgencyChip(urgencyLevel(urgency))}`}>
+                            {formatUrgency(urgency)}
+                          </span>
+                        )}
+                      </td>
+                      <td className="px-3 py-2.5">
+                        <span className="whitespace-nowrap rounded-full bg-tint px-2 py-0.5 font-semibold text-accent">{REPORT_STATUS_LABELS[report.status]}</span>
+                      </td>
+                      <td className="whitespace-nowrap px-3 py-2.5 font-semibold text-ink">{REPORT_TARGET_LABELS[report.targetType]}</td>
+                      <td className="whitespace-nowrap px-3 py-2.5 text-ink">{REPORT_REASON_LABELS[report.reason]}</td>
+                      <td className="whitespace-nowrap px-3 py-2.5">
+                        {show && report.jev?.reason ? (
+                          <span className={differs ? "font-bold text-ink" : "text-muted"}>
+                            {REPORT_REASON_LABELS[report.jev.reason as ReportReason]}
+                          </span>
+                        ) : (
+                          <span className="text-muted">―</span>
+                        )}
+                      </td>
+                      <td className="max-w-[240px] px-3 py-2.5">
+                        <span className="line-clamp-1 text-muted">{report.detail ?? "―"}</span>
+                      </td>
+                      <td className="whitespace-nowrap px-3 py-2.5 text-[0.6875rem] text-muted">{formatDateTime(report.createdAt)}</td>
+                      <td className="whitespace-nowrap px-3 py-2.5 text-right">
+                        <Link href={`/admin/reports/${report.id}`} className="font-semibold text-accent underline underline-offset-2">
+                          開く
+                        </Link>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
         )}
 
         {nextOffset !== null && (

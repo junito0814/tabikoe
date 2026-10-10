@@ -21,6 +21,7 @@ const report: ReportDetail = {
   resolvedBy: null,
   resolvedAt: null,
   resolutionNote: null,
+  jev: null,
   target: { exists: true, summary: "コメント", text: "買ってください", imageUrls: [], ownerId: "bad", hidden: false, href: "/posts/p1" },
 };
 
