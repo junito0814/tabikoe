@@ -55,8 +55,12 @@ export function VideoTrimSheet({
    * 2 本以上なら見出しに「あと N 本」と出す ── 終わったと思って閉じられるのを防ぐ。
    */
   remaining?: number;
-  /** 切り取れた。このファイルを添付する */
-  onTrimmed: (trimmed: File) => void;
+  /**
+   * 切り取れた。このファイルを添付する。
+   * #927: 長さも一緒に渡す ── 投稿画面が「切り取る（いまは 0:18）」を出すのに要るのに、
+   * 測り直すと同じファイルをもう一度読むことになる（`checkTrimmedOutput` で測った値をそのまま渡す）。
+   */
+  onTrimmed: (trimmed: File, durationSeconds: number) => void;
   /** 切り取れなかった。受け取った文を投稿画面に出して、この動画は受け付けない */
   onGiveUp: (message: string) => void;
   /** 「×」や背景で閉じた（何も添付しない） */
@@ -207,7 +211,7 @@ export function VideoTrimSheet({
         onGiveUp(trimFailureMessage(checked.reason, trimmed.size));
         return;
       }
-      onTrimmed(trimmed);
+      onTrimmed(trimmed, checked.durationSeconds);
     } catch (error) {
       if (error instanceof TrimError && error.code === "cancelled") {
         setPhase({ kind: "ready" });
@@ -312,7 +316,19 @@ export function VideoTrimSheet({
             <p className="text-center text-[0.875rem] font-semibold text-ink">
               {formatSeconds(range.startSeconds)} 〜 {formatSeconds(range.endSeconds)} を切り取ります
             </p>
-            <p className="text-center text-[0.75rem] text-muted">帯を動かすと始まりの位置が変わります。長さは {TRIM_WINDOW_SECONDS} 秒です</p>
+            {/*
+              * #927（2026-10-11）: 文を 2 通りにした。
+              *
+              * モーダルから「切り取る」を押せるようになったので、**30 秒より短い動画でも
+              * このシートが開きます**。そのときは帯が全体を覆って動かないので、
+              * 「帯を動かすと…長さは 30 秒です」は嘘になります。
+              * 長さを自分で決められるようにするのは #928。
+              */}
+            <p className="text-center text-[0.75rem] text-muted">
+              {loaded && maxStartSeconds(loaded.durationSeconds) > 0
+                ? `帯を動かすと始まりの位置が変わります。長さは ${TRIM_WINDOW_SECONDS} 秒です`
+                : `この動画は ${TRIM_WINDOW_SECONDS} 秒より短いので、全体がそのまま入ります`}
+            </p>
           </>
         )}
       </div>
