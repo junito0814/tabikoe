@@ -41,7 +41,11 @@ export interface ReportFilters {
   /** 特定の対象への通報だけ（ダッシュボードの「通報が集中している対象」から） */
   targetId: string | null;
   /** 並び。既定は新しい順。"oldest" は古い順（未対応を溜めないため、ダッシュボードから来たとき） */
-  sort: "newest" | "oldest";
+  /**
+   * #892（2026-10-11・決定事項 89）: 既定は **urgency**（Jev の緊急度が高い順）。
+   * 「古い通報を放置しない」という oldest の目的は、一覧の上の 1 行で守る。
+   */
+  sort: "urgency" | "newest" | "oldest";
   reason: ReportReason | null;
   targetType: ReportTargetType | null;
   /** 通報日時の範囲（ISO 8601）。from は含む、to は翌日0時未満で扱うため呼び出し側で丸めない */
@@ -62,7 +66,7 @@ export function parseReportFilters(searchParams: URLSearchParams): ReportFilters
   return {
     status: status === "open" ? "open" : (REPORT_STATUSES as readonly string[]).includes(status) ? (status as ReportStatus) : null,
     targetId: /^[0-9a-f-]{36}$/i.test(targetId) ? targetId : null,
-    sort: searchParams.get("sort") === "oldest" ? "oldest" : "newest",
+    sort: parseSort(searchParams.get("sort")),
     reason: (REPORT_REASONS as readonly string[]).includes(reason) ? (reason as ReportReason) : null,
     targetType: (REPORT_TARGET_TYPES as readonly string[]).includes(targetType)
       ? (targetType as ReportTargetType)
@@ -94,6 +98,12 @@ export function buildReportWhereClauses(filters: ReportFilters): WhereClause[] {
   return clauses;
 }
 
+/** URL のクエリ → 並び順。知らない値は既定に倒す（純粋関数。約束 13） */
+export function parseSort(value: string | null): ReportFilters["sort"] {
+  if (value === "oldest" || value === "newest" || value === "urgency") return value;
+  return "urgency";
+}
+
 export interface ReportListItem {
   id: string;
   targetType: ReportTargetType;
@@ -104,6 +114,8 @@ export interface ReportListItem {
   createdAt: string;
   resolvedAt: string | null;
   resolutionNote: string | null;
+  /** #892: Jev の見立て。呼べなかった通報は null のまま（画面では「―」） */
+  jev: { urgency: number | null; reason: string | null; confidence: number | null } | null;
 }
 
 export async function listReports(
@@ -114,11 +126,21 @@ export async function listReports(
 ): Promise<{ reports: ReportListItem[]; nextOffset: number | null }> {
   let query = admin
     .from("reports")
-    .select("id, target_type, target_id, reason, detail, status, created_at, resolved_at, resolution_note", {
-      count: "exact",
-    })
-    .order("created_at", { ascending: filters.sort === "oldest" })
+    .select(
+      "id, target_type, target_id, reason, detail, status, created_at, resolved_at, resolution_note, jev_urgency, jev_reason, jev_confidence",
+      { count: "exact" }
+    )
     .range(offset, offset + limit - 1);
+
+  /*
+   * #892: 緊急度が高い順。**判定できなかった通報を先頭に出さない**ため nullsFirst: false。
+   * 緊急度が同じ（または両方 null）のときは、新しい順で並べる。
+   */
+  if (filters.sort === "urgency") {
+    query = query.order("jev_urgency", { ascending: false, nullsFirst: false }).order("created_at", { ascending: false });
+  } else {
+    query = query.order("created_at", { ascending: filters.sort === "oldest" });
+  }
 
   for (const clause of buildReportWhereClauses(filters)) {
     if (clause.op === "eq") query = query.eq(clause.column, clause.value);
@@ -138,6 +160,14 @@ export async function listReports(
     detail: row.detail as string | null,
     status: row.status as ReportStatus,
     createdAt: row.created_at as string,
+    jev:
+      row.jev_urgency === null && row.jev_reason === null
+        ? null
+        : {
+            urgency: row.jev_urgency === null ? null : Number(row.jev_urgency),
+            reason: (row.jev_reason as string | null) ?? null,
+            confidence: row.jev_confidence === null ? null : Number(row.jev_confidence),
+          },
     resolvedAt: row.resolved_at as string | null,
     resolutionNote: row.resolution_note as string | null,
   }));

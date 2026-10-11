@@ -9,6 +9,7 @@ import { notifyAdmins } from "@/lib/notifications/notify-admins";
 import { evaluateAutoHide } from "@/lib/moderation/auto-hide";
 import { validateReportInput } from "@/lib/reports/validate-report-input";
 import { findReportTarget } from "@/lib/reports/find-report-target";
+import { evaluateReport } from "@/lib/jev/evaluate-report";
 import {
   REPORT_RATE_LIMIT_MAX_ATTEMPTS,
   REPORT_RATE_LIMIT_WINDOW_SECONDS,
@@ -110,6 +111,35 @@ export async function POST(request: Request) {
 
   // admin-shell-dashboard Task 4（要件 3.9.1）: 管理者全員に「新しい通報」を知らせる（通報者が管理者なら本人には送らない）
   await notifyAdmins(admin, { type: "admin_report", relatedId: report.id, actorId: user.id });
+
+  /*
+   * #892（要件 6.8・2026-10-11）: Jev に見立ててもらい、結果を通報に保存する。
+   *
+   * 【初心者向け】なぜここで呼ぶのか。
+   *   一覧を開くたびに呼ぶと **1 画面で 20 回**になります。それに「緊急度が高い順に並べる」は
+   *   **保存した値が無いと並べ替えられません**。だから作られた瞬間に 1 回だけ呼びます。
+   *
+   * **送るのは理由のメモだけ**（個人情報保護方針 7.1）。失敗しても通報の受付は成功にする。
+   */
+  try {
+    const triage = await evaluateReport(detail);
+    if (triage) {
+      const { error } = await admin
+        .from("reports")
+        .update({
+          jev_urgency: triage.urgency,
+          jev_reason: triage.reason,
+          jev_confidence: triage.confidence,
+          jev_model: triage.model,
+          jev_evaluated_at: new Date().toISOString(),
+        })
+        .eq("id", report.id);
+      if (error) console.error("[reports] Jev の見立てを保存できませんでした:", error.message);
+    }
+  } catch (error) {
+    unstable_rethrow(error);
+    console.error("[reports] Jev の見立てに失敗しました:", error instanceof Error ? error.message : error);
+  }
 
   // strike-system Task 3（要件 3.10.8）: 異なる通報者 3 人で自動的に非公開（確認待ち）。失敗しても通報の受付は成功にする
   try {
