@@ -68,7 +68,8 @@ const outside = () => screen.getAllByRole("button", { name: /を外す$/ });
  * 範囲の数字は読み込みが済んでから出るので、そちらを待ちます。
  */
 async function applyRange() {
-  await screen.findByText(/を切り取ります/);
+  // #928: つまみが出たら、帯は使える（文字は「0:00 〜 0:30」と長さに分かれた）
+  await screen.findByRole("slider", { name: "切り取りの始まり" });
   fireEvent.click(screen.getByRole("button", { name: "この範囲にする" }));
 }
 

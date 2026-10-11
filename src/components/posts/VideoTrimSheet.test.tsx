@@ -48,37 +48,73 @@ function setup(overrides: Partial<React.ComponentProps<typeof VideoTrimSheet>> =
   return { onTrimmed, onGiveUp, onClose, trimmed };
 }
 
-const band = () => screen.getByRole("slider", { name: "切り取りを始める位置" });
+/** #928: つまみは 2 つになった（始まり・終わり） */
+const startHandle = () => screen.getByRole("slider", { name: "切り取りの始まり" });
+const endHandle = () => screen.getByRole("slider", { name: "切り取りの終わり" });
+const ready = () => screen.findByRole("slider", { name: "切り取りの始まり" });
 
 describe("切り取りの画面（要件 4.5.17）", () => {
-  it("選んでいる範囲を数字で出す", async () => {
+  it("選んでいる範囲と**長さ**を数字で出す（#928）", async () => {
     setup();
-    expect(await screen.findByText("0:00 〜 0:30 を切り取ります")).toBeTruthy();
-    // 長さが 30 秒で固定であることを伝える
-    expect(screen.getByText(/長さは 30 秒です/)).toBeTruthy();
+    await ready();
+    expect(screen.getByText("0:00 〜 0:30")).toBeTruthy();
+    expect(screen.getByText("30 秒")).toBeTruthy();
+    expect(screen.getByText(/両端のつまみで長さを決められます/)).toBeTruthy();
   });
 
-  it("帯を動かすと始まりが変わり、終わりは自動で決まる", async () => {
+  it("始まりのつまみを動かすと、終わりは動かない（#928: 長さが変わる）", async () => {
     setup();
-    await screen.findByText("0:00 〜 0:30 を切り取ります");
+    await ready();
     // 指で動かせない人のために矢印キーでも動く
-    fireEvent.keyDown(band(), { key: "ArrowRight" });
-    expect(await screen.findByText("0:02 〜 0:32 を切り取ります")).toBeTruthy();
+    fireEvent.keyDown(startHandle(), { key: "ArrowRight" });
+    expect(await screen.findByText("0:02 〜 0:30")).toBeTruthy();
+    expect(screen.getByText("28 秒")).toBeTruthy();
   });
 
-  it("右端より後ろへは行かない（30 秒ぶん残す）", async () => {
+  it("終わりのつまみを動かすと、長さが縮む（#928）", async () => {
     setup();
-    await screen.findByText("0:00 〜 0:30 を切り取ります");
-    for (let i = 0; i < 20; i++) fireEvent.keyDown(band(), { key: "ArrowRight" });
-    // 40 秒の動画なので、始まりは 0:10 で止まる
-    expect(await screen.findByText("0:10 〜 0:40 を切り取ります")).toBeTruthy();
+    await ready();
+    for (let i = 0; i < 5; i++) fireEvent.keyDown(endHandle(), { key: "ArrowLeft" });
+    expect(await screen.findByText("0:00 〜 0:25")).toBeTruthy();
+    expect(screen.getByText("25 秒")).toBeTruthy();
   });
 
-  it("読み上げでも範囲が分かる", async () => {
+  it("**長さが 1 秒より短くならない**（再生できないものを作らない）", async () => {
     setup();
-    await screen.findByText("0:00 〜 0:30 を切り取ります");
-    expect(band().getAttribute("aria-valuetext")).toBe("0:00 から 0:30 まで");
-    expect(band().getAttribute("aria-valuemax")).toBe("10");
+    await ready();
+    for (let i = 0; i < 60; i++) fireEvent.keyDown(endHandle(), { key: "ArrowLeft" });
+    expect(await screen.findByText("1 秒")).toBeTruthy();
+    expect(screen.getByText("0:00 〜 0:01")).toBeTruthy();
+  });
+
+  it("**長さが 30 秒を超えない**（超えるとサーバーが断る）", async () => {
+    setup();
+    await ready();
+    for (let i = 0; i < 60; i++) fireEvent.keyDown(endHandle(), { key: "ArrowRight" });
+    expect(await screen.findByText("30 秒")).toBeTruthy();
+    expect(screen.getByText("0:00 〜 0:30")).toBeTruthy();
+  });
+
+  it("始まりは動画の終わり際で止まる（40 秒の動画）", async () => {
+    setup();
+    await ready();
+    for (let i = 0; i < 40; i++) fireEvent.keyDown(startHandle(), { key: "ArrowRight" });
+    // 終わり（0:30）の 1 秒前まで。キーフレームは 2 秒ごとなので 0:28
+    expect(await screen.findByText("0:28 〜 0:30")).toBeTruthy();
+  });
+
+  it("読み上げでも**両端と長さ**が分かる（#928）", async () => {
+    setup();
+    await ready();
+    expect(startHandle().getAttribute("aria-valuetext")).toBe("0:00 から 0:30 まで、30 秒");
+    expect(endHandle().getAttribute("aria-valuetext")).toBe("0:00 から 0:30 まで、30 秒");
+  });
+
+  it("コマ画像の場所を先に空けておく（絵は後から埋まる。#928）", async () => {
+    setup();
+    await ready();
+    // 絵が出来ていないところは「待ち」の印が付いている（灰色のまま帯は動かせる）
+    expect(document.querySelectorAll("[data-frame]").length).toBeGreaterThan(0);
   });
 
   it("「この範囲にする」で切り取り、できたファイルを渡す", async () => {
