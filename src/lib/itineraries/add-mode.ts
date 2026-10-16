@@ -12,11 +12,12 @@ import { parseAddModeParams, type AddModeInfo } from "@/components/posts/AddMode
  */
 export async function loadAddMode(
   admin: SupabaseClient,
-  userId: string,
+  /** #951: 未ログイン（共有リンク）は null。追加モードはしおりのメンバーだけの機能なので、必ず null を返す */
+  userId: string | null,
   params: { itinerary?: string; day?: string }
 ): Promise<AddModeInfo | null> {
   const info = parseAddModeParams(params.itinerary ?? null, params.day ?? null);
-  if (!info) return null;
+  if (!info || userId === null) return null;
   const { data: membership } = await admin
     .from("itinerary_members")
     .select("itinerary_id, itineraries(trips(title))")

@@ -1,7 +1,8 @@
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { requireUserOrRedirect } from "@/lib/auth/require-user-or-redirect";
+import { getAuthUserFromClaims } from "@/lib/auth/auth-user";
+import { GuestBand } from "@/components/layout/GuestBand";
 import { ErrorNotice } from "@/components/notices/ErrorNotice";
 import { ERROR_MESSAGES } from "@/components/notices/error-messages";
 import { PostDetailScreen } from "@/components/posts/PostDetailScreen";
@@ -13,21 +14,28 @@ import { getPostDetail, type PostDetailData } from "@/lib/posts/post-detail";
 import { listComments, type CommentPage } from "@/lib/comments/list-comments";
 import { ContentEnter } from "@/components/transitions/Reveal";
 import { postTitle } from "@/lib/metadata/page-title";
+import { countPublicSpotPosts } from "@/lib/spots/count-public-spot-posts";
 
 /**
  * SC-05 投稿詳細画面
  * 出典: docs/tasks/browsing/post-detail-view/02-post-detail-ui.md
  *       docs/tasks/browsing/post-detail-view/03-login-redirect-return-flow.md
  *
- * ログイン必須（3.5.4）。未ログインなら requireUserOrRedirect がログイン画面へ送り、
- * ログイン後に redirect_to でこの投稿へ戻す（F-AC-02 Task3 / F-AC-01 コールバックと共通の仕組み）。
- * 非公開投稿は投稿者本人・アルバムメンバー以外には 404（存在しない扱い）。
+ * #951（2026-10-17）: ~~ログイン必須~~ → **ログインせずに開ける**ようにした（要件 3.5.4）。
+ * 共有されたリンクを受け取った人が、ログイン画面に突き当たって中身を一切見られない状態を避けるため。
+ * 中身は同じで、違うのは 5 つ ── メニューバー（`shouldShowMenuBar`）・「戻る」・「⋯」を出さず、
+ * 投稿者名をリンクにせず、下に帯（`GuestBand`）を 1 本置く。コメントは**読める**。
+ *
+ * 非公開投稿は投稿者本人・アルバムメンバー以外には 404（存在しない扱い）。この判定（`canViewPost`）は
+ * 今までどおりなので、**未ログインでは公開投稿しか開けない**（3.3.6 がそのまま効く）。
  */
 /** #785: タブ名は「〈スポット名〉の投稿」。下書き・非公開・削除では名前を出さない */
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const title = await postTitle(id);
-  return title ? { title } : {};
+  // #951: 検索エンジンには載せない（要件 4.5.18。理由は SC-04 と同じ）
+  const robots = { index: false } as const;
+  return title ? { title, robots } : { robots };
 }
 
 export default async function PostDetailPage({
@@ -43,7 +51,10 @@ export default async function PostDetailPage({
   const flashKey = resolveFlashKey(query);
   const newBadgeTypes = parseBadgeToastParam(query.badges);
   const supabase = await createClient();
-  const user = await requireUserOrRedirect(supabase, `/posts/${id}`);
+  // #951: ログインは必須ではない。未ログインなら user が null のまま進む
+  const user = await getAuthUserFromClaims(supabase);
+  const viewerId = user?.id ?? null;
+  const isGuest = viewerId === null;
 
   const admin = createAdminClient();
   let post: PostDetailData | null = null;
@@ -51,9 +62,9 @@ export default async function PostDetailPage({
   // performance Task2: コメント 1 ページ目は待たずに Promise のまま画面へ渡し、本文の後から流し込む。
   // 失敗しても本文は出す（コメント欄は空。取り直しは画面側の「もっと見る」に任せる）
   const emptyComments: CommentPage = { comments: [], nextOffset: null, totalCount: 0 , viewerAvatarUrl: null};
-  const comments: Promise<CommentPage> = listComments(admin, user.id, id, 0).catch(() => emptyComments);
+  const comments: Promise<CommentPage> = listComments(admin, viewerId, id, 0).catch(() => emptyComments);
   try {
-    post = await getPostDetail(admin, user.id, id);
+    post = await getPostDetail(admin, viewerId, id);
   } catch {
     failed = true;
   }
@@ -70,11 +81,26 @@ export default async function PostDetailPage({
     notFound();
   }
 
+  /*
+   * #951: 未ログインのときだけ「この場所の投稿をすべて見る（N 件）」を出すので、その件数を数える。
+   * ログイン済みでは出さないので、そのときは数えない（問い合わせを増やさない）。
+   */
+  const spotPostCount = isGuest ? await countPublicSpotPosts(admin, post.spot.id) : null;
+
   return (
     <ContentEnter>
       <>
         {newBadgeTypes.length > 0 && <BadgeToast badgeTypes={newBadgeTypes} />}
-        <PostDetailScreen post={post} initialComments={comments} notice={flashKey ? <FlashNotice flashKey={flashKey} /> : undefined} back={resolveListBack(query.back)} />
+        <PostDetailScreen
+          post={post}
+          initialComments={comments}
+          notice={flashKey ? <FlashNotice flashKey={flashKey} /> : undefined}
+          back={resolveListBack(query.back)}
+          isGuest={isGuest}
+          spotPostCount={spotPostCount}
+        />
+        {/* #951: 未ログインはメニューバーの代わりにこの帯（要件 4.5.18） */}
+        {isGuest && <GuestBand returnTo={`/posts/${id}`} />}
       </>
     </ContentEnter>
   );

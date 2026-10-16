@@ -73,7 +73,7 @@ function authorOf(row: CommentRow): CommentData["author"] {
   };
 }
 
-export function toCommentData(row: CommentRow, viewerId: string, replyToName: string | null = null): CommentData {
+export function toCommentData(row: CommentRow, viewerId: string | null, replyToName: string | null = null): CommentData {
   const deleted = Boolean(row.deleted_at);
   return {
     id: row.id,
@@ -92,7 +92,7 @@ export function toCommentData(row: CommentRow, viewerId: string, replyToName: st
  * v3.2: 最上位の行と返信の行から、返信をぶら下げた一覧を組み立てる（純粋関数）。
  * 返信は root_id で親にまとめ、古い順に並べる。「@名前 への返信」は同じやり取りの中の行から名前を引く。
  */
-export function buildCommentTree(topRows: CommentRow[], replyRows: CommentRow[], viewerId: string): CommentData[] {
+export function buildCommentTree(topRows: CommentRow[], replyRows: CommentRow[], viewerId: string | null): CommentData[] {
   const nameOf = new Map<string, string>();
   for (const row of [...topRows, ...replyRows]) nameOf.set(row.id, row.deleted_at ? "削除されたコメント" : authorOf(row).displayName);
   const repliesByRoot = new Map<string, CommentRow[]>();
@@ -115,7 +115,8 @@ export function buildCommentTree(topRows: CommentRow[], replyRows: CommentRow[],
  */
 export function buildCommentPage(
   topRows: CommentRow[],
-  viewerId: string,
+  /** #951: 未ログイン（共有リンク）は null。自分のコメントが 1 つも無い扱いになる */
+  viewerId: string | null,
   offset: number,
   totalTopCount: number,
   totalCount: number,
@@ -136,7 +137,8 @@ const COMMENT_SELECT = "id, user_id, body, created_at, parent_id, root_id, delet
 /** 投稿のコメントを新着順に 1 ページ（最上位 20 件＋返信）返す。ブロック関係のユーザーのコメントは除く（3.8.2） */
 export async function listComments(
   admin: SupabaseClient,
-  viewerId: string,
+  /** #951: 未ログイン（共有リンク）は null。読めるが、自分のコメント・アイコンは無い */
+  viewerId: string | null,
   postId: string,
   offset: number,
   limit: number = COMMENTS_PAGE_SIZE
@@ -162,7 +164,8 @@ export async function listComments(
     topQuery,
     // 返信を含む総件数（削除済みの枠は数えない）
     excludeBlocked(admin.from("comments").select("id", { count: "exact", head: true }).eq("post_id", postId).is("hidden_at", null).is("deleted_at", null)),
-    admin.from("users").select("avatar_url").eq("id", viewerId).maybeSingle(),
+    // #951: 未ログインは入力欄そのものを出さないので、アイコンも要らない
+    viewerId === null ? Promise.resolve({ data: null }) : admin.from("users").select("avatar_url").eq("id", viewerId).maybeSingle(),
   ]);
   if (topResult.error) throw topResult.error;
   const topRows = (topResult.data ?? []) as unknown as CommentRow[];

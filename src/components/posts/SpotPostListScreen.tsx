@@ -54,6 +54,7 @@ export function SpotPostListScreen({
   fetchPage,
   back = null,
   official = null,
+  isGuest = false,
 }: {
   spot: SpotSummary;
   initialState: PostSearchState;
@@ -72,6 +73,8 @@ export function SpotPostListScreen({
    * そのまま置く「差し込み口」として受け取る。出すものが無ければ null が来る。
    */
   official?: React.ReactNode;
+  /** #951: 未ログイン（共有リンク）で見ているか（要件 4.5.18） */
+  isGuest?: boolean;
 }) {
   const context: SearchContext = {
     destination: { kind: "spot", spotId: spot.id },
@@ -162,6 +165,7 @@ export function SpotPostListScreen({
         backHref={back?.href ?? "/map"}
         backLabel={back?.label ?? "地図"}
         backParam={back?.href ?? null}
+        isGuest={isGuest}
         header={header}
         addMode={addMode}
         emptyMessage="まだ投稿がありません"

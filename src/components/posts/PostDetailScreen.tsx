@@ -45,6 +45,8 @@ export function PostDetailScreen({
   initialComments,
   notice,
   back = null,
+  isGuest = false,
+  spotPostCount = null,
 }: {
   post: PostDetailData;
   /** performance Task2: page.tsx は Promise のまま渡す（コメントは本文の後から流し込む）。テストでは値でもよい */
@@ -53,6 +55,10 @@ export function PostDetailScreen({
   notice?: React.ReactNode;
   /** Bug #469・#471: 一覧などから `?back=` で渡された戻り先（URL と画面名）。無ければそのスポットの一覧（「投稿一覧」） */
   back?: { href: string; label: string } | null;
+  /** #951: 未ログイン（共有リンク）で見ているか（要件 4.5.18） */
+  isGuest?: boolean;
+  /** #951: 未ログインのときだけ出す「この場所の投稿をすべて見る（N 件）」の N */
+  spotPostCount?: number | null;
 }) {
   // Bug #471: この画面の URL（back を含む）。ここから開く地図・スポット別一覧の戻り先にする
   const selfHref = appendBackHref(`/posts/${post.id}`, back?.href);
@@ -126,6 +132,8 @@ export function PostDetailScreen({
           {notice}
           {deleteError && <ErrorNotice message={deleteError} />}
           <header className="flex flex-col gap-2">
+            {/* #951: 未ログインは「戻る」も「⋯」も出さないので、この行ごと出さない */}
+            {!isGuest && (
             <div className="flex items-center gap-2">
               {/* #813: 戻るは共通部品（自前で ‹ を描かない） */}
               <BackLink href={backHref} label={backLabel} />
@@ -153,6 +161,7 @@ export function PostDetailScreen({
                 )}
               </MoreMenu>
             </div>
+            )}
 
             <h1 className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[1.125rem] font-bold leading-tight text-ink">
               <Link
@@ -167,6 +176,22 @@ export function PostDetailScreen({
                 </span>
               )}
             </h1>
+            {/*
+              * #951（2026-10-17）: 未ログインのときだけ、見出しの下に 1 行足す。
+              *
+              * 【初心者向け】見出し（スポット名）は前からその場所の一覧へのリンクですが、
+              * **リンクだと気づかれません**。共有された人は投稿 1 件だけを見ているので、
+              * ここが無いと行き止まりになります（要件 4.5.18）。
+              */}
+            {isGuest && spotPostCount !== null && (
+              <Link
+                href={`/spots/${post.spot.id}`}
+                className="tap-target text-[0.8125rem] font-semibold text-accent"
+                data-see-all-spot-posts
+              >
+                この場所の投稿をすべて見る（{spotPostCount} 件）
+              </Link>
+            )}
             {/* strike-system Task 3: 本人にだけ、隠れている理由を出す（他人にはこの画面自体が出ない） */}
             {post.hiddenReason && (
               <p role="note" className="mb-2 rounded-[8px] bg-tint px-3 py-2 text-[0.75rem] leading-[1.7] text-ink">
@@ -240,7 +265,8 @@ export function PostDetailScreen({
           )}
 
           <div className="flex items-center justify-between gap-3 border-t border-line pt-3">
-            {post.author.isDeleted ? (
+            {/* #951: 未ログインにはプロフィール画面を見せないので、名前をリンクにしない（名前とアイコンは出す） */}
+            {post.author.isDeleted || isGuest ? (
               <span className="flex items-center gap-2 text-[0.75rem] text-muted">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
@@ -312,7 +338,7 @@ export function PostDetailScreen({
 
           {/* performance Task2: コメント欄は本文の後から流し込む（届くまで骨組み） */}
           <Suspense fallback={<CommentsSkeleton />}>
-            <StreamedCommentSection postId={post.id} initialComments={initialComments} canComment={post.canInteract} returnTo={returnTo} />
+            <StreamedCommentSection postId={post.id} initialComments={initialComments} canComment={post.canInteract && !isGuest} isGuest={isGuest} returnTo={returnTo} />
           </Suspense>
         </article>
       </div>
@@ -324,7 +350,7 @@ export function PostDetailScreen({
  * コメント 1 ページ目が Promise なら `use()` で待ってから CommentSection を描く（値ならそのまま）。
  * 【初心者向け】`use(promise)` は「まだなら外側の Suspense に骨組みを出させ、届いたら続きを描く」React の仕組み。
  */
-function StreamedCommentSection({ postId, initialComments, canComment, returnTo }: { postId: string; initialComments: CommentPage | Promise<CommentPage>; canComment: boolean; returnTo: string }) {
+function StreamedCommentSection({ postId, initialComments, canComment, isGuest = false, returnTo }: { postId: string; initialComments: CommentPage | Promise<CommentPage>; canComment: boolean; isGuest?: boolean; returnTo: string }) {
   const page = initialComments instanceof Promise ? use(initialComments) : initialComments;
-  return <CommentSection postId={postId} initialPage={page} canComment={canComment} returnTo={returnTo} />;
+  return <CommentSection postId={postId} initialPage={page} canComment={canComment} isGuest={isGuest} returnTo={returnTo} />;
 }

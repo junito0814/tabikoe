@@ -51,7 +51,8 @@ export function Sheet({
   // シート（MapSheetLayout）の中から開くと親の `relative z-10` が重なり順の枠になり fixed でも外に出られないので、
   // createPortal で body 直下に描く。メニューバーは隠さず残す（バーがあるときはスマホで下 60px、パソコンで左 200px を空ける）。
   return createPortal(
-    <div className="fixed inset-0 z-50 flex items-end justify-center md:items-center [body:has([data-menu-bar])_&]:bottom-[60px] md:[body:has([data-menu-bar])_&]:bottom-0 md:[body:has([data-menu-bar])_&]:left-[200px]" data-sheet>
+    /* #951: 未ログインの帯（GuestBand）の上で止める。メニューバーと同じ扱い */
+    <div className="fixed inset-0 z-50 flex items-end justify-center md:items-center [body:has([data-menu-bar])_&]:bottom-[60px] [body:has([data-guest-band])_&]:bottom-[60px] md:[body:has([data-menu-bar])_&]:bottom-0 md:[body:has([data-menu-bar])_&]:left-[200px]" data-sheet>
       <button type="button" aria-label="閉じる" onClick={onClose} className="absolute inset-0 bg-black/40" />
       <div
         role="dialog"

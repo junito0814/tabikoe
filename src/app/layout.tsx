@@ -127,7 +127,8 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
       lang="ja"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col has-[[data-menu-bar]]:pb-[60px] md:has-[[data-menu-bar]]:pb-0 md:has-[[data-menu-bar]]:pl-[200px]">
+      {/* #951: 未ログインの共有リンクではメニューバーの代わりに帯（`GuestBand`）が出る。同じ 60px を空ける */}
+      <body className="min-h-full flex flex-col has-[[data-menu-bar]]:pb-[60px] has-[[data-guest-band]]:pb-[60px] md:has-[[data-menu-bar]]:pb-0 md:has-[[data-menu-bar]]:pl-[200px]">
         <LaunchCover />
         <AppMenuBar isAuthenticated={user !== null} />
         {children}

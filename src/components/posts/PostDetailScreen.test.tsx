@@ -212,3 +212,46 @@ describe("まだあった報告の置き場所（#875）", () => {
     expect(document.querySelector("[data-spot-status-label]")).toBeNull();
   });
 });
+
+/**
+ * #951（2026-10-17）: 未ログイン（共有リンク）で開いたとき
+ * 出典: Issue #951、要件定義書 4.5.18
+ *
+ * **中身は同じ。** 変わるのは「戻る」「⋯」を出さないこと、投稿者名をリンクにしないこと、
+ * 見出しの下に「この場所の投稿をすべて見る（N 件）」が 1 行増えることだけ。
+ */
+describe("未ログインで開いたとき（#951）", () => {
+  const guest = () => render(<PostDetailScreen post={post} initialComments={noComments} isGuest spotPostCount={7} />);
+
+  it("中身は今までどおり見える", () => {
+    guest();
+    expect(screen.getByText("東京駅 グランスタ")).toBeInTheDocument();
+    expect(screen.getByLabelText("星4")).toBeInTheDocument();
+    expect(screen.getByAltText("東京駅 グランスタの写真 1")).toBeInTheDocument();
+  });
+
+  it("「戻る」と「⋯」を出さない（戻る先が無く、通報にもログインが要る）", () => {
+    guest();
+    expect(screen.queryByRole("link", { name: "投稿を見る" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "その他" })).toBeNull();
+  });
+
+  it("見出しの下に「この場所の投稿をすべて見る（N 件）」が出る（1 件だけでは行き止まりになる）", () => {
+    guest();
+    const link = screen.getByRole("link", { name: "この場所の投稿をすべて見る（7 件）" });
+    expect(link).toHaveAttribute("href", "/spots/s1");
+  });
+
+  it("投稿者名をリンクにしない（プロフィール画面は公開しない）。名前とアイコンは出す", () => {
+    guest();
+    expect(screen.queryByRole("link", { name: /たろう/ })).toBeNull();
+    expect(screen.getByText("たろう")).toBeInTheDocument();
+  });
+
+  it("ログイン済みは何も変わらない（戻る・⋯ が出て、この行は出ない）", () => {
+    render(<PostDetailScreen post={post} initialComments={noComments} />);
+    expect(screen.getByRole("link", { name: "投稿を見る" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "その他" })).toBeInTheDocument();
+    expect(document.querySelector("[data-see-all-spot-posts]")).toBeNull();
+  });
+});

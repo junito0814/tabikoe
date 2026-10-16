@@ -150,7 +150,8 @@ function firstLine(comment: string | null): string | null {
 /** 検索条件に合うスポットを 1 ページ（20 件）返す */
 export async function searchSpotCards(
   admin: SupabaseClient,
-  viewerId: string,
+  /** #951: 未ログイン（共有リンク）は null */
+  viewerId: string | null,
   filters: PostSearchFilters,
   sort: SpotSort,
   offset: number,

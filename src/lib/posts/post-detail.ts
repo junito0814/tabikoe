@@ -42,7 +42,8 @@ export interface PostDetailData {
  */
 export function canViewPost(
   post: { user_id: string; visibility: string },
-  viewerId: string,
+  /** #951: 未ログイン（共有リンク）は null */
+  viewerId: string | null,
   isAlbumMember: boolean
 ): boolean {
   if (post.visibility === "public") return true;
@@ -113,7 +114,8 @@ function one<T>(value: T | T[] | null): T | null {
  */
 export async function getPostDetail(
   admin: SupabaseClient,
-  viewerId: string,
+  /** #951: 未ログイン（共有リンク）は null */
+  viewerId: string | null,
   postId: string
 ): Promise<PostDetailData | null> {
   const { data, error } = await admin
@@ -137,13 +139,15 @@ export async function getPostDetail(
   // F-AD-05: 通報対応で非公開化された投稿は本人以外に見せない（存在しない扱い）
   if (row.hidden_at && !isOwner) return null;
 
-  if (!isOwner) {
+  // #951: 未ログイン（共有リンク）は誰ともブロック関係に無いので、引く必要がない
+  if (!isOwner && viewerId !== null) {
     // 3.8.2 相互非表示。存在自体を伏せる
     if (await isBlockedEitherWay(admin, viewerId, row.user_id)) return null;
   }
 
   let isAlbumMember = false;
-  if (!isOwner && row.visibility !== "public") {
+  // #951: 未ログインはアルバムのメンバーになり得ない（このあと canViewPost が 404 にする）
+  if (!isOwner && viewerId !== null && row.visibility !== "public") {
     const { data: membership } = await admin
       .from("album_members")
       .select("id")
@@ -165,8 +169,9 @@ export async function getPostDetail(
     ),
     admin.from("likes").select("id", { count: "exact", head: true }).eq("post_id", row.id),
     admin.from("comments").select("id", { count: "exact", head: true }).eq("post_id", row.id),
-    admin.from("likes").select("id").eq("post_id", row.id).eq("user_id", viewerId).maybeSingle(),
-    admin.from("wishlist").select("id").eq("user_id", viewerId).eq("spot_id", row.spot_id).maybeSingle(),
+    // #951: 未ログインは「自分が押したか」「自分が保存したか」を持たないので、引かずに null にする
+    viewerId === null ? Promise.resolve({ data: null }) : admin.from("likes").select("id").eq("post_id", row.id).eq("user_id", viewerId).maybeSingle(),
+    viewerId === null ? Promise.resolve({ data: null }) : admin.from("wishlist").select("id").eq("user_id", viewerId).eq("spot_id", row.spot_id).maybeSingle(),
     // 報告が取れなくても詳細は出す
     getSpotStatus(admin, row.spot_id, viewerId).catch((): SpotStatusSummary => ({ latest: null, mine: null })),
   ]);

@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getAuthenticatedUser } from "@/lib/auth/get-authenticated-user";
+import { isGuestReadableSearch } from "@/lib/auth/guest-read";
 import { ImageValidationError, processAndUploadImage } from "@/lib/image/process-upload";
 import { POST_MEDIA_BUCKET } from "@/lib/posts/constants";
 import { isOwnTempPath } from "@/lib/posts/upload-slots";
@@ -21,15 +22,16 @@ import { parseSpotSort } from "@/lib/spots/search-spots";
 export async function GET(request: Request) {
   const supabase = await createClient();
   const user = await getAuthenticatedUser(supabase);
-  if (!user) {
+  const searchParams = new URL(request.url).searchParams;
+  // #951: SC-04 の「写真」タブも未ログインで開ける（要件 3.5.4）。それ以外は今までどおり 401
+  if (!user && !isGuestReadableSearch(searchParams)) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
-  const searchParams = new URL(request.url).searchParams;
   const filters = parsePostSearchParams(searchParams);
   const offset = Math.max(0, Number.parseInt(searchParams.get("offset") ?? "0", 10) || 0);
   try {
     // v3.1: 検索結果（スポット単位）ではスポットの並び（sort=newest|rating|count）で、1 スポット 5 枚まで
-    const page = await searchMediaPage(createAdminClient(), user.id, filters, offset, undefined, parseSpotSort(searchParams.get("sort")));
+    const page = await searchMediaPage(createAdminClient(), user?.id ?? null, filters, offset, undefined, parseSpotSort(searchParams.get("sort")));
     return NextResponse.json(page);
   } catch {
     return NextResponse.json({ error: "fetch_failed" }, { status: 500 });

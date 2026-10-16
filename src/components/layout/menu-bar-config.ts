@@ -34,6 +34,16 @@ const HIDDEN_EXACT_PATHS = new Set(["/login", "/signup", "/consent/renew", "/ter
 const HIDDEN_PREFIXES = ["/admin", "/dev"];
 
 /**
+ * #951（2026-10-17）: 共有リンクで開ける画面（SC-04・SC-05）。
+ *
+ * 【初心者向け】ここは**ログイン済みなら今までどおりバーを出し、未ログインのときだけ出さない**。
+ * 未ログインで出してしまうと、バーが未読件数の API を呼び、401 が返って**見ようとしていた
+ * 投稿からログイン画面へ締め出されます**（#583 でまったく同じことが起きました）。
+ * 共有された人は「見に来ただけ」なので、追い出さないことがいちばん大事です。
+ */
+const AUTHENTICATED_ONLY_PREFIXES = ["/spots", "/posts"];
+
+/**
  * 4.2 の除外条件（未ログインのホーム・ログイン・新規作成・管理画面）に加え、開発用プレビュー（/dev）も除外する。
  * ホーム（"/"）はログイン済みのときだけ出す（未ログインの SC-00 はサービス説明とログインボタンだけの画面）。
  */
@@ -42,6 +52,10 @@ export function shouldShowMenuBar(pathname: string, isAuthenticated = true): boo
     return isAuthenticated;
   }
   if (HIDDEN_EXACT_PATHS.has(pathname)) {
+    return false;
+  }
+  // #951: 共有リンク（SC-04・SC-05）は、未ログインのときだけ出さない
+  if (!isAuthenticated && AUTHENTICATED_ONLY_PREFIXES.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`))) {
     return false;
   }
   return !HIDDEN_PREFIXES.some(

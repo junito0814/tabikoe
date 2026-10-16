@@ -260,3 +260,68 @@ describe("コメントの並べ方（#885）", () => {
     expect(form.querySelector("img")).toHaveAttribute("src", "/default-avatar.svg");
   });
 });
+
+/**
+ * #951（2026-10-17）: 未ログイン（共有リンク）で読むとき
+ * 出典: Issue #951、要件定義書 4.5.18
+ *
+ * **読めることは変えない。** 変わるのは 3 つだけ ── 入力欄をログインの案内に差し替え、
+ * 返信・通報を出さず、投稿者名をリンクにしない。
+ */
+describe("未ログインで読むとき（#951）", () => {
+  const show = () =>
+    renderOpen(
+      <CommentSection
+        postId="p1"
+        canComment={false}
+        isGuest
+        returnTo="/posts/p1"
+        initialPage={{ comments: [comment("theirs", false)], nextOffset: null, totalCount: 1, viewerAvatarUrl: null }}
+        api={api()}
+      />
+    );
+
+  it("コメントは今までどおり読める", () => {
+    show();
+    expect(screen.getByText("本文theirs")).toBeInTheDocument();
+    expect(screen.getByText("だれか")).toBeInTheDocument();
+  });
+
+  it("入力欄の代わりに「コメントするにはログイン ／ 読むだけなら、このまま見られます」", () => {
+    show();
+    const notice = document.querySelector("[data-guest-comment-notice]") as HTMLElement;
+    expect(notice).toBeInTheDocument();
+    expect(notice.textContent).toContain("コメントするにはログイン");
+    expect(notice.textContent).toContain("読むだけなら、このまま見られます");
+    expect(screen.getByRole("link", { name: "コメントするにはログイン" })).toHaveAttribute("href", "/login?redirect_to=%2Fposts%2Fp1");
+    expect(screen.queryByLabelText("コメント本文")).toBeNull();
+    // 非公開投稿のときの文言は出さない（理由が違う）
+    expect(document.body.textContent).not.toContain("非公開の投稿にはコメントできません");
+  });
+
+  it("返信・通報は出さない（どちらもログインが要るので、押してから断らない）", () => {
+    show();
+    expect(document.querySelector("[data-reply-button]")).toBeNull();
+    expect(screen.queryByRole("link", { name: /通報/ })).toBeNull();
+  });
+
+  it("投稿者名をリンクにしない（プロフィール画面は公開しない）", () => {
+    show();
+    expect(screen.queryByRole("link", { name: "だれか" })).toBeNull();
+    expect(screen.getByText("だれか")).toBeInTheDocument();
+  });
+
+  it("ログイン済みは今までどおり、名前がリンクで返信も出る", () => {
+    renderOpen(
+      <CommentSection
+        postId="p1"
+        canComment
+        returnTo="/posts/p1"
+        initialPage={{ comments: [comment("theirs", false)], nextOffset: null, totalCount: 1, viewerAvatarUrl: null }}
+        api={api()}
+      />
+    );
+    expect(screen.getByRole("link", { name: "だれか" })).toHaveAttribute("href", "/users/other");
+    expect(document.querySelector("[data-reply-button]")).not.toBeNull();
+  });
+});

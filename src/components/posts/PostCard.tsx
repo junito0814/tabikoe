@@ -49,6 +49,7 @@ export function PostCard({
   showSaveButton = true,
   addMode = null,
   canComment = true,
+  isGuest = false,
   commentApi,
 }: {
   post: PostCardData;
@@ -68,6 +69,8 @@ export function PostCard({
    * 出しているので既定は true。非公開を混ぜる画面ができたら、そこで false を渡すこと。
    */
   canComment?: boolean;
+  /** #951: 未ログイン（共有リンク）で見ているか。コメント欄の見え方が変わる（要件 4.5.18） */
+  isGuest?: boolean;
   /** 差し替え口（単体テスト用）。渡さなければ本物の API を使う */
   commentApi?: CommentApi;
 }) {
@@ -190,6 +193,7 @@ export function PostCard({
         postId={post.id}
         initialPage={null}
         canComment={canComment}
+        isGuest={isGuest}
         {...(commentApi ? { api: commentApi } : {})}
         returnTo={backHref ?? `/posts/${post.id}`}
         open={commentsOpen}
