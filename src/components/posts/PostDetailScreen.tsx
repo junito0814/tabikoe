@@ -21,6 +21,8 @@ import { MapSheetLayout } from "@/components/layout/MapSheetLayout";
 import { StaticSpotMap } from "@/components/map/StaticSpotMap";
 import { formatCost } from "./PostCard";
 import { BackLink } from "@/components/layout/BackLink";
+import { ShareButton } from "@/components/share/ShareButton";
+import { postShareContent } from "@/lib/share/share-text";
 import { formatDate, formatDateTime } from "@/lib/format/date-time";
 import { TERMS } from "@/lib/terms";
 
@@ -308,6 +310,18 @@ export function PostDetailScreen({
               spotId={post.spot.id}
               initialSaved={post.isWishlisted}
             />
+            {/*
+              * #953（2026-10-17）: 共有ボタン。いいね・「＋」と同じ操作行に置く（要件 4.5.18）。
+              * **非公開・下書き・非表示では出しません。** 押してから「これは共有できません」と
+              * 断るより、はじめから出さないほうが親切です。
+              * 非公開は `canInteract`（`visibility === "public"`）で、下書きはこの画面自体が出ないので、
+              * 残るのは**運営が非表示にしたもの**。それは本人にだけ `hiddenReason` が入るので、そこで見ます。
+              */}
+            {post.canInteract && post.hiddenReason === null && (
+              <ShareButton
+                content={postShareContent({ spotName: post.spot.name, comment: post.comment, url: `/posts/${post.id}` })}
+              />
+            )}
           </div>
 
           {/*
