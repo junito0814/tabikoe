@@ -10,6 +10,7 @@ import { BlockedUsersList, type BlockedUser } from "@/components/blocks/BlockedU
 import { createAdminClient } from "@/lib/supabase/admin";
 import { ContentEnter } from "@/components/transitions/Reveal";
 import { AccountScreen } from "@/components/account/AccountScreen";
+import { countLikedPosts } from "@/lib/likes/liked-posts";
 
 // #785: ブラウザのタブ名（「アカウント | タビコエ」）
 export const metadata = { title: "アカウント" };
@@ -64,12 +65,16 @@ export default async function AccountPage() {
     });
   }
 
+  // #954: 行に出す件数。取れなくてもこの画面は出す（0 件として出す）
+  const likedPostCount = await countLikedPosts(admin, user.id).catch(() => 0);
+
   return (
     <ContentEnter>
       {/* #799・#783: iOS の「設定」と同じ行の形。中身（名前と画像・ブロック）はシートで開く */}
       <AccountScreen
         displayName={profile?.display_name ?? ""}
         blockedCount={blockedUsers.length}
+        likedPostCount={likedPostCount}
         isAdmin={profile?.is_admin ?? false}
         profileForm={
           <>
