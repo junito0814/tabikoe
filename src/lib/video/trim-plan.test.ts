@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  adviseTrimFit,
   checkTrimFeasible,
   checkTrimmedOutput,
   estimateTrimmedBytes,
@@ -16,8 +17,9 @@ import {
   TRIM_FALLBACK_MESSAGE,
   TRIM_WINDOW_SECONDS,
   trimFailureMessage,
+  trimTooLargeMessage,
 } from "./trim-plan";
-import { MAX_VIDEO_SIZE_BYTES } from "./limits";
+import { MAX_VIDEO_DURATION_SECONDS, MAX_VIDEO_SIZE_BYTES } from "./limits";
 
 /**
  * #861 / 要件 4.5.17（2026-10-10）: どこを切り取るか・結果を通すかの判断。
@@ -270,5 +272,57 @@ describe("両端つまみ（#928）", () => {
         expect(trimLengthSeconds(range)).toBeLessThanOrEqual(30.0001);
       }
     });
+  });
+});
+
+/**
+ * #941（2026-10-17）: 30 秒に切り取っても 50MB を超える動画
+ * 出典: Issue #941、要件定義書 4.5.17
+ *
+ * 受入条件が名指しした 4 つ（0 除算・長さ 0・もともと入っている・1 秒でも無理）を必ず押さえる。
+ */
+describe("adviseTrimFit（#941）", () => {
+  const MB = 1024 * 1024;
+
+  it("もともと入っていれば、短くしなくてよい", () => {
+    expect(adviseTrimFit({ bytes: 20 * MB, seconds: 30 })).toEqual({ kind: "fits" });
+    expect(adviseTrimFit({ bytes: 50 * MB, seconds: 30 })).toEqual({ kind: "fits" });
+  });
+
+  it("超えていたら、入る秒数を出す（安全側に削って切り捨てる）", () => {
+    // 30 秒で 100MB ＝ 1 秒 3.33MB。50MB ÷ 3.33MB = 15 秒 → 9 割に削って 13 秒
+    expect(adviseTrimFit({ bytes: 100 * MB, seconds: 30 })).toEqual({ kind: "shorten", seconds: 13 });
+  });
+
+  it("長さが 0 でも壊れない（0 で割らない）", () => {
+    expect(adviseTrimFit({ bytes: 100 * MB, seconds: 0 })).toEqual({ kind: "impossible" });
+    expect(adviseTrimFit({ bytes: 100 * MB, seconds: -3 })).toEqual({ kind: "impossible" });
+    expect(adviseTrimFit({ bytes: 100 * MB, seconds: Number.NaN })).toEqual({ kind: "impossible" });
+  });
+
+  it("1 秒まで削っても入らない動画は、そこで受け付けない", () => {
+    // 10 秒で 1,000MB ＝ 1 秒 100MB。50MB では 1 秒も入らない
+    expect(adviseTrimFit({ bytes: 1000 * MB, seconds: 10 })).toEqual({ kind: "impossible" });
+  });
+
+  it("見込みが 30 秒を超えても、切り取れる上限で止める", () => {
+    // 60 秒で 51MB ＝ 1 秒 0.85MB。計算上は 52 秒まで入るが、切り取れるのは 30 秒まで
+    expect(adviseTrimFit({ bytes: 51 * MB, seconds: 60 })).toEqual({ kind: "shorten", seconds: MAX_VIDEO_DURATION_SECONDS });
+  });
+});
+
+describe("trimTooLargeMessage（#941）", () => {
+  const MB = 1024 * 1024;
+
+  it("何秒なら入るかを言う（「大きすぎます」で終わらせない）", () => {
+    const message = trimTooLargeMessage({ kind: "shorten", seconds: 13 }, 100 * MB);
+    expect(message).toContain("13 秒まで短くすると入ります");
+    expect(message).toContain("100MB");
+  });
+
+  it("1 秒でも無理なときは、別の対処を言う（この画面ではもう直せない）", () => {
+    const message = trimTooLargeMessage({ kind: "impossible" }, 1000 * MB);
+    expect(message).toContain("写真アプリで画質を落としてから");
+    expect(message).not.toContain("短くすると入ります");
   });
 });

@@ -6,6 +6,7 @@ import { Sheet } from "@/components/ui/Sheet";
 import { formatSeconds } from "@/lib/posts/accept-media";
 import {
   checkTrimFeasible,
+  adviseTrimFit,
   checkTrimmedOutput,
   MIN_TRIM_SECONDS,
   moveEnd,
@@ -15,6 +16,7 @@ import {
   trimLengthSeconds,
   TRIM_WINDOW_SECONDS,
   trimFailureMessage,
+  trimTooLargeMessage,
   type TrimRange,
 } from "@/lib/video/trim-plan";
 import { captureFrames, frameTimes, waitForFrameData } from "@/lib/video/video-frames";
@@ -84,6 +86,14 @@ export function VideoTrimSheet({
   const [loaded, setLoaded] = useState<LoadedVideo | null>(null);
   const [range, setRange] = useState<TrimRange>({ startSeconds: 0, endSeconds: TRIM_WINDOW_SECONDS });
   const [phase, setPhase] = useState<Phase>({ kind: "loading" });
+  /**
+   * #941（2026-10-17）: 「30 秒でも 50MB を超えた」ことを、**このシートの中で**伝える文。
+   *
+   * 【初心者向け】以前は `onGiveUp` を呼んでシートを閉じ、長いフォームのいちばん下に
+   * 赤い文字を出していました。そこまで書いて送ってから断られるので、気づくのが遅すぎます。
+   * つまみは 1〜30 秒で動かせる（#928）ので、**逃げ道が同じ画面にあります**。閉じません。
+   */
+  const [tooLargeNotice, setTooLargeNotice] = useState<string | null>(null);
   const previewFiles = useMemo(() => [file], [file]);
   const cancelledRef = useRef(false);
   const videoRef = useRef<HTMLVideoElement | null>(null);
@@ -123,8 +133,24 @@ export function VideoTrimSheet({
        */
       const feasible = checkTrimFeasible({ sourceBytes: file.size, durationSeconds });
       if (!feasible.ok) {
-        if (alive) onGiveUp(trimFailureMessage(feasible.reason, feasible.estimatedBytes));
-        return;
+        if (!alive) return;
+        /*
+         * #941（2026-10-17）: **「30 秒でも大きすぎる」なら、閉じずにこの場で言う。**
+         *
+         * 【初心者向け】ここは読み込む前の見込みです。以前はここで `onGiveUp` を呼んで
+         * シートを閉じ、「写真アプリで短く編集してから選び直してください」と出していました。
+         * でも**つまみは 1〜30 秒で動かせる**（#928）ので、**この画面で短くすれば済みます**。
+         * 何秒なら入るかも一緒に出して、そのまま切り直せるようにします。
+         *
+         * 読み込みそのものが無理なとき（300MB 超え）だけは、この画面にできることが
+         * 無いので今までどおり閉じます。
+         */
+        const advice = feasible.reason === "estimated_too_large" ? adviseTrimFit({ bytes: file.size, seconds: durationSeconds }) : { kind: "impossible" as const };
+        if (advice.kind === "shorten") setTooLargeNotice(trimTooLargeMessage(advice, feasible.estimatedBytes));
+        else {
+          onGiveUp(feasible.reason === "estimated_too_large" ? trimTooLargeMessage(advice, feasible.estimatedBytes) : trimFailureMessage(feasible.reason, feasible.estimatedBytes));
+          return;
+        }
       }
       try {
         const result = await load(file);
@@ -240,6 +266,8 @@ export function VideoTrimSheet({
       const seconds = secondsAt(clientX);
       const grab = grabRef.current;
       if (!loaded || seconds === null || !grab) return;
+      // #941: つまみを動かしたら、前の「大きすぎます」は古い話になるので消す
+      setTooLargeNotice(null);
       setRange((current) => {
         const common = { keyframeTimes: loaded.keyframeTimes, durationSeconds: loaded.durationSeconds, current };
         if (grab.part === "start") return moveStart({ ...common, wantStartSeconds: seconds });
@@ -285,6 +313,8 @@ export function VideoTrimSheet({
     if (step === 0) return;
     event.preventDefault();
     event.stopPropagation();
+    // #941: つまみを動かしたら、前の「大きすぎます」は古い話になるので消す
+    setTooLargeNotice(null);
     setRange((current) =>
       part === "start"
         ? // 始まりはキーフレームへ寄るので、1 秒ずつ送れば次のキーフレームへ移る
@@ -311,6 +341,21 @@ export function VideoTrimSheet({
       const durationSeconds = await measure(trimmed);
       const checked = checkTrimmedOutput({ durationSeconds, sizeBytes: trimmed.size, expectedSeconds: range.endSeconds - range.startSeconds });
       if (!checked.ok) {
+        /*
+         * #941: **大きすぎるときだけは、閉じずにこの場で言う。**
+         * 何秒なら入るかも出すので、つまみを動かしてそのまま切り直せる。
+         * ただし 1 秒まで削っても入らないなら、この画面にできることは無いので閉じて案内する。
+         */
+        if (checked.reason === "too_large") {
+          const advice = adviseTrimFit({ bytes: trimmed.size, seconds: durationSeconds ?? range.endSeconds - range.startSeconds });
+          if (advice.kind === "shorten") {
+            setTooLargeNotice(trimTooLargeMessage(advice, trimmed.size));
+            setPhase({ kind: "ready" });
+            return;
+          }
+          onGiveUp(trimTooLargeMessage(advice, trimmed.size));
+          return;
+        }
         onGiveUp(trimFailureMessage(checked.reason, trimmed.size));
         return;
       }
@@ -385,6 +430,13 @@ export function VideoTrimSheet({
           * `preload="metadata"` のまま ── 全部読まないことは #923 で決めたこと。
           */}
         {previewUrl && <video ref={frameVideoRef} src={previewUrl} preload="metadata" muted playsInline hidden />}
+
+        {/* #941: 大きすぎたことは**この場で**。つまみを動かせば、そのまま切り直せる */}
+        {tooLargeNotice && (
+          <p role="alert" data-trim-too-large className="rounded-[8px] bg-tint px-3 py-2 text-[0.75rem] leading-[1.7] text-ink">
+            {tooLargeNotice}
+          </p>
+        )}
 
         {phase.kind === "loading" ? (
           <p className="py-2 text-center text-[0.8125rem] text-muted">動画を読み込んでいます…</p>
