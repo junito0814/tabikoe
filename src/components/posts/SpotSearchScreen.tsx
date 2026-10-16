@@ -232,8 +232,13 @@ export function SpotSearchScreen({
           )}
         </div>
 
-        {/* Task 6: この画面は検索結果（スポットカード）なので「タビコエだけの場所」を出す（要件 3.4.2） */}
+        {/*
+          * #955（2026-10-16）: この画面は**スポットの一覧**なので、絞り込みも**スポット単位**にする。
+          * ~~variant="posts"（投稿単位：予算 1 人あたり・期間）~~ → **variant="spots"**（予算は平均・評価が入る）。
+          * 1 件 5,000 円の投稿があるだけで「5,000 円の店」として出ていたのを直す（要件 3.4.2・4.5.19）。
+          */}
         <FilterSheet
+          variant="spots"
           open={isSheetOpen}
           value={state}
             showArea={showArea}

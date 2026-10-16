@@ -4,7 +4,7 @@ import { getBlockedUserIds } from "@/lib/blocks/get-blocked-user-ids";
 import { createPostPhotoUrls } from "@/lib/posts/signed-url";
 import { findSavedSpotIds } from "./saved-spots";
 import { findLatestSpotStatuses, representativeMedia } from "@/lib/posts/post-cards";
-import { applyFilters, baseQuery, matchesFilters, SEARCH_PAGE_SIZE, type PostSearchFilters, type SearchRow } from "@/lib/posts/search-posts";
+import { applyFilters, baseQuery, matchesCostRange, matchesFilters, SEARCH_PAGE_SIZE, type CostRange, type PostSearchFilters, type SearchRow } from "@/lib/posts/search-posts";
 import { resolveSpotCategory } from "@/lib/map/spot-category";
 import type { PostCategory } from "@/lib/posts/constants";
 
@@ -78,6 +78,9 @@ export interface SpotAggregate {
   postCount: number;
   ratingSum: number;
   ratingCount: number;
+  /** #955: 平均予算を出すための材料。費用が未入力（null）の投稿は数に入れない */
+  costSum: number;
+  costCount: number;
   latestPostAt: string;
   latestComment: string | null;
   coverPath: string | null;
@@ -104,6 +107,8 @@ export function aggregateSpotCards(rows: SearchRow[]): SpotAggregate[] {
         postCount: 0,
         ratingSum: 0,
         ratingCount: 0,
+        costSum: 0,
+        costCount: 0,
         // #741: 代表カテゴリを出すために、投稿のカテゴリと日付を集める
         categoryInputs: [],
         latestPostAt: row.created_at,
@@ -119,6 +124,11 @@ export function aggregateSpotCards(rows: SearchRow[]): SpotAggregate[] {
       agg.ratingSum += row.rating;
       agg.ratingCount += 1;
     }
+    // #955: 費用は未入力があるので、入っているものだけで平均を出す
+    if (typeof row.cost === "number") {
+      agg.costSum += row.cost;
+      agg.costCount += 1;
+    }
     // 先頭が最新なので latest* は最初の行のまま。ただし感想が空なら後の行から補う
     if (agg.latestComment === null) agg.latestComment = firstLine(row.comment);
     if (agg.coverPath === null) {
@@ -130,6 +140,37 @@ export function aggregateSpotCards(rows: SearchRow[]): SpotAggregate[] {
     }
   }
   return Array.from(bySpot.values());
+}
+
+/**
+ * #955（2026-10-16）: スポットの一覧を**平均**で絞る（純粋関数）
+ * 出典: 要件定義書 3.4.2・4.5.19
+ *
+ * 【初心者向け】検索結果は**スポットの一覧**なのに、これまで**投稿単位の条件**で絞っていました。
+ * 1 件 5,000 円の投稿があるだけで「5,000 円の店」として出てしまい、平均が 1,000 円でも同じ扱いでした。
+ * Google マップも食べログも、場所の一覧は**その場所の平均**で絞ります。
+ *
+ * カテゴリと滞在時間は**投稿単位のまま**です（「そのカテゴリの投稿があるスポット」でよく、
+ * 画面のラベルにも「平均」と書いていないため）。平均にするのは**予算と評価だけ**。
+ *
+ * 材料が無いスポット（費用が未入力ばかり／星が無い）は、**その条件で絞ったときは出しません**
+ * （費用で絞ると未入力の投稿が出ないのと同じ考え方。要件 3.4.4）。
+ */
+export function filterSpotsByAverage<T extends { ratingSum: number; ratingCount: number; costSum: number; costCount: number }>(
+  spots: T[],
+  { cost, minRating }: { cost: CostRange | null; minRating: number | null }
+): T[] {
+  return spots.filter((spot) => {
+    if (cost !== null) {
+      if (spot.costCount === 0) return false;
+      if (!matchesCostRange(Math.round(spot.costSum / spot.costCount), cost)) return false;
+    }
+    if (minRating !== null) {
+      if (spot.ratingCount === 0) return false;
+      if (spot.ratingSum / spot.ratingCount < minRating) return false;
+    }
+    return true;
+  });
 }
 
 /** 並び替え（純粋関数）。同点は新しい投稿がある順 */
@@ -154,14 +195,21 @@ export async function searchSpotCards(
   filters: PostSearchFilters,
   sort: SpotSort,
   offset: number,
-  limit: number = SEARCH_PAGE_SIZE
+  limit: number = SEARCH_PAGE_SIZE,
+  /** #955: 平均評価の下限（1〜5）。絞り込みシートの「評価（平均）」から来る */
+  minRating: number | null = null
 ): Promise<SpotCardPage> {
   const blockedIds = await getBlockedUserIds(admin, viewerId);
-  const { data, error } = await applyFilters(baseQuery(admin, "newest"), filters, blockedIds).limit(SPOT_SEARCH_FETCH_CAP);
+  /*
+   * #955: **予算は投稿単位で絞らない**。平均を出すには、その スポットの投稿を全部足す必要があるため。
+   * 絞るのは集計のあと（filterSpotsByAverage）。カテゴリ・滞在時間・行き先・期間は今までどおり投稿単位。
+   */
+  const postFilters: PostSearchFilters = { ...filters, costRange: null };
+  const { data, error } = await applyFilters(baseQuery(admin, "newest"), postFilters, blockedIds).limit(SPOT_SEARCH_FETCH_CAP);
   if (error) throw error;
-  const rows = ((data ?? []) as unknown as SearchRow[]).filter((row) => matchesFilters({ ...row, spot: row.spots }, filters));
+  const rows = ((data ?? []) as unknown as SearchRow[]).filter((row) => matchesFilters({ ...row, spot: row.spots }, postFilters));
 
-  const sorted = sortSpotCards(aggregateSpotCards(rows), sort);
+  const sorted = sortSpotCards(filterSpotsByAverage(aggregateSpotCards(rows), { cost: filters.costRange, minRating }), sort);
   const page = sorted.slice(offset, offset + limit);
   const spotIds = page.map((spot) => spot.id);
 
