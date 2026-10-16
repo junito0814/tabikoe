@@ -132,9 +132,12 @@ describe("loading-feedback Task 3: 押した直後に文言が変わる", () => 
 
     fireEvent.click(screen.getByRole("button", { name: "下書きに保存" }));
     // 押した直後に変わる（写真のアップロードを含むので最も長く待つ）
-    expect(await screen.findByRole("button", { name: "保存中…" })).toBeInTheDocument();
-    // 下書きを保存している間に「送信中...」とは出さない
+    // #940（2026-10-17）: 点は付けない形にそろえた（~~「保存中…」~~ → 「保存中」）
+    expect(await screen.findByRole("button", { name: "保存中" })).toBeInTheDocument();
+    // 下書きを保存している間、投稿ボタンの文言は変わらない
     expect(screen.getByRole("button", { name: "投稿する" })).toBeInTheDocument();
+    // #940: 進み具合は上端の細いバーで見せる（ボタンの中には書かない）
+    expect(screen.getByRole("progressbar", { name: "下書きの保存の進み具合" })).toBeInTheDocument();
 
     resolveCreate(Response.json({ postId: "p1" }, { status: 201 }));
     await waitFor(() => expect(api.create).toHaveBeenCalled());
