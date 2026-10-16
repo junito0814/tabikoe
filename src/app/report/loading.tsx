@@ -1,4 +1,4 @@
-import { DelayedSkeleton, FormScreenSkeleton } from "@/components/skeleton/Skeletons";
+import { DelayedSkeleton, ReportFormSkeleton } from "@/components/skeleton/Skeletons";
 
 /**
  * #900（2026-10-09）: 画面を移るときの骨組み
@@ -12,5 +12,5 @@ import { DelayedSkeleton, FormScreenSkeleton } from "@/components/skeleton/Skele
  * この画面: SC-11 通報
  */
 export default function Loading() {
-  return <DelayedSkeleton><FormScreenSkeleton backLabel="戻る" title="通報する" fields={3} /></DelayedSkeleton>;
+  return <DelayedSkeleton><ReportFormSkeleton /></DelayedSkeleton>;
 }

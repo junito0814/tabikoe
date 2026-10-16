@@ -171,7 +171,15 @@ describe("PostSearchScreen（SC-04 タイムライン）", () => {
     fireEvent.click(screen.getByRole("button", { name: "もっと見る" }));
     await waitFor(() => expect(fetchPage).toHaveBeenCalledTimes(1));
     expect((fetchPage.mock.calls[0][0]).get("offset")).toBe("20");
-    expect(document.querySelector("[data-post-card='p21']")).toBeInTheDocument();
+    /*
+     * #936（2026-10-17）: ここは `expect(...)` を直に書いていて、**たまに落ちていました**。
+     *
+     * 【初心者向け】ひとつ上の `waitFor` が待っているのは「**取りに行った**こと」だけで、
+     * 「**届いて画面に出た**こと」ではありません。届いてから React が描き直すまでには
+     * わずかに間があるので、速いときは間に合い、遅いときは間に合いません。
+     * すぐ下のテスト（保存した状態の復元）は `waitFor` で囲んであり、そちらは落ちませんでした。
+     */
+    await waitFor(() => expect(document.querySelector("[data-post-card='p21']")).toBeInTheDocument());
   });
 
   it("保存した状態が URL キーで復元される（同じページ数まで読み込み直す）", async () => {

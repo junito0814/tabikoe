@@ -1,4 +1,4 @@
-import { DelayedSkeleton, ListScreenSkeleton } from "@/components/skeleton/Skeletons";
+import { DelayedSkeleton, PostHistorySkeleton } from "@/components/skeleton/Skeletons";
 
 /**
  * #900（2026-10-09）: 画面を移るときの骨組み
@@ -12,5 +12,5 @@ import { DelayedSkeleton, ListScreenSkeleton } from "@/components/skeleton/Skele
  * この画面: SC-12 あしあと（自分の投稿の履歴）
  */
 export default function Loading() {
-  return <DelayedSkeleton><ListScreenSkeleton backLabel="マイページ" title="あしあと" /></DelayedSkeleton>;
+  return <DelayedSkeleton><PostHistorySkeleton /></DelayedSkeleton>;
 }

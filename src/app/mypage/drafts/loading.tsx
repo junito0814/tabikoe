@@ -1,4 +1,4 @@
-import { DelayedSkeleton, ListScreenSkeleton } from "@/components/skeleton/Skeletons";
+import { DelayedSkeleton, DraftListSkeleton } from "@/components/skeleton/Skeletons";
 
 /**
  * #900（2026-10-09）: 画面を移るときの骨組み
@@ -12,5 +12,5 @@ import { DelayedSkeleton, ListScreenSkeleton } from "@/components/skeleton/Skele
  * この画面: 下書き一覧
  */
 export default function Loading() {
-  return <DelayedSkeleton><ListScreenSkeleton backLabel="マイページ" title="下書き" /></DelayedSkeleton>;
+  return <DelayedSkeleton><DraftListSkeleton /></DelayedSkeleton>;
 }
