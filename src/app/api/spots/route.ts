@@ -7,6 +7,7 @@ import { DUPLICATE_SPOT_RADIUS_METERS, findNearbySpots } from "@/lib/spots/nearb
 import { reverseGeocodePrefecture } from "@/lib/google/geocoding";
 import { getMapPins, parseMapBounds } from "@/lib/map/get-map-pins";
 import { parseSpotFilters } from "@/lib/map/spot-aggregate";
+import { findSpotIdsWithAllFindings } from "@/lib/spots/visit-findings-db";
 import { findPrefecture } from "@/lib/geo/prefectures";
 
 /** スポット名の最大文字数（要件定義書3.3.1） */
@@ -40,7 +41,10 @@ export async function GET(request: Request) {
 
   // 他ユーザーの投稿・ブロック関係の判定を含むため service_role で読み、可視性はライブラリ側で絞る
   try {
-    const pins = await getMapPins(createAdminClient(), user.id, bounds, filters);
+    const admin = createAdminClient();
+    // #929: 「行ってわかったこと」で残るスポットはここで引く（`get-map-pins.ts` は画面側からも読まれるため）
+    const allowedSpotIds = await findSpotIdsWithAllFindings(admin, filters.findings);
+    const pins = await getMapPins(admin, user.id, bounds, filters, allowedSpotIds);
     return NextResponse.json({ pins });
   } catch {
     return NextResponse.json({ error: "fetch_failed" }, { status: 500 });

@@ -14,6 +14,18 @@ export default defineConfig({
   plugins: [react()],
   resolve: {
     tsconfigPaths: true,
+    alias: {
+      /*
+       * #929（2026-10-17）: `import "server-only"` を含むファイルを、テストから辿れるようにする。
+       *
+       * 【初心者向け】`server-only` は「このファイルをブラウザ側に混ぜたらビルドで止める」という印で、
+       * パッケージの実体は Next.js が内部に持っている（`next/dist/compiled/server-only`）。
+       * 単体テスト（Vite）は Next.js を通さないので、そのままでは見つけられず読み込みに失敗する。
+       * 印そのものはビルド時の話なので、テストでは**何もしない空のファイル**に差し替える。
+       * 本番のビルドはこの設定を見ないので、印は今までどおり効く。
+       */
+      "server-only": "next/dist/compiled/server-only/empty.js",
+    },
   },
   test: {
     environment: "jsdom",

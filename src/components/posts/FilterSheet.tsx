@@ -15,6 +15,7 @@ import type { CostRange, DistanceOption, PeriodOption } from "@/lib/posts/search
 import type { PostDuration } from "@/lib/posts/constants";
 import type { ListView } from "@/lib/search/list-view";
 import { TERMS } from "@/lib/terms";
+import { VISIT_FINDING_GROUPS, VISIT_FINDING_LABELS, type VisitFinding } from "@/lib/spots/visit-findings";
 
 /**
  * post-timeline Task2: 絞り込みシート（下から出るパネル）
@@ -29,8 +30,11 @@ import { TERMS } from "@/lib/terms";
  *
  * このシートは 2 か所で使う（同じ見た目を 2 つ書かないため。約束 14）。
  *   variant="posts" … 投稿一覧・検索結果（3.4.2）。予算・期間・カテゴリ・滞在時間 の **4 つ**
- *   variant="spots" … 地図の探すモード（3.4.6）。カテゴリ・予算（平均）・滞在時間・評価（平均）の **4 つ**
+ *   variant="spots" … 地図の探すモード（3.4.6）と検索結果のスポット一覧（3.4.2。#955 でこちらに移った）。
+ *                     カテゴリ・予算（平均）・滞在時間・評価（平均）・行ってわかったこと の **5 つ**
  *                     期間は出さない（移動手段が範囲を決めているため）
+ * #929（2026-10-17）: 5 つ目の「行ってわかったこと」を**いちばん下**に足した（要件 4.5.19）。
+ *   既存 4 節の並びは動かさない。**スポット単位の画面だけ**に出す（投稿一覧には出さない）
  *
  * ここの説明が中身とずれていたので直した（2026-10-16）。ずれていたのは 2 つ。
  *   - ~~距離~~ … **シートには節を作っていない**。型（`distance`）と `countActiveFilters` には残っていて、
@@ -50,6 +54,8 @@ export interface SheetFilters {
   distance?: DistanceOption | null;
   /** explore-mode Task 4: 平均評価の下限（1〜5）。地図だけ */
   rating?: number | null;
+  /** #929: 「行ってわかったこと」。スポット単位の画面だけ。選んだものを**すべて**満たすスポットに絞る */
+  findings?: readonly VisitFinding[];
   /** explore-mode Task 4: 「タビコエだけの場所」だけを出すか。地図だけ */
   /** #809: エリア（都道府県の並び）。「みんなの投稿」のときだけ使う */
   areas?: string[];
@@ -69,6 +75,8 @@ const CLEARED_FILTERS: SheetFilters = {
   to: "",
   distance: null,
   rating: null,
+  // #929: 「条件をクリア」で一緒に消す（要件 4.5.19）
+  findings: [],
   keyword: "",
   view: "posts",
 };
@@ -284,6 +292,46 @@ function FilterSheetBody<T extends SheetFilters>({
     (option) => (option === 5 ? "★5" : `★${option} 以上`)
   );
 
+  /*
+   * #929（2026-10-17）: 「行ってわかったこと」── シートのいちばん下に置く 5 つ目の節。
+   *
+   * 【初心者向け】**投稿画面（VisitFindingsField）とまったく同じ並び・同じ単語**で出す。
+   * 見出し（入れた／あった／平気だった／支払い）が左、チップが右。言葉が変わると、
+   * 投稿したときに選んだものと、絞り込みで探すものが**同じだと分からなくなる**。
+   *
+   * 複数選んだときは **AND**（すべて満たす）。カテゴリの「どれか 1 つ」とは違うので、
+   * そのことを下の 1 行で書いておく。
+   */
+  const toggleFinding = (finding: VisitFinding) => {
+    const current = draft.findings ?? [];
+    patch({ findings: current.includes(finding) ? current.filter((item) => item !== finding) : [...current, finding] });
+  };
+
+  const findingsSection = (
+    <fieldset key="findings">
+      <legend className="mb-1.5 text-[0.75rem] font-medium text-muted">行ってわかったこと（複数選択可）</legend>
+      <div className="flex flex-col gap-1.5">
+        {VISIT_FINDING_GROUPS.map((group) => (
+          <div key={group.key} className="flex items-start gap-2">
+            <span className="w-[4.5rem] shrink-0 pt-1.5 text-[0.6875rem] font-medium text-muted">{group.label}</span>
+            <div className="flex flex-1 flex-wrap gap-1.5">
+              {group.findings.map((finding) => {
+                const checked = (draft.findings ?? []).includes(finding);
+                return (
+                  <label key={finding} className={chip(checked)}>
+                    <input type="checkbox" checked={checked} onChange={() => toggleFinding(finding)} className="sr-only" />
+                    {VISIT_FINDING_LABELS[finding]}
+                  </label>
+                );
+              })}
+            </div>
+          </div>
+        ))}
+      </div>
+      <p className="mt-1 text-[0.6875rem] text-muted">選んだものが、すべてそろっている場所だけ表示されます</p>
+    </fieldset>
+  );
+
 
   // Bug #473: スポット別一覧は上 1/3 地図＋下 2/3 シート（MapSheetLayout）の中にあり、そのシートが `relative z-10` で
   // 重なり順の入れ物（stacking context）を作る。その中で fixed にしても z-10 の枠から出られず、メニューバー（z-40）の下に
@@ -335,7 +383,8 @@ function FilterSheetBody<T extends SheetFilters>({
 
         {isSpots
           /* #680: 「タビコエだけの場所」の行は廃止（決定事項 70）。地図は 4 つ、投稿一覧は 5 つ */
-          ? [categorySection, costSection, durationSection, ratingSection]
+          /* #929: 「行ってわかったこと」はいちばん下（5 つ目） */
+          ? [categorySection, costSection, durationSection, ratingSection, findingsSection]
           : [costSection, periodSection, categorySection, durationSection]}
 
         <div className="flex justify-between">

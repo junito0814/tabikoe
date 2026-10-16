@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { filterSpotsByAverage } from "./search-spots";
+import { filterSpotsByAverage, filterSpotsByIds } from "./search-spots";
 
 /**
  * #955（2026-10-16）: スポットの一覧を「平均」で絞る
@@ -51,5 +51,28 @@ describe("filterSpotsByAverage", () => {
     const costOnly = spot({ costSum: 1000, costCount: 1, ratingSum: 2, ratingCount: 1 });
     const ratingOnly = spot({ costSum: 9000, costCount: 1, ratingSum: 5, ratingCount: 1 });
     expect(filterSpotsByAverage([both, costOnly, ratingOnly], { cost: "1000", minRating: 4 })).toEqual([both]);
+  });
+});
+
+/**
+ * #929-c（2026-10-17）: 「行ってわかったこと」で絞る
+ * 出典: 要件定義書 4.5.19「絞り込み」
+ *
+ * どのスポットが残るかは `spotIdsWithAllFindings`（visit-findings.ts）が決めるので、
+ * ここで確かめるのは「渡された集合どおりに選んでいるか」だけ。
+ */
+describe("filterSpotsByIds（#929 行ってわかったこと）", () => {
+  const spots = [{ id: "a" }, { id: "b" }, { id: "c" }];
+
+  it("条件なし（null）なら 1 件も落とさない", () => {
+    expect(filterSpotsByIds(spots, null)).toEqual(spots);
+  });
+
+  it("集合に入っているスポットだけ残る", () => {
+    expect(filterSpotsByIds(spots, new Set(["a", "c"])).map((spot) => spot.id)).toEqual(["a", "c"]);
+  });
+
+  it("1 件も合わなければ空になる（「条件に合う投稿がありません」を出す側の入力）", () => {
+    expect(filterSpotsByIds(spots, new Set())).toEqual([]);
   });
 });

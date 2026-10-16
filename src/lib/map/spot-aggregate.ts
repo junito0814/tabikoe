@@ -2,6 +2,7 @@ import { costRangeBounds, COST_RANGES, durationsMatching } from "@/lib/posts/sea
 import type { CostRange } from "@/lib/posts/search-posts";
 import { POST_CATEGORIES, POST_DURATIONS, type PostCategory, type PostDuration } from "@/lib/posts/constants";
 import { resolveSpotCategory, type SpotCategoryInput } from "./spot-category";
+import { normalizeVisitFindings, type VisitFinding } from "@/lib/spots/visit-findings";
 
 /**
  * explore-mode Task 4: スポットの代表値と、絞り込みの判断
@@ -53,7 +54,14 @@ export interface SpotFilters {
   duration: PostDuration | null;
   /** 平均の下限（1〜5）。null は条件なし */
   minRating: number | null;
-  /** 「タビコエだけの場所」だけを出すか */
+  /**
+   * #929（2026-10-17）: 「行ってわかったこと」。選んだものを**すべて**満たすスポットだけ残す。
+   *
+   * 【初心者向け】ほかの 4 つと違って、これは**投稿から計算できません**（別の表に入っている）。
+   * そのため、どのスポットが残るかは呼ぶ側が先に調べ（`findSpotIdsWithAllFindings`）、
+   * `aggregateSpots` に id の集合として渡します。
+   */
+  findings: VisitFinding[];
 }
 
 export const EMPTY_SPOT_FILTERS: SpotFilters = {
@@ -61,6 +69,7 @@ export const EMPTY_SPOT_FILTERS: SpotFilters = {
   cost: null,
   duration: null,
   minRating: null,
+  findings: [],
 };
 
 /** 条件が 1 つでも入っているか（ボタンの色と、0 件のときの文言の出し分けに使う） */
@@ -75,6 +84,8 @@ export function activeSpotFilterCount(filters: SpotFilters): number {
   if (filters.cost) count += 1;
   if (filters.duration) count += 1;
   if (filters.minRating !== null) count += 1;
+  // #929: 何個選んでいても「行ってわかったこと」で 1 つ（カテゴリと同じ数え方）
+  if (filters.findings.length > 0) count += 1;
   return count;
 }
 
@@ -149,11 +160,20 @@ export interface SpotWithPosts {
  *
  * 投稿が 0 件のスポットは入らない（公開投稿のあるスポットを見せる画面なので）。
  */
-export function aggregateSpots(spots: readonly SpotWithPosts[], filters: SpotFilters): Map<string, SpotAggregate> {
+export function aggregateSpots(
+  spots: readonly SpotWithPosts[],
+  filters: SpotFilters,
+  /**
+   * #929: 「行ってわかったこと」で残ったスポットの id（`findSpotIdsWithAllFindings` の結果）。
+   * `null` は条件なし。別の表にあるデータなので、投稿からは計算できず、呼ぶ側が渡す。
+   */
+  allowedSpotIds: ReadonlySet<string> | null = null
+): Map<string, SpotAggregate> {
   const active = hasActiveSpotFilters(filters);
   const result = new Map<string, SpotAggregate>();
   for (const spot of spots) {
     if (spot.posts.length === 0) continue;
+    if (allowedSpotIds !== null && !allowedSpotIds.has(spot.id)) continue;
     const aggregate = aggregateSpot(spot.posts);
     if (active && !matchesSpotFilters(aggregate, { manual: spot.manual }, filters)) continue;
     result.set(spot.id, aggregate);
@@ -217,8 +237,11 @@ export function parseSpotFilters(searchParams: URLSearchParams): SpotFilters {
   const cost = searchParams.get("cost") ?? "";
   const duration = searchParams.get("duration") ?? "";
   const rating = Number(searchParams.get("rating"));
+  // #929: 知らない項目は落とし、決まった順に並べ直す（名前は投稿一覧と同じ `findings`）
+  const findings = normalizeVisitFindings((searchParams.get("findings") ?? "").split(",").map((value) => value.trim()));
   return {
     categories,
+    findings,
     cost: (COST_RANGES as readonly string[]).includes(cost) ? (cost as CostRange) : null,
     duration: isPostDuration(duration) ? duration : null,
     // 星は 1〜5 の整数だけ受ける（要件 3.4.6: 選択肢は ★1〜★5 の 5 つ）
@@ -238,5 +261,6 @@ export function spotFiltersToParams(filters: SpotFilters): [string, string][] {
   if (filters.cost) params.push(["cost", filters.cost]);
   if (filters.duration) params.push(["duration", filters.duration]);
   if (filters.minRating !== null) params.push(["rating", String(filters.minRating)]);
+  if (filters.findings.length > 0) params.push(["findings", filters.findings.join(",")]);
   return params;
 }

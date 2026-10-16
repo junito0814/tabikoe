@@ -9,6 +9,8 @@ import { findSavedSpotIds } from "@/lib/spots/saved-spots";
 import { averageRating } from "@/lib/map/get-map-pins";
 import { parsePostSearchParams, searchPostCards } from "@/lib/posts/search-posts";
 import { parseSpotSort, searchSpotCards, type SpotCardPage } from "@/lib/spots/search-spots";
+import { findSpotIdsWithAllFindings } from "@/lib/spots/visit-findings-db";
+import type { VisitFinding } from "@/lib/spots/visit-findings";
 import { searchMediaPage, type SpotMediaPage } from "@/lib/posts/search-photos";
 import { buildPostSearchParams } from "@/components/posts/post-search-query";
 import { resolveDestination, type ResolvedDestination } from "./resolve-destination";
@@ -96,7 +98,7 @@ export type SearchPageShell =
       addMode: AddModeInfo | null;
       spot: SpotSummary | null;
       /** 1 ページ目を取るための条件（loadSearchFirstPage に渡す） */
-      firstPageInput: { filters: ReturnType<typeof parsePostSearchParams>; spotSort: ReturnType<typeof parseSpotSort>; isPhotos: boolean; isSpotResult: boolean; empty: boolean; notFound: boolean; /** #955: 評価（平均）の下限。スポットの一覧だけで使う */ minRating: number | null };
+      firstPageInput: { filters: ReturnType<typeof parsePostSearchParams>; spotSort: ReturnType<typeof parseSpotSort>; isPhotos: boolean; isSpotResult: boolean; empty: boolean; notFound: boolean; /** #955: 評価（平均）の下限。スポットの一覧だけで使う */ minRating: number | null; /** #929: 行ってわかったこと。スポットの一覧だけで使う */ findings: VisitFinding[] };
     };
 
 /**
@@ -161,7 +163,7 @@ export async function loadSearchShell(admin: SupabaseClient, userId: string, que
       initialState,
       addMode,
       spot,
-      firstPageInput: { filters, spotSort: parseSpotSort(apiParams.get("sort")), isPhotos, isSpotResult, empty, notFound: resolved.kind === "not_found", minRating: initialState.rating },
+      firstPageInput: { filters, spotSort: parseSpotSort(apiParams.get("sort")), isPhotos, isSpotResult, empty, notFound: resolved.kind === "not_found", minRating: initialState.rating, findings: initialState.findings },
     };
   } catch {
     return { kind: "error" };
@@ -170,10 +172,14 @@ export async function loadSearchShell(admin: SupabaseClient, userId: string, que
 
 /** 1 ページ目（投稿／スポット／写真）。3 つは独立なので並列に。失敗は呼び出し側で扱う */
 export async function loadSearchFirstPage(admin: SupabaseClient, userId: string, shell: Extract<SearchPageShell, { kind: "ok" }>): Promise<SearchFirstPage> {
-  const { filters, spotSort, isPhotos, isSpotResult, empty, notFound, minRating } = shell.firstPageInput;
+  const { filters, spotSort, isPhotos, isSpotResult, empty, notFound, minRating, findings } = shell.firstPageInput;
+  // #929: 「行ってわかったこと」で残るスポットを先に出す（条件が無ければ null ＝ 絞らない）
+  const allowedSpotIds = await findSpotIdsWithAllFindings(admin, findings);
   const [initialPage, initialSpotPage, mediaPage] = await Promise.all([
     empty || isSpotResult ? Promise.resolve<PostCardPage>({ posts: [], nextOffset: null }) : searchPostCards(admin, userId, filters, 0),
-    empty || !isSpotResult ? Promise.resolve<SpotCardPage>({ spots: [], nextOffset: null }) : searchSpotCards(admin, userId, filters, spotSort, 0, undefined, minRating),
+    empty || !isSpotResult
+      ? Promise.resolve<SpotCardPage>({ spots: [], nextOffset: null })
+      : searchSpotCards(admin, userId, filters, spotSort, 0, undefined, minRating, allowedSpotIds),
     // 写真切替で開いたときは写真の 1 ページ目を取る（投稿一覧は「投稿」に戻したときにブラウザが取る）
     isPhotos && !notFound ? searchMediaPage(admin, userId, filters, 0, undefined, spotSort) : Promise.resolve(null),
   ]);

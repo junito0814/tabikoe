@@ -181,6 +181,8 @@ describe("NearbyVoices の絞り込み（explore-mode Task 4）", () => {
       cost: null,
       duration: null,
       minRating: 4,
+      // #929: 「行ってわかったこと」も同じシートから来る（何も選ばなければ空）
+      findings: [],
     });
   });
 
