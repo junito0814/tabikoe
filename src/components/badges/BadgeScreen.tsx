@@ -10,11 +10,25 @@ import type { BadgeCategory } from "@/lib/badges/catalog";
  * 都道府県は未投稿の県も含めて47都道府県すべてを出す。
  * 表示のみで操作は無いため Server Component。
  */
-const SECTIONS: { category: BadgeCategory; title: string; note: string }[] = [
+const SECTIONS: { category: BadgeCategory; title: string; note: string; hint?: string }[] = [
   { category: "post_count", title: "投稿数バッジ", note: "累計投稿数 1／10／50／100 件" },
   { category: "like_count", title: "いいね数バッジ", note: "累計獲得いいね数 1／10／50／100／200 件" },
   // v3.2（feedback-0919 Task2）
-  { category: "spot_registration", title: "スポット登録バッジ", note: "新しい場所を最初に登録した件数 1／3／5／10／20／30／50 件" },
+  /*
+   * #939（2026-10-16）: ~~「新しい場所を最初に登録した件数」~~ → **「地図に無かった場所を、自分で登録した件数」**。
+   *
+   * 【初心者向け】前の言い方だと「**誰よりも早く登録した人**」と読めてしまい、実際の条件が伝わらなかった。
+   *   増えるのは、投稿するときに **Google の検索に出てこない場所**を「この付近の新しい場所」から自分で登録したとき
+   *   （`src/app/api/spots/route.ts` が `source === "manual"` のときだけ `created_by` を入れる）。
+   *   「タビコエだけの場所」は #680 で廃止したので復活させず、「Google」とも名指ししない。
+   *   増やし方が分からないままだと集めようがないので、`hint` の 1 行を添える。
+   */
+  {
+    category: "spot_registration",
+    title: "スポット登録バッジ",
+    note: "地図に無かった場所を、自分で登録した件数 1／3／5／10／20／30／50 件",
+    hint: "投稿するとき「この付近の新しい場所」から登録すると増えます",
+  },
   { category: "prefecture", title: "都道府県バッジ", note: "各都道府県で 1 件以上投稿" },
 ];
 
@@ -48,7 +62,9 @@ export function BadgeScreen({ badges }: { badges: BadgeStatus[] }) {
         return (
           <section key={section.category} className="w-full max-w-[420px]">
             <h2 className="text-[0.8125rem] font-bold text-ink">{section.title}</h2>
-            <p className="mb-2.5 text-[0.6875rem] text-muted">{section.note}</p>
+            <p className={`text-[0.6875rem] text-muted${section.hint ? "" : " mb-2.5"}`}>{section.note}</p>
+            {/* #939: 増やし方の 1 行。ある種別だけに出すので、下の余白はこちらに付け替える */}
+            {section.hint && <p className="mb-2.5 text-[0.6875rem] text-muted">{section.hint}</p>}
             <ul
               className={
                 section.category === "prefecture"
