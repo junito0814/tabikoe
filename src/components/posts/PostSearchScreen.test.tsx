@@ -134,7 +134,15 @@ describe("PostSearchScreen（SC-04 タイムライン）", () => {
     expect(url2.searchParams.get("back")).toBe("/search?pref=東京都");
   });
 
-  it("絞り込みシートの選択がリクエストに反映され、件数がボタンに出る", async () => {
+  /*
+   * #955（2026-10-16）: 期間（訪問日）は**スポットの一覧では送らない**ようになった。
+   *
+   * 【初心者向け】検索結果・みんなの投稿は**スポットの一覧**で、絞り込みシートに期間を出しません。
+   * 出していない条件を送ると、画面から消せないのに効いている状態ができてしまいます。
+   * なお**この画面の絞り込みは本番では開けません**（#692 でスポット別では出さない決まりで、
+   * この画面が開かれるのはスポット別のときだけ）。ここで確かめているのは配線だけです。
+   */
+  it("絞り込みシートの選択がリクエストに反映され、件数がボタンに出る（期間は送らない）", async () => {
     const fetchPage = renderScreen({ context: nearby, title: "東京駅" });
     fireEvent.click(screen.getByRole("button", { name: "絞り込み" }));
     fireEvent.click(screen.getByLabelText("グルメ"));
@@ -152,9 +160,9 @@ describe("PostSearchScreen（SC-04 タイムライン）", () => {
       categories: "グルメ,宿泊施設",
       cost: "3000",
       duration: "2時間以内",
-      period: "this_month",
     });
-    expect(screen.getByRole("button", { name: "絞り込み（4）" })).toBeInTheDocument();
+    // 期間を選んでも送らず、数にも入れない（カテゴリ・予算・滞在時間の 3 つ）
+    expect(screen.getByRole("button", { name: "絞り込み（3）" })).toBeInTheDocument();
   });
 
   /** #681（2026-10-05）: 距離は廃止した（地図タブに置き換え。要件 3.4.2） */

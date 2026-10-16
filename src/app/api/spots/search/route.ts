@@ -27,9 +27,12 @@ export async function GET(request: Request) {
   const filters = parsePostSearchParams(searchParams);
   const sort = parseSpotSort(searchParams.get("sort"));
   const offset = Math.max(0, Number.parseInt(searchParams.get("offset") ?? "0", 10) || 0);
+  // #955: 評価（平均）の下限。1〜5 以外は条件なしとして扱う
+  const ratingValue = Number.parseInt(searchParams.get("rating") ?? "", 10);
+  const minRating = ratingValue >= 1 && ratingValue <= 5 ? ratingValue : null;
 
   try {
-    const page = await searchSpotCards(createAdminClient(), user.id, filters, sort, offset);
+    const page = await searchSpotCards(createAdminClient(), user.id, filters, sort, offset, undefined, minRating);
     return NextResponse.json(page);
   } catch {
     return NextResponse.json({ error: "fetch_failed" }, { status: 500 });
