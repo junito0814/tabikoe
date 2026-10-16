@@ -29,7 +29,7 @@ describe("StreamingSearchScreens（1 ページ目のストリーミング）", (
     await act(async () => {
       render(
         <Suspense fallback={<CardListSkeleton />}>
-          <StreamingSpotPostListScreen spot={spot} initialState={EMPTY_SEARCH_STATE} fetchPage={vi.fn()} firstPage={first.promise} />
+          <StreamingSpotPostListScreen videoEnabled spot={spot} initialState={EMPTY_SEARCH_STATE} fetchPage={vi.fn()} firstPage={first.promise} />
         </Suspense>
       );
     });
@@ -48,7 +48,7 @@ describe("StreamingSearchScreens（1 ページ目のストリーミング）", (
     await act(async () => {
       render(
         <Suspense fallback={<CardListSkeleton />}>
-          <StreamingSpotSearchScreen context={{ destination: { kind: "prefecture", name: "東京都" } }} initialState={EMPTY_SEARCH_STATE} title="東京都" backHref="/" backLabel="ホーム" fetchPage={vi.fn()} firstPage={first.promise} />
+          <StreamingSpotSearchScreen videoEnabled context={{ destination: { kind: "prefecture", name: "東京都" } }} initialState={EMPTY_SEARCH_STATE} title="東京都" backHref="/" backLabel="ホーム" fetchPage={vi.fn()} firstPage={first.promise} />
         </Suspense>
       );
     });

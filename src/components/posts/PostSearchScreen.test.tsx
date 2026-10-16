@@ -58,6 +58,7 @@ function renderScreen(props: Partial<Parameters<typeof PostSearchScreen>[0]> = {
   const fetchPage = vi.fn<(params: URLSearchParams) => Promise<{ posts: PostCardData[]; nextOffset: number | null }>>(async () => empty);
   render(
     <PostSearchScreen
+      videoEnabled
       context={pref}
       initialState={EMPTY_SEARCH_STATE}
       initialPage={empty}
@@ -221,7 +222,7 @@ describe("PostSearchScreen（SC-04 タイムライン）", () => {
 describe("PostCard（v3.2: コメントのプレビュー）", () => {
   it("コメントがあれば最新 1 件と「コメント N 件をすべて見る」が出て、押すとその場でシートが開く（#885）", () => {
     const item = card("p1", { commentCount: 3, latestComment: { authorName: "けんた", excerpt: "行列すごかった" } });
-    render(<PostSearchScreen context={{ destination: { kind: "spot", spotId: "spot-1" } }} initialState={EMPTY_SEARCH_STATE} initialPage={{ posts: [item], nextOffset: null }} title="たこ焼き〇〇" backHref="/" backLabel="ホーム" />);
+    render(<PostSearchScreen videoEnabled context={{ destination: { kind: "spot", spotId: "spot-1" } }} initialState={EMPTY_SEARCH_STATE} initialPage={{ posts: [item], nextOffset: null }} title="たこ焼き〇〇" backHref="/" backLabel="ホーム" />);
     const preview = document.querySelector("[data-comment-preview]") as HTMLElement;
     expect(preview).toHaveTextContent("けんた 行列すごかった");
     expect(preview).toHaveTextContent("コメント 3 件をすべて見る");
@@ -239,6 +240,7 @@ describe("loading-feedback Task 3: 条件を変えたら古い一覧を残さな
     const fetchPage = vi.fn(() => new Promise<typeof empty>((resolve) => { resolvePage = resolve; }));
     render(
       <PostSearchScreen
+      videoEnabled
         context={pref}
         initialState={EMPTY_SEARCH_STATE}
         initialPage={filled}
@@ -277,6 +279,7 @@ describe("#675: 引っ張って更新は付けない", () => {
   it("PullToRefresh で包まない", async () => {
     render(
       <PostSearchScreen
+      videoEnabled
         context={{ destination: { kind: "spot", spotId: "s1" } }}
         initialState={EMPTY_SEARCH_STATE}
         initialPage={{ posts: [], nextOffset: null }}

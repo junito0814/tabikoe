@@ -50,8 +50,11 @@ export function SpotSearchScreen({
   fetchPage = defaultFetchSpotPage,
   initialMediaPage = null,
   fetchMediaPage,
+  videoEnabled,
 }: {
   context: SearchContext;
+  /** #937: 動画も受け付けているか。写真タブの空の文面を「写真」「写真・動画」で分ける */
+  videoEnabled: boolean;
   initialState: PostSearchState;
   initialPage: SpotCardPage;
   title: string;
@@ -192,6 +195,7 @@ export function SpotSearchScreen({
             />
           ) : isPhotos ? (
             <PhotoGrid
+              videoEnabled={videoEnabled}
               key={mediaParams.toString()}
               params={mediaParams}
               initialPage={initialMediaPage && initialMediaPage.key === mediaParams.toString() ? initialMediaPage.page : { items: [], nextOffset: 0 }}
