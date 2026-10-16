@@ -310,10 +310,11 @@ export function AlbumScreen({
             <Link href={`/albums/${album.tripId}/photos`} className="inline-flex h-8 w-fit items-center gap-1 rounded-full border border-line bg-surface px-3 text-[0.75rem] font-semibold text-ink">
               写真
             </Link>
-            {/* itinerary-basics Task4: しおりのメンバーにだけ「しおりを見る」 */}
+            {/* itinerary-basics Task4: しおりのメンバーにだけ出す。
+                #938（2026-10-13）: ~~「しおりを見る」~~ → **「しおり」**。隣の「写真」と形をそろえる */}
             {album.itineraryId && (
               <Link href={`/itineraries/${album.itineraryId}?back=${encodeURIComponent(`/albums/${album.tripId}`)}`} className="inline-flex h-8 w-fit items-center gap-1 rounded-full border border-line bg-surface px-3 text-[0.75rem] font-semibold text-ink">
-                しおりを見る
+                しおり
               </Link>
             )}
           </div>

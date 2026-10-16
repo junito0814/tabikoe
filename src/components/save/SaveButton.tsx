@@ -14,7 +14,7 @@ import { TERMS } from "@/lib/terms";
  *       要件定義書 v3.0 3.6.4・3.11.4
  *
  * 【初心者向け】投稿カード・スポット別見出し・投稿詳細・ピンの吹き出しに置く丸い「＋」。
- *   - 通常: 押すと保存先シート（SaveSheet: 行きたい／しおり）。閉じたら「〈しおり名〉に保存しました [しおりを見る]」のトースト。
+ *   - 通常: 押すと保存先シート（SaveSheet: 行きたい／しおり）。閉じたら「〈しおり名〉に保存しました [しおり]」のトースト（#938 で「しおりを見る」から短くした）。
  *           保存済み（行きたい or しおり）なら「✓」表示
  *   - 追加モード（addMode）: シートを出さず、そのしおりに直接追加する。入っていれば「✓」で、押すと外れる
  * `onPress` を渡すと既定の動きを差し替えられる（テストや特殊な入口用）。
@@ -121,7 +121,7 @@ export function SaveButton({
              */
             setSaved(isSpotSaved(result.wishlisted, result.inAnyItinerary));
             if (result.savedItinerary) {
-              setToast({ text: `${result.savedItinerary.title} に保存しました`, action: { label: "しおりを見る", href: `/itineraries/${result.savedItinerary.id}` } });
+              setToast({ text: `${result.savedItinerary.title} に保存しました`, action: { label: "しおり", href: `/itineraries/${result.savedItinerary.id}` } });
             }
           }}
         />

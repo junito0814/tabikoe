@@ -5,7 +5,7 @@ import Link from "next/link";
 
 /**
  * 共通: 画面下のトースト（数秒で消える短い知らせ。任意でリンクを 1 つ）
- * 出典: docs/wireframes.md（「Day 2 に移動しました [Day 2 を見る]」「大阪旅行 に保存しました [しおりを見る]」）
+ * 出典: docs/wireframes.md（「Day 2 に移動しました [Day 2 を見る]」「大阪旅行 に保存しました [しおり]」）
  *
  * 【初心者向け】state は親が持つ（`toast` が null なら何も出さない）。表示から AUTO_HIDE_MS 後に onClose を呼ぶ。
  * `role="status"` は「重要ではないが知らせたい」領域で、スクリーンリーダーが読み上げる。
