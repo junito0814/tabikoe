@@ -21,12 +21,21 @@ export async function spotTitle(spotId: string): Promise<string | null> {
   return data?.name ?? null;
 }
 
-/** 投稿の「〈スポット名〉の投稿」。公開されていない投稿は null */
+/**
+ * 投稿の「〈スポット名〉の投稿」。公開されていない投稿は null。
+ *
+ * #952（2026-10-17）: **`visibility = public` の条件が抜けていました。**
+ * 上のコメントは「下書き・非公開・削除では名前を出さない」と書いてあるのに、
+ * 絞っていたのは下書き（`status`）と非表示（`hidden_at`）だけで、**非公開投稿のスポット名が
+ * タブ名に出ていました**。#951 でこの画面を未ログインに開けたので、
+ * **ログインしていない人にも見えてしまう**状態になりました（本文は「見つかりません」なのに）。
+ */
 export async function postTitle(postId: string): Promise<string | null> {
   const { data } = await createAdminClient()
     .from("posts")
     .select("spots(name)")
     .eq("id", postId)
+    .eq("visibility", "public")
     .eq("status", "published")
     .is("hidden_at", null)
     .maybeSingle();

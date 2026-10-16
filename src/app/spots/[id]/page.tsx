@@ -13,6 +13,7 @@ import { resolveListBack } from "@/lib/search/list-state";
 import { ContentEnter } from "@/components/transitions/Reveal";
 import { officialInfoSlot } from "@/components/spots/OfficialInfo";
 import { spotTitle } from "@/lib/metadata/page-title";
+import { spotShareCard } from "@/lib/metadata/share-card";
 
 /**
  * SC-04 投稿一覧（スポット別）
@@ -39,7 +40,12 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
    * 画面を開くたびに 1 回呼ぶ**ので、クローラの巡回がそのまま無料枠を使ってしまうため。
    */
   const robots = { index: false } as const;
-  return name ? { title: name, robots } : { robots };
+  if (!name) return { robots };
+  /*
+   * #952（2026-10-17）: 共有したときに出るリンクカード。
+   * `robots: { index: false }` とは両立する（検索には載せないが、カードは読まれる）。
+   */
+  return { title: name, robots, ...(await spotShareCard(id, name)) };
 }
 
 export default async function SpotPostsPage({
