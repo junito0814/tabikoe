@@ -272,7 +272,7 @@ export function WishlistScreen({
                 })
               );
               if (saved) {
-                setToast({ text: `${saved.title} に保存しました`, action: { label: "しおりを見る", href: `/itineraries/${saved.id}` } });
+                setToast({ text: `${saved.title} に保存しました`, action: { label: "しおり", href: `/itineraries/${saved.id}` } });
               }
               // 外したときも取り直す（どのしおりが残ったかはサーバーが正）
               router.refresh();

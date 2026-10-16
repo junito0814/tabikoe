@@ -69,7 +69,7 @@ describe("SaveButton / SaveSheet", () => {
     fireEvent.click(screen.getByRole("button", { name: "完了" }));
     expect(screen.queryByRole("dialog")).toBeNull();
     expect(await screen.findByRole("status")).toHaveTextContent("大阪旅行 に保存しました");
-    expect(screen.getByRole("link", { name: "しおりを見る" })).toHaveAttribute("href", "/itineraries/it-1");
+    expect(screen.getByRole("link", { name: "しおり" })).toHaveAttribute("href", "/itineraries/it-1");
     expect(screen.getByRole("button", { name: "行きたいに入っています（押すと変えられます）" })).toHaveAttribute("aria-pressed", "true");
   });
 

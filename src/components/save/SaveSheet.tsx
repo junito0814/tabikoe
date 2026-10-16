@@ -23,7 +23,7 @@ import { TERMS } from "@/lib/terms";
  *         チェックで /api/itineraries/[id]/spots を呼び、期間があれば Day の選択（既定は未定）を展開する
  *         「＋ 新しいしおりを作る」はタイトルだけで作り、そのままこのスポットを入れる
  * チェックの付け外しだけで保存・削除が確定する（「完了」は閉じるだけ）。閉じるときに保存したしおりを親へ知らせ、
- * 親がトースト「〈しおり名〉に保存しました [しおりを見る]」を出す。
+ * 親がトースト「〈しおり名〉に保存しました [しおり]」を出す。
  */
 export interface SaveSheetApi {
   itineraries: ItineraryApi;

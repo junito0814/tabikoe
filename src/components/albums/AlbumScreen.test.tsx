@@ -72,12 +72,12 @@ describe("AlbumScreen（SC-09）", () => {
     expect(screen.getByRole("link", { name: /写真/ })).toHaveAttribute("href", "/albums/trip-1/photos");
   });
 
-  it("v3.0: しおりのメンバーにだけ「しおりを見る」が出る", () => {
+  it("v3.0: しおりのメンバーにだけ「しおり」が出る", () => {
     const { unmount } = render(<AlbumScreen album={{ ...album("editor"), itineraryId: "it-1" }} initialInvitations={[]} viewerId="me" api={api()} />);
-    expect(screen.getByRole("link", { name: /しおりを見る/ })).toHaveAttribute("href", "/itineraries/it-1?back=%2Falbums%2Ftrip-1");
+    expect(screen.getByRole("link", { name: "しおり" })).toHaveAttribute("href", "/itineraries/it-1?back=%2Falbums%2Ftrip-1");
     unmount();
     render(<AlbumScreen album={album("editor")} initialInvitations={[]} viewerId="me" api={api()} />);
-    expect(screen.queryByRole("link", { name: /しおりを見る/ })).toBeNull();
+    expect(screen.queryByRole("link", { name: "しおり" })).toBeNull();
   });
 
   it("v3.1: 「名前を変更」ボタンは無く、しおりが無いアルバムはオーナーがタイトルをタップして変更。しおりがあればタイトルは押せない", () => {
