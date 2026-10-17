@@ -7,6 +7,7 @@ import { parseTravelMode } from "@/lib/geo/travel-time";
 import { boundsAround } from "@/lib/posts/search-posts";
 import { findMatchingSpotIds } from "@/lib/map/get-map-pins";
 import { hasActiveSpotFilters, parseSpotFilters } from "@/lib/map/spot-aggregate";
+import { findSpotIdsWithAllFindings } from "@/lib/spots/visit-findings-db";
 
 /**
  * explore-mode Task1: 近くの投稿 API
@@ -43,7 +44,15 @@ export async function GET(request: Request) {
     const admin = createAdminClient();
     // 絞り込みが効いていないときは、余分な問い合わせをしない
     const allowedSpotIds = hasActiveSpotFilters(filters)
-      ? await findMatchingSpotIds(admin, user.id, boundsAround({ lat, lng }, radius), filters, NEARBY_FETCH_CAP)
+      ? await findMatchingSpotIds(
+          admin,
+          user.id,
+          boundsAround({ lat, lng }, radius),
+          filters,
+          NEARBY_FETCH_CAP,
+          // #929: 「行ってわかったこと」は投稿からは計算できないので、先に引いて渡す
+          await findSpotIdsWithAllFindings(admin, filters.findings)
+        )
       : null;
     const posts = await getNearbyPosts(admin, user.id, { lat, lng }, radius, mode, { allowedSpotIds });
     return NextResponse.json({ radius, mode, posts });

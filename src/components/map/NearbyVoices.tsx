@@ -15,6 +15,7 @@ import {
 } from "@/lib/map/spot-aggregate";
 import type { PostCategory, PostDuration } from "@/lib/posts/constants";
 import type { CostRange } from "@/lib/posts/search-posts";
+import type { VisitFinding } from "@/lib/spots/visit-findings";
 import { FilterButton } from "@/components/posts/FilterButton";
 import { FilterSheet } from "@/components/posts/FilterSheet";
 import { CARD_ATTRIBUTE, centeredCardIndex, scrollToCard } from "./card-strip";
@@ -37,14 +38,16 @@ interface SpotSheetValue {
   cost: CostRange | null;
   duration: PostDuration | null;
   rating: number | null;
+  /** #929: 「行ってわかったこと」。こちらはシートと同じ名前なので、そのまま行き来する */
+  findings: readonly VisitFinding[];
 }
 
 function toSheet(filters: SpotFilters): SpotSheetValue {
-  return { categories: filters.categories, cost: filters.cost, duration: filters.duration, rating: filters.minRating };
+  return { categories: filters.categories, cost: filters.cost, duration: filters.duration, rating: filters.minRating, findings: filters.findings };
 }
 
 function fromSheet(value: SpotSheetValue): SpotFilters {
-  return { categories: value.categories, cost: value.cost, duration: value.duration, minRating: value.rating };
+  return { categories: value.categories, cost: value.cost, duration: value.duration, minRating: value.rating, findings: [...value.findings] };
 }
 
 /**

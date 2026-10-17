@@ -1,6 +1,6 @@
 import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { isVisitFinding, normalizeVisitFindings, VISIT_FINDINGS, type VisitFinding } from "./visit-findings";
+import { isVisitFinding, normalizeVisitFindings, spotIdsWithAllFindings, VISIT_FINDINGS, type VisitFinding } from "./visit-findings";
 
 /**
  * #929: 「行ってわかったこと」の読み書き
@@ -86,4 +86,26 @@ export async function summarizeVisitFindings(admin: SupabaseClient, spotId: stri
     const found = byFinding.get(finding);
     return found ? [{ finding, count: found.count, latestAt: found.latestAt }] : [];
   });
+}
+
+/**
+ * #929-c: 選んだ項目を**すべて**満たすスポットの id を引く。条件が空なら `null`（＝絞らない）。
+ *
+ * 【初心者向け】判定そのものは純粋関数（`spotIdsWithAllFindings`）に置いてあり、ここは
+ * **DB から材料を取ってくるだけ**です。検索結果の一覧と地図の探すモードが、
+ * どちらもこの関数を呼ぶので、同じスポットが出ます。
+ *
+ * 絞り込みに使う項目の行だけを引きます（11 項目のうち選んだぶんだけ）。
+ */
+export async function findSpotIdsWithAllFindings(
+  admin: SupabaseClient,
+  findings: readonly VisitFinding[]
+): Promise<Set<string> | null> {
+  if (findings.length === 0) return null;
+  const { data, error } = await admin.from("spot_visit_findings").select("spot_id, finding").in("finding", [...findings]);
+  if (error || !data) return new Set();
+  return spotIdsWithAllFindings(
+    (data as { spot_id: string; finding: string }[]).map((row) => ({ spotId: row.spot_id, finding: row.finding })),
+    findings
+  );
 }

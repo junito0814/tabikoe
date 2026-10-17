@@ -54,3 +54,36 @@ export function normalizeVisitFindings(values: readonly unknown[]): VisitFinding
   const chosen = new Set(values.filter(isVisitFinding));
   return VISIT_FINDINGS.filter((finding) => chosen.has(finding));
 }
+
+/**
+ * #929-c: 絞り込みの判定（純粋関数）。選んだ項目が**すべて**そろっているスポットの id を返す。
+ *
+ * 【初心者向け】カテゴリは「どれか 1 つ」（OR）ですが、こちらは **AND** です。
+ * 投稿のカテゴリは 1 件に 1 つしか無いので OR にするしかありませんが、
+ * スポットは報告を**複数持てる**ので意味が変わります。犬を連れていて車でも行く人は、
+ * ペットと駐車場の**両方**そろっていないと意味がありません（要件 4.5.19）。
+ * Airbnb のアメニティ、食べログのこだわり条件も AND です。
+ *
+ * 報告が 1 つも無いスポットは、条件を 1 つでも選んだ時点で落ちます
+ * （費用で絞ると未入力の投稿が出ないのと同じ考え方）。
+ *
+ * **ここが「どのスポットが残るか」を決める唯一の場所**です。検索結果（search-spots.ts）と
+ * 地図の探すモード（spot-aggregate.ts）はどちらもこの答えを使うので、食い違いません（約束 14）。
+ */
+export function spotIdsWithAllFindings(
+  rows: readonly { spotId: string; finding: string }[],
+  required: readonly VisitFinding[]
+): Set<string> {
+  const bySpot = new Map<string, Set<string>>();
+  for (const row of rows) {
+    if (!isVisitFinding(row.finding)) continue;
+    const current = bySpot.get(row.spotId);
+    if (current) current.add(row.finding);
+    else bySpot.set(row.spotId, new Set([row.finding]));
+  }
+  const matched = new Set<string>();
+  for (const [spotId, findings] of bySpot) {
+    if (required.every((finding) => findings.has(finding))) matched.add(spotId);
+  }
+  return matched;
+}
