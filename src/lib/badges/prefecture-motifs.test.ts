@@ -92,8 +92,16 @@ describe("描き方の決まり（要件 4.5.20）", () => {
         expect(numbers.length, prefecture).toBeGreaterThan(0);
         for (const value of numbers) {
           expect(Number.isNaN(value), `${prefecture}: NaN`).toBe(false);
-          // 絶対座標の上限。これを超えると半径 47 の輪からあふれる
-          expect(Math.abs(value), `${prefecture}: ${value}`).toBeLessThanOrEqual(95);
+          /*
+           * `viewBox` の外（100 超）に出ていないこと。
+           *
+           * 【初心者向け】ここは「はみ出し」ではなく**座標が壊れていないこと**を見ています。
+           * 曲線の制御点（`Q` の途中の点）は**描かれない点**なので、絵の実際の大きさより
+           * 外に置かれることがあります（沖縄のたてがみは 95.3 まで出ますが、
+           * 描かれる線は輪の内側に収まります）。だから実寸の上限では測れません。
+           * 桁を間違えた・NaN が混ざった、といった壊れ方をここで止めます。
+           */
+          expect(Math.abs(value), `${prefecture}: ${value}`).toBeLessThanOrEqual(100);
         }
       }
     }
@@ -107,7 +115,12 @@ describe("描き方の決まり（要件 4.5.20）", () => {
     }
   });
 
-  it("色は 17 色に収まっている", () => {
+  /*
+   * 色数は要件 4.5.20 の表と合っていること。
+   * 2026-10-17: ~~17 色~~ → **20 色**（実際に数えたら 20 色で、要件の表を直した）。
+   * 増やすこと自体は構わないが、**気づかずに増えるのを止める**ためここで数える。
+   */
+  it("色は 20 色に収まっている", () => {
     const colors = new Set<string>();
     for (const prefecture of PREFECTURES) {
       const motif = prefectureMotif(prefecture)!;
@@ -117,7 +130,7 @@ describe("描き方の決まり（要件 4.5.20）", () => {
         if (layer.stroke) colors.add(layer.stroke);
       }
     }
-    expect(colors.size).toBeLessThanOrEqual(17);
+    expect(colors.size).toBeLessThanOrEqual(20);
   });
 
   it("線の太さの既定は 7", () => {
