@@ -5,6 +5,7 @@ import { PhotoGrid, type FetchMediaPage } from "@/components/media/PhotoGrid";
 import { fetchWithAuthRedirect } from "@/lib/api/fetch-with-auth-redirect";
 import type { SpotMediaPage } from "@/lib/posts/search-photos";
 import { BackLink } from "@/components/layout/BackLink";
+import { mediaLabel } from "@/lib/posts/media-label";
 
 /**
  * F-RC-05 Task2: SC-21 アルバム写真一覧（画面）
@@ -15,7 +16,18 @@ import { BackLink } from "@/components/layout/BackLink";
  * fetchPage を /api/trips/[id]/photos に向けた関数に差し替えて渡す（PhotoGrid は offset を足して呼ぶ）。
  * タップでモーダル（情報バー＋「この投稿を見る →」）、40 点ずつ無限スクロール、新着順。
  */
-export function AlbumPhotoGalleryScreen({ tripId, title, initialPage }: { tripId: string; title: string; initialPage: SpotMediaPage }) {
+export function AlbumPhotoGalleryScreen({
+  tripId,
+  title,
+  initialPage,
+  videoEnabled,
+}: {
+  tripId: string;
+  title: string;
+  initialPage: SpotMediaPage;
+  /** #937: 動画も受け付けているか。見出しと空のときの文面を「写真」「写真・動画」で分ける */
+  videoEnabled: boolean;
+}) {
   const fetchPage = useMemo<FetchMediaPage>(() => (params) => fetchAlbumMediaPage(tripId, params), [tripId]);
   const params = useMemo(() => new URLSearchParams(), []);
 
@@ -25,9 +37,9 @@ export function AlbumPhotoGalleryScreen({ tripId, title, initialPage }: { tripId
         <header className="flex flex-col gap-1">
           {/* #813: 下線付きの「← 題名」をやめ、他の画面と同じ共通部品に揃えた */}
           <BackLink href={`/albums/${tripId}`} label={title} />
-          <h1 className="text-[1.125rem] font-bold text-ink">写真・動画</h1>
+          <h1 className="text-[1.125rem] font-bold text-ink">{mediaLabel(videoEnabled)}</h1>
         </header>
-        <PhotoGrid params={params} initialPage={initialPage} fetchPage={fetchPage} backHref={`/albums/${tripId}/photos`} />
+        <PhotoGrid params={params} initialPage={initialPage} fetchPage={fetchPage} backHref={`/albums/${tripId}/photos`} videoEnabled={videoEnabled} />
       </div>
     </div>
   );

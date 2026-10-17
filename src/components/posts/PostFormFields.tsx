@@ -20,6 +20,9 @@ import {
   type PostVisibility,
   autoDurationForCategory,
 } from "@/lib/posts/constants";
+import { mediaLabel } from "@/lib/posts/media-label";
+import { VisitFindingsField } from "./VisitFindingsField";
+import type { VisitFinding } from "@/lib/spots/visit-findings";
 
 /**
  * post-creation-v3 Task2: 投稿フォームの項目（配置を 2 列・横並びに詰めた版）
@@ -42,6 +45,8 @@ export interface PostFormValues {
   rating: number;
   comment: string;
   visibility: PostVisibility;
+  /** #929: 行ってわかったこと。**投稿ではなくスポットに付く**（1 人 1 スポット）ので、保存先だけ別 */
+  visitFindings: VisitFinding[];
 }
 
 export const EMPTY_POST_FORM_VALUES: PostFormValues = {
@@ -53,6 +58,7 @@ export const EMPTY_POST_FORM_VALUES: PostFormValues = {
   rating: 0,
   comment: "",
   visibility: "public",
+  visitFindings: [],
 };
 
 const inputClass =
@@ -279,14 +285,14 @@ export function PostFormFields({
         *   `videoUploadDisabled` が true のときは、選んだ時点で `decideMedia` が断る。
         */}
       <div className="flex flex-col gap-1.5">
-        <span className="text-[0.75rem] font-medium text-muted">{videoUploadDisabled ? "写真 *" : "写真・動画 *"}</span>
+        <span className="text-[0.75rem] font-medium text-muted">{mediaLabel(!videoUploadDisabled)} *</span>
         <SelectedMediaThumbnails
           items={mediaItems}
           onRemove={onRemoveMedia}
           removingKey={removingMediaKey}
           onAdd={onAddMedia}
           onOpen={onOpenMedia}
-          addLabel={videoUploadDisabled ? "写真を追加" : "写真・動画を追加"}
+          addLabel={`${mediaLabel(!videoUploadDisabled)}を追加`}
         />
         <input
           ref={fileInputRef}
@@ -294,11 +300,18 @@ export function PostFormFields({
           accept={videoUploadDisabled ? "image/jpeg,image/png" : "image/jpeg,image/png,video/mp4,video/quicktime,.mov"}
           multiple
           onChange={onFilesSelected}
-          aria-label={videoUploadDisabled ? "写真を選択" : "写真・動画を選択"}
+          aria-label={`${mediaLabel(!videoUploadDisabled)}を選択`}
           className="sr-only"
         />
         <UploadNotice compact videoEnabled={!videoUploadDisabled} />
       </div>
+
+      {/*
+        * #929: 「行ってわかったこと（任意）」は**感想のすぐ上**。
+        * スポット単位の情報なので、投稿の中身（星・費用）とは性質が違うが、
+        * 書き終わる直前に「そういえば」と思い出す場所がここ。
+        */}
+      <VisitFindingsField value={values.visitFindings} onChange={(visitFindings) => onChange({ visitFindings })} />
 
       {/* 感想（2 行から伸びる）と公開設定（ラベル行の右端） */}
       <div className="flex flex-col gap-1">

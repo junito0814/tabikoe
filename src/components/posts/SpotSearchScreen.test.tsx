@@ -41,7 +41,7 @@ beforeEach(() => {
 
 describe("SpotSearchScreen（SC-04 検索結果・スポット単位）", () => {
   it("スポットカードに スポット名・★の平均・投稿件数・感想・まだあった が出て、リンク先はスポット別一覧", () => {
-    render(<SpotSearchScreen context={pref} initialState={EMPTY_SEARCH_STATE} initialPage={{ spots: [spot("s1"), spot("s2")], nextOffset: null }} title="東京都" backHref="/" backLabel="ホーム" />);
+    render(<SpotSearchScreen videoEnabled context={pref} initialState={EMPTY_SEARCH_STATE} initialPage={{ spots: [spot("s1"), spot("s2")], nextOffset: null }} title="東京都" backHref="/" backLabel="ホーム" />);
     expect(document.querySelectorAll("[data-spot-card]")).toHaveLength(2);
     const card = document.querySelector("[data-spot-card='s2']") as HTMLElement;
     expect(card).toHaveTextContent("スポット s2");
@@ -59,7 +59,7 @@ describe("SpotSearchScreen（SC-04 検索結果・スポット単位）", () => 
 
   it("並び替えは 新着順／評価順／投稿数順 で、投稿数順を選ぶと sort=count で取り直し URL も変わる", async () => {
     const fetchPage = vi.fn<(params: URLSearchParams) => Promise<{ spots: SpotCardData[]; nextOffset: number | null }>>(async () => ({ spots: [spot("s9")], nextOffset: null }));
-    render(<SpotSearchScreen context={pref} initialState={EMPTY_SEARCH_STATE} initialPage={{ spots: [spot("s1")], nextOffset: null }} title="東京都" backHref="/" backLabel="ホーム" fetchPage={fetchPage} />);
+    render(<SpotSearchScreen videoEnabled context={pref} initialState={EMPTY_SEARCH_STATE} initialPage={{ spots: [spot("s1")], nextOffset: null }} title="東京都" backHref="/" backLabel="ホーム" fetchPage={fetchPage} />);
     // #812: 自前のリストをやめ、ブラウザ標準の <select> になった
     const sort = screen.getByRole("combobox", { name: "並び替え" });
     expect(within(sort).getAllByRole("option").map((o) => o.textContent)).toEqual(["新着順", "評価順", "投稿数順"]);
@@ -77,7 +77,7 @@ describe("SpotSearchScreen（SC-04 検索結果・スポット単位）", () => 
   });
 
   it("0 件のときは案内文", () => {
-    render(<SpotSearchScreen context={pref} initialState={EMPTY_SEARCH_STATE} initialPage={{ spots: [], nextOffset: null }} title="東京都" backHref="/" backLabel="ホーム" />);
+    render(<SpotSearchScreen videoEnabled context={pref} initialState={EMPTY_SEARCH_STATE} initialPage={{ spots: [], nextOffset: null }} title="東京都" backHref="/" backLabel="ホーム" />);
     expect(screen.getByText("条件に合う投稿がありません")).toBeInTheDocument();
   });
 });
@@ -93,7 +93,7 @@ describe("SpotSearchScreen（SC-04 検索結果・スポット単位）", () => 
  */
 describe("#673: 引っ張って更新", () => {
   it("検索結果は PullToRefresh で包まれている", () => {
-    render(<SpotSearchScreen context={pref} initialState={EMPTY_SEARCH_STATE} initialPage={{ spots: [spot("s1")], nextOffset: null }} title="東京都" backHref="/" backLabel="ホーム" />);
+    render(<SpotSearchScreen videoEnabled context={pref} initialState={EMPTY_SEARCH_STATE} initialPage={{ spots: [spot("s1")], nextOffset: null }} title="東京都" backHref="/" backLabel="ホーム" />);
     const container = document.querySelector("[data-pull-to-refresh]");
     expect(container, "検索結果は「付ける」6 画面の 1 つ（受入条件 96）").not.toBeNull();
     // 中身ごと包んでいること（一部だけ包むと、引ける場所が画面の一部に限られる）
@@ -107,7 +107,7 @@ describe("#673: 引っ張って更新", () => {
  */
 describe("地図タブ（#681）", () => {
   it("検索結果では 投稿／写真／地図 の 3 つが選べる", () => {
-    render(<SpotSearchScreen context={pref} initialState={EMPTY_SEARCH_STATE} initialPage={{ spots: [spot("s1")], nextOffset: null }} title="東京都" backHref="/" backLabel="ホーム" />);
+    render(<SpotSearchScreen videoEnabled context={pref} initialState={EMPTY_SEARCH_STATE} initialPage={{ spots: [spot("s1")], nextOffset: null }} title="東京都" backHref="/" backLabel="ホーム" />);
     const toggle = screen.getByRole("radiogroup", { name: "表示" });
     expect(within(toggle).getAllByRole("radio").map((radio) => radio.textContent)).toEqual(["投稿", "写真", "地図"]);
   });
@@ -121,19 +121,19 @@ const allPosts: SearchContext = { destination: null };
 
 describe("エリアの絞り込み（#809）", () => {
   it("みんなの投稿では、絞り込みに「エリア」の行が出る", () => {
-    render(<SpotSearchScreen context={allPosts} initialState={EMPTY_SEARCH_STATE} initialPage={{ spots: [spot("s1")], nextOffset: null }} title="みんなの投稿" backHref="/" backLabel="ホーム" />);
+    render(<SpotSearchScreen videoEnabled context={allPosts} initialState={EMPTY_SEARCH_STATE} initialPage={{ spots: [spot("s1")], nextOffset: null }} title="みんなの投稿" backHref="/" backLabel="ホーム" />);
     fireEvent.click(screen.getByRole("button", { name: "絞り込み" }));
     expect(document.querySelector("[data-area-row]")).not.toBeNull();
   });
 
   it("検索結果（行き先あり）では「エリア」の行を出さない（行き先が決まっているため）", () => {
-    render(<SpotSearchScreen context={pref} initialState={EMPTY_SEARCH_STATE} initialPage={{ spots: [spot("s1")], nextOffset: null }} title="東京都" backHref="/" backLabel="ホーム" />);
+    render(<SpotSearchScreen videoEnabled context={pref} initialState={EMPTY_SEARCH_STATE} initialPage={{ spots: [spot("s1")], nextOffset: null }} title="東京都" backHref="/" backLabel="ホーム" />);
     fireEvent.click(screen.getByRole("button", { name: "絞り込み" }));
     expect(document.querySelector("[data-area-row]")).toBeNull();
   });
 
   it("「エリア」を押すと都道府県を選ぶ画面になり、地方の □ でまとめて選べる", () => {
-    render(<SpotSearchScreen context={allPosts} initialState={EMPTY_SEARCH_STATE} initialPage={{ spots: [spot("s1")], nextOffset: null }} title="みんなの投稿" backHref="/" backLabel="ホーム" />);
+    render(<SpotSearchScreen videoEnabled context={allPosts} initialState={EMPTY_SEARCH_STATE} initialPage={{ spots: [spot("s1")], nextOffset: null }} title="みんなの投稿" backHref="/" backLabel="ホーム" />);
     fireEvent.click(screen.getByRole("button", { name: "絞り込み" }));
     fireEvent.click(document.querySelector("[data-area-row]") as HTMLElement);
     expect(document.querySelector("[data-area-picker]")).not.toBeNull();
@@ -143,7 +143,7 @@ describe("エリアの絞り込み（#809）", () => {
 
   it("全部選んだ地方の札は 1 枚にまとまり、× でその地方ごと外れる", () => {
     const kanto = ["茨城県", "栃木県", "群馬県", "埼玉県", "千葉県", "東京都", "神奈川県"];
-    render(<SpotSearchScreen context={allPosts} initialState={{ ...EMPTY_SEARCH_STATE, areas: kanto }} initialPage={{ spots: [spot("s1")], nextOffset: null }} title="みんなの投稿" backHref="/" backLabel="ホーム" />);
+    render(<SpotSearchScreen videoEnabled context={allPosts} initialState={{ ...EMPTY_SEARCH_STATE, areas: kanto }} initialPage={{ spots: [spot("s1")], nextOffset: null }} title="みんなの投稿" backHref="/" backLabel="ホーム" />);
     const chips = document.querySelector("[data-area-chips]");
     expect(chips?.querySelectorAll("button")).toHaveLength(1);
     expect(chips).toHaveTextContent("関東");
@@ -152,7 +152,7 @@ describe("エリアの絞り込み（#809）", () => {
   });
 
   it("一部だけの地方は都道府県ごとの札", () => {
-    render(<SpotSearchScreen context={allPosts} initialState={{ ...EMPTY_SEARCH_STATE, areas: ["東京都", "神奈川県"] }} initialPage={{ spots: [spot("s1")], nextOffset: null }} title="みんなの投稿" backHref="/" backLabel="ホーム" />);
+    render(<SpotSearchScreen videoEnabled context={allPosts} initialState={{ ...EMPTY_SEARCH_STATE, areas: ["東京都", "神奈川県"] }} initialPage={{ spots: [spot("s1")], nextOffset: null }} title="みんなの投稿" backHref="/" backLabel="ホーム" />);
     expect(document.querySelector("[data-area-chips]")?.querySelectorAll("button")).toHaveLength(2);
   });
 });

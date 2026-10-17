@@ -82,7 +82,7 @@ describe("タップして大きく見る", () => {
     await pick([photo()], {
       postId: "p1",
       status: "draft",
-      values: { tripTitle: "", category: "", visitDate: "", duration: "", cost: "", rating: 0, comment: "", visibility: "public" },
+      values: { tripTitle: "", category: "", visitDate: "", duration: "", cost: "", rating: 0, comment: "", visibility: "public", visitFindings: [] },
       spot: null,
       position: null,
       photos: [{ id: "ph1", url: "https://example.test/ph1.jpg", mediaType: "photo" }],

@@ -58,6 +58,7 @@ function renderScreen(props: Partial<Parameters<typeof PostSearchScreen>[0]> = {
   const fetchPage = vi.fn<(params: URLSearchParams) => Promise<{ posts: PostCardData[]; nextOffset: number | null }>>(async () => empty);
   render(
     <PostSearchScreen
+      videoEnabled
       context={pref}
       initialState={EMPTY_SEARCH_STATE}
       initialPage={empty}
@@ -134,7 +135,15 @@ describe("PostSearchScreen（SC-04 タイムライン）", () => {
     expect(url2.searchParams.get("back")).toBe("/search?pref=東京都");
   });
 
-  it("絞り込みシートの選択がリクエストに反映され、件数がボタンに出る", async () => {
+  /*
+   * #955（2026-10-16）: 期間（訪問日）は**スポットの一覧では送らない**ようになった。
+   *
+   * 【初心者向け】検索結果・みんなの投稿は**スポットの一覧**で、絞り込みシートに期間を出しません。
+   * 出していない条件を送ると、画面から消せないのに効いている状態ができてしまいます。
+   * なお**この画面の絞り込みは本番では開けません**（#692 でスポット別では出さない決まりで、
+   * この画面が開かれるのはスポット別のときだけ）。ここで確かめているのは配線だけです。
+   */
+  it("絞り込みシートの選択がリクエストに反映され、件数がボタンに出る（期間は送らない）", async () => {
     const fetchPage = renderScreen({ context: nearby, title: "東京駅" });
     fireEvent.click(screen.getByRole("button", { name: "絞り込み" }));
     fireEvent.click(screen.getByLabelText("グルメ"));
@@ -152,9 +161,9 @@ describe("PostSearchScreen（SC-04 タイムライン）", () => {
       categories: "グルメ,宿泊施設",
       cost: "3000",
       duration: "2時間以内",
-      period: "this_month",
     });
-    expect(screen.getByRole("button", { name: "絞り込み（4）" })).toBeInTheDocument();
+    // 期間を選んでも送らず、数にも入れない（カテゴリ・予算・滞在時間の 3 つ）
+    expect(screen.getByRole("button", { name: "絞り込み（3）" })).toBeInTheDocument();
   });
 
   /** #681（2026-10-05）: 距離は廃止した（地図タブに置き換え。要件 3.4.2） */
@@ -221,7 +230,7 @@ describe("PostSearchScreen（SC-04 タイムライン）", () => {
 describe("PostCard（v3.2: コメントのプレビュー）", () => {
   it("コメントがあれば最新 1 件と「コメント N 件をすべて見る」が出て、押すとその場でシートが開く（#885）", () => {
     const item = card("p1", { commentCount: 3, latestComment: { authorName: "けんた", excerpt: "行列すごかった" } });
-    render(<PostSearchScreen context={{ destination: { kind: "spot", spotId: "spot-1" } }} initialState={EMPTY_SEARCH_STATE} initialPage={{ posts: [item], nextOffset: null }} title="たこ焼き〇〇" backHref="/" backLabel="ホーム" />);
+    render(<PostSearchScreen videoEnabled context={{ destination: { kind: "spot", spotId: "spot-1" } }} initialState={EMPTY_SEARCH_STATE} initialPage={{ posts: [item], nextOffset: null }} title="たこ焼き〇〇" backHref="/" backLabel="ホーム" />);
     const preview = document.querySelector("[data-comment-preview]") as HTMLElement;
     expect(preview).toHaveTextContent("けんた 行列すごかった");
     expect(preview).toHaveTextContent("コメント 3 件をすべて見る");
@@ -239,6 +248,7 @@ describe("loading-feedback Task 3: 条件を変えたら古い一覧を残さな
     const fetchPage = vi.fn(() => new Promise<typeof empty>((resolve) => { resolvePage = resolve; }));
     render(
       <PostSearchScreen
+      videoEnabled
         context={pref}
         initialState={EMPTY_SEARCH_STATE}
         initialPage={filled}
@@ -277,6 +287,7 @@ describe("#675: 引っ張って更新は付けない", () => {
   it("PullToRefresh で包まない", async () => {
     render(
       <PostSearchScreen
+      videoEnabled
         context={{ destination: { kind: "spot", spotId: "s1" } }}
         initialState={EMPTY_SEARCH_STATE}
         initialPage={{ posts: [], nextOffset: null }}

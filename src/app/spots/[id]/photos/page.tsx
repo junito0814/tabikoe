@@ -1,7 +1,15 @@
 import { redirect } from "next/navigation";
+import { isVideoUploadDisabled } from "@/lib/video/process-video";
+import { mediaLabel } from "@/lib/posts/media-label";
 
-// #785: ブラウザのタブ名（「写真・動画 | タビコエ」）
-export const metadata = { title: "写真・動画" };
+/*
+ * #785: ブラウザのタブ名。
+ * #937（2026-10-16）: ここも手で書いてあったので、動画の受付フラグに連動させる。
+ *   この画面は転送するだけだが、転送の前に一瞬だけタブ名が出るので揃える。
+ */
+export function generateMetadata() {
+  return { title: mediaLabel(!isVideoUploadDisabled()) };
+}
 
 /**
  * 旧 SC-13 スポット写真一覧（v1）

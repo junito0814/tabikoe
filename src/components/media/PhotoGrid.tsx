@@ -11,6 +11,7 @@ import { formatCost } from "@/components/posts/PostCard";
 import { MediaModal } from "./MediaModal";
 import { MediaThumbnail, type MediaItem } from "./MediaGrid";
 import { gridColumnsForWidth, MIN_GALLERY_COLUMNS } from "./gallery-columns";
+import { mediaLabel } from "@/lib/posts/media-label";
 
 export type FetchMediaPage = (params: URLSearchParams) => Promise<SpotMediaPage>;
 
@@ -30,6 +31,7 @@ export function PhotoGrid({
   initialPage,
   fetchPage = defaultFetchMediaPage,
   backHref = null,
+  videoEnabled,
 }: {
   /** 投稿一覧と同じ検索条件（offset は含めない） */
   params: URLSearchParams;
@@ -38,6 +40,11 @@ export function PhotoGrid({
   fetchPage?: FetchMediaPage;
   /** Bug #471: モーダルの「この投稿を見る →」に渡す戻り先（この一覧の URL）。無ければ付けない */
   backHref?: string | null;
+  /**
+   * #937: 動画も受け付けているか。空のときの文面を「写真」「写真・動画」で分ける。
+   * **既定値を置かない**（置くと、渡し忘れた画面で表示だけがずれて気づけない）
+   */
+  videoEnabled: boolean;
 }) {
   const [items, setItems] = useState<SpotMediaItem[]>(initialPage.items);
   const [nextOffset, setNextOffset] = useState<number | null>(initialPage.nextOffset);
@@ -92,7 +99,7 @@ export function PhotoGrid({
       <div ref={containerRef} data-columns={columns}>
         {items.length === 0 ? (
           // 1 ページ目が未取得（nextOffset が 0）のときは番兵が見えて自動で読み込む
-          <p className="py-16 text-center text-[0.8125rem] text-muted">{nextOffset !== null ? "読み込んでいます…" : "まだ写真・動画がありません"}</p>
+          <p className="py-16 text-center text-[0.8125rem] text-muted">{nextOffset !== null ? "読み込んでいます…" : `まだ${mediaLabel(videoEnabled)}がありません`}</p>
         ) : (
           <ul className="grid gap-0.5" style={{ gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))` }}>
             {items.map((item, index) => (
