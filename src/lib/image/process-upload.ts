@@ -8,9 +8,21 @@ import type { SupabaseClient } from "@supabase/supabase-js";
  * 要件定義書5.4準拠。将来的にF-PO（投稿の写真アップロード）でも再利用する想定の共通モジュール。
  */
 
-const MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024;
+/*
+ * #899（2026-10-17）: この 2 つを **export** にした。
+ *
+ * 【初心者向け】`avatars` バケット側にも同じ上限・同じ形式を掛けたので
+ * （`supabase/migrations/20261017000002_avatars_bucket_limits_apply.sql`）、
+ * **2 か所に同じ数字がある**状態になりました。ずれると「アプリは通すのに Storage が弾く」
+ * （またはその逆）が起き、原因が分かりにくくなります。
+ * そこで**ここを唯一の出どころ**にし、マイグレーションと一致していることをテストで見ます（約束 14）。
+ */
+export const MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024;
 const MAX_DIMENSION_PX = 1200;
-const ALLOWED_FORMATS = new Set(["jpeg", "png"]);
+export const ALLOWED_FORMATS = new Set(["jpeg", "png"]);
+
+/** `avatars` バケットに掛ける受付形式（上の `ALLOWED_FORMATS` を MIME 型にしたもの） */
+export const ALLOWED_MIME_TYPES = ["image/jpeg", "image/png"] as const;
 
 export class ImageValidationError extends Error {}
 
