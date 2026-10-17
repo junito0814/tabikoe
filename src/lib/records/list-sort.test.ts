@@ -37,5 +37,8 @@ describe("選択肢と文字", () => {
     expect(listSortLabel("oldest", "保存")).toBe("保存が古い順");
     expect(listSortLabel("newest", "作成")).toBe("作成が新しい順");
     expect(listSortLabel("oldest", "作成")).toBe("作成が古い順");
+    // #954: SC-34 は「いいねを押した順」。基準の言葉を 1 つ足すだけで済む
+    expect(listSortLabel("newest", "いいね")).toBe("いいねが新しい順");
+    expect(listSortLabel("oldest", "いいね")).toBe("いいねが古い順");
   });
 });

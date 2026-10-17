@@ -23,6 +23,7 @@ import { SettingGroup, SettingRow } from "./SettingRow";
 export function AccountScreen({
   displayName,
   blockedCount,
+  likedPostCount,
   isAdmin,
   profileForm,
   blockedList,
@@ -31,6 +32,8 @@ export function AccountScreen({
 }: {
   displayName: string;
   blockedCount: number;
+  /** #954: いいねした投稿（SC-34）の件数。いま見られるものだけ */
+  likedPostCount: number;
   isAdmin: boolean;
   /** 名前と画像の編集（シートの中に入れる） */
   profileForm: ReactNode;
@@ -53,6 +56,15 @@ export function AccountScreen({
         <SettingGroup>
           <SettingRow label="名前と画像" value={displayName || "未設定"} onClick={() => setSheet("profile")} />
           <SettingRow label="ブロック中のユーザー" value={`${blockedCount} 人`} onClick={() => setSheet("blocked")} />
+          {/*
+            * #954（2026-10-17）: 「いいねした投稿」（SC-34）への入口。
+            *
+            * 【初心者向け】マイページのメニュー（行きたい・アルバム・投稿履歴）に足すと 4 つになり、
+            * 3 列 1 行の並びが崩れます。いいねした投稿は「行きたい」ほど頻繁には開かないので、
+            * ここの行で足りると判断しました（Instagram も設定の中に置いています。要件 3.6.6）。
+            * **文字の色はほかの行と同じ**にします（色で目立たせない）。
+            */}
+          <SettingRow label="いいねした投稿" value={`${likedPostCount} 件`} href="/likes" />
         </SettingGroup>
 
         <SettingGroup>

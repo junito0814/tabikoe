@@ -18,8 +18,11 @@ export type ListSort = (typeof LIST_SORTS)[number];
  * （保存した日なのか、投稿された日なのか、スポットができた日なのか）。
  * 画面ごとに基準が違うので、基準の言葉（「保存」「作成」）を受け取って作ります。
  * アルバム一覧がラベルを自前で書いていたのも、ここに寄せました（約束 14）。
+ *
+ * #954（2026-10-17）: 「いいね」を足した（SC-34。「いいねが新しい順」「いいねが古い順」）。
+ * 基準の言葉を 1 つ足すだけで済むのが、この形にしてあることの効き目です。
  */
-export type ListSortBasis = "保存" | "作成";
+export type ListSortBasis = "保存" | "作成" | "いいね";
 
 export function listSortLabel(sort: ListSort, basis: ListSortBasis): string {
   return sort === "newest" ? `${basis}が新しい順` : `${basis}が古い順`;

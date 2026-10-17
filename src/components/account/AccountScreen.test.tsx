@@ -9,11 +9,12 @@ import { AccountScreen } from "./AccountScreen";
  *       Issue #783「Bug 3: 「アカウント」に戻るが無い。見出しの重複、効かない「保存」」
  *       要件定義書 4.5.16
  */
-const show = (isAdmin = false) =>
+const show = (isAdmin = false, likedPostCount = 0) =>
   render(
     <AccountScreen
       displayName="たろう"
       blockedCount={0}
+      likedPostCount={likedPostCount}
       isAdmin={isAdmin}
       profileForm={<p>名前と画像の編集</p>}
       blockedList={<p>いません</p>}
@@ -81,5 +82,28 @@ describe("アカウントまわりに下線の操作リンクが無い（#799）
   it("underline を使っているファイルが無い", () => {
     const offenders = files.filter((path) => readFileSync(path, "utf8").includes("underline"));
     expect(offenders).toEqual([]);
+  });
+});
+
+/**
+ * #954（2026-10-17）: 「いいねした投稿」（SC-34）への入口
+ * 出典: 要件定義書 3.6.6、ワイヤーフレーム決定事項 98
+ */
+describe("いいねした投稿への行（#954）", () => {
+  it("1 つ目のグループの 3 行目に出て、押すと SC-34 へ行く", () => {
+    show(false, 12);
+    const row = screen.getByRole("link", { name: /いいねした投稿/ });
+    expect(row).toHaveAttribute("href", "/likes");
+    expect(row).toHaveTextContent("12 件");
+    // 1 つ目のグループ（名前と画像・ブロック中のユーザー）の 3 行目
+    const group = row.closest("ul") as HTMLElement;
+    expect([...group.children].map((li) => li.textContent?.slice(0, 5))).toEqual(["名前と画像", "ブロック中", "いいねした"]);
+  });
+
+  it("文字の色はほかの行と同じ（色で目立たせない）", () => {
+    show(false, 3);
+    const label = screen.getByText("いいねした投稿");
+    expect(label).toHaveClass("text-ink");
+    expect(label).not.toHaveClass("text-saved");
   });
 });
