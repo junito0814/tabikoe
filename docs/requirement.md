@@ -2585,6 +2585,7 @@ v1 で確認済みの条件（アカウント・アルバム・通報・通知�
 | 5 | 17 テーブル | itineraries・itinerary_spots・itinerary_members・itinerary_invitations・spot_status_reports を追加、posts に status・lat・lng・published_at |
 | 8 | 受入条件 43 件 | 廃止機能の条件を差し替え、27 件を追加して 70 件に |
 | 9 | 6 件 | 下書きリマインド・MOV 変換・Autocomplete 利用量の 3 件を追加し 9 件に |
+| 19 | 4.5.18 | **存在しない投稿・スポットの URL が HTTP 200 を返す**（画面には「見つかりません」が正しく出る。2026-10-17・#964 に調査）。原因は**ストリーミング**で、`loading.tsx` の骨組みを送り始めた時点で応答のヘッダが出るため、あとから `notFound()` を呼んでも**ステータスを変えられない**（Next のドキュメント `loading.md`「Status Codes」に明記されている）。**`generateMetadata` で判定する案は効かなかった** ── 本番ビルドで実測したところ、`notFound()` を待ちなしで呼べば 404 になるが、**DB を `await` してから呼ぶと 200 のまま**だった（ドキュメントの「suspend しうる `await` より前に置くこと」に反する）。**直すには `proxy` で判定するしかない**が、在る投稿のほうが圧倒的に多いのに**全アクセスに問い合わせを 1 回増やす**ので、いまは採らない。**検索エンジンには影響しない** ── `notFound()` は `<meta name="robots" content="noindex">` を入れ、この 2 画面は `robots: { index: false }` も付けている（ドキュメントも「noindex なので soft 404 でも索引されない」と書いている）。残るのは**監視・ログで 404 を数えられない**ことだけ | 提出後 |
 
 ## 付録：v2.7からの主な変更差分まとめ
 
