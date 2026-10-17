@@ -7,9 +7,17 @@ import { ERROR_MESSAGES } from "@/components/notices/error-messages";
 import { AlbumPhotoGalleryScreen } from "@/components/albums/AlbumPhotoGalleryScreen";
 import { getAlbumMediaPage } from "@/lib/albums/album-photos";
 import type { SpotMediaPage } from "@/lib/posts/search-photos";
+import { isVideoUploadDisabled } from "@/lib/video/process-video";
+import { mediaLabel } from "@/lib/posts/media-label";
 
-// #785: ブラウザのタブ名（「写真・動画 | タビコエ」）
-export const metadata = { title: "写真・動画" };
+/*
+ * #785: ブラウザのタブ名。
+ * #937（2026-10-16）: 手で「写真・動画」と書いていたので、**動画の受付フラグに連動**させる。
+ *   タブ名はサーバーで決まるので `generateMetadata` に替えて `isVideoUploadDisabled()` を読む。
+ */
+export function generateMetadata() {
+  return { title: mediaLabel(!isVideoUploadDisabled()) };
+}
 
 /**
  * SC-21 アルバム写真一覧
@@ -49,5 +57,5 @@ export default async function AlbumPhotosPage({ params }: { params: Promise<{ id
     notFound();
   }
 
-  return <AlbumPhotoGalleryScreen tripId={id} title={title} initialPage={page} />;
+  return <AlbumPhotoGalleryScreen tripId={id} title={title} initialPage={page} videoEnabled={!isVideoUploadDisabled()} />;
 }

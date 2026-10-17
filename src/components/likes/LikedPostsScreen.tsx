@@ -38,6 +38,7 @@ export function LikedPostsScreen({
   view,
   sort,
   totalCount,
+  videoEnabled,
   initialPage,
   initialMediaPage,
   fetchPosts = defaultFetchLikedPosts,
@@ -47,6 +48,8 @@ export function LikedPostsScreen({
   sort: ListSort;
   /** 見出しの右に出す件数（いま見られるものだけ。一覧と必ず一致する） */
   totalCount: number;
+  /** #937: 動画も受け付けているか。写真グリッドの文言が「写真」「写真・動画」で変わる */
+  videoEnabled: boolean;
   initialPage: PostCardPage;
   initialMediaPage: SpotMediaPage;
   /** 差し替え口（単体テスト用） */
@@ -128,7 +131,7 @@ export function LikedPostsScreen({
               action={{ label: "投稿を探す", href: "/" }}
             />
           ) : view === "photos" ? (
-            <PhotoGrid params={photoParams} initialPage={initialMediaPage} fetchPage={fetchPage} backHref={hrefFor("photos", sort)} />
+            <PhotoGrid params={photoParams} initialPage={initialMediaPage} fetchPage={fetchPage} backHref={hrefFor("photos", sort)} videoEnabled={videoEnabled} />
           ) : (
             <>
               <ul className="flex flex-col gap-3">

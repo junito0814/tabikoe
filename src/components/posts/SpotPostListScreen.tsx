@@ -54,9 +54,13 @@ export function SpotPostListScreen({
   fetchPage,
   back = null,
   official = null,
+  visitFindings = null,
+  videoEnabled,
   isGuest = false,
 }: {
   spot: SpotSummary;
+  /** #937: 動画も受け付けているか。写真タブの空の文面に使う（そのまま PostSearchScreen へ渡す） */
+  videoEnabled: boolean;
   initialState: PostSearchState;
   initialPage: PostCardPage;
   initialMediaPage?: { key: string; page: SpotMediaPage } | null;
@@ -73,6 +77,8 @@ export function SpotPostListScreen({
    * そのまま置く「差し込み口」として受け取る。出すものが無ければ null が来る。
    */
   official?: React.ReactNode;
+  /** #929: 「行ってわかったこと」。中身はサーバーで作る（VisitFindingsSlot） */
+  visitFindings?: React.ReactNode;
   /** #951: 未ログイン（共有リンク）で見ているか（要件 4.5.18） */
   isGuest?: boolean;
 }) {
@@ -95,6 +101,11 @@ export function SpotPostListScreen({
           */}
       </p>
       {official}
+      {/*
+        * #929（2026-10-16）: 「行ってわかったこと」は**公式情報の下、「まだありますか？」のすぐ上**。
+        * どちらも**スポット単位の情報**（1 人 1 件）で、同じ仲間だから並べる（要件 4.5.19）。
+        */}
+      {visitFindings}
       {/*
         * #875（2026-10-07）: 「この場所、まだありますか？」はここに置く。
         *
@@ -148,6 +159,7 @@ export function SpotPostListScreen({
   return (
     <MapSheetLayout map={map} summary={summary}>
       <PostSearchScreen
+        videoEnabled={videoEnabled}
         context={context}
         initialState={initialState}
         initialPage={initialPage}

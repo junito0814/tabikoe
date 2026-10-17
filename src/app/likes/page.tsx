@@ -7,6 +7,7 @@ import { ContentEnter } from "@/components/transitions/Reveal";
 import { LikedPostsScreen } from "@/components/likes/LikedPostsScreen";
 import { countLikedPosts, getLikedMediaPage, getLikedPostCards } from "@/lib/likes/liked-posts";
 import { parseListSort } from "@/lib/records/list-sort";
+import { isVideoUploadDisabled } from "@/lib/video/process-video";
 import type { PostCardPage } from "@/lib/posts/post-cards";
 import type { SpotMediaPage } from "@/lib/posts/search-photos";
 
@@ -63,6 +64,7 @@ export default async function LikedPostsPage({ searchParams }: { searchParams: P
         view={isPhotos ? "photos" : "posts"}
         sort={sort}
         totalCount={loaded.totalCount}
+        videoEnabled={!isVideoUploadDisabled()}
         initialPage={loaded.initialPage}
         initialMediaPage={loaded.initialMediaPage}
       />

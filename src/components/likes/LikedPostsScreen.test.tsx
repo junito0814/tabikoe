@@ -51,6 +51,7 @@ const show = (over: Partial<Parameters<typeof LikedPostsScreen>[0]> = {}) =>
       view="posts"
       sort="newest"
       totalCount={1}
+      videoEnabled
       initialPage={page([post("a", "浅草寺")])}
       initialMediaPage={EMPTY_MEDIA}
       {...over}
