@@ -1,0 +1,72 @@
+# Migrate: マイグレーションを CI から当てる（#944）
+#
+# 【初心者向け】いまは `supabase/migrations/` にファイルを足しても、どこにも自動では当たりません。
+# 実際には `scripts/apply_<日付>.sql` にまとめて写し、Supabase の SQL エディタに貼っています
+# （docs/deployment.md「マイグレーションの当て方」）。貼り忘れ・二重貼りに気づけないので、
+# CI から当てる形に移します。
+#
+# **ただし一気に移しません。** いまこのファイルにあるのは **① 検査だけ** です。
+#
+#   ① PR          : 当てずに、何が増えるかを出すだけ   ← いまここ
+#   ② main に push : 開発用に当てる（自動）              ← まだ入れない
+#   ③ 本番         : 承認を押したら当てる（Environments）← まだ入れない
+#
+# なぜ順番に入れるのか。**記録表（`supabase_migrations.schema_migrations`）が、いまどの DB にも
+# ありません**（2026-10-17 に開発用で確認）。この状態で `supabase db push` を走らせると
+# **52 本すべてが最初から流れ**、既にある表を作ろうとして止まるか、データが消えます。
+# まず「52 本はもう当たっている」と記録し（`scripts/migrations/build-repair-sql.mjs`）、
+# ① が空振りすることを目で見てから ②③ を足します。
+#
+# ① は**当てません**。`migration list` は読むだけです。PR 段階で当てると、
+# **マージされなかった PR の表が開発用に残ります**。開発用は確認作業で共用しているので、
+# 壊れると確認が全部止まります。
+name: Migrate
+
+on:
+  pull_request:
+    # マイグレーションを触っていない PR では走らせない（Actions の分数を節約）
+    paths: ["supabase/migrations/**"]
+
+concurrency:
+  group: migrate-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  inspect:
+    name: 何が増えるかを出す（当てない）
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      # Secret が未設定でも PR を止めない（#944 の手順 2 を踏む前の PR でも通るように）
+      - name: Secret があるか
+        id: secret
+        run: |
+          if [ -n "${{ secrets.DEV_SUPABASE_DB_URL }}" ]; then
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::DEV_SUPABASE_DB_URL が未設定です。差分の比較はとばします（#944 の手順 5）"
+          fi
+
+      # 当てずに「手元にあるもの」と「DB に記録されているもの」を並べて出すだけ
+      - name: 開発用 DB との差分
+        if: steps.secret.outputs.ready == 'true'
+        run: supabase migration list --db-url "${{ secrets.DEV_SUPABASE_DB_URL }}"
+
+      # 記録表がまだ無い間は、上の差分が「52 本すべて未適用」に見える。
+      # そのとき db push を走らせてはいけないことを、ログに出して気づけるようにする
+      - name: 記録表が追いついているか
+        if: steps.secret.outputs.ready == 'true'
+        run: |
+          applied=$(supabase migration list --db-url "${{ secrets.DEV_SUPABASE_DB_URL }}" | grep -cE '^\s+\|?\s*[0-9]{14}' || true)
+          files=$(ls supabase/migrations/*.sql | wc -l | tr -d ' ')
+          echo "手元のファイル: ${files} 本"
+          if [ "$applied" = "0" ]; then
+            echo "::warning::記録表が空です。db push を走らせると ${files} 本すべてが流れます。先に scripts/migrations/build-repair-sql.mjs の SQL を当ててください（#944 の手順 1）"
+          fi
