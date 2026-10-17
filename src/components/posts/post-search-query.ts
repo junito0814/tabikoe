@@ -33,8 +33,13 @@ export interface PostSearchState {
   distance: DistanceOption | null;
   cost: CostRange | null;
   duration: PostDuration | null;
-  /** v3.0: 期間（訪問日） */
+  /** v3.0: 期間（訪問日）。**スポットの一覧では使わない**（絞り込みシートに出さない。#955） */
   period: PeriodOption | null;
+  /**
+   * #955（2026-10-16）: 平均評価の下限（1〜5）。**スポットの一覧でだけ使う**。
+   * 投稿一覧（スポット別）には出さない ── 1 件の投稿に「平均」は無いため。
+   */
+  rating: number | null;
   /** period が custom のときの日付（YYYY-MM-DD。空なら未指定） */
   from: string;
   to: string;
@@ -74,6 +79,7 @@ export const EMPTY_SEARCH_STATE: PostSearchState = {
   cost: null,
   duration: null,
   period: null,
+  rating: null,
   from: "",
   to: "",
   sort: "newest",
@@ -95,8 +101,18 @@ export function distanceCenter(context: SearchContext): { lat: number; lng: numb
   return context.destination?.kind === "nearby" ? { lat: context.destination.lat, lng: context.destination.lng } : null;
 }
 
-/** 適用中の絞り込みの種類数（「絞り込み（N）」の N。並び替えは数えない） */
+/**
+ * 適用中の絞り込みの種類数（「絞り込み（N）」の N。並び替えは数えない）
+ *
+ * #955（2026-10-16）: スポットの一覧（検索結果・みんなの投稿）は カテゴリ・予算（平均）・
+ * 滞在時間・評価（平均）の 4 つになったので、**期間は数えず、評価を数える**。
+ *
+ * 【初心者向け】距離はどちらの用途でもシートに出していませんが、**駅の検索など別の経路から
+ * URL に入ってくる**ので、今までどおり数えます（数えないと、効いているのに数が出ません）。
+ * 期間は**このシートでしか設定されない**ので、出さなくなった用途では読むのもやめます。
+ */
 export function countActiveFilters(state: PostSearchState, context: SearchContext): number {
+  const isSpotList = isSpotResultContext(context);
   return (
     (state.keyword.trim() ? 1 : 0) +
     (state.categories.length > 0 ? 1 : 0) +
@@ -104,7 +120,8 @@ export function countActiveFilters(state: PostSearchState, context: SearchContex
     (state.distance !== null && distanceCenter(context) ? 1 : 0) +
     (state.cost !== null ? 1 : 0) +
     (state.duration !== null ? 1 : 0) +
-    (state.period !== null ? 1 : 0)
+    (!isSpotList && state.period !== null ? 1 : 0) +
+    (isSpotList && state.rating !== null ? 1 : 0)
   );
 }
 
@@ -118,9 +135,11 @@ function appendStateParams(params: URLSearchParams, state: PostSearchState, cont
   // 距離は基準点が分かっている時だけ意味を持つ
   if (state.distance !== null && distanceCenter(context)) params.set("distance", String(state.distance));
   if (state.cost !== null) params.set("cost", state.cost);
+  // #955: 評価（平均）はスポットの一覧だけ
+  if (isSpotResultContext(context) && state.rating !== null) params.set("rating", String(state.rating));
   // Task 6: 地図（3.4.6）と同じ名前。地図 → 投稿一覧へ条件を持ち越せる
   if (state.duration !== null) params.set("duration", state.duration);
-  if (state.period !== null) {
+  if (!isSpotResultContext(context) && state.period !== null) {
     params.set("period", state.period);
     if (state.period === "custom") {
       if (state.from) params.set("from", state.from);
@@ -192,6 +211,8 @@ export function parseSearchState(params: URLSearchParams, context: SearchContext
   const cost = params.get("cost");
   const duration = params.get("duration");
   const period = params.get("period");
+  // #955: 評価（平均）は 1〜5 の整数だけ受ける。スポットの一覧以外では読まない
+  const ratingValue = Number.parseInt(params.get("rating") ?? "", 10);
   const date = (value: string | null) => (value && /^\d{4}-\d{2}-\d{2}$/.test(value) ? value : "");
   return {
     // 座標付きの q は行き先のラベルなのでキーワードにしない
@@ -202,7 +223,9 @@ export function parseSearchState(params: URLSearchParams, context: SearchContext
     distance: distanceCenter(context) ? distance : null,
     cost: includes(COST_RANGES, cost) ? cost : null,
     duration: includes(POST_DURATIONS, duration) ? duration : null,
-    period: includes(PERIOD_OPTIONS, period) ? period : null,
+    // #955: 期間はスポットの一覧では出さない条件なので、そこでは読まない（URL に残っていても無視する）
+    period: isSpotResultContext(context) ? null : (includes(PERIOD_OPTIONS, period) ? period : null),
+    rating: isSpotResultContext(context) && ratingValue >= 1 && ratingValue <= 5 ? ratingValue : null,
     from: date(params.get("from")),
     to: date(params.get("to")),
     sort: isSpotResultContext(context) ? parseSpotSort(params.get("sort")) : parsePostSort(params.get("sort")),

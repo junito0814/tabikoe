@@ -15,11 +15,16 @@ import {
  */
 const nearby: SearchContext = { destination: { kind: "nearby", lat: 35.6812, lng: 139.7671, label: "東京駅" } };
 const pref: SearchContext = { destination: { kind: "prefecture", name: "大阪府" } };
+/*
+ * #955（2026-10-16）: 期間（訪問日）は**スポット別の投稿一覧でだけ**使う条件になった。
+ * 検索結果（都道府県・駅・みんなの投稿）はスポットの一覧で、絞り込みシートに期間を出さないため。
+ */
+const spotCtx: SearchContext = { destination: { kind: "spot", spotId: "spot-1" } };
 
 describe("buildPostSearchParams", () => {
   it("行き先＋選択した条件だけをクエリに載せる", () => {
     const params = buildPostSearchParams(
-      { ...EMPTY_SEARCH_STATE, categories: ["グルメ", "観光スポット"], distance: 1000, cost: "3000", duration: "1時間以内", period: "this_month", sort: "rating" },
+      { ...EMPTY_SEARCH_STATE, categories: ["グルメ", "観光スポット"], distance: 1000, cost: "3000", duration: "1時間以内", rating: 4, sort: "rating" },
       nearby,
       20,
       { lat: 35, lng: 139 }
@@ -32,7 +37,7 @@ describe("buildPostSearchParams", () => {
       distance: "1000",
       cost: "3000",
       duration: "1時間以内",
-      period: "this_month",
+      rating: "4",
       sort: "rating",
       vlat: "35",
       vlng: "139",
@@ -46,18 +51,28 @@ describe("buildPostSearchParams", () => {
     expect(Object.fromEntries(params)).toEqual({ pref: "大阪府" });
   });
 
-  it("日付指定は from/to を付ける", () => {
-    const params = buildPostSearchParams({ ...EMPTY_SEARCH_STATE, period: "custom", from: "2026-05-01", to: "" }, pref, 0);
+  it("日付指定は from/to を付ける（スポット別の投稿一覧）", () => {
+    const params = buildPostSearchParams({ ...EMPTY_SEARCH_STATE, period: "custom", from: "2026-05-01", to: "" }, spotCtx, 0);
     expect(params.get("period")).toBe("custom");
     expect(params.get("from")).toBe("2026-05-01");
     expect(params.has("to")).toBe(false);
+  });
+
+  // #955: スポットの一覧は期間を出さないので、持っていても送らない（効いているのに消せない条件を作らない）
+  it("スポットの一覧では、期間を送らない／評価（平均）を送る", () => {
+    const state = { ...EMPTY_SEARCH_STATE, period: "this_month" as const, rating: 4 };
+    expect(buildPostSearchParams(state, pref, 0).has("period")).toBe(false);
+    expect(buildPostSearchParams(state, pref, 0).get("rating")).toBe("4");
+    // 逆に、スポット別の投稿一覧では評価（平均）が無い（1 件の投稿に「平均」は無いため）
+    expect(buildPostSearchParams(state, spotCtx, 0).has("rating")).toBe(false);
+    expect(buildPostSearchParams(state, spotCtx, 0).get("period")).toBe("this_month");
   });
 });
 
 describe("buildSearchPageHref / parseSearchState", () => {
   it("URL に書いた条件をそのまま読み戻せる（往復）", () => {
     // v3.1: 都道府県の検索結果はスポット単位なので並び替えは 新着順／評価順／投稿数順（いいね順はスポット別だけ）
-    const state = { ...EMPTY_SEARCH_STATE, categories: ["グルメ" as const], cost: "1000" as const, period: "last_month" as const, sort: "count" as const };
+    const state = { ...EMPTY_SEARCH_STATE, categories: ["グルメ" as const], cost: "1000" as const, rating: 3, sort: "count" as const };
     const href = buildSearchPageHref(state, { ...pref, addMode: { itinerary: "it-1", day: "2" } });
     expect(href).toContain("/search?pref=");
     expect(href).toContain("itinerary=it-1");
@@ -78,6 +93,16 @@ describe("countActiveFilters", () => {
     const state = { ...EMPTY_SEARCH_STATE, categories: ["グルメ" as const], distance: 1000 as const, sort: "likes" as const };
     expect(countActiveFilters(state, nearby)).toBe(2);
     expect(countActiveFilters(state, pref)).toBe(1);
+
+    /*
+     * #955: 出していない条件は数えない。
+     *   スポットの一覧 … 期間は数えず、評価（平均）を数える
+     *   スポット別     … 期間を数え、評価（平均）は持っていても数えない
+     * 距離はどちらでもシートに出していないが、駅の検索など別の経路から URL に入るので今までどおり数える。
+     */
+    const withBoth = { ...EMPTY_SEARCH_STATE, period: "this_month" as const, rating: 4 };
+    expect(countActiveFilters(withBoth, pref)).toBe(1);
+    expect(countActiveFilters(withBoth, spotCtx)).toBe(1);
   });
 });
 
