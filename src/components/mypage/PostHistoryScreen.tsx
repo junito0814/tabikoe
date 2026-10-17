@@ -78,8 +78,9 @@ export function PostHistoryScreen({
         <div className="flex w-full max-w-[520px] flex-col gap-4">
           {header}
           {/* #682: マイページから移した 2 つ。部品はそのまま */}
-          {drafts && <DraftsSection initial={drafts} />}
-          <MyPostsList initialPage={initialPosts} tripOptions={tripOptions} fetchPosts={fetchPosts} />
+          {/* #972: 戻り先は「この画面の URL」を渡す。決め打ちを消すため */}
+          {drafts && <DraftsSection initial={drafts} backHref="/mymap" />}
+          <MyPostsList initialPage={initialPosts} tripOptions={tripOptions} fetchPosts={fetchPosts} backHref="/mymap" />
         </div>
       </div>
     </PullToRefresh>

@@ -17,6 +17,7 @@ import { useConfirm } from "@/components/ui/ConfirmSheet";
 import { formatDateTime } from "@/lib/format/date-time";
 import { Sheet } from "@/components/ui/Sheet";
 import { useKeyboardInset } from "@/lib/ui/use-keyboard-inset";
+import { appendBackHref } from "@/lib/search/list-state";
 
 export interface CommentApi {
   fetchPage: (postId: string, offset: number) => Promise<CommentPage>;
@@ -47,6 +48,7 @@ export function CommentSection({
   canComment,
   isGuest = false,
   returnTo,
+  pageHref,
   api = defaultApi,
   open,
   onOpenChange,
@@ -71,6 +73,15 @@ export function CommentSection({
   isGuest?: boolean;
   /** 通報画面からの戻り先 */
   returnTo: string;
+  /**
+   * #972: 読んでいる画面の URL。投稿者名からプロフィールへ飛んだときの戻り先になる。
+   *
+   * 【初心者向け】ここは `?back=` を渡していなかったので、プロフィールの戻るが
+   * 既定の**ホーム**になり、コメントを読んでいた画面に帰れなかった。
+   * `returnTo`（通報とログインの戻り先）とは別に持つ ── あちらは `?back=` を含まない
+   * 素の URL で、ここは**元の一覧まで遡れる URL**を渡したいため。
+   */
+  pageHref?: string | null;
   /** 差し替え口（単体テスト用） */
   api?: CommentApi;
   /**
@@ -388,6 +399,7 @@ export function CommentSection({
                   isGuest={isGuest}
                   pendingDeleteId={pendingDeleteId}
                   returnTo={returnTo}
+                  pageHref={pageHref}
                   onDelete={handleDelete}
                   onReply={() => setReplyTo({ id: comment.id, rootId: comment.id, name: comment.author.displayName })}
                 >
@@ -401,6 +413,7 @@ export function CommentSection({
                             isGuest={isGuest}
                             pendingDeleteId={pendingDeleteId}
                             returnTo={returnTo}
+                            pageHref={pageHref}
                             onDelete={handleDelete}
                             onReply={() => setReplyTo({ id: reply.id, rootId: comment.id, name: reply.author.displayName })}
                             small
@@ -491,6 +504,7 @@ function CommentItem({
   isGuest = false,
   pendingDeleteId,
   returnTo,
+  pageHref,
   onDelete,
   onReply,
   small = false,
@@ -502,6 +516,8 @@ function CommentItem({
   isGuest?: boolean;
   pendingDeleteId: string | null;
   returnTo: string;
+  /** #972: 読んでいる画面の URL（プロフィールの戻り先） */
+  pageHref?: string | null;
   onDelete: (commentId: string) => void;
   onReply: () => void;
   /** 返信（アイコンを一回り小さくする） */
@@ -533,7 +549,7 @@ function CommentItem({
           {comment.author.isDeleted || isGuest ? (
             <span className="font-bold">{comment.author.displayName}</span>
           ) : (
-            <Link href={`/users/${comment.author.id}`} className="font-bold text-ink">
+            <Link href={appendBackHref(`/users/${comment.author.id}`, pageHref)} className="font-bold text-ink">
               {comment.author.displayName}
             </Link>
           )}{" "}

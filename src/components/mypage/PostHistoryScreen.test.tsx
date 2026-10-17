@@ -122,3 +122,33 @@ describe("戻るは 1 つだけ（#747）", () => {
     expect(screen.getByRole("radiogroup", { name: "表示するピン" })).toBeInTheDocument();
   });
 });
+
+/**
+ * #972 Bug 2: 戻るの行き先が、来た画面ではなく決め打ちになっていた。
+ *
+ * 【初心者向け】#682 で自分の投稿と下書きがマイページから投稿履歴（/mymap）へ移ったのに、
+ * `?back=%2Fmypage` と `href="/mypage"` が**決め打ちで残っていた**。
+ * 直したのは送り出す側だけで、戻るの仕組み（back-label.ts）は元から正しかった。
+ * ここで押さえるのは「投稿履歴が自分の URL を渡していること」。
+ */
+describe("戻りの行き先を決め打ちしない（#972）", () => {
+  it("自分の投稿のリンクが、戻り先に投稿履歴（/mymap）を渡す", () => {
+    render(<PostHistoryScreen {...base} view="list" initialPosts={{ posts: [post("a", "冬旅")], nextOffset: null }} fetchPosts={vi.fn()} />);
+    const link = document.querySelector("[data-my-post='a']") as HTMLAnchorElement | null;
+    expect(link).not.toBeNull();
+    expect(link!.getAttribute("href")).toBe("/posts/a?back=%2Fmymap");
+  });
+
+  it("下書きの「すべて見る」も、戻り先に投稿履歴を渡す", () => {
+    render(
+      <PostHistoryScreen
+        {...base}
+        view="list"
+        drafts={{ drafts: [draft("d1"), draft("d2"), draft("d3"), draft("d4")], total: 4 }}
+        fetchPosts={vi.fn()}
+      />
+    );
+    const link = screen.getByRole("link", { name: /すべて見る/ });
+    expect(link.getAttribute("href")).toBe("/mypage/drafts?back=%2Fmymap");
+  });
+});

@@ -6,7 +6,7 @@ import { GuestBand } from "@/components/layout/GuestBand";
 import { ErrorNotice } from "@/components/notices/ErrorNotice";
 import { ERROR_MESSAGES } from "@/components/notices/error-messages";
 import { PostDetailScreen } from "@/components/posts/PostDetailScreen";
-import { resolveListBack } from "@/lib/search/list-state";
+import { appendBackHref, resolveListBack } from "@/lib/search/list-state";
 import { BadgeToast } from "@/components/badges/BadgeToast";
 import { parseBadgeToastParam } from "@/components/badges/badge-toast-params";
 import { FlashNotice, resolveFlashKey } from "@/components/notices/FlashNotice";
@@ -97,7 +97,10 @@ export default async function PostDetailPage({
   return (
     <ContentEnter>
       <>
-        {newBadgeTypes.length > 0 && <BadgeToast badgeTypes={newBadgeTypes} />}
+        {/* #972: バッジ画面から帰る先はこの投稿。元の一覧まで遡れるよう `?back=` も引き継ぐ */}
+        {newBadgeTypes.length > 0 && (
+          <BadgeToast badgeTypes={newBadgeTypes} backHref={appendBackHref(`/posts/${post.id}`, resolveListBack(query.back)?.href)} />
+        )}
         <PostDetailScreen
           post={post}
           initialComments={comments}

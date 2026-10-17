@@ -255,3 +255,32 @@ describe("未ログインで開いたとき（#951）", () => {
     expect(document.querySelector("[data-see-all-spot-posts]")).toBeNull();
   });
 });
+
+/**
+ * #972 Bug 2: 「編集をやめて投稿に戻る」で帰ったあと、戻るが「スポットの一覧」になっていた。
+ *
+ * 【初心者向け】根っこは、ここ（「⋯ → 編集」）が `?back=` を渡していなかったこと。
+ * 投稿詳細 → 編集 → 投稿詳細 の 3 画面で来た場所を渡し続けないと、元の一覧まで遡れない。
+ */
+describe("編集のリンクが、来た場所を渡す（#972）", () => {
+  it("back があれば ?back= 付きで編集を開く", () => {
+    render(
+      <PostDetailScreen
+        post={{ ...post, isOwner: true }}
+        initialComments={noComments}
+        back={{ href: "/search?pref=東京都", label: "東京都" }}
+      />
+    );
+    fireEvent.click(screen.getByRole("button", { name: "その他" }));
+    expect(screen.getByRole("menuitem", { name: "編集" })).toHaveAttribute(
+      "href",
+      "/posts/p1/edit?back=%2Fsearch%3Fpref%3D%E6%9D%B1%E4%BA%AC%E9%83%BD"
+    );
+  });
+
+  it("back が無ければ今までどおり /posts/<id>/edit のまま", () => {
+    render(<PostDetailScreen post={{ ...post, isOwner: true }} initialComments={noComments} />);
+    fireEvent.click(screen.getByRole("button", { name: "その他" }));
+    expect(screen.getByRole("menuitem", { name: "編集" })).toHaveAttribute("href", "/posts/p1/edit");
+  });
+});

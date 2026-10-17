@@ -57,3 +57,22 @@ describe("バッジの受け渡し（URLクエリ）", () => {
     expect(parseBadgeToastParam(undefined)).toEqual([]);
   });
 });
+
+/**
+ * #972 Bug 2: バッジ獲得の知らせ → バッジ画面 → 戻る で、知らせが出ていた画面に帰れなかった。
+ *
+ * 【初心者向け】起きるのはバッジを取った直後だけだが、**そこが見せ場**。
+ * 投稿した直後に喜んで押した人が、自分の新しい投稿に帰れないのは惜しい。
+ */
+describe("バッジ一覧へのリンクが、知らせが出ていた画面を渡す（#972）", () => {
+  it("backHref を渡すと ?back= が付く", () => {
+    render(<BadgeToast badgeTypes={["prefecture:東京都"]} autoDismissMs={0} backHref="/posts/p1?back=%2Fsearch" />);
+    const link = screen.getByRole("link", { name: "バッジ一覧を見る" });
+    expect(link.getAttribute("href")).toBe("/badges?back=%2Fposts%2Fp1%3Fback%3D%252Fsearch");
+  });
+
+  it("渡さなければ今までどおり /badges のまま", () => {
+    render(<BadgeToast badgeTypes={["prefecture:東京都"]} autoDismissMs={0} />);
+    expect(screen.getByRole("link", { name: "バッジ一覧を見る" }).getAttribute("href")).toBe("/badges");
+  });
+});

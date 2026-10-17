@@ -325,3 +325,43 @@ describe("未ログインで読むとき（#951）", () => {
     expect(document.querySelector("[data-reply-button]")).not.toBeNull();
   });
 });
+
+/**
+ * #972 Bug 2: コメントの投稿者名からプロフィールへ飛ぶと、戻るが**ホーム**になっていた。
+ * `?back=` を渡していなかったので、読んでいた画面に帰れなかった。
+ */
+describe("投稿者名のリンクが、読んでいた画面を渡す（#972）", () => {
+  const api = (comments: CommentData[]) =>
+    ({
+      fetchPage: vi.fn(async () => ({ comments, nextOffset: null, totalCount: comments.length, viewerAvatarUrl: null })),
+    }) as unknown as CommentApi;
+
+  it("pageHref を渡すと ?back= が付く", async () => {
+    renderOpen(
+      <CommentSection
+        postId="p1"
+        initialPage={{ comments: [comment("c1", false)], nextOffset: null, totalCount: 1, viewerAvatarUrl: null }}
+        canComment
+        returnTo="/posts/p1"
+        pageHref="/posts/p1?back=%2Fsearch"
+        api={api([comment("c1", false)])}
+      />
+    );
+    const link = await screen.findByRole("link", { name: "だれか" });
+    expect(link.getAttribute("href")).toBe("/users/other?back=%2Fposts%2Fp1%3Fback%3D%252Fsearch");
+  });
+
+  it("渡さなければ今までどおり /users/<id> のまま", async () => {
+    renderOpen(
+      <CommentSection
+        postId="p1"
+        initialPage={{ comments: [comment("c1", false)], nextOffset: null, totalCount: 1, viewerAvatarUrl: null }}
+        canComment
+        returnTo="/posts/p1"
+        api={api([comment("c1", false)])}
+      />
+    );
+    const link = await screen.findByRole("link", { name: "だれか" });
+    expect(link.getAttribute("href")).toBe("/users/other");
+  });
+});
