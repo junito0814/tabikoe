@@ -7,6 +7,7 @@ import {
   parseSearchState,
   type SearchContext,
 } from "./post-search-query";
+import type { VisitFinding } from "@/lib/spots/visit-findings";
 
 /**
  * 出典: docs/tasks/map-search/post-filter/02-filter-ui.md 単体テスト
@@ -67,12 +68,19 @@ describe("buildPostSearchParams", () => {
     expect(buildPostSearchParams(state, spotCtx, 0).has("rating")).toBe(false);
     expect(buildPostSearchParams(state, spotCtx, 0).get("period")).toBe("this_month");
   });
+
+  // #929: 「行ってわかったこと」もスポットの一覧だけ（投稿を 1 件ずつ絞る画面には出さない）
+  it("スポットの一覧では「行ってわかったこと」を送り、スポット別では送らない", () => {
+    const state = { ...EMPTY_SEARCH_STATE, findings: ["pet", "parking"] as VisitFinding[] };
+    expect(buildPostSearchParams(state, pref, 0).get("findings")).toBe("pet,parking");
+    expect(buildPostSearchParams(state, spotCtx, 0).has("findings")).toBe(false);
+  });
 });
 
 describe("buildSearchPageHref / parseSearchState", () => {
   it("URL に書いた条件をそのまま読み戻せる（往復）", () => {
     // v3.1: 都道府県の検索結果はスポット単位なので並び替えは 新着順／評価順／投稿数順（いいね順はスポット別だけ）
-    const state = { ...EMPTY_SEARCH_STATE, categories: ["グルメ" as const], cost: "1000" as const, rating: 3, sort: "count" as const };
+    const state = { ...EMPTY_SEARCH_STATE, categories: ["グルメ" as const], cost: "1000" as const, rating: 3, findings: ["pet", "parking"] as VisitFinding[], sort: "count" as const };
     const href = buildSearchPageHref(state, { ...pref, addMode: { itinerary: "it-1", day: "2" } });
     expect(href).toContain("/search?pref=");
     expect(href).toContain("itinerary=it-1");
@@ -82,9 +90,17 @@ describe("buildSearchPageHref / parseSearchState", () => {
   });
 
   it("不正な値は捨て、座標付きの q はキーワードにしない", () => {
-    const params = new URLSearchParams({ q: "東京駅", categories: "存在しない", distance: "999", cost: "x", period: "y", from: "bad", sort: "z" });
+    const params = new URLSearchParams({ q: "東京駅", categories: "存在しない", distance: "999", cost: "x", period: "y", from: "bad", sort: "z", findings: "wifi" });
     expect(parseSearchState(params, nearby)).toEqual(EMPTY_SEARCH_STATE);
     expect(parseSearchState(new URLSearchParams({ q: "東京" }), pref).keyword).toBe("東京");
+  });
+
+  // #929: URL から来た値をそのまま信じない。知らない項目は落とし、決まった順に並べ直す
+  it("「行ってわかったこと」は知らない項目を落とし、決まった順に並べ直す", () => {
+    const params = new URLSearchParams({ findings: "parking,wifi,pet" });
+    expect(parseSearchState(params, pref).findings).toEqual(["pet", "parking"]);
+    // スポット別の一覧では出さない条件なので、URL に残っていても読まない
+    expect(parseSearchState(params, spotCtx).findings).toEqual([]);
   });
 });
 
@@ -103,6 +119,13 @@ describe("countActiveFilters", () => {
     const withBoth = { ...EMPTY_SEARCH_STATE, period: "this_month" as const, rating: 4 };
     expect(countActiveFilters(withBoth, pref)).toBe(1);
     expect(countActiveFilters(withBoth, spotCtx)).toBe(1);
+  });
+
+  // #929: 何個選んでも 1 つ（カテゴリと同じ）。スポット別では数えない
+  it("「行ってわかったこと」は、何個選んでも 1 つとして数える", () => {
+    const state = { ...EMPTY_SEARCH_STATE, findings: ["pet", "parking", "card"] as VisitFinding[] };
+    expect(countActiveFilters(state, pref)).toBe(1);
+    expect(countActiveFilters(state, spotCtx)).toBe(0);
   });
 });
 

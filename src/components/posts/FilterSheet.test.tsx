@@ -46,7 +46,7 @@ describe("FilterSheet（絞り込みシート）", () => {
  */
 describe("絞り込みの選び方（explore-mode Task 5）", () => {
   /** 地図（探すモード）で使う形。評価が増える */
-  const SPOT_VALUE = { categories: [] as string[], cost: null, duration: null, rating: null };
+  const SPOT_VALUE = { categories: [] as string[], cost: null, duration: null, rating: null, findings: [] };
 
   it("投稿一覧に「指定なし」を出さない", () => {
     render(<FilterSheet open value={EMPTY_SEARCH_STATE} onApply={vi.fn()} onClose={vi.fn()} />);
@@ -150,5 +150,56 @@ describe("#681: 距離は出さない", () => {
     render(<FilterSheet open value={EMPTY_SEARCH_STATE} onApply={vi.fn()} onClose={vi.fn()} />);
     expect(screen.queryByText(/距離/)).toBeNull();
     expect(screen.queryByLabelText("1km以内")).toBeNull();
+  });
+});
+
+/*
+ * #929（2026-10-17）: 「行ってわかったこと」の節
+ * 出典: 要件定義書 4.5.19「絞り込み」
+ */
+describe("行ってわかったこと（#929）", () => {
+  const SPOT_VALUE = { categories: [] as string[], cost: null, duration: null, rating: null, findings: [] };
+
+  it("スポット単位の画面にだけ出て、いちばん下に置かれる", () => {
+    render(<FilterSheet open value={SPOT_VALUE} variant="spots" onApply={vi.fn()} onClose={vi.fn()} />);
+    const legends = [...document.querySelectorAll("[data-filter-sheet] legend")].map((node) => node.textContent);
+    expect(legends).toEqual(["カテゴリ（複数選択可）", "予算（平均）", "滞在時間", "評価（平均）", "行ってわかったこと（複数選択可）"]);
+  });
+
+  it("投稿一覧には出さない（スポットではなく投稿を絞る画面のため）", () => {
+    render(<FilterSheet open value={EMPTY_SEARCH_STATE} onApply={vi.fn()} onClose={vi.fn()} />);
+    expect(screen.queryByText("行ってわかったこと（複数選択可）")).toBeNull();
+  });
+
+  it("投稿画面と同じ見出しと単語で並ぶ", () => {
+    render(<FilterSheet open value={SPOT_VALUE} variant="spots" onApply={vi.fn()} onClose={vi.fn()} />);
+    for (const label of ["入れた", "あった", "平気だった", "支払い"]) expect(screen.getByText(label)).toBeInTheDocument();
+    for (const label of ["ペット", "駐車場", "子連れ", "電子マネー・QR"]) expect(screen.getByLabelText(label)).toBeInTheDocument();
+  });
+
+  it("複数選べて、そのまま onApply に渡る（すべて満たす＝AND の材料）", () => {
+    const onApply = vi.fn();
+    render(<FilterSheet open value={SPOT_VALUE} variant="spots" onApply={onApply} onClose={vi.fn()} />);
+    fireEvent.click(screen.getByLabelText("ペット"));
+    fireEvent.click(screen.getByLabelText("駐車場"));
+    fireEvent.click(screen.getByRole("button", { name: "この条件で表示" }));
+    expect(onApply).toHaveBeenCalledWith(expect.objectContaining({ findings: ["pet", "parking"] }));
+  });
+
+  it("もう一度押すと外れる（ほかの条件と同じ選び方）", () => {
+    const onApply = vi.fn();
+    render(<FilterSheet open value={SPOT_VALUE} variant="spots" onApply={onApply} onClose={vi.fn()} />);
+    fireEvent.click(screen.getByLabelText("ペット"));
+    fireEvent.click(screen.getByLabelText("ペット"));
+    fireEvent.click(screen.getByRole("button", { name: "この条件で表示" }));
+    expect(onApply).toHaveBeenCalledWith(expect.objectContaining({ findings: [] }));
+  });
+
+  it("「条件をクリア」で一緒に消える", () => {
+    const onApply = vi.fn();
+    render(<FilterSheet open value={{ ...SPOT_VALUE, findings: ["pet"] }} variant="spots" onApply={onApply} onClose={vi.fn()} />);
+    fireEvent.click(screen.getByRole("button", { name: "条件を消す" }));
+    fireEvent.click(screen.getByRole("button", { name: "この条件で表示" }));
+    expect(onApply).toHaveBeenCalledWith(expect.objectContaining({ findings: [] }));
   });
 });
