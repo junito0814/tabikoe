@@ -9,6 +9,7 @@ import { composeHref } from "@/lib/posts/compose-href";
 import type { DraftListPage, DraftSummary } from "@/lib/posts/drafts";
 import { useConfirm } from "@/components/ui/ConfirmSheet";
 import { formatDateTime } from "@/lib/format/date-time";
+import { appendBackHref } from "@/lib/search/list-state";
 
 /**
  * my-page-v3 Task1: マイページの「下書き」の段
@@ -25,11 +26,14 @@ export function DraftsSection({
   initial,
   submitDelete = defaultSubmitDelete,
   showAll = false,
+  backHref,
 }: {
   initial: DraftListPage;
   submitDelete?: (id: string) => Promise<Response>;
   /** true なら件数を絞らず全件出す（/mypage/drafts の下書き一覧。v3.1） */
   showAll?: boolean;
+  /** #972: この段を出している画面の URL。「すべて見る」で開く下書き一覧の戻り先になる */
+  backHref?: string;
 }) {
   const [drafts, setDrafts] = useState<DraftSummary[]>(initial.drafts);
   const [total, setTotal] = useState(initial.total);
@@ -101,7 +105,7 @@ export function DraftsSection({
       </ul>
       {/* v3.1（mentoring-7 Task1）: 4 件以上あるときだけ「すべて見る」→ /mypage/drafts（下書き一覧） */}
       {!showAll && total > DRAFTS_PREVIEW_COUNT && (
-        <Link href="/mypage/drafts" className="self-end text-[0.75rem] font-medium text-accent underline underline-offset-2">
+        <Link href={appendBackHref("/mypage/drafts", backHref)} className="self-end text-[0.75rem] font-medium text-accent underline underline-offset-2">
           すべて見る（{total} 件）
         </Link>
       )}

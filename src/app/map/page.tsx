@@ -60,7 +60,8 @@ export default async function MapPage({
 
   return (
     <>
-      {newBadgeTypes.length > 0 && <BadgeToast badgeTypes={newBadgeTypes} />}
+      {/* #972: バッジ画面から帰る先はこの地図。`?badges=` は外す（戻って知らせが再び出ないように） */}
+      {newBadgeTypes.length > 0 && <BadgeToast badgeTypes={newBadgeTypes} backHref="/map" />}
       <MapScreen open={open} notice={flashKey ? <FlashNotice flashKey={flashKey} /> : undefined} />
     </>
   );

@@ -6,6 +6,7 @@ import { buildComposeInitialState } from "@/lib/posts/compose-initial-state";
 import { loadExistingPostForCompose } from "@/lib/posts/load-compose-data";
 import { isVideoUploadDisabled } from "@/lib/video/process-video";
 import { PostComposeScreen } from "@/components/posts/PostComposeScreen";
+import { parseBackHref } from "@/lib/search/list-state";
 
 // #785: ブラウザのタブ名（「投稿を編集 | タビコエ」）
 export const metadata = { title: "投稿を編集" };
@@ -21,10 +22,15 @@ export const metadata = { title: "投稿を編集" };
  */
 export default async function EditPostPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const { id } = await params;
+  const query = await searchParams;
+  // #972: 「編集をやめて投稿に戻る」で帰った先が、元の一覧まで遡れるようにする
+  const back = parseBackHref(typeof query.back === "string" ? query.back : null);
   const supabase = await createClient();
   const user = await requireUserOrRedirect(supabase, `/posts/${id}/edit`);
 
@@ -33,5 +39,5 @@ export default async function EditPostPage({
   // 下書きは /posts/new?draft= で開く（「続きを書く」）
   if (existing.status === "draft") notFound();
 
-  return <PostComposeScreen videoUploadDisabled={isVideoUploadDisabled()} initial={buildComposeInitialState({})} existing={existing} />;
+  return <PostComposeScreen videoUploadDisabled={isVideoUploadDisabled()} initial={buildComposeInitialState({})} existing={existing} backHref={back} />;
 }

@@ -60,7 +60,8 @@ describe("ItineraryListScreen（SC-22）", () => {
     const entry = screen.getByRole("link", { name: /行きたいスポット/ });
     expect(entry).toHaveAttribute("href", "/wishlist?back=%2Fitineraries");
     expect(entry).toHaveTextContent("6");
-    expect(screen.getByRole("link", { name: /アルバムを見る/ })).toHaveAttribute("href", "/albums/trip-past");
+    // #972: 戻り先に「計画」を渡すようにした（渡さないとアルバム一覧に帰ってしまう）
+    expect(screen.getByRole("link", { name: /アルバムを見る/ })).toHaveAttribute("href", "/albums/trip-past?back=%2Fitineraries");
     expect(screen.getByText(/3 日間/)).toBeInTheDocument();
   });
 
@@ -99,3 +100,4 @@ describe("ItineraryListScreen（SC-22）", () => {
     expect(api.create).not.toHaveBeenCalled();
   });
 });
+
