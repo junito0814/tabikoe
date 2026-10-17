@@ -14,7 +14,7 @@ import { resolveListBack } from "@/lib/search/list-state";
 import { ContentEnter } from "@/components/transitions/Reveal";
 import { officialInfoSlot } from "@/components/spots/OfficialInfo";
 import { visitFindingsSlot } from "@/components/spots/VisitFindingsSlot";
-import { spotTitle } from "@/lib/metadata/page-title";
+import { lookupSpot } from "@/lib/metadata/page-title";
 import { spotShareCard } from "@/lib/metadata/share-card";
 
 /**
@@ -35,7 +35,17 @@ import { spotShareCard } from "@/lib/metadata/share-card";
  */
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const name = await spotTitle(id);
+  /*
+   * #964（2026-10-17）: **ここで 404 を決める。**
+   *
+   * 【初心者向け】本体（下の関数）で `notFound()` を呼んでも、`loading.tsx` の骨組みを
+   * 送り始めたあとなので **HTTP は 200 のまま**でした。流し始める前に動くのはこの
+   * `generateMetadata` なので、在るかどうかの判定をここへ移します。
+   * **読めなかったとき（`failed`）は 404 にしません** ── 本体がエラー画面を出します。
+   */
+  const found = await lookupSpot(id);
+  if (!found.failed && !found.name) notFound();
+  const name = found.name;
   /*
    * #951: 検索エンジンには載せない（要件 4.5.18）。
    * 卒業制作で検索流入を目的としないことに加え、**Google の公式情報（6.2）はキャッシュできず

@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 /**
@@ -15,10 +16,24 @@ import { createAdminClient } from "@/lib/supabase/admin";
  * 名前を引くだけなので、1 列だけ取る軽い問い合わせにしています。
  */
 
+/**
+ * スポットを 1 回だけ引く（#964）。
+ *
+ * 【初心者向け】`name === null` には「**無い**」と「**読めなかった**」の 2 つの意味があるので、
+ * 言い分けられるようにしました。無いときだけ 404 にしたいからです
+ * （DB が一時的に落ちただけで「見つかりません」を出すと、スポットが消えたように見えます）。
+ *
+ * `cache` で包んでいるので、`generateMetadata` と本体で呼んでも**問い合わせは 1 回**です。
+ */
+export const lookupSpot = cache(async (spotId: string): Promise<{ name: string | null; failed: boolean }> => {
+  const { data, error } = await createAdminClient().from("spots").select("name").eq("id", spotId).is("hidden_at", null).maybeSingle();
+  if (error) return { name: null, failed: true };
+  return { name: data?.name ?? null, failed: false };
+});
+
 /** スポット名。無ければ null */
 export async function spotTitle(spotId: string): Promise<string | null> {
-  const { data } = await createAdminClient().from("spots").select("name").eq("id", spotId).is("hidden_at", null).maybeSingle();
-  return data?.name ?? null;
+  return (await lookupSpot(spotId)).name;
 }
 
 /**
