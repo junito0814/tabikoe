@@ -91,7 +91,8 @@ export const BADGE_CATALOG: readonly BadgeDefinition[] = [
     category: "spot_registration",
     label: `スポット登録${threshold} 件`,
     // #680: 「タビコエだけの場所」は廃止したので言い換える（バッジの説明にだけ出る）
-    description: `新しい場所を${threshold} 件登録`,
+    // #939（2026-10-16）: ~~「新しい場所を」~~ → **「地図に無かった場所を」**。前の言い方は「誰よりも早く」と読めた
+    description: `地図に無かった場所を${threshold} 件登録`,
   })),
   ...PREFECTURES.map<BadgeDefinition>((prefecture) => ({
     type: `prefecture:${prefecture}`,
