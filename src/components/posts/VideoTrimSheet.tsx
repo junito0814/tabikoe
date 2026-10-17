@@ -16,6 +16,7 @@ import {
   trimLengthSeconds,
   TRIM_WINDOW_SECONDS,
   trimFailureMessage,
+  trimSourceTooLargeMessage,
   trimTooLargeMessage,
   type TrimRange,
 } from "@/lib/video/trim-plan";
@@ -144,11 +145,20 @@ export function VideoTrimSheet({
          *
          * 読み込みそのものが無理なとき（300MB 超え）だけは、この画面にできることが
          * 無いので今までどおり閉じます。
+         *
+         * #970（2026-10-17）: そのとき出す文を分けました。理由が「開けない」なのに
+         * 「画質が高く、30 秒に切り取っても 50MB を超えます（92.9MB）」と出していて、
+         * **短くしても画質は変わらない**ので的外れでしたし、92.9MB は**中身を見ずに出した見込み**でした。
+         * いまは**ブラウザが受け取った実際の大きさ**と上限を言います。
          */
-        const advice = feasible.reason === "estimated_too_large" ? adviseTrimFit({ bytes: file.size, seconds: durationSeconds }) : { kind: "impossible" as const };
+        if (feasible.reason === "source_too_large") {
+          onGiveUp(trimSourceTooLargeMessage(file.size));
+          return;
+        }
+        const advice = adviseTrimFit({ bytes: file.size, seconds: durationSeconds });
         if (advice.kind === "shorten") setTooLargeNotice(trimTooLargeMessage(advice, feasible.estimatedBytes));
         else {
-          onGiveUp(feasible.reason === "estimated_too_large" ? trimTooLargeMessage(advice, feasible.estimatedBytes) : trimFailureMessage(feasible.reason, feasible.estimatedBytes));
+          onGiveUp(trimTooLargeMessage(advice, feasible.estimatedBytes));
           return;
         }
       }

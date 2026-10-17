@@ -59,8 +59,24 @@ describe("動画", () => {
     expect(decideMedia({ ...video, durationSeconds: null })).toEqual({ kind: "accept" });
   });
 
-  it("50MB を超えたら断る", () => {
-    expect(decideMedia({ ...video, sizeBytes: MAX_VIDEO_SIZE_BYTES + 1 }).kind).toBe("reject");
+  /*
+   * #970（2026-10-17）: ~~50MB を超えたら断る~~ → **切り取りへ送る**。
+   *
+   * 【初心者向け】4K60 なら 20 秒でも 50MB を超えます。以前はそこで切り取りを
+   * 一度も勧めずに断っていましたが、**短く切れば入る**のだから長い動画と同じ扱いにします。
+   */
+  it("30 秒以内でも 50MB を超えたら、切り取りへ送る（短くすれば入るため）", () => {
+    expect(decideMedia({ ...video, durationSeconds: 20, sizeBytes: MAX_VIDEO_SIZE_BYTES + 1 })).toEqual({ kind: "needs_trim", durationSeconds: 20 });
+  });
+
+  it("切り取れない端末では、今までどおり 50MB で断る", () => {
+    const result = decideMedia({ ...video, durationSeconds: 20, sizeBytes: MAX_VIDEO_SIZE_BYTES + 1, canTrim: false });
+    expect(result.kind).toBe("reject");
+    expect(result.kind === "reject" && result.message).toContain("50MB 以内");
+  });
+
+  it("長さが読めないまま 50MB を超えたときは断る（どこを切ればよいか決められない）", () => {
+    expect(decideMedia({ ...video, durationSeconds: null, sizeBytes: MAX_VIDEO_SIZE_BYTES + 1 }).kind).toBe("reject");
   });
 
   it("長さを先に見る ── 長くて大きい動画は「短くすれば入る」ので、切り取りへ送る", () => {

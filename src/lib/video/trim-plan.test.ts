@@ -17,6 +17,7 @@ import {
   TRIM_FALLBACK_MESSAGE,
   TRIM_WINDOW_SECONDS,
   trimFailureMessage,
+  trimSourceTooLargeMessage,
   trimTooLargeMessage,
 } from "./trim-plan";
 import { MAX_VIDEO_DURATION_SECONDS, MAX_VIDEO_SIZE_BYTES } from "./limits";
@@ -324,5 +325,40 @@ describe("trimTooLargeMessage（#941）", () => {
     const message = trimTooLargeMessage({ kind: "impossible" }, 1000 * MB);
     expect(message).toContain("写真アプリで画質を落としてから");
     expect(message).not.toContain("短くすると入ります");
+  });
+});
+
+/**
+ * #970（2026-10-17）: 元のファイルが大きすぎて開けないとき
+ * 出典: Issue #970、要件定義書 4.5.11
+ *
+ * 実機で 4K60・1 分 37 秒の動画を選んだとき、**理由と違う案内**が出ていた。
+ * 中身をまだ見ていないのに「画質が高く、30 秒に切り取っても 50MB を超えます（92.9MB）」。
+ */
+describe("trimSourceTooLargeMessage（#970）", () => {
+  const MB = 1024 * 1024;
+
+  it("実際の大きさと上限を言う（見込みの数字を出さない）", () => {
+    const message = trimSourceTooLargeMessage(300.4 * MB);
+    expect(message).toContain("300.4MB");
+    expect(message).toContain(`上限 ${MAX_TRIM_SOURCE_BYTES / MB}MB`);
+    // 中身を見ていないのに「画質が高い」とは言わない
+    expect(message).not.toContain("画質が高く");
+    expect(message).not.toContain("50MB を超えます");
+  });
+
+  it("次にやることを言う（「できません」で終わらせない）", () => {
+    expect(trimSourceTooLargeMessage(651 * MB)).toContain("短く切ってから選び直してください");
+  });
+
+  /*
+   * 【初心者向け】同じ間違いを繰り返さないための見張り。
+   * `trimFailureMessage` に `source_too_large` を渡すと**型で止まる**ので、
+   * ここでは「画質が高く」の文が出る理由が 2 つだけに絞られていることを確かめる。
+   */
+  it("「画質が高く」の文が出るのは、中身を見たあとの 2 つだけ", () => {
+    expect(trimFailureMessage("estimated_too_large", 100 * MB)).toContain("画質が高く");
+    expect(trimFailureMessage("too_large", 100 * MB)).toContain("画質が高く");
+    expect(trimFailureMessage("unreadable")).toBe(TRIM_FALLBACK_MESSAGE);
   });
 });

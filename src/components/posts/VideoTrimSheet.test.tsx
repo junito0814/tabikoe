@@ -240,6 +240,24 @@ describe("切り取りの画面（要件 4.5.17）", () => {
     expect(message).not.toBe(TRIM_FALLBACK_MESSAGE);
   });
 
+  /*
+   * #970（2026-10-17）: 読み込めない動画の案内を、理由に合った文にした。
+   * 実機では 4K60・1 分 37 秒（ブラウザが受け取ったのは 300.4MB）で、
+   * 上限を 0.4MB 超えただけなのに「画質が高く…」と出ていた。
+   */
+  it("300MB を超える動画は、実際の大きさと上限を言って断る", async () => {
+    const huge = new File([new Uint8Array(10)], "4k60.mp4", { type: "video/mp4" });
+    Object.defineProperty(huge, "size", { value: Math.round(300.4 * 1024 * 1024) });
+    const { onGiveUp } = setup({ file: huge, durationSeconds: 97 });
+    await waitFor(() => expect(onGiveUp).toHaveBeenCalled());
+    const message = onGiveUp.mock.calls[0][0] as string;
+    expect(message).toContain("300.4MB");
+    expect(message).toContain("上限 300MB");
+    // 中身を見ていないのに「画質が高い」とも「92.9MB」とも言わない
+    expect(message).not.toContain("画質が高く");
+    expect(message).not.toContain("92.9MB");
+  });
+
   it("大きすぎる動画は、読み込む前に断る（ブラウザが落ちるのを避ける）", async () => {
     const huge = new File([new Uint8Array(10)], "huge.mp4", { type: "video/mp4" });
     Object.defineProperty(huge, "size", { value: 400 * 1024 * 1024 });
