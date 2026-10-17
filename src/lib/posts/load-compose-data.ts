@@ -4,6 +4,7 @@ import { POST_DURATIONS, type PostCategory, type PostDuration, type PostVisibili
 import { createPostPhotoUrls } from "./signed-url";
 import type { RegisteredSpot } from "@/lib/spots/types";
 import { resolveSpotCategory } from "@/lib/map/spot-category";
+import { listMyVisitFindings } from "@/lib/spots/visit-findings-db";
 
 /**
  * post-entry-points Task1: 投稿画面の初期値をサーバーで読む
@@ -66,6 +67,12 @@ export async function loadExistingPostForCompose(
       rating: post.rating ?? 0,
       comment: post.comment ?? "",
       visibility: (post.visibility as PostVisibility) ?? "public",
+      /*
+       * #929: 「行ってわかったこと」は**スポットに付く**（投稿には付かない）。
+       * 編集で開いたときは、そのスポットへの**自分の報告**を選んだ状態で出す。
+       * こうしておくと、**外して保存すれば報告が消える**（取り消し専用の画面が要らない）。
+       */
+      visitFindings: spot ? await listMyVisitFindings(admin, userId, spot.id) : [],
     },
     spot,
     position:

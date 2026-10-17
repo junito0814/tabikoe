@@ -37,6 +37,8 @@ export function buildComposePayload(input: {
     rating: values.rating > 0 ? values.rating : null,
     comment: values.comment,
     visibility: values.visibility,
+    // #929: 「行ってわかったこと」は投稿ではなくスポットに付くが、入力は投稿画面なので一緒に送る
+    visitFindings: values.visitFindings,
     lat: input.position.lat,
     lng: input.position.lng,
     media: input.media,

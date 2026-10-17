@@ -63,8 +63,11 @@ export function PostSearchScreen({
   fetchPage = defaultFetchPage,
   initialMediaPage = null,
   fetchMediaPage,
+  videoEnabled,
 }: {
   context: SearchContext;
+  /** #937: 動画も受け付けているか。写真タブの空の文面を「写真」「写真・動画」で分ける */
+  videoEnabled: boolean;
   /** URL から読んだ絞り込み・並び替え */
   initialState: PostSearchState;
   /** 1 ページ目。Server Component が取得して渡す */
@@ -200,6 +203,7 @@ export function PostSearchScreen({
 
         {isPhotos ? (
           <PhotoGrid
+              videoEnabled={videoEnabled}
             key={mediaParams.toString()}
             params={mediaParams}
             initialPage={initialMediaPage && initialMediaPage.key === mediaParams.toString() ? initialMediaPage.page : { items: [], nextOffset: 0 }}

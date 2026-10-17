@@ -31,12 +31,15 @@ import {
   POST_RATE_LIMIT_MAX_ATTEMPTS,
   POST_RATE_LIMIT_WINDOW_SECONDS,
 } from "@/lib/posts/constants";
+import { saveVisitFindings } from "@/lib/spots/visit-findings-db";
+import { normalizeVisitFindings } from "@/lib/spots/visit-findings";
 
 /** ブラウザから届く JSON の形。値の型は信用せず `unknown` で受け、validatePostInput で確かめる */
 interface PostRequestBody {
   status?: unknown;
   tripTitle?: unknown;
   spotId?: unknown;
+  visitFindings?: unknown;
   spotName?: unknown;
   category?: unknown;
   visitDate?: unknown;
@@ -181,6 +184,21 @@ export async function POST(request: Request) {
       // 写真が1点も無い公開投稿は成立しないため、投稿ごと取り消す（下書きは写真無しでも成立するが、同じ扱いで安全側に倒す）
       await admin.from("posts").delete().eq("id", post.id);
       return NextResponse.json({ error: "photo_insert_failed" }, { status: 500 });
+    }
+  }
+
+  /*
+   * #929: 「行ってわかったこと」を保存する。
+   *
+   * 【初心者向け】これは**投稿ではなくスポットに付く**（1 人 1 スポット）ので、posts とは別の表に入れます。
+   * 下書きのときは保存しません ── まだ行ったことを公にしていない段階で、場所の情報だけ増えるのは変なので。
+   * **選んだ状態がそのまま報告になる**ので、外したものはここで消えます（要件 4.5.19）。
+   */
+  if (!isDraft && spotId && Array.isArray(body.visitFindings)) {
+    try {
+      await saveVisitFindings(admin, user.id, spotId, normalizeVisitFindings(body.visitFindings));
+    } catch {
+      // 投稿そのものは成功させる（場所の情報が入らないだけで、投稿が消えては困る）
     }
   }
 
