@@ -1,10 +1,8 @@
-import { unstable_rethrow } from "next/navigation";
 import type { Metadata, Viewport } from "next";
 import { geistSans, geistMono } from "./fonts";
-import { AppMenuBar } from "@/components/layout/AppMenuBar";
+import { Suspense } from "react";
+import { MenuBarSlot } from "@/components/layout/MenuBarSlot";
 import { siteUrl } from "@/lib/metadata/site-url";
-import { createClient } from "@/lib/supabase/server";
-import { getAuthUserFromClaims } from "@/lib/auth/auth-user";
 import { LAUNCH_GROUND } from "@/lib/theme/colors";
 import "./globals.css";
 
@@ -120,14 +118,18 @@ export const viewport: Viewport = {
  * バーが描画されている時だけ、スマートフォンでは下部バーの分、PCでは左サイドバーの分の
  * 余白をbodyに確保する（`has-[[data-menu-bar]]`）。
  */
-export default async function RootLayout({ children }: LayoutProps<"/">) {
-  // menu-bar-v3 Task1: 未ログインのホーム（/）ではメニューバーを出さないため、ここでログイン状態を見る
-  // performance Task1: ここは「ログインしているか」だけ分かればよいので、手元の署名検証（getClaims）で済ませる。
-  // 【初心者向け】この共通レイアウトは 404 ページを含む全ページで動くので、ここで例外を投げるとビルドごと止まる
-  // （環境変数の入れ忘れでデプロイが丸ごと失敗した）。読めなければ「未ログイン」として描き、原因はログに出す。
-  // 実際のページを開けば、そのページ自身が同じ環境変数のエラーを出すので、設定漏れは見逃されない。
-  const user = await getMenuBarUser();
-
+/*
+ * #901（2026-10-17）: **この関数は Cookie を待たない。**
+ *
+ * 【初心者向け】ここには「ログインしているか」を見る `await` がありました。
+ * 共通レイアウトは全ページで動くので、ここで待つと **Next.js はどのページの器も
+ * 静的に作れません**（器を作る時点ではまだ Cookie が無い）。実際、`cacheComponents` を
+ * 入れたとき**最初の 1 枚でビルドが止まった**のがここです。
+ *
+ * ログイン状態を見る処理は `MenuBarSlot` に移し、`<Suspense>` の中に置きました。
+ * 器は関数を呼ばずに配られ、メニューバーだけが後から流れてきます。
+ */
+export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
       lang="ja"
@@ -136,41 +138,15 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
       {/* #951: 未ログインの共有リンクではメニューバーの代わりに帯（`GuestBand`）が出る。同じ 60px を空ける */}
       <body className="min-h-full flex flex-col has-[[data-menu-bar]]:pb-[60px] has-[[data-guest-band]]:pb-[60px] md:has-[[data-menu-bar]]:pb-0 md:has-[[data-menu-bar]]:pl-[200px]">
         <LaunchCover />
-        <AppMenuBar isAuthenticated={user !== null} />
+        {/* #901: Cookie を読むのはこの中だけにする（器を静的に作れるようにするため） */}
+        <Suspense fallback={null}>
+          <MenuBarSlot />
+        </Suspense>
         {children}
       </body>
     </html>
   );
 }
-
-/** メニューバーの出し分け用に、ログイン状態だけを見る。失敗しても画面は描く（未ログイン扱い） */
-async function getMenuBarUser() {
-  try {
-    return await getAuthUserFromClaims(await createClient());
-  } catch (error) {
-    /*
-     * #895（2026-10-09）: Next.js の**内部的な合図**は、ここで握りつぶさずに投げ直す。
-     *
-     * 【初心者向け】`cookies()` を使っている画面を Next.js が「静的に作れるか」試すとき、
-     * `DYNAMIC_SERVER_USAGE` という合図を**例外の形で**投げてくる。これはエラーではなく
-     * 「このページは毎回サーバーで描くものだ」と伝えるための仕組み。
-     *
-     * それをこの `catch` が拾って `console.error` に流していたため、**ビルドのたびに
-     * ページ数ぶんの赤字**がログに並んでいた（2026-10-09 時点で 18 個）。成功しているのに
-     * 失敗に見えるので、本物の失敗がその中に埋もれる。実際、本番の再デプロイのときに
-     * これを失敗と判断して原因の調査に時間を使った。
-     *
-     * `unstable_rethrow` は Next.js が用意している公式の口で、`notFound()`・`redirect()`・
-     * `permanentRedirect()` と、`cookies`/`headers`/`searchParams` の合図をまとめて投げ直す。
-     * 自前で `digest` を見るより取りこぼしが無い。
-     * （同梱ドキュメント: node_modules/next/dist/docs/01-app/03-api-reference/04-functions/unstable_rethrow.md）
-     */
-    unstable_rethrow(error);
-    console.error("[layout] ログイン状態を確認できませんでした:", error);
-    return null;
-  }
-}
-
 
 /**
  * loading-feedback Task 10（2026-10-02）: 起動のときの覆い
