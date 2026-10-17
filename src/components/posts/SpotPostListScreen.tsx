@@ -3,6 +3,8 @@
 import Link from "next/link";
 import { buildReportHref } from "@/components/reports/report-href";
 import { MoreMenu, MoreMenuItem } from "@/components/ui/MoreMenu";
+import { ShareButton } from "@/components/share/ShareButton";
+import { spotShareContent } from "@/lib/share/share-text";
 import { SaveButton } from "@/components/save/SaveButton";
 import { SpotStatusButtons } from "@/components/spots/SpotStatusButtons";
 import { composeHref } from "@/lib/posts/compose-initial-state";
@@ -120,6 +122,19 @@ export function SpotPostListScreen({
           spotId={spot.id}
           initialSaved={spot.isSaved}
           addMode={addMode ? { itineraryId: addMode.itineraryId, day: addMode.day, initialAdded: addMode.spotIds.includes(spot.id) } : null}
+        />
+        {/*
+          * #953（2026-10-17）: 共有ボタンは**ここ**（いいね・「＋」と同じ操作行）。
+          * 右上の「⋯」の中には入れない ── あそこは通報・削除の場所で、
+          * **広めたい操作を隠す場所ではない**ため（要件 4.5.18）。
+          */}
+        <ShareButton
+          content={spotShareContent({
+            spotName: spot.name,
+            postCount: spot.postCount,
+            ratingAverage: spot.ratingAverage,
+            url: `/spots/${spot.id}`,
+          })}
         />
         <Link
           href={composeHref({ kind: "spot", spotId: spot.id })}
