@@ -224,6 +224,56 @@ export function checkTrimmedOutput(input: { durationSeconds: number | null; size
   return { ok: true, durationSeconds: input.durationSeconds };
 }
 
+/**
+ * #941（2026-10-17）: 切り取っても 50MB を超えるとき、**何秒なら入るか**を見込む（純粋関数。約束 13）。
+ *
+ * 【初心者向け】画質の高い動画（4K60 など）は、30 秒に切り取っても 50MB を超えることがあります。
+ * そのとき「大きすぎます」とだけ言われても、**何秒にすればいいのか分かりません**。
+ * 出来上がったファイルの大きさと長さが分かっていれば、1 秒あたりの大きさが出せます。
+ *
+ *     1 秒あたりの大きさ ＝ 切り取った大きさ ÷ 切り取った秒数
+ *     入る秒数           ＝ 50MB ÷ 1 秒あたりの大きさ
+ *
+ * **安全側に削ります。** 切り取りは開始位置をキーフレームに寄せるので、頼んだ長さより
+ * 少し長い出力になることがあります（`TRIM_LENGTH_TOLERANCE_SECONDS`）。ぎりぎりの秒数を
+ * 出すと、やり直してもまた超えて二度手間になります。
+ */
+export const TRIM_FIT_SAFETY_RATIO = 0.9;
+
+export type TrimFitAdvice =
+  /** そのままで入る（短くする必要がない） */
+  | { kind: "fits" }
+  /** ここまで短くすれば入る */
+  | { kind: "shorten"; seconds: number }
+  /** 1 秒まで削っても入らない。画質を落としてもらうしかない */
+  | { kind: "impossible" };
+
+export function adviseTrimFit(input: { bytes: number; seconds: number }): TrimFitAdvice {
+  if (input.bytes <= MAX_VIDEO_SIZE_BYTES) return { kind: "fits" };
+  // 長さが 0 や、読めない値のときは見込みを立てられない（0 で割らない）
+  if (!Number.isFinite(input.seconds) || input.seconds <= 0 || !Number.isFinite(input.bytes) || input.bytes <= 0) return { kind: "impossible" };
+
+  const bytesPerSecond = input.bytes / input.seconds;
+  const raw = (MAX_VIDEO_SIZE_BYTES / bytesPerSecond) * TRIM_FIT_SAFETY_RATIO;
+  const seconds = Math.floor(raw);
+  if (seconds < MIN_TRIM_SECONDS) return { kind: "impossible" };
+  return { kind: "shorten", seconds: Math.min(seconds, MAX_VIDEO_DURATION_SECONDS) };
+}
+
+/**
+ * #941: 切り取りのシートの中にそのまま出す文（**シートを閉じない**）。
+ *
+ * 【初心者向け】つまみは 1〜30 秒で動かせる（#928）ので、**逃げ道が同じ画面にあります**。
+ * 閉じてしまうと、選び直しからやり直しになります。
+ */
+export function trimTooLargeMessage(advice: TrimFitAdvice, bytes: number): string {
+  if (advice.kind === "shorten") {
+    return `この画質だと ${TRIM_WINDOW_SECONDS} 秒でも ${MAX_VIDEO_SIZE_BYTES / 1024 / 1024}MB を超えます（${formatMegabytes(bytes)}）。${advice.seconds} 秒まで短くすると入ります`;
+  }
+  // 1 秒でも入らない。アプリの中で画質を落とす（再エンコード）は #861 で「やらない」と決めている
+  return `この動画は画質が高すぎて、1 秒に切り取っても ${MAX_VIDEO_SIZE_BYTES / 1024 / 1024}MB を超えます（${formatMegabytes(bytes)}）。写真アプリで画質を落としてから選び直してください`;
+}
+
 /** 切り取れなかったときの案内（要件 4.5.17 の「逃げ道」の文） */
 export const TRIM_FALLBACK_MESSAGE = `この端末では動画を切り取れませんでした。写真アプリで ${MAX_VIDEO_DURATION_SECONDS} 秒以内に編集してから選び直してください`;
 

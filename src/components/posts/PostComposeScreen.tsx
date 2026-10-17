@@ -195,6 +195,8 @@ export function PostComposeScreen({
   /** 消している最中の写真。二重に押せないようにし、押したことが分かるように薄くする */
   const [removingMediaKey, setRemovingMediaKey] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  /** #941: 知らせが出たら、そこまで寄せる（このフォームは長く、ここはいちばん下にある） */
+  const errorNoticeRef = useRef<HTMLDivElement | null>(null);
   const [confirmingHome, setConfirmingHome] = useState(false);
   /*
    * #861（2026-10-10）: 30 秒を超える動画の**待ち列**。先頭から 1 本ずつ切り取ってもらう
@@ -489,6 +491,17 @@ export function PostComposeScreen({
     void save("published");
   };
 
+  /*
+   * #941: 知らせが出たら、そこまで寄せる。
+   * 動きを減らす設定の人には滑らせない（`behavior: "auto"` にする）。
+   */
+  useEffect(() => {
+    if (!errorMessage) return;
+    const reduceMotion = typeof window !== "undefined" && window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+    // jsdom（テスト）や古いブラウザには `scrollIntoView` が無いので、あるときだけ呼ぶ
+    errorNoticeRef.current?.scrollIntoView?.({ behavior: reduceMotion ? "auto" : "smooth", block: "center" });
+  }, [errorMessage]);
+
   const isPostingRestricted = !!postingRestrictedUntil;
   const canPublish = isPostFormComplete(values, mediaCount) && position !== null && !isSubmitting && !isPostingRestricted;
 
@@ -598,7 +611,19 @@ export function PostComposeScreen({
                 {postingRestrictedMessage(postingRestrictedUntil)}（下書きの保存はできます）
               </p>
             )}
-            {errorMessage && <ErrorNotice className="mt-3" message={errorMessage} />}
+            {/*
+              * #941（2026-10-17）: 知らせが出たら、**そこまで自動で寄せる**。
+              *
+              * 【初心者向け】このフォームは長く、ここは**いちばん下**です。
+              * サーバーに断られたとき（HEVC など、手元では分からないもの）は、
+              * 赤い文字が画面の外に出たままで、押しても何も起きないように見えていました。
+              * 動きを減らす設定の人には滑らせません（`prefers-reduced-motion`）。
+              */}
+            {errorMessage && (
+              <div ref={errorNoticeRef}>
+                <ErrorNotice className="mt-3" message={errorMessage} />
+              </div>
+            )}
             {isEditingPublished && (
               <p className="mt-4 text-center text-[0.75rem] text-muted">
                 <Link href={`/posts/${existing?.postId}`} className="underline underline-offset-2">

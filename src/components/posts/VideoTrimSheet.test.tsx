@@ -3,7 +3,7 @@ import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { VideoTrimSheet } from "./VideoTrimSheet";
 import { TRIM_FALLBACK_MESSAGE } from "@/lib/video/trim-plan";
 import { TrimError, type LoadedVideo } from "@/lib/video/trim-video";
-import { MAX_VIDEO_SIZE_BYTES } from "@/lib/video/limits";
+
 
 /**
  * #861 / 要件 4.5.17（2026-10-10）: 切り取りの画面。
@@ -182,14 +182,61 @@ describe("切り取りの画面（要件 4.5.17）", () => {
     expect(onTrimmed).not.toHaveBeenCalled();
   });
 
-  it("切り取っても 50MB を超えたら、別の文で断る（短くしても直らないため）", async () => {
+  /*
+   * #941（2026-10-17）: ~~切り取っても 50MB を超えたら、別の文で断る~~
+   * → **シートを閉じずに、この場で言う**。つまみは動かせるので、逃げ道が同じ画面にある。
+   */
+  it("切り取っても 50MB を超えたら、閉じずに「◯ 秒まで短くすると入ります」と出す", async () => {
     const big = new File([new Uint8Array(1000)], "trimmed.mp4", { type: "video/mp4" });
-    Object.defineProperty(big, "size", { value: MAX_VIDEO_SIZE_BYTES + 1 });
-    const { onGiveUp } = setup({ trim: async () => big });
+    // 30 秒で 100MB ＝ 1 秒 3.33MB → 13 秒まで短くすれば入る
+    Object.defineProperty(big, "size", { value: 100 * 1024 * 1024 });
+    const { onGiveUp, onTrimmed } = setup({ trim: async () => big, measure: async () => 29.9 });
+    fireEvent.click(await screen.findByRole("button", { name: "この範囲にする" }));
+    const notice = await screen.findByRole("alert");
+    expect(notice.textContent).toContain("13 秒まで短くすると入ります");
+    expect(notice.textContent).toContain("50MB");
+    // 閉じない・添付もしない。つまみも「この範囲にする」も残っている
+    expect(onGiveUp).not.toHaveBeenCalled();
+    expect(onTrimmed).not.toHaveBeenCalled();
+    expect(screen.getByRole("button", { name: "この範囲にする" })).toBeEnabled();
+    expect(startHandle()).toBeInTheDocument();
+  });
+
+  it("つまみを動かすと、前の「大きすぎます」は消える（古い話になるため）", async () => {
+    const big = new File([new Uint8Array(1000)], "trimmed.mp4", { type: "video/mp4" });
+    Object.defineProperty(big, "size", { value: 100 * 1024 * 1024 });
+    setup({ trim: async () => big, measure: async () => 29.9 });
+    fireEvent.click(await screen.findByRole("button", { name: "この範囲にする" }));
+    await screen.findByRole("alert");
+    fireEvent.keyDown(endHandle(), { key: "ArrowLeft" });
+    await waitFor(() => expect(screen.queryByRole("alert")).toBeNull());
+  });
+
+  /*
+   * #941: 読み込む前の見込みで「30 秒でも大きすぎる」と分かったときも、閉じない。
+   * つまみは 1〜30 秒で動かせるので、**この画面で短くすれば済む**。
+   */
+  it("見込みの段階で大きすぎても、閉じずに「◯ 秒まで短くすると入ります」と出す", async () => {
+    const big = new File([new Uint8Array(10)], "big.mp4", { type: "video/mp4" });
+    // 40 秒で 105MB ＝ 1 秒 2.6MB。30 秒ぶんの見込みは 79MB で、65MB（50MB × 1.3）を超える
+    Object.defineProperty(big, "size", { value: 105 * 1024 * 1024 });
+    const { onGiveUp } = setup({ file: big });
+    const notice = await screen.findByRole("alert");
+    expect(notice.textContent).toContain("秒まで短くすると入ります");
+    expect(onGiveUp).not.toHaveBeenCalled();
+    // 読み込みは続くので、つまみは出る（そのまま短く切り直せる）
+    expect(await screen.findByRole("slider", { name: "切り取りの始まり" })).toBeInTheDocument();
+  });
+
+  it("1 秒まで削っても入らない動画は、この画面ではもう直せないので閉じて案内する", async () => {
+    const huge = new File([new Uint8Array(1000)], "trimmed.mp4", { type: "video/mp4" });
+    // 30 秒で 2,000MB ＝ 1 秒 67MB。1 秒も入らない
+    Object.defineProperty(huge, "size", { value: 2000 * 1024 * 1024 });
+    const { onGiveUp } = setup({ trim: async () => huge, measure: async () => 29.9 });
     fireEvent.click(await screen.findByRole("button", { name: "この範囲にする" }));
     await waitFor(() => expect(onGiveUp).toHaveBeenCalled());
     const message = onGiveUp.mock.calls[0][0] as string;
-    expect(message).toContain("50MB");
+    expect(message).toContain("写真アプリで画質を落としてから");
     expect(message).not.toBe(TRIM_FALLBACK_MESSAGE);
   });
 
