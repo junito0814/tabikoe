@@ -71,7 +71,8 @@ describe("覆いが外部ファイルを待たない", () => {
 
   it("body のいちばん上に置いている（他の要素の構築を待たない）", () => {
     const body = layout.indexOf("<body");
-    const menu = layout.indexOf("<AppMenuBar");
+    // #901: メニューバーは `MenuBarSlot`（Suspense の中）に移した
+    const menu = layout.indexOf("<MenuBarSlot");
     const launch = layout.indexOf("<LaunchCover />");
     expect(launch).toBeGreaterThan(body);
     expect(launch, "メニューバーより先に置くこと").toBeLessThan(menu);

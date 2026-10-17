@@ -75,7 +75,16 @@ describe("Next.js の内部的な合図を握りつぶさない（#895）", () =
   });
 
   it("直した 3 か所が、公式の口（next/navigation）を使っている", () => {
-    for (const path of ["src/app/layout.tsx", "src/app/admin/(shell)/layout.tsx", "src/app/admin/(shell)/page.tsx"]) {
+    /*
+     * #901（2026-10-17）: `src/app/layout.tsx` の中身は
+     * `src/components/layout/MenuBarSlot.tsx` へ移した（器を静的に作れるようにするため）。
+     * 握りつぶさない決まりは移した先でも守ること。
+     */
+    for (const path of [
+      "src/components/layout/MenuBarSlot.tsx",
+      "src/app/admin/(shell)/layout.tsx",
+      "src/app/admin/(shell)/page.tsx",
+    ]) {
       const source = readFileSync(path, "utf8");
       expect(source, `${path} が unstable_rethrow を import していない`).toMatch(/import \{[^}]*unstable_rethrow[^}]*\} from "next\/navigation"/);
     }

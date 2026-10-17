@@ -8,7 +8,6 @@ import { loadSpotFixTarget } from "@/lib/moderation/spot-fix";
 // #785: ブラウザのタブ名（「スポットの修正 | タビコエ」）
 export const metadata = { title: "スポットの修正" };
 
-export const dynamic = "force-dynamic";
 
 /**
  * strike-system Task 6: スポットの修正（SC-29）
