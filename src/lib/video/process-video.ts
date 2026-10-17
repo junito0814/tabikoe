@@ -42,7 +42,25 @@ const execFileAsync = promisify(execFile);
  */
 export { ALLOWED_VIDEO_CODEC, MAX_VIDEO_DURATION_SECONDS, MAX_VIDEO_SIZE_BYTES } from "./limits";
 
-export class VideoValidationError extends Error {}
+export class VideoValidationError extends Error {
+  /**
+   * #904 の調査（2026-10-17）: **実際に入っていた形式**（`hevc`・`vp9` など）。
+   *
+   * 【初心者向け】いままで断る理由は合言葉（`unsupported_codec`）だけで、
+   * **何が入っていたのかは誰にも分かりませんでした**。そのため画面の文は
+   * 「iPhone のカメラ設定を…」と決め打ちで、**Android から VP9 を上げた人にも
+   * iPhone の設定を直させる**ことになっていました。
+   *
+   * もう 1 つ、#904（HEVC を端末の中で H.264 に変換する）に取りかかるかどうかは
+   * **HEVC が本当に届いているか**で決まります。ここを残しておけば、実際の利用から分かります。
+   */
+  constructor(
+    message: string,
+    readonly videoCodec: string | null = null
+  ) {
+    super(message);
+  }
+}
 
 export interface ProcessedVideoUpload {
   /** サムネイル（先頭フレーム、JPEG）のパス。post_photos.storage_url に入れる */
@@ -134,8 +152,10 @@ export async function processAndUploadVideo(
   try {
     await writeFile(inputPath, body);
 
-    const checked = checkVideo(await probe(ffmpeg, inputPath));
-    if (!checked.ok) throw new VideoValidationError(checked.error);
+    const probed = await probe(ffmpeg, inputPath);
+    const checked = checkVideo(probed);
+    // #904 の調査: 断るときは、実際に入っていた形式も一緒に持たせる
+    if (!checked.ok) throw new VideoValidationError(checked.error, probed.videoCodec);
 
     /*
      * 先頭フレーム。0 秒ちょうどは真っ黒なことがあるので少しだけ進めてから取る。

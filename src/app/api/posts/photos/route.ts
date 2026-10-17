@@ -127,7 +127,15 @@ export async function POST(request: Request) {
     } catch (error) {
       await cleanUp();
       if (error instanceof ImageValidationError || error instanceof VideoValidationError) {
-        return NextResponse.json({ error: error.message }, { status: 400 });
+        /*
+         * #904 の調査（2026-10-17）: 動画のときは**実際に入っていた形式**も返す。
+         *
+         * 【初心者向け】返す先はその人自身が選んだファイルの情報なので、
+         * 新しく漏れるものはありません。画面の文を正しくするため（Android の人に
+         * iPhone の設定を直させない）と、**HEVC が本当に届いているかを知るため**です。
+         */
+        const codec = error instanceof VideoValidationError ? error.videoCodec : null;
+        return NextResponse.json({ error: error.message, ...(codec ? { videoCodec: codec } : {}) }, { status: 400 });
       }
       // #895: Next.js の内部的な合図（redirect / notFound など）は、記録する前に投げ直す。
       // 握りつぶすと転送が黙って効かなくなる。API の口でも決まりを揃える
