@@ -19,7 +19,7 @@ import type { PostCategory } from "@/lib/posts/constants";
 export type PinType =
   | "post" // みんなの投稿（公開投稿があるスポット）
   | "saved" // 保存済み（行きたい・しおり）
-  | "posted" // 自分の投稿があるスポット（あしあと）
+  | "posted" // 自分の投稿があるスポット（投稿履歴）
   | "draft" // 自分の下書き
   | "focus" // 「地図で見る」で開いた対象・探すモードでめくったカード
   | "numbered" // しおりの訪問順（Day の色＋番号）
@@ -174,7 +174,7 @@ export function resolvePinColor(token: PinColorToken): string {
 
 /** マップ画面ごとの優先順位（同じスポットが複数種別に該当するとき） */
 export function resolvePinPriority(
-  screen: "map" | "mymap",
+  screen: "map" | "post-history",
   flags: { hasPost?: boolean; isSaved?: boolean; isPosted?: boolean; isDraft?: boolean }
 ): PinType {
   if (flags.isDraft) return "draft";

@@ -40,7 +40,7 @@ describe("MyPageScreen（SC-06）", () => {
 
   it("遷移メニューは 3 導線（行きたい／アルバム／投稿履歴）。バッジはプロフィールの下の 1 行へ", () => {
     render(<MyPageScreen {...base} />);
-    expect(MY_PAGE_MENU.map((item) => item.href)).toEqual(["/wishlist", "/albums", "/mymap"]);
+    expect(MY_PAGE_MENU.map((item) => item.href)).toEqual(["/wishlist", "/albums", "/post-history"]);
     expect((MY_PAGE_MENU as readonly { href: string }[]).some((item) => item.href === "/itineraries")).toBe(false);
     for (const item of MY_PAGE_MENU) {
       expect(screen.getByRole("link", { name: new RegExp(`^${item.label}`) })).toHaveAttribute("href", item.href);
@@ -58,7 +58,7 @@ describe("MyPageScreen（SC-06）", () => {
     render(<MyPageScreen {...base} />);
     expect(document.body.textContent).not.toContain("マイマップ");
     expect(document.body.textContent).not.toContain("旅行タイトル");
-    expect(screen.getByRole("link", { name: /投稿履歴/ })).toHaveAttribute("href", "/mymap");
+    expect(screen.getByRole("link", { name: /投稿履歴/ })).toHaveAttribute("href", "/post-history");
   });
 
   it("管理者には管理者ダッシュボードへの導線を出す", () => {

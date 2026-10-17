@@ -280,7 +280,7 @@ describe("#653・#936: 共通の骨組みの使い回しをやめ、画面ごと
       ["albums/[id]", "AlbumDetailSkeleton"],
       ["itineraries/[id]", "ItineraryDetailSkeleton"],
       // #936（2026-10-17）: ここも共通の使い回しだった 6 画面
-      ["mymap", "PostHistorySkeleton"],
+      ["post-history", "PostHistorySkeleton"],
       ["mypage/drafts", "DraftListSkeleton"],
       ["account", "AccountSkeleton"],
       ["badges", "BadgeListSkeleton"],

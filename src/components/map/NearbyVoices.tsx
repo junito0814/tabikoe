@@ -103,7 +103,7 @@ export function NearbyVoices({
    *
    * 旗を立てる代わりに「**どの条件で取り終えたか**」を覚えて、いまの条件と見比べる。
    * 効果（useEffect）の中で旗を立てると eslint（react-hooks/set-state-in-effect）に
-   * 止められるため、あしあとの地図（Task 2）と同じこのやり方に揃えている。
+   * 止められるため、投稿履歴の地図（Task 2）と同じこのやり方に揃えている。
    */
   const [loadedFor, setLoadedFor] = useState<string | null>(null);
   const [failedFor, setFailedFor] = useState<string | null>(null);

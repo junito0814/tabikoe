@@ -146,7 +146,7 @@ docs/tasks/<カテゴリ>/<スラッグ>/01-〇〇.md     ③ タスク 1 件の
 | F-RC-02 | [album-photos](user-stories/records/album-photos.md) | アルバム写真一覧（SC-21） | 3 |
 | F-RC-03 | [album-collaboration](user-stories/records/album-collaboration.md) | アルバムの共同編集・招待 | 8 |
 | F-RC-05 | [wishlist](user-stories/records/wishlist.md) | 保存先の 2 択と「行きたい」（SC-08） | 4（＋v3 3） |
-| F-RC-06 | [my-map](user-stories/records/my-map.md) | あしあと（SC-12。旧 マイマップ） | 4（＋v3 2） |
+| F-RC-06 | [post-history](user-stories/records/post-history.md) | 投稿履歴（SC-12。~~マイマップ~~ → ~~あしあと~~ → 2026-10-17・#973 で URL も `/post-history` に） | 4（＋v3 2） |
 
 ### F-BG ステータスバッジ（3.7）
 
