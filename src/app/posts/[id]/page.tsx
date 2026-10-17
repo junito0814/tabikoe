@@ -1,5 +1,7 @@
 import { notFound } from "next/navigation";
+import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { getAuthUserFromClaims } from "@/lib/auth/auth-user";
 import { GuestBand } from "@/components/layout/GuestBand";
 import { ErrorNotice } from "@/components/notices/ErrorNotice";
 import { ERROR_MESSAGES } from "@/components/notices/error-messages";
@@ -8,10 +10,10 @@ import { resolveListBack } from "@/lib/search/list-state";
 import { BadgeToast } from "@/components/badges/BadgeToast";
 import { parseBadgeToastParam } from "@/components/badges/badge-toast-params";
 import { FlashNotice, resolveFlashKey } from "@/components/notices/FlashNotice";
+import { getPostDetail, type PostDetailData } from "@/lib/posts/post-detail";
 import { listComments, type CommentPage } from "@/lib/comments/list-comments";
 import { ContentEnter } from "@/components/transitions/Reveal";
 import { postTitle } from "@/lib/metadata/page-title";
-import { loadPostDetailOnce, requestViewerId } from "@/lib/posts/post-detail-request";
 import { postShareCard } from "@/lib/metadata/share-card";
 import { countPublicSpotPosts } from "@/lib/spots/count-public-spot-posts";
 
@@ -31,19 +33,6 @@ import { countPublicSpotPosts } from "@/lib/spots/count-public-spot-posts";
 /** #785: タブ名は「〈スポット名〉の投稿」。下書き・非公開・削除では名前を出さない */
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  /*
-   * #964（2026-10-17）: **ここで 404 を決める。**
-   *
-   * 【初心者向け】理由はスポット側（`src/app/spots/[id]/page.tsx`）と同じで、
-   * 流し始めたあとではステータスを変えられないからです。
-   * 投稿は**見る人によって見られるかが変わる**（非公開は本人とアルバムの仲間だけ）ので、
-   * タブ名の `postTitle` では判定できません（あれは公開投稿しか名前を出さないため、
-   * 本人が自分の非公開投稿を開いたときに 404 にしてしまいます）。
-   * 本体とまったく同じ `loadPostDetailOnce` で判定し、`cache` のおかげで問い合わせは増えません。
-   */
-  const loaded = await loadPostDetailOnce(id);
-  if (!loaded.failed && !loaded.post) notFound();
-
   const title = await postTitle(id);
   // #951: 検索エンジンには載せない（要件 4.5.18。理由は SC-04 と同じ）
   const robots = { index: false } as const;
@@ -68,17 +57,24 @@ export default async function PostDetailPage({
   const query = await searchParams;
   const flashKey = resolveFlashKey(query);
   const newBadgeTypes = parseBadgeToastParam(query.badges);
-  // #951: ログインは必須ではない。未ログインなら null のまま進む
-  // #964: generateMetadata と同じ口から読む（cache で 1 リクエスト 1 回）
-  const viewerId = await requestViewerId();
+  const supabase = await createClient();
+  // #951: ログインは必須ではない。未ログインなら user が null のまま進む
+  const user = await getAuthUserFromClaims(supabase);
+  const viewerId = user?.id ?? null;
   const isGuest = viewerId === null;
 
   const admin = createAdminClient();
+  let post: PostDetailData | null = null;
+  let failed = false;
   // performance Task2: コメント 1 ページ目は待たずに Promise のまま画面へ渡し、本文の後から流し込む。
   // 失敗しても本文は出す（コメント欄は空。取り直しは画面側の「もっと見る」に任せる）
   const emptyComments: CommentPage = { comments: [], nextOffset: null, totalCount: 0 , viewerAvatarUrl: null};
   const comments: Promise<CommentPage> = listComments(admin, viewerId, id, 0).catch(() => emptyComments);
-  const { post, failed } = await loadPostDetailOnce(id);
+  try {
+    post = await getPostDetail(admin, viewerId, id);
+  } catch {
+    failed = true;
+  }
 
   if (failed) {
     return (
@@ -88,6 +84,19 @@ export default async function PostDetailPage({
     );
   }
 
+  /*
+   * #964（2026-10-17）: **この `notFound()` は HTTP 404 を返しません**（本文は正しく
+   * 「見つかりません」が出ますが、ステータスは 200 です）。要件定義書 9 章 No 19。
+   *
+   * 【初心者向け】`loading.tsx` の骨組みを送り始めた時点で応答のヘッダが出てしまうので、
+   * **あとからステータスは変えられません**（Next のドキュメント
+   * `node_modules/next/dist/docs/01-app/03-api-reference/03-file-conventions/loading.md`
+   * の「Status Codes」）。`generateMetadata` に移す案は**本番ビルドで実測して駄目でした** ──
+   * `notFound()` を待ちなしで呼べば 404 になりますが、**DB を `await` してから呼ぶと 200 のまま**です。
+   * 直すには `proxy` で判定するしかなく、在る投稿のほうが圧倒的に多いのに
+   * 全アクセスに問い合わせが 1 回増えるので、いまは採っていません。
+   * 検索エンジンには影響しません（`notFound()` が noindex を入れ、この画面は `robots: { index: false }` も付けている）。
+   */
   if (!post) {
     notFound();
   }

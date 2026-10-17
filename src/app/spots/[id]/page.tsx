@@ -14,7 +14,7 @@ import { resolveListBack } from "@/lib/search/list-state";
 import { ContentEnter } from "@/components/transitions/Reveal";
 import { officialInfoSlot } from "@/components/spots/OfficialInfo";
 import { visitFindingsSlot } from "@/components/spots/VisitFindingsSlot";
-import { lookupSpot } from "@/lib/metadata/page-title";
+import { spotTitle } from "@/lib/metadata/page-title";
 import { spotShareCard } from "@/lib/metadata/share-card";
 
 /**
@@ -35,17 +35,7 @@ import { spotShareCard } from "@/lib/metadata/share-card";
  */
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  /*
-   * #964（2026-10-17）: **ここで 404 を決める。**
-   *
-   * 【初心者向け】本体（下の関数）で `notFound()` を呼んでも、`loading.tsx` の骨組みを
-   * 送り始めたあとなので **HTTP は 200 のまま**でした。流し始める前に動くのはこの
-   * `generateMetadata` なので、在るかどうかの判定をここへ移します。
-   * **読めなかったとき（`failed`）は 404 にしません** ── 本体がエラー画面を出します。
-   */
-  const found = await lookupSpot(id);
-  if (!found.failed && !found.name) notFound();
-  const name = found.name;
+  const name = await spotTitle(id);
   /*
    * #951: 検索エンジンには載せない（要件 4.5.18）。
    * 卒業制作で検索流入を目的としないことに加え、**Google の公式情報（6.2）はキャッシュできず
@@ -78,6 +68,19 @@ export default async function SpotPostsPage({
   const admin = createAdminClient();
   // performance Task2: 骨組みだけ待ち、1 ページ目はストリーミング（/search と同じ）
   const data = await loadSearchShell(admin, viewerId, { ...query, spot: id });
+  /*
+   * #964（2026-10-17）: **この `notFound()` は HTTP 404 を返しません**（本文は正しく
+   * 「見つかりません」が出ますが、ステータスは 200 です）。要件定義書 9 章 No 19。
+   *
+   * 【初心者向け】`loading.tsx` の骨組みを送り始めた時点で応答のヘッダが出てしまうので、
+   * **あとからステータスは変えられません**（Next のドキュメント
+   * `node_modules/next/dist/docs/01-app/03-api-reference/03-file-conventions/loading.md`
+   * の「Status Codes」）。`generateMetadata` に移す案は**本番ビルドで実測して駄目でした** ──
+   * `notFound()` を待ちなしで呼べば 404 になりますが、**DB を `await` してから呼ぶと 200 のまま**です。
+   * 直すには `proxy` で判定するしかなく、在る投稿のほうが圧倒的に多いのに
+   * 全アクセスに問い合わせが 1 回増えるので、いまは採っていません。
+   * 検索エンジンには影響しません（`notFound()` が noindex を入れ、この画面は `robots: { index: false }` も付けている）。
+   */
   if (data.kind === "spot_missing") notFound();
   if (data.kind === "error" || !data.spot) {
     return (
