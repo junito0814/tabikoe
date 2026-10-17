@@ -57,7 +57,16 @@ export function decideMedia(input: {
     };
   }
 
+  /*
+   * #970（2026-10-17）: **30 秒以内でも 50MB を超えることがある**（4K60 の 20 秒など）。
+   *
+   * 【初心者向け】ここは以前、切り取りを一度も勧めずに断っていました。
+   * でも**短く切れば入る**のだから、長い動画と同じように切り取りの画面へ送るべきです
+   * （要件 4.5.11「できませんで終わらせない」）。シートの中で「◯ 秒まで短くすると入ります」も出ます。
+   * 切り取れない端末だけ、今までどおり断って案内します。
+   */
   if (input.sizeBytes > MAX_VIDEO_SIZE_BYTES) {
+    if (input.canTrim && input.durationSeconds !== null) return { kind: "needs_trim", durationSeconds: input.durationSeconds };
     return { kind: "reject", message: `動画は1点あたり ${MAX_VIDEO_SIZE_BYTES / 1024 / 1024}MB 以内にしてください。短く編集してから選び直してください` };
   }
 

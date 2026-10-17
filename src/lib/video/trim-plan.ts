@@ -283,11 +283,34 @@ export function formatMegabytes(bytes: number): string {
 }
 
 /**
+ * #970（2026-10-17）: **元のファイルが大きすぎて、そもそも開けない**ときの文。
+ *
+ * 【初心者向け】ここは「画質が高い」話ではありません。`MAX_TRIM_SOURCE_BYTES` は
+ * **読み込むと端末が落ちる**ので手前で止める上限で、**中身はまだ一度も見ていません**。
+ * それなのに「30 秒に切り取っても 50MB を超えます（92.9MB）」と出していました。
+ * 92.9MB は**切ったらこれくらいという見込み**で、実物ではありません。
+ * 651MB のファイルに 92.9MB とだけ出ても、何の数字か分かりません。
+ *
+ * そこで、**起きていることをそのまま言います** ── 実際の大きさと、上限はいくつか。
+ *
+ * なお **iPhone は写真アプリの動画をそのまま渡しません**（HEVC を H.264 に変換して渡す）。
+ * 写真アプリに出ている数字とここの数字は**ずれます**。だからこそ、
+ * **ブラウザが受け取った実際の大きさ**を出す意味があります。
+ */
+export function trimSourceTooLargeMessage(sourceBytes: number): string {
+  return `この動画は ${formatMegabytes(sourceBytes)} で、この画面では開けません（上限 ${MAX_TRIM_SOURCE_BYTES / 1024 / 1024}MB）。写真アプリで短く切ってから選び直してください`;
+}
+
+/**
  * 切り取りがうまくいかなかったときに出す文。**「できません」で終わらせない**（要件 4.5.11）。
  * 大きすぎるときだけは原因が違うので、別の文にする（短くしても直らない）。
+ *
+ * #970: **`source_too_large` はここでは扱えません**（型で弾いています）。
+ * 理由が「開けない」なので、言うべきことが違います → `trimSourceTooLargeMessage`。
+ * 型で弾いておくと、次に増やす人が間違った文を出せません。
  */
-export function trimFailureMessage(reason: TrimRefusal | TrimOutputRefusal, bytes?: number): string {
-  if (reason === "source_too_large" || reason === "estimated_too_large" || reason === "too_large") {
+export function trimFailureMessage(reason: Exclude<TrimRefusal, "source_too_large"> | TrimOutputRefusal, bytes?: number): string {
+  if (reason === "estimated_too_large" || reason === "too_large") {
     const size = bytes === undefined ? "" : `（${formatMegabytes(bytes)}）`;
     return `この動画は画質が高く、${TRIM_WINDOW_SECONDS} 秒に切り取っても ${MAX_VIDEO_SIZE_BYTES / 1024 / 1024}MB を超えます${size}。写真アプリで短く編集してから選び直してください`;
   }
