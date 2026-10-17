@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { safeRedirectPath } from "@/lib/safe-redirect";
+import { CATCHPHRASE } from "@/lib/terms";
 import { ErrorNotice } from "@/components/notices/ErrorNotice";
 import { ERROR_MESSAGES } from "@/components/notices/error-messages";
 import { outfit, lora } from "@/app/fonts";
@@ -120,8 +121,8 @@ export default function AuthScreen({ sky = false }: { /** Task12（2026-09-25）
                     {isAdminLogin ? (
                         <>管理者ログイン</>
                     ) : (
-                        // キャッチフレーズ（2026-09-22 決定。要求定義書 0 章）
-                        <>あなたのコエが、だれかのタビへ。</>
+                        // キャッチフレーズ（2026-09-22 決定。要求定義書 0 章）。#951 で lib/terms.ts に寄せた
+                        <>{CATCHPHRASE}</>
                     )}
                 </p>
 

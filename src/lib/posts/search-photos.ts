@@ -170,7 +170,8 @@ export async function buildMediaPage(admin: SupabaseClient, merged: MergedMedia[
 /** 検索条件に合う公開投稿の写真・動画を、投稿一覧と同じ並び順で 1 ページ（40 点）返す */
 export async function searchMediaPage(
   admin: SupabaseClient,
-  viewerId: string,
+  /** #951: 未ログイン（共有リンク）は null */
+  viewerId: string | null,
   filters: PostSearchFilters,
   offset: number,
   limit: number = PHOTOS_PAGE_SIZE,

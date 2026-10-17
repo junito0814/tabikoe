@@ -14,10 +14,11 @@ import type { SupabaseClient } from "@supabase/supabase-js";
  */
 export async function findSavedSpotIds(
   admin: SupabaseClient,
-  viewerId: string,
+  /** #951: 未ログイン（共有リンク）は null。保存済みは本人の情報なので、1 つも無い */
+  viewerId: string | null,
   spotIds: string[]
 ): Promise<Set<string>> {
-  if (spotIds.length === 0) return new Set();
+  if (viewerId === null || spotIds.length === 0) return new Set();
 
   const [wishlist, itineraries] = await Promise.all([
     admin.from("wishlist").select("spot_id").eq("user_id", viewerId).in("spot_id", spotIds),

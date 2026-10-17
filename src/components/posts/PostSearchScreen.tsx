@@ -54,6 +54,7 @@ export function PostSearchScreen({
   initialPage,
   title,
   headerAction,
+  isGuest = false,
   backHref,
   backLabel,
   backParam = null,
@@ -76,6 +77,11 @@ export function PostSearchScreen({
   title: string;
   /** #770: 見出しの右に置くもの（スポット別一覧の「⋯」）。無ければ何も出さない */
   headerAction?: ReactNode;
+  /**
+   * #951: 未ログイン（共有リンク）で見ているか。
+   * 「戻る」（戻り先が無い）と「⋯」（中身の通報にログインが要る）を出さない（要件 4.5.18）。
+   */
+  isGuest?: boolean;
   backHref: string;
   backLabel: string;
   /** Bug #469: この一覧自身が受け取った戻り先（`back=`）。投稿詳細へ渡す一覧 URL に付け直して数珠つなぎにする */
@@ -173,8 +179,8 @@ export function PostSearchScreen({
       <div className="w-full max-w-[520px] px-4 pt-4">
         <header className="mb-3 flex flex-col gap-2.5">
           <div className="flex items-center gap-2">
-            {/* #813: 戻るは共通部品（自前で ‹ を描かない） */}
-            <BackLink href={backHref} label={backLabel} />
+            {/* #813: 戻るは共通部品（自前で ‹ を描かない）。#951: 未ログインは戻る先が無いので出さない */}
+            {!isGuest && <BackLink href={backHref} label={backLabel} />}
             <h1 className="min-w-0 flex-1 truncate text-center text-[1rem] font-bold text-ink">{title}</h1>
             {/*
               * #692: スポット別の一覧では絞り込みを出さない（並び替えは残す）。
@@ -190,8 +196,8 @@ export function PostSearchScreen({
                 絞り込み{activeCount > 0 && `（${activeCount}）`}
               </button>
             )}
-            {/* #770: 主役ではない操作（通報する）は右上の「⋯」へ */}
-            {headerAction}
+            {/* #770: 主役ではない操作（通報する）は右上の「⋯」へ。#951: 未ログインには出さない */}
+            {!isGuest && headerAction}
           </div>
           {header}
           <div className="flex items-center justify-between gap-2">
@@ -224,6 +230,7 @@ export function PostSearchScreen({
                   addMode={addMode}
                   /* #692: スポット別では「＋」を出さない（保存先はスポット単位。見出しの「＋」1 つに任せる） */
                   showSaveButton={!isSpotList}
+                  isGuest={isGuest}
                 />
               </li>
             ))}

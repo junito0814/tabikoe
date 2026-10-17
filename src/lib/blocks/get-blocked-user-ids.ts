@@ -26,6 +26,12 @@ import type { SupabaseClient } from "@supabase/supabase-js";
  * この関数はRoute Handler内でのみ呼び、戻り値（誰が自分をブロックしたか）を
  * そのままクライアントへ返さないこと。
  *
+ * ## 未ログインのとき（#951・2026-10-17）
+ *
+ * 共有リンクから来た人には `userId` が無いので `null` を渡す。誰ともブロック関係に無いので
+ * 空配列を返す。**呼ぶ側で `if (user)` を書かずに済む**ようにここで受けている
+ * （書き忘れると、未ログインのときだけ落ちる画面ができる）。
+ *
  * ## アルバム文脈の例外
  *
  * 共同アルバム内の投稿一覧では、メンバー同士がブロック関係でも相手の投稿を表示する
@@ -39,10 +45,11 @@ export interface BlockedUserIdsOptions {
 
 export async function getBlockedUserIds(
   admin: SupabaseClient,
-  userId: string,
+  userId: string | null,
   options: BlockedUserIdsOptions = {}
 ): Promise<string[]> {
-  if (options.albumContext) {
+  // #951: 未ログイン（共有リンク）はブロック関係を持たない
+  if (userId === null || options.albumContext) {
     return [];
   }
 

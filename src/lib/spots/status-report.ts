@@ -38,10 +38,13 @@ export async function upsertSpotStatusReport(
   return getSpotStatus(admin, spotId, userId);
 }
 
-export async function getSpotStatus(admin: SupabaseClient, spotId: string, userId: string): Promise<SpotStatusSummary> {
+export async function getSpotStatus(admin: SupabaseClient, spotId: string, userId: string | null): Promise<SpotStatusSummary> {
   const [latestResult, mineResult] = await Promise.all([
     admin.from("spot_latest_status").select("status, reported_at").eq("spot_id", spotId).maybeSingle(),
-    admin.from("spot_status_reports").select("status, reported_at").eq("spot_id", spotId).eq("user_id", userId).maybeSingle(),
+    // #951: 未ログイン（共有リンク）は「自分の報告」が無いので、引かずに null のままにする
+    userId === null
+      ? Promise.resolve({ data: null, error: null })
+      : admin.from("spot_status_reports").select("status, reported_at").eq("spot_id", spotId).eq("user_id", userId).maybeSingle(),
   ]);
   if (latestResult.error) throw latestResult.error;
   if (mineResult.error) throw mineResult.error;

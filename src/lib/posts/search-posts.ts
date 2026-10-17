@@ -385,7 +385,8 @@ const MAX_FETCH_ROUNDS = 5;
  */
 export async function searchPostCards(
   admin: SupabaseClient,
-  viewerId: string,
+  /** #951: 未ログイン（共有リンク）は null */
+  viewerId: string | null,
   filters: PostSearchFilters,
   offset: number,
   limit: number = SEARCH_PAGE_SIZE,
@@ -518,7 +519,8 @@ export function applyFilters<Q extends ReturnType<typeof baseQuery>>(
 
 async function searchByLikes(
   admin: SupabaseClient,
-  viewerId: string,
+  /** #951: 未ログイン（共有リンク）は null */
+  viewerId: string | null,
   filters: PostSearchFilters,
   offset: number,
   limit: number,

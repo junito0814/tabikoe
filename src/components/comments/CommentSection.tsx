@@ -45,6 +45,7 @@ export function CommentSection({
   postId,
   initialPage,
   canComment,
+  isGuest = false,
   returnTo,
   api = defaultApi,
   open,
@@ -60,6 +61,14 @@ export function CommentSection({
    */
   initialPage: CommentPage | null;
   canComment: boolean;
+  /**
+   * #951: 未ログイン（共有リンク）で見ているか。
+   *
+   * 【初心者向け】**読むのは今までどおり**で、変わるのは 3 つだけ。
+   * 入力欄をログインの案内に差し替え、返信・通報を出さず、投稿者名をリンクにしない
+   * （プロフィール画面は公開していないため。要件 4.5.18）。
+   */
+  isGuest?: boolean;
   /** 通報画面からの戻り先 */
   returnTo: string;
   /** 差し替え口（単体テスト用） */
@@ -338,6 +347,20 @@ export function CommentSection({
             </button>
           </div>
         </form>
+  ) : isGuest ? (
+    /*
+      * #951（2026-10-17）: 未ログインは入力欄の代わりにこれ。
+      *
+      * 【初心者向け】「ログインしてください」だけだと、**読むのも駄目なのかと思われます**。
+      * 読めることをその場で言い切るために、2 つ並べて書きます（要件 4.5.18）。
+      */
+    <p className="text-[0.75rem] leading-[1.7] text-muted" data-guest-comment-notice>
+      <Link href={`/login?redirect_to=${encodeURIComponent(returnTo)}`} className="font-semibold text-accent">
+        コメントするにはログイン
+      </Link>
+      <span aria-hidden> ／ </span>
+      読むだけなら、このまま見られます
+    </p>
   ) : (
     <p className="text-[0.75rem] text-muted">非公開の投稿にはコメントできません</p>
   );
@@ -362,6 +385,7 @@ export function CommentSection({
                 <CommentItem
                   comment={comment}
                   canReply={canComment}
+                  isGuest={isGuest}
                   pendingDeleteId={pendingDeleteId}
                   returnTo={returnTo}
                   onDelete={handleDelete}
@@ -374,6 +398,7 @@ export function CommentSection({
                           <CommentItem
                             comment={reply}
                             canReply={canComment}
+                            isGuest={isGuest}
                             pendingDeleteId={pendingDeleteId}
                             returnTo={returnTo}
                             onDelete={handleDelete}
@@ -463,6 +488,7 @@ export function CommentSection({
 function CommentItem({
   comment,
   canReply,
+  isGuest = false,
   pendingDeleteId,
   returnTo,
   onDelete,
@@ -472,6 +498,8 @@ function CommentItem({
 }: {
   comment: CommentData;
   canReply: boolean;
+  /** #951: 未ログインは、投稿者名をリンクにせず、通報も出さない */
+  isGuest?: boolean;
   pendingDeleteId: string | null;
   returnTo: string;
   onDelete: (commentId: string) => void;
@@ -501,7 +529,8 @@ function CommentItem({
       <div className="min-w-0 flex-1">
         {/* 名前と本文を同じ行から続ける。本文は改行を活かすが、名前の直後から始まる */}
         <p className="whitespace-pre-wrap break-words text-[0.8125rem] leading-[1.6] text-ink">
-          {comment.author.isDeleted ? (
+          {/* #951: 未ログインにはプロフィール画面を見せないので、名前は字のまま（アイコンと名前は出す） */}
+          {comment.author.isDeleted || isGuest ? (
             <span className="font-bold">{comment.author.displayName}</span>
           ) : (
             <Link href={`/users/${comment.author.id}`} className="font-bold text-ink">
@@ -531,7 +560,8 @@ function CommentItem({
               className="h-6 w-6"
             />
           ) : (
-            <ReportLink targetType="comment" targetId={comment.id} returnTo={returnTo} className="text-[0.625rem]" />
+            /* #951: 通報にもログインが要るので、未ログインには出さない（押してから断らない） */
+            !isGuest && <ReportLink targetType="comment" targetId={comment.id} returnTo={returnTo} className="text-[0.625rem]" />
           )}
         </div>
         {children}

@@ -20,15 +20,21 @@ import { getPostingRestrictionUntil, postingRestrictedResponse } from "@/lib/mod
  *
  * 投稿の閲覧可否は SC-05 の表示時点で判定済みだが、直接呼ばれる場合に備えてここでも
  * 「公開投稿 or 本人」を最低限確認する（非公開投稿にはコメント自体が付かない 3.3.6）。
+ *
+ * #951（2026-10-17）: **GET だけ未ログインに開けた**（要件 3.5.4）。共有リンクで来た人も
+ * コメントを読めるようにするため。POST・DELETE は従来どおり 401。
+ *
+ * 【初心者向け】いままでは「ログインしているか」で止めていたので、**その手前の公開範囲の判定が
+ * 効いているか**を確かめたことがありませんでした。開けるにあたって、`!target.ok` のときは
+ * **その理由のまま返す**ようにしました（非公開なら 403、無ければ 404）。
+ * 以前は 403 のときだけ素通りして、空のコメント一覧を返していました。
  */
 export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const supabase = await createClient();
+  // #951: 未ログインでも読める。user が null のまま先へ進む
   const user = await getAuthenticatedUser(supabase);
-
-  if (!user) {
-    return NextResponse.json({ error: "unauthorized" }, { status: 401 });
-  }
+  const viewerId = user?.id ?? null;
 
   const offset = Math.max(
     0,
@@ -37,11 +43,11 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
 
   const admin = createAdminClient();
   try {
-    const target = await findLikeTarget(admin, user.id, id);
-    if (!target.ok && target.status === 404) {
-      return NextResponse.json({ error: "not_found" }, { status: 404 });
+    const target = await findLikeTarget(admin, viewerId, id);
+    if (!target.ok) {
+      return NextResponse.json({ error: target.error }, { status: target.status });
     }
-    const page = await listComments(admin, user.id, id, offset);
+    const page = await listComments(admin, viewerId, id, offset);
     return NextResponse.json(page);
   } catch {
     return NextResponse.json({ error: "fetch_failed" }, { status: 500 });

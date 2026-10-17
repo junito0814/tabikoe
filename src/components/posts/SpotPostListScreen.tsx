@@ -56,6 +56,7 @@ export function SpotPostListScreen({
   official = null,
   visitFindings = null,
   videoEnabled,
+  isGuest = false,
 }: {
   spot: SpotSummary;
   /** #937: 動画も受け付けているか。写真タブの空の文面に使う（そのまま PostSearchScreen へ渡す） */
@@ -78,6 +79,8 @@ export function SpotPostListScreen({
   official?: React.ReactNode;
   /** #929: 「行ってわかったこと」。中身はサーバーで作る（VisitFindingsSlot） */
   visitFindings?: React.ReactNode;
+  /** #951: 未ログイン（共有リンク）で見ているか（要件 4.5.18） */
+  isGuest?: boolean;
 }) {
   const context: SearchContext = {
     destination: { kind: "spot", spotId: spot.id },
@@ -174,6 +177,7 @@ export function SpotPostListScreen({
         backHref={back?.href ?? "/map"}
         backLabel={back?.label ?? "地図"}
         backParam={back?.href ?? null}
+        isGuest={isGuest}
         header={header}
         addMode={addMode}
         emptyMessage="まだ投稿がありません"

@@ -246,7 +246,8 @@ export function sortPostCards<T extends Pick<PostCardData, "createdAt" | "rating
 /** 一覧を署名付きURL付きのカードへ変換する（可視性の判定は呼び出し側が済ませていること） */
 export async function buildPostCards(
   admin: SupabaseClient,
-  viewerId: string,
+  /** #951: 未ログイン（共有リンク）は null。いいね済み・保存済みが付かないだけで、カードは同じ */
+  viewerId: string | null,
   rows: PostCardRow[],
   options: { viewer?: { lat: number; lng: number } | null } = {}
 ): Promise<PostCardData[]> {
@@ -264,7 +265,7 @@ export async function buildPostCards(
 }
 
 /** v3.2: 投稿ごとの最新のコメント 1 件（返信を含む。削除済み・非公開化・ブロック相手は除く）。取れなくてもカードは出す */
-export async function findLatestComments(admin: SupabaseClient, viewerId: string, postIds: string[]): Promise<Map<string, { authorName: string; excerpt: string }>> {
+export async function findLatestComments(admin: SupabaseClient, viewerId: string | null, postIds: string[]): Promise<Map<string, { authorName: string; excerpt: string }>> {
   const map = new Map<string, { authorName: string; excerpt: string }>();
   if (postIds.length === 0) return map;
   try {
@@ -317,10 +318,11 @@ export async function findLatestSpotStatuses(
 /** 閲覧者がいいね済みの投稿ID */
 async function findLikedPostIds(
   admin: SupabaseClient,
-  viewerId: string,
+  /** #951: 未ログイン（共有リンク）は null。いいねは本人の情報なので、1 つも無い */
+  viewerId: string | null,
   postIds: string[]
 ): Promise<Set<string>> {
-  if (postIds.length === 0) return new Set();
+  if (viewerId === null || postIds.length === 0) return new Set();
   const { data, error } = await admin
     .from("likes")
     .select("post_id")
@@ -348,7 +350,7 @@ export interface PostCardPage {
  */
 export async function getSpotPostCards(
   admin: SupabaseClient,
-  viewerId: string,
+  viewerId: string | null,
   spotId: string,
   sort: PostSort,
   offset: number,

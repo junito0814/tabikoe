@@ -26,7 +26,8 @@ export function evaluateLikeTarget(
 
 export async function findLikeTarget(
   admin: SupabaseClient,
-  viewerId: string,
+  /** #951: 未ログイン（共有リンク）は null。コメントの取得でも使うため受けられるようにした */
+  viewerId: string | null,
   postId: string
 ): Promise<LikeTargetResult> {
   const { data: post, error } = await admin
@@ -37,7 +38,7 @@ export async function findLikeTarget(
   if (error) throw error;
 
   const blocked =
-    post && post.user_id !== viewerId ? await isBlockedEitherWay(admin, viewerId, post.user_id) : false;
+    post && viewerId !== null && post.user_id !== viewerId ? await isBlockedEitherWay(admin, viewerId, post.user_id) : false;
   return evaluateLikeTarget(post, blocked);
 }
 

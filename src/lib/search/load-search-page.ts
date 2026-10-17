@@ -5,6 +5,7 @@ import type { AddModeInfo } from "@/components/posts/AddModeBanner";
 import { loadAddMode } from "@/lib/itineraries/add-mode";
 import { type PostCardPage } from "@/lib/posts/post-cards";
 import { getSpotStatus } from "@/lib/spots/status-report";
+import { countPublicSpotPosts } from "@/lib/spots/count-public-spot-posts";
 import { findSavedSpotIds } from "@/lib/spots/saved-spots";
 import { averageRating } from "@/lib/map/get-map-pins";
 import { parsePostSearchParams, searchPostCards } from "@/lib/posts/search-posts";
@@ -53,11 +54,12 @@ function str(value: string | string[] | undefined): string | undefined {
 }
 
 /** スポット別一覧の見出し（件数・行きたい・最新の報告）。3 本のクエリを並列に */
-async function loadSpotSummary(admin: SupabaseClient, userId: string, spot: { id: string; name: string; prefecture: string | null; lat: number | null; lng: number | null; source: string }): Promise<SpotSummary> {
+async function loadSpotSummary(admin: SupabaseClient, userId: string | null, spot: { id: string; name: string; prefecture: string | null; lat: number | null; lng: number | null; source: string }): Promise<SpotSummary> {
   // map-sheet Task2: 星の平均も出すので rating も取る。件数は正確さのため今までどおり count で数える
   // （rating の取得は最大 1000 行までなので、投稿が多いスポットでは件数がずれてしまう）。4 本とも並列なので往復は増えない
-  const [countResult, ratingResult, saved, statuses] = await Promise.all([
-    admin.from("posts").select("id", { count: "exact", head: true }).eq("spot_id", spot.id).eq("visibility", "public").eq("status", "published").is("hidden_at", null),
+  const [postCount, ratingResult, saved, statuses] = await Promise.all([
+    // #951: 「いま見られる投稿の件数」の条件は 1 か所にまとめた（約束 14）
+    countPublicSpotPosts(admin, spot.id),
     admin.from("posts").select("rating").eq("spot_id", spot.id).eq("visibility", "public").eq("status", "published").is("hidden_at", null),
     // #696: 「行きたい」だけでなく「しおり」に入っていても保存済みとして ✓ を出す
     findSavedSpotIds(admin, userId, [spot.id]),
@@ -71,7 +73,7 @@ async function loadSpotSummary(admin: SupabaseClient, userId: string, spot: { id
     lat: spot.lat,
     lng: spot.lng,
     isManualSpot: spot.source === "manual",
-    postCount: countResult.count ?? 0,
+    postCount,
     ratingAverage: averageRating(((ratingResult.data ?? []) as { rating: number | null }[]).map((row) => row.rating)),
     isSaved: saved.has(spot.id),
     latestStatus: statuses.latest,
@@ -106,7 +108,7 @@ export type SearchPageShell =
  * 【初心者向け】ページはまず骨組み（行き先・スポットの見出し・条件）だけを待って HTML を返し始め、
  * 1 ページ目は Promise のままブラウザ側の Suspense に渡す。データが揃った順に画面が埋まる。
  */
-export async function loadSearchShell(admin: SupabaseClient, userId: string, query: SearchPageQuery): Promise<SearchPageShell> {
+export async function loadSearchShell(admin: SupabaseClient, userId: string | null, query: SearchPageQuery): Promise<SearchPageShell> {
   const params = new URLSearchParams();
   for (const [key, value] of Object.entries(query)) {
     if (typeof value === "string") params.set(key, value);
@@ -171,7 +173,7 @@ export async function loadSearchShell(admin: SupabaseClient, userId: string, que
 }
 
 /** 1 ページ目（投稿／スポット／写真）。3 つは独立なので並列に。失敗は呼び出し側で扱う */
-export async function loadSearchFirstPage(admin: SupabaseClient, userId: string, shell: Extract<SearchPageShell, { kind: "ok" }>): Promise<SearchFirstPage> {
+export async function loadSearchFirstPage(admin: SupabaseClient, userId: string | null, shell: Extract<SearchPageShell, { kind: "ok" }>): Promise<SearchFirstPage> {
   const { filters, spotSort, isPhotos, isSpotResult, empty, notFound, minRating, findings } = shell.firstPageInput;
   // #929: 「行ってわかったこと」で残るスポットを先に出す（条件が無ければ null ＝ 絞らない）
   const allowedSpotIds = await findSpotIdsWithAllFindings(admin, findings);
@@ -202,7 +204,7 @@ export function retryableEmptyFirstPage(shell: Extract<SearchPageShell, { kind: 
 }
 
 /** 骨組みと 1 ページ目をまとめて待つ（従来どおりの形。/spots/[id]・テストで使う） */
-export async function loadSearchPage(admin: SupabaseClient, userId: string, query: SearchPageQuery): Promise<SearchPageData> {
+export async function loadSearchPage(admin: SupabaseClient, userId: string | null, query: SearchPageQuery): Promise<SearchPageData> {
   const shell = await loadSearchShell(admin, userId, query);
   if (shell.kind !== "ok") return shell;
   try {

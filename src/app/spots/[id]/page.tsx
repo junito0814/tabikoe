@@ -1,7 +1,8 @@
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { requireUserOrRedirect } from "@/lib/auth/require-user-or-redirect";
+import { getAuthUserFromClaims } from "@/lib/auth/auth-user";
+import { GuestBand } from "@/components/layout/GuestBand";
 import { ErrorNotice } from "@/components/notices/ErrorNotice";
 import { ERROR_MESSAGES } from "@/components/notices/error-messages";
 import { Suspense } from "react";
@@ -22,6 +23,11 @@ import { spotTitle } from "@/lib/metadata/page-title";
  * 【初心者向け】地図（SC-02）のピンの吹き出しや投稿カードのスポット名から来る。
  * 中身は `/search?spot=<id>` と同じ（lib/search/load-search-page.ts を共用）。
  * v1 からのリンク（/spots/[id]?sort=）もそのまま動く。
+ *
+ * #951（2026-10-17）: **ログインせずに開ける**ようにした（要件 3.5.4）。共有されたリンクを
+ * 受け取った人が、ログイン画面に突き当たって中身を一切見られない状態を避けるため。
+ * 中身は同じで、違うのは 4 つ ── メニューバー（`shouldShowMenuBar`）・「戻る」・「⋯」を出さず、
+ * 下に帯（`GuestBand`）を 1 本置く。**どこから来たかでは判定しない**（同じ URL は同じ動き）。
  */
 /**
  * #785: タブ名はスポット名。見つからない・見られないときは名前を出さない（存在が漏れるため）
@@ -29,7 +35,13 @@ import { spotTitle } from "@/lib/metadata/page-title";
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const name = await spotTitle(id);
-  return name ? { title: name } : {};
+  /*
+   * #951: 検索エンジンには載せない（要件 4.5.18）。
+   * 卒業制作で検索流入を目的としないことに加え、**Google の公式情報（6.2）はキャッシュできず
+   * 画面を開くたびに 1 回呼ぶ**ので、クローラの巡回がそのまま無料枠を使ってしまうため。
+   */
+  const robots = { index: false } as const;
+  return name ? { title: name, robots } : { robots };
 }
 
 export default async function SpotPostsPage({
@@ -41,12 +53,15 @@ export default async function SpotPostsPage({
 }) {
   const { id } = await params;
   const supabase = await createClient();
-  const user = await requireUserOrRedirect(supabase, `/spots/${id}`);
+  // #951: ログインは必須ではない。未ログインなら user が null のまま進む
+  const user = await getAuthUserFromClaims(supabase);
+  const viewerId = user?.id ?? null;
+  const isGuest = viewerId === null;
 
   const query = await searchParams;
   const admin = createAdminClient();
   // performance Task2: 骨組みだけ待ち、1 ページ目はストリーミング（/search と同じ）
-  const data = await loadSearchShell(admin, user.id, { ...query, spot: id });
+  const data = await loadSearchShell(admin, viewerId, { ...query, spot: id });
   if (data.kind === "spot_missing") notFound();
   if (data.kind === "error" || !data.spot) {
     return (
@@ -57,7 +72,7 @@ export default async function SpotPostsPage({
   }
 
   const shell = data;
-  const firstPage = loadSearchFirstPage(admin, user.id, shell).catch(() => retryableEmptyFirstPage(shell));
+  const firstPage = loadSearchFirstPage(admin, viewerId, shell).catch(() => retryableEmptyFirstPage(shell));
   const back = resolveListBack(typeof query.back === "string" ? query.back : null);
   return (
     <ContentEnter>
@@ -73,8 +88,11 @@ export default async function SpotPostsPage({
           official={officialInfoSlot(id)}
           /* #929: 行ってわかったこと（報告が 1 件も無ければ、中で何も出さない） */
           visitFindings={visitFindingsSlot(id)}
+          isGuest={isGuest}
         />
       </Suspense>
+      {/* #951: 未ログインはメニューバーの代わりにこの帯（要件 4.5.18） */}
+      {isGuest && <GuestBand returnTo={`/spots/${id}`} />}
     </ContentEnter>
   );
 }

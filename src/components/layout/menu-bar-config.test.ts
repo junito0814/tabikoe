@@ -92,3 +92,28 @@ describe("isMenuItemActive", () => {
     expect(isMenuItemActive(item("home"), "/account")).toBe(false);
   });
 });
+
+/**
+ * #951（2026-10-17）: 共有リンク（SC-04・SC-05）
+ * 出典: Issue #951、要件定義書 4.5.18
+ *
+ * メニューバーを未ログインで出すと、**未読件数の API が 401 を返して
+ * 見に来た投稿から締め出されます**（#583 と同じ事故）。
+ */
+describe("共有リンクのメニューバー（#951）", () => {
+  const paths = ["/spots/abc", "/posts/abc", "/spots/abc/photos"];
+
+  it("未ログインでは出さない", () => {
+    for (const path of paths) expect(shouldShowMenuBar(path, false)).toBe(false);
+  });
+
+  it("ログイン済みでは今までどおり出す（見え方を変えない）", () => {
+    for (const path of paths) expect(shouldShowMenuBar(path, true)).toBe(true);
+  });
+
+  it("ほかの画面の判定は変わらない", () => {
+    expect(shouldShowMenuBar("/search", false)).toBe(true);
+    expect(shouldShowMenuBar("/mypage", false)).toBe(true);
+    expect(shouldShowMenuBar("/admin", true)).toBe(false);
+  });
+});
