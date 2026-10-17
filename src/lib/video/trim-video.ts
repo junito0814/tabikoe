@@ -1,7 +1,7 @@
 "use client";
 
 import type { ISOFile, Movie, Sample, Track } from "mp4box";
-import { type TrimRange } from "@/lib/video/trim-plan";
+import { MAX_TRIM_SOURCE_BYTES, type TrimRange } from "@/lib/video/trim-plan";
 
 /**
  * #861 / 要件定義書 4.5.17（2026-10-10）: 動画を**作り直さずに**切り取る。
@@ -23,7 +23,16 @@ import { type TrimRange } from "@/lib/video/trim-plan";
 export const TRIM_PARSE_TIMEOUT_MS = 20000;
 
 export class TrimError extends Error {
-  constructor(readonly code: "unsupported" | "no_video_track" | "no_keyframes" | "cancelled" | "failed") {
+  constructor(
+    readonly code:
+      | "unsupported"
+      | "no_video_track"
+      | "no_keyframes"
+      | "cancelled"
+      | "failed"
+      /** #974: 目次が見つからず「丸ごと読む」しかないが、大きすぎて読めない */
+      | "source_too_large"
+  ) {
     super(code);
     this.name = "TrimError";
   }
@@ -141,7 +150,15 @@ export async function loadVideoForTrim(file: File, options: { onProgress?: (rati
     /*
      * 少しずつ読む方法で目次が見つからなかったときの保険。
      * **今までどおり全部読んで**やり直す（#923 で速くしたが、確実さは落とさない）。
+     *
+     * #974（2026-10-17）: **大きさの門はここに置く。**
+     *
+     * 【初心者向け】ここだけが `file.arrayBuffer()` で**丸ごと**読みます。300MB を丸ごと
+     * 読むと端末が落ちるので、ここで止めます。上の `readIndex`（1MB ずつ）と `trimVideo`
+     * （選んだ範囲だけ）は大きさに関係なく走らせます ── 以前はこの門が入り口にあり、
+     * **目次を見せることすらせずに追い返していました**。
      */
+    if (file.size > MAX_TRIM_SOURCE_BYTES) throw new TrimError("source_too_large");
     const ready: { movie?: Movie } = {};
     try {
       isoFile = createFile();
