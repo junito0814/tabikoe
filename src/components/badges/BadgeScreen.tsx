@@ -1,4 +1,6 @@
 import { BackLink } from "@/components/layout/BackLink";
+import { PrefectureBadgeIcon } from "./PrefectureBadgeIcon";
+import { prefectureMotif } from "@/lib/badges/prefecture-motifs";
 import type { BadgeStatus } from "@/lib/badges/badge-status";
 import type { BadgeCategory } from "@/lib/badges/catalog";
 
@@ -31,6 +33,11 @@ const SECTIONS: { category: BadgeCategory; title: string; note: string; hint?: s
   },
   { category: "prefecture", title: "都道府県バッジ", note: "各都道府県で 1 件以上投稿" },
 ];
+
+/** その県の絵を持っているか。無ければ 🏅 に落とす（要件 8 章 102） */
+function hasMotif(prefecture: string): boolean {
+  return prefectureMotif(prefecture) !== null;
+}
 
 function formatAcquiredAt(iso: string): string {
   return new Intl.DateTimeFormat("ja-JP", {
@@ -85,8 +92,24 @@ export function BadgeScreen({ badges }: { badges: BadgeStatus[] }) {
                         : "border-line bg-tint text-muted opacity-70"
                     }`}
                   >
-                    <span aria-hidden className={`text-[1rem] ${acquired ? "" : "grayscale opacity-50"}`}>
-                      🏅
+                    {/*
+                      * #977: 都道府県だけ、🏅 を**その県の名産・シンボルの絵**に替える（要件 4.5.20）。
+                      *
+                      * 【初心者向け】47 県が同じ 🏅 だと、3 列で並べても見分けが付きませんでした。
+                      * ほかの 3 種類（投稿数・いいね数・スポット登録）は **🏅 のまま**です
+                      * （要件 4.5.14 で「残す」と決めたもの）。
+                      *
+                      * **絵を持っていない県は 🏅 に落ちます**（`PrefectureBadgeIcon` が `null` を返す）。
+                      * 47 県が揃う前でも画面が壊れないための作りです（要件 8 章 102）。
+                      *
+                      * 未獲得の見せ方（灰色にして薄める）は、絵でも 🏅 でも同じです。
+                      */}
+                    <span aria-hidden className={acquired ? "" : "grayscale opacity-50"}>
+                      {section.category === "prefecture" && hasMotif(badge.label) ? (
+                        <PrefectureBadgeIcon prefecture={badge.label} />
+                      ) : (
+                        <span className="text-[1rem]">🏅</span>
+                      )}
                     </span>
                     <span className="text-[0.75rem] font-semibold leading-tight">{badge.label}</span>
                     <span className="text-[0.625rem] leading-tight">
