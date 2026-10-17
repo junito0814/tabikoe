@@ -11,8 +11,10 @@ import {
   hasActiveSpotFilters,
   matchesSpotFilters,
   resolveSpotDuration,
+  type SpotFilters,
   type SpotPostInput,
 } from "./spot-aggregate";
+import type { VisitFinding } from "@/lib/spots/visit-findings";
 import { resolveSpotCategory } from "./spot-category";
 
 /**
@@ -236,13 +238,15 @@ describe("aggregateSpots（ピンとカードで同じ答えを出す 1 か所�
 });
 
 describe("URL クエリの読み書き", () => {
+  // #929（2026-10-17）: 「行ってわかったこと」が加わって 5 つになった（manual は #680 で廃止）
   it("5 つの条件を読む", () => {
-    const filters = parseSpotFilters(new URLSearchParams("categories=グルメ,観光スポット&cost=3000&duration=1時間以内&rating=4&manual=1"));
+    const filters = parseSpotFilters(new URLSearchParams("categories=グルメ,観光スポット&cost=3000&duration=1時間以内&rating=4&findings=pet,parking&manual=1"));
     expect(filters).toEqual({
       categories: ["グルメ", "観光スポット"],
       cost: "3000",
       duration: "1時間以内",
       minRating: 4,
+      findings: ["pet", "parking"],
     });
   });
 
@@ -255,12 +259,37 @@ describe("URL クエリの読み書き", () => {
   });
 
   it("書いて読み直すと同じ条件に戻る（URL と地図の状態の保存はこれに頼っている）", () => {
-    const filters = { categories: ["観光スポット"] as const, cost: "1000" as const, duration: "30分以内" as const, minRating: 5 };
+    // #929: 「行ってわかったこと」も往復に含める（URL ⇄ 地図の状態の保存がこれに頼っている）
+    const filters = { categories: ["観光スポット"] as const, cost: "1000" as const, duration: "30分以内" as const, minRating: 5, findings: ["pet", "parking"] as VisitFinding[] };
     const restored = parseSpotFilters(new URLSearchParams(spotFiltersToParams(filters)));
     expect(restored).toEqual(filters);
   });
 
   it("条件なしの項目は URL に載せない（余計なクエリを増やさない）", () => {
     expect(spotFiltersToParams(EMPTY_SPOT_FILTERS)).toEqual([]);
+  });
+});
+
+/**
+ * #929（2026-10-17）: 「行ってわかったこと」は別の表にあるので、投稿からは計算できない。
+ * 呼ぶ側が先に「残るスポットの id」を調べて `aggregateSpots` に渡す形にした。
+ * 出典: 要件定義書 4.5.19「絞り込み」
+ */
+describe("行ってわかったこと（#929）", () => {
+  const base = { categories: [], cost: null, duration: null, minRating: null, findings: [] } satisfies SpotFilters;
+  const spot = (id: string) => ({ id, manual: false, posts: [{ category: "グルメ", duration: null, cost: null, rating: 4, createdAt: "2026-10-01T00:00:00Z" }] });
+
+  it("渡された id の集合に無いスポットは、ピンごと落ちる", () => {
+    const result = aggregateSpots([spot("a"), spot("b")], { ...base, findings: ["pet"] }, new Set(["a"]));
+    expect([...result.keys()]).toEqual(["a"]);
+  });
+
+  it("条件なし（null）のときは何も落とさない", () => {
+    expect([...aggregateSpots([spot("a"), spot("b")], base, null).keys()]).toEqual(["a", "b"]);
+  });
+
+  it("絞り込みボタンの数は、何個選んでも 1 つ", () => {
+    expect(activeSpotFilterCount({ ...base, findings: ["pet", "parking"] })).toBe(1);
+    expect(hasActiveSpotFilters({ ...base, findings: ["pet"] })).toBe(true);
   });
 });

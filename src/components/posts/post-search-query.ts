@@ -2,6 +2,7 @@ import { POST_CATEGORIES, POST_DURATIONS, type PostCategory, type PostDuration }
 import { parsePostSort, type PostSort } from "@/lib/posts/post-cards";
 import { normalizeAreas } from "@/lib/search/regions";
 import { parseSpotSort, type SpotSort } from "@/lib/spots/search-spots";
+import { normalizeVisitFindings, type VisitFinding } from "@/lib/spots/visit-findings";
 import {
   COST_RANGES,
   DISTANCE_OPTIONS,
@@ -40,6 +41,11 @@ export interface PostSearchState {
    * 投稿一覧（スポット別）には出さない ── 1 件の投稿に「平均」は無いため。
    */
   rating: number | null;
+  /**
+   * #929（2026-10-17）: 「行ってわかったこと」。**スポットの一覧でだけ使う**。
+   * 選んだものが**すべてそろっている**スポットだけ残す（AND。要件 4.5.19）。
+   */
+  findings: VisitFinding[];
   /** period が custom のときの日付（YYYY-MM-DD。空なら未指定） */
   from: string;
   to: string;
@@ -80,6 +86,7 @@ export const EMPTY_SEARCH_STATE: PostSearchState = {
   duration: null,
   period: null,
   rating: null,
+  findings: [],
   from: "",
   to: "",
   sort: "newest",
@@ -121,7 +128,9 @@ export function countActiveFilters(state: PostSearchState, context: SearchContex
     (state.cost !== null ? 1 : 0) +
     (state.duration !== null ? 1 : 0) +
     (!isSpotList && state.period !== null ? 1 : 0) +
-    (isSpotList && state.rating !== null ? 1 : 0)
+    (isSpotList && state.rating !== null ? 1 : 0) +
+    // #929: 何個選んでいても「行ってわかったこと」で 1 つ（カテゴリと同じ数え方）
+    (isSpotList && state.findings.length > 0 ? 1 : 0)
   );
 }
 
@@ -137,6 +146,8 @@ function appendStateParams(params: URLSearchParams, state: PostSearchState, cont
   if (state.cost !== null) params.set("cost", state.cost);
   // #955: 評価（平均）はスポットの一覧だけ
   if (isSpotResultContext(context) && state.rating !== null) params.set("rating", String(state.rating));
+  // #929: 「行ってわかったこと」もスポットの一覧だけ。地図（spot-aggregate.ts）と**同じ名前**にして条件を持ち越せるようにする
+  if (isSpotResultContext(context) && state.findings.length > 0) params.set("findings", state.findings.join(","));
   // Task 6: 地図（3.4.6）と同じ名前。地図 → 投稿一覧へ条件を持ち越せる
   if (state.duration !== null) params.set("duration", state.duration);
   if (!isSpotResultContext(context) && state.period !== null) {
@@ -213,6 +224,8 @@ export function parseSearchState(params: URLSearchParams, context: SearchContext
   const period = params.get("period");
   // #955: 評価（平均）は 1〜5 の整数だけ受ける。スポットの一覧以外では読まない
   const ratingValue = Number.parseInt(params.get("rating") ?? "", 10);
+  // #929: 知らない項目は落とし、決まった順に並べ直す（URL から来た値をそのまま信じない）
+  const findings = normalizeVisitFindings((params.get("findings") ?? "").split(",").map((item) => item.trim()));
   const date = (value: string | null) => (value && /^\d{4}-\d{2}-\d{2}$/.test(value) ? value : "");
   return {
     // 座標付きの q は行き先のラベルなのでキーワードにしない
@@ -226,6 +239,7 @@ export function parseSearchState(params: URLSearchParams, context: SearchContext
     // #955: 期間はスポットの一覧では出さない条件なので、そこでは読まない（URL に残っていても無視する）
     period: isSpotResultContext(context) ? null : (includes(PERIOD_OPTIONS, period) ? period : null),
     rating: isSpotResultContext(context) && ratingValue >= 1 && ratingValue <= 5 ? ratingValue : null,
+    findings: isSpotResultContext(context) ? findings : [],
     from: date(params.get("from")),
     to: date(params.get("to")),
     sort: isSpotResultContext(context) ? parseSpotSort(params.get("sort")) : parsePostSort(params.get("sort")),

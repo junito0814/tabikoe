@@ -143,11 +143,13 @@ export function mergeMapPins(
    * 地図が探しているのは場所なので、代表値（spot-aggregate.ts）が条件に合うかで決める。
    * こうすると、残ったスポットの件数・評価・色は**そのスポットの全公開投稿**から出た値のままになる。
    */
-  filters: SpotFilters = EMPTY_SPOT_FILTERS
+  filters: SpotFilters = EMPTY_SPOT_FILTERS,
+  /** #929: 「行ってわかったこと」で残ったスポットの id。null は条件なし（投稿からは計算できないので外から渡す） */
+  allowedSpotIds: ReadonlySet<string> | null = null
 ): MapPinData[] {
   const active = hasActiveSpotFilters(filters);
   // 条件に合わないスポットは、ここで落ちる（= ピンそのものを出さない）
-  const stats = aggregateSpots(postSpots.map(toSpotWithPosts), filters);
+  const stats = aggregateSpots(postSpots.map(toSpotWithPosts), filters, allowedSpotIds);
 
   const pins: MapPinData[] = [];
   const seen = new Set<string>();
@@ -231,7 +233,15 @@ export async function getMapPins(
   userId: string,
   bounds: MapBounds,
   /** explore-mode Task 4: 探すモードの絞り込み（既定は条件なし） */
-  filters: SpotFilters = EMPTY_SPOT_FILTERS
+  filters: SpotFilters = EMPTY_SPOT_FILTERS,
+  /**
+   * #929: 「行ってわかったこと」で残ったスポットの id。null は条件なし。
+   *
+   * 【初心者向け】ここで DB を引かないのは、このファイルが**画面側（MapScreen）からも読まれている**ため。
+   * 引く側（`visit-findings-db.ts`）はサーバー専用の印（`import "server-only"`）が付いていて、
+   * 画面側に混ざるとビルドが止まる。呼ぶ側（Route Handler）が引いて渡す。
+   */
+  allowedSpotIds: ReadonlySet<string> | null = null
 ): Promise<MapPinData[]> {
   const blockedIds = await getBlockedUserIds(admin, userId);
 
@@ -288,7 +298,7 @@ export async function getMapPins(
 
   const spotIds = Array.from(new Set([...postSpots.map((row) => row.id), ...savedSpots.map((spot) => spot.id)]));
   const latestStatusBySpot = await findLatestSpotStatuses(admin, spotIds);
-  return mergeMapPins(postSpots, savedSpots, drafts, latestStatusBySpot, MAX_MAP_PINS, filters);
+  return mergeMapPins(postSpots, savedSpots, drafts, latestStatusBySpot, MAX_MAP_PINS, filters, allowedSpotIds);
 }
 
 /**
@@ -344,13 +354,15 @@ export async function findMatchingSpotIds(
   viewerId: string,
   bounds: MapBounds,
   filters: SpotFilters,
-  limit: number = MAX_MAP_PINS
+  limit: number = MAX_MAP_PINS,
+  /** #929: 「行ってわかったこと」で残ったスポットの id。null は条件なし（理由は `getMapPins` と同じ） */
+  allowedSpotIds: ReadonlySet<string> | null = null
 ): Promise<Set<string>> {
   const blockedIds = await getBlockedUserIds(admin, viewerId);
   const { data, error } = await selectSpotsWithPublicPosts(admin, bounds, blockedIds, limit);
   if (error) throw error;
   const rows = (data ?? []) as unknown as SpotWithPostsRow[];
-  return new Set(aggregateSpots(rows.map(toSpotWithPosts), filters).keys());
+  return new Set(aggregateSpots(rows.map(toSpotWithPosts), filters, allowedSpotIds).keys());
 }
 
 function one<T>(value: T | T[] | null): T | null {

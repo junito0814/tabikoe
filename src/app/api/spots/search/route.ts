@@ -4,6 +4,8 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { getAuthenticatedUser } from "@/lib/auth/get-authenticated-user";
 import { parsePostSearchParams } from "@/lib/posts/search-posts";
 import { parseSpotSort, searchSpotCards } from "@/lib/spots/search-spots";
+import { normalizeVisitFindings } from "@/lib/spots/visit-findings";
+import { findSpotIdsWithAllFindings } from "@/lib/spots/visit-findings-db";
 
 /**
  * mentoring-7 Task3（v3.1）: スポット単位の検索 Route Handler
@@ -30,9 +32,13 @@ export async function GET(request: Request) {
   // #955: 評価（平均）の下限。1〜5 以外は条件なしとして扱う
   const ratingValue = Number.parseInt(searchParams.get("rating") ?? "", 10);
   const minRating = ratingValue >= 1 && ratingValue <= 5 ? ratingValue : null;
+  // #929: 「行ってわかったこと」。知らない項目は落とす（URL から来た値をそのまま信じない）
+  const findings = normalizeVisitFindings((searchParams.get("findings") ?? "").split(",").map((item) => item.trim()));
 
   try {
-    const page = await searchSpotCards(createAdminClient(), user.id, filters, sort, offset, undefined, minRating);
+    const admin = createAdminClient();
+    const allowedSpotIds = await findSpotIdsWithAllFindings(admin, findings);
+    const page = await searchSpotCards(admin, user.id, filters, sort, offset, undefined, minRating, allowedSpotIds);
     return NextResponse.json(page);
   } catch {
     return NextResponse.json({ error: "fetch_failed" }, { status: 500 });

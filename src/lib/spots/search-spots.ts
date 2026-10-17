@@ -173,6 +173,18 @@ export function filterSpotsByAverage<T extends { ratingSum: number; ratingCount:
   });
 }
 
+/**
+ * #929-c（2026-10-17）: 「行ってわかったこと」で絞る（純粋関数）。
+ *
+ * 【初心者向け】**どのスポットが残るか**は `visit-findings.ts` の
+ * `spotIdsWithAllFindings` が決めていて、ここは受け取った集合で選ぶだけです。
+ * 地図の探すモード（spot-aggregate.ts）も同じ集合を使うので、答えが食い違いません。
+ * `null` は「条件なし」で、そのときは何も落としません。
+ */
+export function filterSpotsByIds<T extends { id: string }>(spots: T[], allowedSpotIds: ReadonlySet<string> | null): T[] {
+  return allowedSpotIds === null ? spots : spots.filter((spot) => allowedSpotIds.has(spot.id));
+}
+
 /** 並び替え（純粋関数）。同点は新しい投稿がある順 */
 export function sortSpotCards<T extends { latestPostAt: string; postCount: number; ratingSum: number; ratingCount: number }>(spots: T[], sort: SpotSort): T[] {
   const avg = (s: T) => (s.ratingCount > 0 ? s.ratingSum / s.ratingCount : -1);
@@ -198,7 +210,13 @@ export async function searchSpotCards(
   offset: number,
   limit: number = SEARCH_PAGE_SIZE,
   /** #955: 平均評価の下限（1〜5）。絞り込みシートの「評価（平均）」から来る */
-  minRating: number | null = null
+  minRating: number | null = null,
+  /**
+   * #929: 「行ってわかったこと」で残ったスポットの id（`findSpotIdsWithAllFindings` の結果）。
+   * `null` は条件なし。**この関数の中では DB を引かない**ので、呼ぶ側が渡す
+   * （`visit-findings-db.ts` はサーバー専用で、このファイルは画面側からも型を読まれるため）
+   */
+  allowedSpotIds: ReadonlySet<string> | null = null
 ): Promise<SpotCardPage> {
   const blockedIds = await getBlockedUserIds(admin, viewerId);
   /*
@@ -210,7 +228,8 @@ export async function searchSpotCards(
   if (error) throw error;
   const rows = ((data ?? []) as unknown as SearchRow[]).filter((row) => matchesFilters({ ...row, spot: row.spots }, postFilters));
 
-  const sorted = sortSpotCards(filterSpotsByAverage(aggregateSpotCards(rows), { cost: filters.costRange, minRating }), sort);
+  const matched = filterSpotsByIds(aggregateSpotCards(rows), allowedSpotIds);
+  const sorted = sortSpotCards(filterSpotsByAverage(matched, { cost: filters.costRange, minRating }), sort);
   const page = sorted.slice(offset, offset + limit);
   const spotIds = page.map((spot) => spot.id);
 

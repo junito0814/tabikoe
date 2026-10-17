@@ -161,6 +161,7 @@ describe("mergeMapPins の絞り込み（#656）", () => {
     cost: null,
     duration: null,
     minRating: null,
+    findings: [],
     ...over,
   });
 
