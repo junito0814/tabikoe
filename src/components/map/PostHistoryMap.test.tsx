@@ -13,7 +13,7 @@ const push = vi.fn();
 vi.mock("next/navigation", () => ({ useRouter: () => ({ push }) }));
 
 const BOUNDS: MapBounds = { north: 35.7, south: 35.6, east: 139.8, west: 139.7 };
-// map-current-location Task1: あしあとには現在地を出さない（要件定義書 4.5.10）
+// map-current-location Task1: 投稿履歴には現在地を出さない（要件定義書 4.5.10）
 let latestCurrentLocation: { lat: number; lng: number } | null | undefined;
 
 vi.mock("./GoogleMap", () => ({
@@ -45,7 +45,7 @@ vi.mock("./GoogleMap", () => ({
   },
 }));
 
-import { MyMapScreen } from "./MyMapScreen";
+import { PostHistoryMap } from "./PostHistoryMap";
 
 const resolveCenter = () =>
   Promise.resolve({ center: { lat: 35.6812, lng: 139.7671 }, zoom: 13, source: "fallback" as const });
@@ -67,10 +67,10 @@ beforeEach(() => {
   push.mockClear();
 });
 
-describe("MyMapScreen（SC-12）", () => {
+describe("PostHistoryMap（SC-12）", () => {
   it("表示切り替えに応じて mode が both → posted → saved と切り替わる", async () => {
     const fetchPins = vi.fn(async () => []);
-    render(<MyMapScreen fetchPins={fetchPins} resolveCenter={resolveCenter} />);
+    render(<PostHistoryMap fetchPins={fetchPins} resolveCenter={resolveCenter} />);
     await screen.findByTestId("map-stub");
     await act(async () => {
       await vi.advanceTimersByTimeAsync(400);
@@ -93,7 +93,7 @@ describe("MyMapScreen（SC-12）", () => {
 
   it("投稿済みは posted で投稿詳細へ、保存済みは saved で一覧へ、下書きは draft で続きを書くへ", async () => {
     render(
-      <MyMapScreen
+      <PostHistoryMap
         fetchPins={async () => [pin("s-posted", "posted", "post-1"), pin("s-saved", "saved", null), pin("s-draft", "draft", "d1")]}
         resolveCenter={resolveCenter}
       />
@@ -102,16 +102,16 @@ describe("MyMapScreen（SC-12）", () => {
       await vi.advanceTimersByTimeAsync(400);
     });
     fireEvent.click(await screen.findByRole("button", { name: "s-posted:posted" }));
-    // Bug #471: 「← あしあと」で戻れるよう back を付ける
-    expect(push).toHaveBeenCalledWith("/posts/post-1?back=%2Fmymap");
+    // Bug #471: 「← 投稿履歴」で戻れるよう back を付ける
+    expect(push).toHaveBeenCalledWith("/posts/post-1?back=%2Fpost-history");
     fireEvent.click(screen.getByRole("button", { name: "s-saved:saved" }));
-    expect(push).toHaveBeenCalledWith("/spots/s-saved?back=%2Fmymap");
+    expect(push).toHaveBeenCalledWith("/spots/s-saved?back=%2Fpost-history");
     fireEvent.click(screen.getByRole("button", { name: "draft:d1:draft" }));
     expect(push).toHaveBeenCalledWith("/posts/new?draft=d1");
   });
 
-  it("あしあとには現在地の点を出さない（4.5.10。自分の記録を見る画面なので）", async () => {
-    render(<MyMapScreen fetchPins={async () => []} resolveCenter={resolveCenter} />);
+  it("投稿履歴には現在地の点を出さない（4.5.10。自分の記録を見る画面なので）", async () => {
+    render(<PostHistoryMap fetchPins={async () => []} resolveCenter={resolveCenter} />);
     await screen.findByTestId("map-stub");
     expect(latestCurrentLocation ?? null).toBeNull();
   });
@@ -124,7 +124,7 @@ describe("loading-feedback Task 2: 読み込み中に「ありません」と言
   it("取得が終わるまでは「ありません」を出さず「読み込んでいます…」を出す", async () => {
     let resolvePins: ((pins: never[]) => void) | null = null;
     const fetchPins = vi.fn(() => new Promise<never[]>((resolve) => { resolvePins = resolve; }));
-    render(<MyMapScreen fetchPins={fetchPins} resolveCenter={resolveCenter} />);
+    render(<PostHistoryMap fetchPins={fetchPins} resolveCenter={resolveCenter} />);
     await screen.findByTestId("map-stub");
 
     // デバウンスで待っている間も「取得中」として扱う（地図が範囲を知らせるのを待ってから見る）
@@ -147,7 +147,7 @@ describe("loading-feedback Task 2: 読み込み中に「ありません」と言
 
   it("ピンが返ってきたらどちらの文言も出さない", async () => {
     const fetchPins = vi.fn(async () => [pin("s1", "posted", "p1")]);
-    render(<MyMapScreen fetchPins={fetchPins} resolveCenter={resolveCenter} />);
+    render(<PostHistoryMap fetchPins={fetchPins} resolveCenter={resolveCenter} />);
     await screen.findByTestId("map-stub");
     await act(async () => {
       await vi.advanceTimersByTimeAsync(400);
@@ -158,7 +158,7 @@ describe("loading-feedback Task 2: 読み込み中に「ありません」と言
 
   it("表示を切り替えた直後も「ありません」を出さない（取り直している最中のため）", async () => {
     const fetchPins = vi.fn(async () => []);
-    render(<MyMapScreen fetchPins={fetchPins} resolveCenter={resolveCenter} />);
+    render(<PostHistoryMap fetchPins={fetchPins} resolveCenter={resolveCenter} />);
     await screen.findByTestId("map-stub");
     await act(async () => {
       await vi.advanceTimersByTimeAsync(400);
@@ -175,7 +175,7 @@ describe("loading-feedback Task 2: 読み込み中に「ありません」と言
     const fetchPins = vi.fn(async () => {
       throw new Error("down");
     });
-    render(<MyMapScreen fetchPins={fetchPins} resolveCenter={resolveCenter} />);
+    render(<PostHistoryMap fetchPins={fetchPins} resolveCenter={resolveCenter} />);
     await screen.findByTestId("map-stub");
     await act(async () => {
       await vi.advanceTimersByTimeAsync(400);

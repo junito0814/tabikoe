@@ -26,11 +26,11 @@ export default async function MyDraftsPage({ searchParams }: PageProps<"/mypage/
    * #972: 戻り先は `?back=` で渡されたものを使い、無ければ**投稿履歴**。
    *
    * 【初心者向け】ここは `href="/mypage"` と決め打ちされていた。#682 で下書きが
-   * マイページから投稿履歴（/mymap）へ移ったのに、戻るだけマイページに残っていた。
+   * マイページから投稿履歴（/post-history）へ移ったのに、戻るだけマイページに残っていた。
    * 既定を投稿履歴にしつつ、`?back=` が来ればそれを優先する（将来ほかから開いても壊れない）。
    */
   const back = resolveListBack(typeof query.back === "string" ? query.back : null) ?? {
-    href: "/mymap",
+    href: "/post-history",
     label: "投稿履歴",
   };
 

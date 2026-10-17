@@ -6,7 +6,7 @@
 
 地図を見る利用者として、ピンが「みんなの投稿」「保存済み」「下書き」「しおりの何番目」のどれかを色と形で一目で見分けたい。なぜなら、タブを切り替えずに 1 つの地図で判断したいから。
 
-> v1 で実装済みの `pin-marker-icon.ts`／`PinIcon` を拡張する。ピンの取得・描画は [map-display](../map-search/map-display.md)・[my-map](../records/my-map.md)・[itinerary-map-and-post](../itinerary/itinerary-map-and-post.md) が本ルールを組み込む。
+> v1 で実装済みの `pin-marker-icon.ts`／`PinIcon` を拡張する。ピンの取得・描画は [map-display](../map-search/map-display.md)・[post-history](../records/post-history.md)・[itinerary-map-and-post](../itinerary/itinerary-map-and-post.md) が本ルールを組み込む。
 
 ## 詳細
 
