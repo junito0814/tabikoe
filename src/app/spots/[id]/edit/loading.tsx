@@ -1,4 +1,4 @@
-import { DelayedSkeleton, FormScreenSkeleton } from "@/components/skeleton/Skeletons";
+import { DelayedSkeleton, SpotFixSkeleton } from "@/components/skeleton/Skeletons";
 
 /**
  * #900（2026-10-09）: 画面を移るときの骨組み
@@ -12,5 +12,5 @@ import { DelayedSkeleton, FormScreenSkeleton } from "@/components/skeleton/Skele
  * この画面: SC-30 スポットの修正（登録者向け）
  */
 export default function Loading() {
-  return <DelayedSkeleton><FormScreenSkeleton backLabel="戻る" title="スポットの修正" fields={4} /></DelayedSkeleton>;
+  return <DelayedSkeleton><SpotFixSkeleton /></DelayedSkeleton>;
 }

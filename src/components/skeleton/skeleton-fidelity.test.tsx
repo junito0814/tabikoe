@@ -87,11 +87,59 @@ describe("左右のボタンの有無が本物と同じ", () => {
     expect(headRow.children).toHaveLength(1);
   });
 
-  it("しおりには右のボタンがある（本物の「＋ 新規」）", () => {
+  /*
+   * #936（2026-10-17）: ~~しおりには右のボタンがある~~ → **見出しの右には何も無い**。
+   * #693 で画面名が「計画」になり、「＋ 新規」は**「しおり」の小見出しの横**へ移った（決定事項 75）。
+   */
+  it("計画の見出しの右には何も無い（「＋ 新規」は下の小見出しの横）", () => {
     expect(real.しおり).toContain("＋ 新規");
     const { container } = render(<ItineraryListSkeleton />);
     const headRow = container.querySelector("h1")!.parentElement!;
-    expect(headRow.children).toHaveLength(2);
+    expect(headRow.children).toHaveLength(1);
+  });
+});
+
+/**
+ * #936（2026-10-17）: 画面を直したのに骨組みを直し忘れた、を**次からは止める**。
+ *
+ * 【初心者向け】骨組みと本物は別のファイルなので、片方だけ直してもテストは落ちませんでした。
+ * そこで「本物にこの形があるなら、骨組みにも無いとおかしい」という組を、ここに並べます。
+ * 本物を直したときにここが落ちれば、骨組みの直し忘れに気づけます。
+ */
+describe("本物に足したものが、骨組みにもある（#936 の再発防止）", () => {
+  it("マイページ: ステータスバッジの 1 行（#683）", () => {
+    expect(real.マイページ).toContain("ステータスバッジ");
+    // 本物は px-4 py-3 の 1 行カード。骨組みにも同じ形がある
+    expect(part("MyPageSkeleton")).toContain("rounded-[12px] border border-line bg-surface px-4 py-3");
+  });
+
+  it("マイページ: メニューは 3 列 1 行（#683）", () => {
+    expect(readFileSync("src/components/mypage/MyPageMenu.tsx", "utf8")).toContain("grid grid-cols-3 gap-2");
+    expect(part("MyPageSkeleton")).toContain("grid grid-cols-3 gap-2");
+  });
+
+  it("マイページ: 投稿一覧はもう無い（#682 で投稿履歴へ移した）", () => {
+    expect(real.マイページ).not.toContain("MyPostsList");
+    expect(part("MyPageSkeleton")).not.toContain("CardSkeleton");
+  });
+
+  it("計画: 画面の見出しは「計画」（#693）", () => {
+    expect(real.しおり).toContain('<h1 className="text-[1.125rem] font-bold text-ink">計画</h1>');
+    expect(part("ItineraryListSkeleton")).toContain('title="計画"');
+    expect(part("ItineraryListSkeleton")).not.toContain('title="しおり"');
+  });
+
+  it("計画: 「しおり」の小見出しと「＋ 新規」は mb-2 mt-5 の行にある（#693）", () => {
+    expect(real.しおり).toContain('className="mb-2 mt-5 flex items-center justify-between"');
+    expect(part("ItineraryListSkeleton")).toContain('className="mb-2 mt-5 flex items-center justify-between"');
+  });
+
+  it.each([
+    ["マイページ", "MyPageSkeleton", "src/components/mypage/MyPageScreen.tsx"],
+    ["計画", "ItineraryListSkeleton", "src/components/itineraries/ItineraryListScreen.tsx"],
+  ])("%s: 外枠の余白が本物と同じ（px-4 pt-6 pb-24）", (_name, skeleton, realPath) => {
+    expect(readFileSync(realPath, "utf8")).toContain("bg-app px-4 pt-6 pb-24");
+    expect(part(skeleton)).toContain('padding="px-4 pt-6 pb-24"');
   });
 });
 
@@ -220,8 +268,8 @@ describe("#653: 読み込んでいると伝わる形は 5 枚とも残ってい�
   });
 });
 
-describe("#653: 共通の ListScreenSkeleton はもう画面に使っていない", () => {
-  it("8 つの loading.tsx はすべて専用の骨組みを使っている", () => {
+describe("#653・#936: 共通の骨組みの使い回しをやめ、画面ごとに作る", () => {
+  it("14 の loading.tsx はすべて専用の骨組みを使っている", () => {
     const routes = [
       ["notifications", "NotificationListSkeleton"],
       ["itineraries", "ItineraryListSkeleton"],
@@ -231,11 +279,28 @@ describe("#653: 共通の ListScreenSkeleton はもう画面に使っていな�
       ["search", "PostSearchSkeleton"],
       ["albums/[id]", "AlbumDetailSkeleton"],
       ["itineraries/[id]", "ItineraryDetailSkeleton"],
+      // #936（2026-10-17）: ここも共通の使い回しだった 6 画面
+      ["mymap", "PostHistorySkeleton"],
+      ["mypage/drafts", "DraftListSkeleton"],
+      ["account", "AccountSkeleton"],
+      ["badges", "BadgeListSkeleton"],
+      ["report", "ReportFormSkeleton"],
+      ["spots/[id]/edit", "SpotFixSkeleton"],
     ];
     for (const [route, fn] of routes) {
       const source = readFileSync(`src/app/${route}/loading.tsx`, "utf8");
       expect(source, `${route} が ${fn} を使っていない`).toContain(`<${fn} />`);
     }
+  });
+
+  /** #936: 上 1/3 地図＋下 2/3 シートの中身の幅。ここがずれると読み込み後に 40px 動く */
+  it("地図＋シートの骨組みは、本物と同じ 520px で掴む印も出す", () => {
+    const frame = part("MapSheetSkeleton");
+    expect(frame).toContain("max-w-[520px]");
+    expect(frame).not.toContain("max-w-[560px]");
+    // 本物（MapSheetLayout）は上端に h-8 の掴む印がある
+    expect(readFileSync("src/components/layout/MapSheetLayout.tsx", "utf8")).toContain("flex h-8 w-full touch-none items-center justify-center md:hidden");
+    expect(frame).toContain("flex h-8 w-full items-center justify-center md:hidden");
   });
 
   it("検索のページ内の待ちも専用の骨組みを使っている", () => {
