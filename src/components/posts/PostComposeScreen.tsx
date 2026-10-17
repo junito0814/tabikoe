@@ -398,8 +398,9 @@ export function PostComposeScreen({
        * それまでは理由を問わず「写真のアップロードに失敗しました」の 1 文だったので、
        * 利用者には次に何をすればよいか分からなかった（とくに動画の形式は、設定を変えれば直せる）。
        */
-      const data = (await response.json().catch(() => ({}))) as { error?: string };
-      setErrorMessage(uploadErrorMessage(data.error));
+      const data = (await response.json().catch(() => ({}))) as { error?: string; videoCodec?: string };
+      // #904 の調査: 動画の形式が分かるときは、その形式に合った直し方を出す
+      setErrorMessage(uploadErrorMessage(data.error, typeof data.videoCodec === "string" ? data.videoCodec : null));
       return null;
     }
     const uploaded = (await response.json()) as { media: UploadedMedia[] };
