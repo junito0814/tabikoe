@@ -14,6 +14,7 @@ import { getPostDetail, type PostDetailData } from "@/lib/posts/post-detail";
 import { listComments, type CommentPage } from "@/lib/comments/list-comments";
 import { ContentEnter } from "@/components/transitions/Reveal";
 import { postTitle } from "@/lib/metadata/page-title";
+import { postShareCard } from "@/lib/metadata/share-card";
 import { countPublicSpotPosts } from "@/lib/spots/count-public-spot-posts";
 
 /**
@@ -35,7 +36,13 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
   const title = await postTitle(id);
   // #951: 検索エンジンには載せない（要件 4.5.18。理由は SC-04 と同じ）
   const robots = { index: false } as const;
-  return title ? { title, robots } : { robots };
+  if (!title) return { robots };
+  /*
+   * #952（2026-10-17）: 共有したときに出るリンクカード。
+   * **公開投稿でなければ `null`** が返り、そのときはカードを足さない（題名でも中身を明かさない）。
+   */
+  const card = await postShareCard(id);
+  return { title, robots, ...(card ?? {}) };
 }
 
 export default async function PostDetailPage({

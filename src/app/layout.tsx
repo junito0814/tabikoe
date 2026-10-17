@@ -2,6 +2,7 @@ import { unstable_rethrow } from "next/navigation";
 import type { Metadata, Viewport } from "next";
 import { geistSans, geistMono } from "./fonts";
 import { AppMenuBar } from "@/components/layout/AppMenuBar";
+import { siteUrl } from "@/lib/metadata/site-url";
 import { createClient } from "@/lib/supabase/server";
 import { getAuthUserFromClaims } from "@/lib/auth/auth-user";
 import { LAUNCH_GROUND } from "@/lib/theme/colors";
@@ -33,6 +34,11 @@ export const metadata: Metadata = {
    * `template` を決めておくと、各ページが `title: "通知"` と書くだけで
    * **「通知 | タビコエ」**になります。`default` はホーム（何も書かないページ）用。
    */
+  /*
+   * #952（2026-10-17）: リンクカードの `og:url` は絶対 URL でなければならないので、
+   * もとになる住所をここで決めておく（`lib/metadata/site-url.ts`）。
+   */
+  metadataBase: siteUrl(),
   title: { default: "タビコエ", template: "%s | タビコエ" },
   description: "あなたのコエが、だれかのタビへ。",
   // loading-feedback Task 1: iPhone のホーム画面に置いたとき、単独のアプリとして開く（4.5.11 の場面 1）
