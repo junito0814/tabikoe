@@ -21,6 +21,8 @@ import {
   autoDurationForCategory,
 } from "@/lib/posts/constants";
 import { mediaLabel } from "@/lib/posts/media-label";
+import { VisitFindingsField } from "./VisitFindingsField";
+import type { VisitFinding } from "@/lib/spots/visit-findings";
 
 /**
  * post-creation-v3 Task2: 投稿フォームの項目（配置を 2 列・横並びに詰めた版）
@@ -43,6 +45,8 @@ export interface PostFormValues {
   rating: number;
   comment: string;
   visibility: PostVisibility;
+  /** #929: 行ってわかったこと。**投稿ではなくスポットに付く**（1 人 1 スポット）ので、保存先だけ別 */
+  visitFindings: VisitFinding[];
 }
 
 export const EMPTY_POST_FORM_VALUES: PostFormValues = {
@@ -54,6 +58,7 @@ export const EMPTY_POST_FORM_VALUES: PostFormValues = {
   rating: 0,
   comment: "",
   visibility: "public",
+  visitFindings: [],
 };
 
 const inputClass =
@@ -300,6 +305,13 @@ export function PostFormFields({
         />
         <UploadNotice compact videoEnabled={!videoUploadDisabled} />
       </div>
+
+      {/*
+        * #929: 「行ってわかったこと（任意）」は**感想のすぐ上**。
+        * スポット単位の情報なので、投稿の中身（星・費用）とは性質が違うが、
+        * 書き終わる直前に「そういえば」と思い出す場所がここ。
+        */}
+      <VisitFindingsField value={values.visitFindings} onChange={(visitFindings) => onChange({ visitFindings })} />
 
       {/* 感想（2 行から伸びる）と公開設定（ラベル行の右端） */}
       <div className="flex flex-col gap-1">

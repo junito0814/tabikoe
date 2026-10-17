@@ -15,6 +15,8 @@ import { recordOperation } from "@/lib/logs/record-operation";
 import { getPostDetail } from "@/lib/posts/post-detail";
 import { evaluatePostBadges } from "@/lib/badges/award-badges";
 import { findBadgeDefinition } from "@/lib/badges/catalog";
+import { saveVisitFindings } from "@/lib/spots/visit-findings-db";
+import { normalizeVisitFindings } from "@/lib/spots/visit-findings";
 
 /**
  * F-VW-01 Task1: 投稿詳細取得・非公開アクセス制御
@@ -203,6 +205,21 @@ export async function PATCH(
 
   if (updateError) {
     return NextResponse.json({ error: "update_failed" }, { status: 500 });
+  }
+
+  /*
+   * #929: 「行ってわかったこと」を保存する（新規投稿と同じ扱い）。
+   *
+   * 【初心者向け】**選んだ状態がそのまま報告になる**ので、編集で外せば報告も消えます。
+   * これが取り消しの手段で、そのために専用の画面を作らずに済んでいます（要件 4.5.19）。
+   * 下書きのままのときは保存しません。
+   */
+  if (!isDraft && spotId && Array.isArray((body as { visitFindings?: unknown }).visitFindings)) {
+    try {
+      await saveVisitFindings(admin, user.id, spotId, normalizeVisitFindings((body as { visitFindings: unknown[] }).visitFindings));
+    } catch {
+      // 投稿そのものは成功させる
+    }
   }
 
   let newBadges: { type: string; label: string }[] = [];
