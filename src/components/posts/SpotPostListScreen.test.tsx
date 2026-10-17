@@ -57,12 +57,12 @@ const card = (id: string): PostCardData => ({
 
 describe("SpotPostListScreen（SC-04 スポット別）", () => {
   it("投稿が0件なら「まだ投稿がありません」", () => {
-    render(<SpotPostListScreen spot={spot} initialState={EMPTY_SEARCH_STATE} initialPage={{ posts: [], nextOffset: null }} fetchPage={vi.fn()} />);
+    render(<SpotPostListScreen videoEnabled spot={spot} initialState={EMPTY_SEARCH_STATE} initialPage={{ posts: [], nextOffset: null }} fetchPage={vi.fn()} />);
     expect(screen.getByText("まだ投稿がありません")).toBeInTheDocument();
   });
 
   it("見出しにスポット名・都道府県・件数・まだあった・＋・投稿する。上 1/3 の地図のタップで SC-02（v3.1）", () => {
-    render(<SpotPostListScreen spot={spot} initialState={EMPTY_SEARCH_STATE} initialPage={{ posts: [card("p1")], nextOffset: null }} fetchPage={vi.fn()} />);
+    render(<SpotPostListScreen videoEnabled spot={spot} initialState={EMPTY_SEARCH_STATE} initialPage={{ posts: [card("p1")], nextOffset: null }} fetchPage={vi.fn()} />);
     expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("東京駅");
     expect(screen.getByText("東京都")).toBeInTheDocument();
     expect(screen.getByText("投稿 7 件")).toBeInTheDocument();
@@ -80,7 +80,7 @@ describe("SpotPostListScreen（SC-04 スポット別）", () => {
 
   it("Bug #469: 検索結果から来た（back あり）なら戻るは検索結果の画面名で、投稿詳細へも back を渡す。無ければ「地図」", () => {
     const { unmount } = render(
-      <SpotPostListScreen spot={spot} initialState={EMPTY_SEARCH_STATE} initialPage={{ posts: [card("p1")], nextOffset: null }} fetchPage={vi.fn()} back={{ href: "/search?pref=東京都", label: "東京都" }} />
+      <SpotPostListScreen videoEnabled spot={spot} initialState={EMPTY_SEARCH_STATE} initialPage={{ posts: [card("p1")], nextOffset: null }} fetchPage={vi.fn()} back={{ href: "/search?pref=東京都", label: "東京都" }} />
     );
     expect(screen.getByRole("link", { name: "東京都" })).toHaveAttribute("href", "/search?pref=東京都");
     expect(screen.queryByRole("link", { name: "地図" })).toBeNull();
@@ -88,13 +88,14 @@ describe("SpotPostListScreen（SC-04 スポット別）", () => {
     expect(detail.pathname).toBe("/posts/p1");
     expect(detail.searchParams.get("back")).toBe("/search?spot=spot-1&back=%2Fsearch%3Fpref%3D%E6%9D%B1%E4%BA%AC%E9%83%BD");
     unmount();
-    render(<SpotPostListScreen spot={spot} initialState={EMPTY_SEARCH_STATE} initialPage={{ posts: [card("p1")], nextOffset: null }} fetchPage={vi.fn()} />);
+    render(<SpotPostListScreen videoEnabled spot={spot} initialState={EMPTY_SEARCH_STATE} initialPage={{ posts: [card("p1")], nextOffset: null }} fetchPage={vi.fn()} />);
     expect(screen.getByRole("link", { name: "地図" })).toHaveAttribute("href", "/map");
   });
 
   it("追加モードならバナーが出て「完了」でしおりへ戻る", () => {
     render(
       <SpotPostListScreen
+        videoEnabled
         spot={spot}
         initialState={EMPTY_SEARCH_STATE}
         initialPage={{ posts: [], nextOffset: null }}
@@ -117,6 +118,7 @@ describe("Google の公式情報の差し込み口（#701）", () => {
   it("渡されたものを見出しに置く", () => {
     render(
       <SpotPostListScreen
+        videoEnabled
         spot={spot}
         initialState={EMPTY_SEARCH_STATE}
         initialPage={{ posts: [], nextOffset: null }}
@@ -130,6 +132,7 @@ describe("Google の公式情報の差し込み口（#701）", () => {
   it("渡されなければ何も出さない（place_id が無いスポット・引けなかったとき）", () => {
     render(
       <SpotPostListScreen
+        videoEnabled
         spot={spot}
         initialState={EMPTY_SEARCH_STATE}
         initialPage={{ posts: [], nextOffset: null }}
@@ -146,13 +149,13 @@ describe("Google の公式情報の差し込み口（#701）", () => {
  */
 describe("まだあった報告（#875）", () => {
   it("見出しに「まだあった」「無くなっていた」のボタンが出る", () => {
-    render(<SpotPostListScreen spot={spot} initialState={EMPTY_SEARCH_STATE} initialPage={{ posts: [], nextOffset: null }} fetchPage={vi.fn()} />);
+    render(<SpotPostListScreen videoEnabled spot={spot} initialState={EMPTY_SEARCH_STATE} initialPage={{ posts: [], nextOffset: null }} fetchPage={vi.fn()} />);
     expect(screen.getByRole("button", { name: "まだあった" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "無くなっていた" })).toBeInTheDocument();
   });
 
   it("最新の報告は 1 か所にだけ出る（見出しの行と二重にしない）", () => {
-    render(<SpotPostListScreen spot={spot} initialState={EMPTY_SEARCH_STATE} initialPage={{ posts: [], nextOffset: null }} fetchPage={vi.fn()} />);
+    render(<SpotPostListScreen videoEnabled spot={spot} initialState={EMPTY_SEARCH_STATE} initialPage={{ posts: [], nextOffset: null }} fetchPage={vi.fn()} />);
     expect(screen.getAllByText("9月にまだあった")).toHaveLength(1);
   });
 });

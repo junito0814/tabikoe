@@ -20,8 +20,22 @@ const item = (id: string, postId: string): SpotMediaItem => ({
 });
 
 describe("AlbumPhotoGalleryScreen（SC-21）", () => {
+  /*
+   * #937: 見出しは手で「写真・動画」と書いてあり、動画を止めた環境でずれていた。
+   * 受付フラグに連動させたので、両方の場合を押さえる。
+   */
+  it("見出しは動画の受付に連動する", () => {
+    const { unmount } = render(
+      <AlbumPhotoGalleryScreen videoEnabled tripId="trip-1" title="夏の東北旅行" initialPage={{ items: [], nextOffset: null }} />
+    );
+    expect(screen.getByRole("heading", { name: "写真・動画" })).toBeInTheDocument();
+    unmount();
+    render(<AlbumPhotoGalleryScreen videoEnabled={false} tripId="trip-1" title="夏の東北旅行" initialPage={{ items: [], nextOffset: null }} />);
+    expect(screen.getByRole("heading", { name: "写真" })).toBeInTheDocument();
+  });
+
   it("アルバムへ戻るリンクとグリッドが出て、タップでモーダルから投稿へ飛べる", () => {
-    render(<AlbumPhotoGalleryScreen tripId="trip-1" title="夏の東北旅行" initialPage={{ items: [item("a", "post-1")], nextOffset: null }} />);
+    render(<AlbumPhotoGalleryScreen videoEnabled tripId="trip-1" title="夏の東北旅行" initialPage={{ items: [item("a", "post-1")], nextOffset: null }} />);
     // #813: 戻るは共通部品（BackLink）になり、文字の「←」ではなく記号になった
     expect(screen.getByRole("link", { name: "夏の東北旅行" })).toHaveAttribute("href", "/albums/trip-1");
     fireEvent.click(screen.getByRole("button", { name: "浅草寺の写真 a" }));
@@ -33,7 +47,7 @@ describe("AlbumPhotoGalleryScreen（SC-21）", () => {
     const fetchMock = vi.fn<(input: string) => Promise<Response>>(async () => Response.json({ items: [item("b", "post-2")], nextOffset: null }));
     vi.stubGlobal("fetch", fetchMock);
     try {
-      render(<AlbumPhotoGalleryScreen tripId="trip-1" title="夏の東北旅行" initialPage={{ items: [item("a", "post-1")], nextOffset: 40 }} />);
+      render(<AlbumPhotoGalleryScreen videoEnabled tripId="trip-1" title="夏の東北旅行" initialPage={{ items: [item("a", "post-1")], nextOffset: 40 }} />);
       fireEvent.click(screen.getByRole("button", { name: "もっと見る" }));
       await waitFor(() => expect(screen.getByRole("button", { name: "浅草寺の写真 b" })).toBeInTheDocument());
       expect(String(fetchMock.mock.calls[0]?.[0])).toBe("/api/trips/trip-1/photos?offset=40");

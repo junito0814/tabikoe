@@ -54,8 +54,11 @@ export function SpotPostListScreen({
   fetchPage,
   back = null,
   official = null,
+  videoEnabled,
 }: {
   spot: SpotSummary;
+  /** #937: 動画も受け付けているか。写真タブの空の文面に使う（そのまま PostSearchScreen へ渡す） */
+  videoEnabled: boolean;
   initialState: PostSearchState;
   initialPage: PostCardPage;
   initialMediaPage?: { key: string; page: SpotMediaPage } | null;
@@ -145,6 +148,7 @@ export function SpotPostListScreen({
   return (
     <MapSheetLayout map={map} summary={summary}>
       <PostSearchScreen
+        videoEnabled={videoEnabled}
         context={context}
         initialState={initialState}
         initialPage={initialPage}

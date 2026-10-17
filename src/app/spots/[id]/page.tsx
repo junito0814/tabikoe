@@ -5,6 +5,7 @@ import { requireUserOrRedirect } from "@/lib/auth/require-user-or-redirect";
 import { ErrorNotice } from "@/components/notices/ErrorNotice";
 import { ERROR_MESSAGES } from "@/components/notices/error-messages";
 import { Suspense } from "react";
+import { isVideoUploadDisabled } from "@/lib/video/process-video";
 import { StreamingSpotPostListScreen } from "@/components/posts/StreamingSearchScreens";
 import { MapSheetSkeleton } from "@/components/skeleton/Skeletons";
 import { loadSearchFirstPage, loadSearchShell, retryableEmptyFirstPage, type SearchPageQuery } from "@/lib/search/load-search-page";
@@ -61,6 +62,7 @@ export default async function SpotPostsPage({
     <ContentEnter>
       <Suspense fallback={<MapSheetSkeleton backLabel={back?.label ?? "地図"} title={data.spot.name} />}>
         <StreamingSpotPostListScreen
+          videoEnabled={!isVideoUploadDisabled()}
           spot={data.spot}
           initialState={data.initialState}
           addMode={data.addMode}

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { WarningIcon } from "@/components/ui/LineIcons";
+import { mediaLabel } from "@/lib/posts/media-label";
 
 /**
  * 投稿時の注意喚起 Task1: 注意喚起メッセージ共通コンポーネント
@@ -27,7 +28,7 @@ export function UploadNotice({ compact = false, videoEnabled = false }: { compac
   return (
     <ul className="list-disc space-y-1 pl-4 text-[0.6875rem] leading-[1.6] text-muted">
       {/* 2026-10-07 に「写真」だけへ → 2026-10-10 に動画を受け付けたら戻す（#861） */}
-      <li>他人が写り込んだ{videoEnabled ? "写真・動画" : "写真"}は、本人の同意を得てから投稿してください</li>
+      <li>他人が写り込んだ{mediaLabel(videoEnabled)}は、本人の同意を得てから投稿してください</li>
       <li>個人が特定できる情報（車のナンバー等）が写っていないか確認してください</li>
     </ul>
   );

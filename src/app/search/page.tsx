@@ -12,6 +12,7 @@ import { loadSearchFirstPage, loadSearchShell, retryableEmptyFirstPage, type Sea
 import { resolveListBack } from "@/lib/search/list-state";
 import { ContentEnter } from "@/components/transitions/Reveal";
 import { searchPageTitle } from "@/lib/metadata/page-title";
+import { isVideoUploadDisabled } from "@/lib/video/process-video";
 
 /**
  * SC-04 投稿一覧（タイムライン形式・検索結果）
@@ -58,6 +59,7 @@ export default async function SearchPage({ searchParams }: { searchParams: Promi
     return (
       <Suspense fallback={<MapSheetSkeleton backLabel={back?.label ?? "地図"} title={data.spot.name} />}>
         <StreamingSpotPostListScreen
+          videoEnabled={!isVideoUploadDisabled()}
           spot={data.spot}
           initialState={data.initialState}
           addMode={data.addMode}
@@ -80,6 +82,7 @@ export default async function SearchPage({ searchParams }: { searchParams: Promi
         */}
       <Suspense fallback={<PostSearchSkeleton />}>
         <StreamingSpotSearchScreen
+          videoEnabled={!isVideoUploadDisabled()}
           context={data.context}
           initialState={data.initialState}
           title={data.resolved.title}
