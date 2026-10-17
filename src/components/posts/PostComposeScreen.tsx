@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { TopProgressBar } from "@/components/ui/TopProgressBar";
 import { ErrorNotice } from "@/components/notices/ErrorNotice";
 import { useObjectUrls, type SelectedMedia } from "@/components/media/SelectedMediaThumbnails";
 import { MediaModal } from "@/components/media/MediaModal";
@@ -608,6 +609,9 @@ export function PostComposeScreen({
           </div>
         </div>
 
+        {/* #940: 送っている間だけ、画面の上端に細いバー（進み具合はここだけで見せる） */}
+        {submittingStatus !== null && <TopProgressBar progress={uploadProgress} label={submittingStatus === "draft" ? "下書きの保存の進み具合" : "投稿の進み具合"} />}
+
         {/* 下に固定: 投稿する／下書きに保存 */}
         <div className="flex gap-2 border-t border-line bg-surface px-4 py-3 md:px-6">
           <button
@@ -616,13 +620,16 @@ export function PostComposeScreen({
             disabled={!canPublish}
             className="h-12 flex-1 rounded-[10px] bg-accent text-[0.9375rem] font-semibold text-white disabled:cursor-not-allowed disabled:opacity-45"
           >
-            {submittingStatus === "published"
-              ? uploadProgress
-                ? `送っています ${uploadProgress.done}/${uploadProgress.total}`
-                : "送信中..."
-              : isEditingPublished
-                ? "更新する"
-                : "投稿する"}
+            {/*
+              * #940（2026-10-17）: ~~`送っています 1/3` ／ `送信中...`~~ → **「投稿中」だけ**。
+              *
+              * 【初心者向け】「送っています」は**何を送っているのか分からず**、「1/3」も
+              * 何の数か読み取りにくいものでした。Instagram・X・LINE・TikTok はどれも
+              * **ボタンの中に進み具合を書きません**。進み具合は画面の上端の細いバー
+              * （`TopProgressBar`）に移しました。#923 で数字を足した目的（動画が大きく、
+              * 止まって見える）は、バーが伸びることで果たせます。
+              */}
+            {submittingStatus === "published" ? "投稿中" : isEditingPublished ? "更新する" : "投稿する"}
           </button>
           {!isEditingPublished && (
             <button
@@ -631,7 +638,8 @@ export function PostComposeScreen({
               disabled={isSubmitting || position === null}
               className="h-12 flex-1 rounded-[10px] border border-line bg-surface text-[0.875rem] font-semibold text-ink disabled:opacity-45"
             >
-              {submittingStatus === "draft" ? "保存中…" : "下書きに保存"}
+              {/* #940: 点の付け方が `...` と `…` で揃っていなかったので、どちらも点を付けない形に */}
+              {submittingStatus === "draft" ? "保存中" : "下書きに保存"}
             </button>
           )}
         </div>
