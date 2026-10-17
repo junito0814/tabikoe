@@ -12,6 +12,7 @@ import { loadSearchFirstPage, loadSearchShell, retryableEmptyFirstPage, type Sea
 import { resolveListBack } from "@/lib/search/list-state";
 import { ContentEnter } from "@/components/transitions/Reveal";
 import { officialInfoSlot } from "@/components/spots/OfficialInfo";
+import { visitFindingsSlot } from "@/components/spots/VisitFindingsSlot";
 import { spotTitle } from "@/lib/metadata/page-title";
 
 /**
@@ -70,6 +71,8 @@ export default async function SpotPostsPage({
           firstPage={firstPage}
           /* #701・#739: Google の公式情報（中身は officialInfoSlot にまとめてある） */
           official={officialInfoSlot(id)}
+          /* #929: 行ってわかったこと（報告が 1 件も無ければ、中で何も出さない） */
+          visitFindings={visitFindingsSlot(id)}
         />
       </Suspense>
     </ContentEnter>

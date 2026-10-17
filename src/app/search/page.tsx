@@ -7,6 +7,7 @@ import { ERROR_MESSAGES } from "@/components/notices/error-messages";
 import { Suspense } from "react";
 import { StreamingSpotPostListScreen, StreamingSpotSearchScreen } from "@/components/posts/StreamingSearchScreens";
 import { officialInfoSlot } from "@/components/spots/OfficialInfo";
+import { visitFindingsSlot } from "@/components/spots/VisitFindingsSlot";
 import { MapSheetSkeleton, PostSearchSkeleton } from "@/components/skeleton/Skeletons";
 import { loadSearchFirstPage, loadSearchShell, retryableEmptyFirstPage, type SearchPageQuery } from "@/lib/search/load-search-page";
 import { resolveListBack } from "@/lib/search/list-state";
@@ -67,6 +68,8 @@ export default async function SearchPage({ searchParams }: { searchParams: Promi
           firstPage={firstPage}
           /* #739: 検索結果のカードから開く経路。ここに差し込んでいなかったので公式情報が出ていなかった */
           official={officialInfoSlot(data.spot.id)}
+          /* #929: こちらの経路にも差し込む（#739 と同じ取りこぼしをしないため） */
+          visitFindings={visitFindingsSlot(data.spot.id)}
         />
       </Suspense>
     );

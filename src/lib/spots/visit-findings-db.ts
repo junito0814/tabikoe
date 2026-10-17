@@ -1,6 +1,6 @@
 import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { normalizeVisitFindings, type VisitFinding } from "./visit-findings";
+import { isVisitFinding, normalizeVisitFindings, VISIT_FINDINGS, type VisitFinding } from "./visit-findings";
 
 /**
  * #929: 「行ってわかったこと」の読み書き
@@ -48,4 +48,42 @@ export async function saveVisitFindings(
   if (removed.length > 0) {
     await admin.from("spot_visit_findings").delete().eq("user_id", userId).eq("spot_id", spotId).in("finding", removed);
   }
+}
+
+/** スポット画面に出す 1 項目分（件数と、いちばん新しい報告の日時） */
+export interface VisitFindingSummary {
+  finding: VisitFinding;
+  count: number;
+  latestAt: string;
+}
+
+/**
+ * そのスポットの報告を、**項目ごとに数えて**返す（新しい順ではなく、項目の決まった並び）。
+ *
+ * 【初心者向け】**割合は出しません**（要件 4.5.19）。空欄は「ダメだった」ではなく
+ * 「連れていなかった」なので、分母が作れないためです。**0 件の項目は返しません**
+ * （「ペット不可」とは絶対に書かない、の裏返し）。
+ */
+export async function summarizeVisitFindings(admin: SupabaseClient, spotId: string): Promise<VisitFindingSummary[]> {
+  const { data, error } = await admin
+    .from("spot_visit_findings")
+    .select("finding, reported_at")
+    .eq("spot_id", spotId);
+  if (error || !data) return [];
+
+  const byFinding = new Map<VisitFinding, { count: number; latestAt: string }>();
+  for (const row of data as { finding: string; reported_at: string }[]) {
+    if (!isVisitFinding(row.finding)) continue;
+    const current = byFinding.get(row.finding);
+    if (!current) byFinding.set(row.finding, { count: 1, latestAt: row.reported_at });
+    else {
+      current.count += 1;
+      if (row.reported_at > current.latestAt) current.latestAt = row.reported_at;
+    }
+  }
+  // 並びは項目の決まった順（投稿画面と同じ）。件数順にはしない ── 件数の多さは重要さではないため
+  return VISIT_FINDINGS.flatMap((finding) => {
+    const found = byFinding.get(finding);
+    return found ? [{ finding, count: found.count, latestAt: found.latestAt }] : [];
+  });
 }
