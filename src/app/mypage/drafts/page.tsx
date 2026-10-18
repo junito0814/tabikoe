@@ -6,6 +6,7 @@ import { ERROR_MESSAGES } from "@/components/notices/error-messages";
 import { DraftsSection } from "@/components/mypage/DraftsSection";
 import { getMyDrafts } from "@/lib/posts/drafts";
 import { BackLink } from "@/components/layout/BackLink";
+import { resolveListBack } from "@/lib/search/list-state";
 
 // #785: ブラウザのタブ名（「下書き | タビコエ」）
 export const metadata = { title: "下書き" };
@@ -19,7 +20,20 @@ export const metadata = { title: "下書き" };
  * 中身は同じ DraftsSection を `showAll` で使い回す（続きを書く・削除の動きはマイページと同じ）。
  * 下書きの上限は 20 件（draft Task1）なので、ページングは要らない。
  */
-export default async function MyDraftsPage() {
+export default async function MyDraftsPage({ searchParams }: PageProps<"/mypage/drafts">) {
+  const query = await searchParams;
+  /*
+   * #972: 戻り先は `?back=` で渡されたものを使い、無ければ**投稿履歴**。
+   *
+   * 【初心者向け】ここは `href="/mypage"` と決め打ちされていた。#682 で下書きが
+   * マイページから投稿履歴（/mymap）へ移ったのに、戻るだけマイページに残っていた。
+   * 既定を投稿履歴にしつつ、`?back=` が来ればそれを優先する（将来ほかから開いても壊れない）。
+   */
+  const back = resolveListBack(typeof query.back === "string" ? query.back : null) ?? {
+    href: "/mymap",
+    label: "投稿履歴",
+  };
+
   const supabase = await createClient();
   const user = await requireUserOrRedirect(supabase, "/mypage/drafts");
 
@@ -30,7 +44,7 @@ export default async function MyDraftsPage() {
     <div className="mx-auto flex min-h-screen w-full max-w-[420px] flex-col gap-4 bg-app px-4 pt-4 pb-[calc(60px+env(safe-area-inset-bottom))] md:pb-6">
       <header className="flex items-center gap-2">
         {/* #813: 枠付きの丸いボタンをやめ、他の画面と同じ共通部品に揃えた */}
-        <BackLink href="/mypage" label="マイページ" />
+        <BackLink href={back.href} label={back.label} />
         <h1 className="text-[1.0625rem] font-bold text-ink">下書き</h1>
       </header>
       {drafts ? (

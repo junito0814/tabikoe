@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { CloseButton } from "@/components/ui/CloseButton";
 import { findBadgeDefinition } from "@/lib/badges/catalog";
+import { appendBackHref } from "@/lib/search/list-state";
 
 /** 自動で閉じるまでの時間。複数件をまとめて1枚に出すので少し長め */
 const AUTO_DISMISS_MS = 6000;
@@ -18,10 +19,19 @@ const AUTO_DISMISS_MS = 6000;
 export function BadgeToast({
   badgeTypes,
   autoDismissMs = AUTO_DISMISS_MS,
+  backHref,
 }: {
   badgeTypes: string[];
   /** 0以下で自動クローズしない（テスト用） */
   autoDismissMs?: number;
+  /**
+   * #972: この知らせが出ている画面の URL。「バッジ一覧を見る」の戻り先になる。
+   *
+   * 【初心者向け】ここは `?back=` を渡していなかったので、バッジ画面の戻るが
+   * 既定の**マイページ**になり、**投稿した直後に喜んで押した人が、自分の新しい投稿に帰れなかった**。
+   * 起きるのはバッジを取った直後だけだが、そこが見せ場なので直す。
+   */
+  backHref?: string | null;
 }) {
   const [isOpen, setIsOpen] = useState(badgeTypes.length > 0);
 
@@ -62,7 +72,7 @@ export function BadgeToast({
             ))}
           </ul>
           <Link
-            href="/badges"
+            href={appendBackHref("/badges", backHref)}
             className="tap-target mt-1.5 inline-block text-[0.6875rem] font-medium text-muted underline underline-offset-2"
           >
             バッジ一覧を見る

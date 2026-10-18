@@ -148,7 +148,8 @@ export function PostDetailScreen({
               <MoreMenu>
                 {post.isOwner ? (
                   <>
-                    <MoreMenuItem label="編集" href={`/posts/${post.id}/edit`} />
+                    {/* #972: 編集画面に「来た場所」を渡す。やめて戻ったとき、元の一覧まで遡れるようにするため */}
+                    <MoreMenuItem label="編集" href={appendBackHref(`/posts/${post.id}/edit`, back?.href)} />
                     {/*
                       * #862（2026-10-07）: 削除も「編集」と同じ共通部品にする。
                       *
@@ -352,7 +353,8 @@ export function PostDetailScreen({
 
           {/* performance Task2: コメント欄は本文の後から流し込む（届くまで骨組み） */}
           <Suspense fallback={<CommentsSkeleton />}>
-            <StreamedCommentSection postId={post.id} initialComments={initialComments} canComment={post.canInteract && !isGuest} isGuest={isGuest} returnTo={returnTo} />
+            {/* #972: プロフィールの戻り先は selfHref（元の一覧まで遡れる URL）を渡す */}
+            <StreamedCommentSection postId={post.id} initialComments={initialComments} canComment={post.canInteract && !isGuest} isGuest={isGuest} returnTo={returnTo} pageHref={selfHref} />
           </Suspense>
         </article>
       </div>
@@ -364,7 +366,7 @@ export function PostDetailScreen({
  * コメント 1 ページ目が Promise なら `use()` で待ってから CommentSection を描く（値ならそのまま）。
  * 【初心者向け】`use(promise)` は「まだなら外側の Suspense に骨組みを出させ、届いたら続きを描く」React の仕組み。
  */
-function StreamedCommentSection({ postId, initialComments, canComment, isGuest = false, returnTo }: { postId: string; initialComments: CommentPage | Promise<CommentPage>; canComment: boolean; isGuest?: boolean; returnTo: string }) {
+function StreamedCommentSection({ postId, initialComments, canComment, isGuest = false, returnTo, pageHref }: { postId: string; initialComments: CommentPage | Promise<CommentPage>; canComment: boolean; isGuest?: boolean; returnTo: string; pageHref: string }) {
   const page = initialComments instanceof Promise ? use(initialComments) : initialComments;
-  return <CommentSection postId={postId} initialPage={page} canComment={canComment} isGuest={isGuest} returnTo={returnTo} />;
+  return <CommentSection postId={postId} initialPage={page} canComment={canComment} isGuest={isGuest} returnTo={returnTo} pageHref={pageHref} />;
 }
