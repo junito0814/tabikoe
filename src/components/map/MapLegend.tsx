@@ -21,7 +21,7 @@ export function MapLegend({
   dayCount = 0,
   className,
 }: {
-  mode?: "default" | "itinerary" | "mymap";
+  mode?: "default" | "itinerary" | "post-history";
   /** itinerary モードのとき、色分けする Day の数 */
   dayCount?: number;
   className?: string;
@@ -33,7 +33,7 @@ export function MapLegend({
           icon: <PinIcon type="numbered" size={16} label={i + 1} dayIndex={i + 1} />,
           label: `Day ${i + 1}`,
         }))
-      : mode === "mymap"
+      : mode === "post-history"
         ? [
             { key: "posted", icon: <PinIcon type="posted" size={16} />, label: "自分の投稿" },
             { key: "saved", icon: <PinIcon type="saved" size={16} />, label: TERMS.wishlist },

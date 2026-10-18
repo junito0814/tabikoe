@@ -11,8 +11,8 @@ describe("resolvePinPriority", () => {
     expect(resolvePinPriority("map", { hasPost: true })).toBe("post");
   });
   it("SC-12 では投稿済みが保存済みより優先", () => {
-    expect(resolvePinPriority("mymap", { isPosted: true, isSaved: true })).toBe("posted");
-    expect(resolvePinPriority("mymap", { isSaved: true })).toBe("saved");
+    expect(resolvePinPriority("post-history", { isPosted: true, isSaved: true })).toBe("posted");
+    expect(resolvePinPriority("post-history", { isSaved: true })).toBe("saved");
   });
   it("下書きは常に draft", () => {
     expect(resolvePinPriority("map", { isDraft: true, isSaved: true })).toBe("draft");

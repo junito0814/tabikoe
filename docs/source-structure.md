@@ -47,7 +47,8 @@ app/
 ├── itineraries/              しおり一覧・詳細（SC-22・SC-23）
 ├── albums/                   アルバムとアルバム写真一覧（SC-09・SC-21）
 ├── wishlist/                 行きたい（SC-08）
-├── mymap/                    あしあと（SC-12）
+├── post-history/             投稿履歴（SC-12。2026-10-17・#973 で ~~mymap~~ から改名）
+├── mymap/                    上への転送だけ（古いリンクを切らないため）
 ├── mypage/                   マイページ（SC-06）と下書き一覧
 ├── account/                  アカウント（SC-07。プロフィール編集・通知・退会）
 ├── notifications/            通知一覧（SC-14）

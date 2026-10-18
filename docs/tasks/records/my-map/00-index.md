@@ -1,6 +1,6 @@
 # F-RC-06 マイマップ — タスク分割
 
-> 出典: [my-map.md](../../../user-stories/records/my-map.md)
+> 出典: [post-history.md](../../../user-stories/records/post-history.md)
 
 各タスクの詳細・テスト要件は個別ファイルを参照。Task 1が土台。Task 2はTask 1に依存。Task 3はTask 2に依存。Task 4は全体の結合後に実施する。
 

@@ -1,14 +1,14 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { MyMapScreen } from "@/components/map/MyMapScreen";
+import { PostHistoryMap } from "@/components/map/PostHistoryMap";
 import { BackLink } from "@/components/layout/BackLink";
 import { PullToRefresh } from "@/components/layout/PullToRefresh";
 import { DraftsSection } from "./DraftsSection";
 import { MyPostsList, type FetchMyPosts } from "./MyPostsList";
 import type { DraftListPage } from "@/lib/posts/drafts";
 import type { MyPostsPage } from "@/lib/users/my-page";
-import type { MyMapMode } from "@/lib/map/get-my-map-pins";
+import type { PostHistoryMapMode } from "@/lib/map/get-post-history-pins";
 
 /**
  * SC-12 投稿履歴（#682。v3.1 の「あしあと」から改称）
@@ -17,7 +17,7 @@ import type { MyMapMode } from "@/lib/map/get-my-map-pins";
  *
  * 【初心者向け】マイページから開く。**一覧が既定**で、地図に切り替えられる。
  * 一覧はマイページにあった「自分の投稿」と「下書き」をそのまま移したもの
- * （部品は動かしていない）。地図は今までの「あしあと」そのまま。
+ * （部品は動かしていない）。地図は今までの「あしあと」そのまま（部品名は #973 で `PostHistoryMap` に改めた）。
  *
  * どちらを見ているかは URL（`?view=map`）に持つので、戻ってきても同じ側が開く。
  */
@@ -36,7 +36,7 @@ export function PostHistoryScreen({
   tripOptions: { id: string; title: string }[];
   drafts: DraftListPage | null;
   fetchPosts?: FetchMyPosts;
-  initialMapMode: MyMapMode;
+  initialMapMode: PostHistoryMapMode;
 }) {
   const router = useRouter();
 
@@ -53,7 +53,7 @@ export function PostHistoryScreen({
             type="button"
             role="radio"
             aria-checked={view === option}
-            onClick={() => view !== option && router.replace(option === "map" ? "/mymap?view=map" : "/mymap")}
+            onClick={() => view !== option && router.replace(option === "map" ? "/post-history?view=map" : "/post-history")}
             className={`tap-target h-7 rounded-full px-3 text-[0.75rem] font-semibold ${view === option ? "bg-ink text-on-ink" : "text-muted"}`}
           >
             {option === "list" ? "一覧" : "地図"}
@@ -67,7 +67,7 @@ export function PostHistoryScreen({
     return (
       <div className="flex min-h-screen flex-col bg-app">
         <div className="px-4 pb-2 pt-4">{header}</div>
-        <MyMapScreen initialMode={initialMapMode} />
+        <PostHistoryMap initialMode={initialMapMode} />
       </div>
     );
   }
@@ -79,8 +79,8 @@ export function PostHistoryScreen({
           {header}
           {/* #682: マイページから移した 2 つ。部品はそのまま */}
           {/* #972: 戻り先は「この画面の URL」を渡す。決め打ちを消すため */}
-          {drafts && <DraftsSection initial={drafts} backHref="/mymap" />}
-          <MyPostsList initialPage={initialPosts} tripOptions={tripOptions} fetchPosts={fetchPosts} backHref="/mymap" />
+          {drafts && <DraftsSection initial={drafts} backHref="/post-history" />}
+          <MyPostsList initialPage={initialPosts} tripOptions={tripOptions} fetchPosts={fetchPosts} backHref="/post-history" />
         </div>
       </div>
     </PullToRefresh>

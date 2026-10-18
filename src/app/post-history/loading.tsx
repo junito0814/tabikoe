@@ -9,7 +9,7 @@ import { DelayedSkeleton, PostHistorySkeleton } from "@/components/skeleton/Skel
  * 白くはならないが、利用者には「押したのに何も起きない」と見える。本番の実測で、冷えた関数が
  * 立ち上がるのに 2.44 秒かかっていた（温まっていれば 0.21 秒）。その間ずっと無反応に見えていた。
  *
- * この画面: SC-12 あしあと（自分の投稿の履歴）
+ * この画面: SC-12 投稿履歴（自分の投稿の履歴）
  */
 export default function Loading() {
   return <DelayedSkeleton><PostHistorySkeleton /></DelayedSkeleton>;
