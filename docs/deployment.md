@@ -200,3 +200,9 @@ node scripts/grant-admin.mjs you@example.com --apply     # 開発用。先に一
 
 > **バケットの設定は手でやらない。** 大きさ上限・受付形式はマイグレーションに書いてある（#896）。
 > 管理画面で直すとコードとズレて、作り直したときに再現できなくなる。
+>
+> **2026-10-17（#899）: `avatars` にも上限（10MB）と形式（JPEG / PNG）を掛けた。**
+> 値は `src/lib/image/process-upload.ts` と同じで、**ずれていないことをテストで見ている**
+> （`src/lib/image/avatars-bucket-limits.test.ts`）。
+> **本番に当てる前に、本番の `avatars` を一覧して 10MB 超と JPEG/PNG 以外が無いことを確かめること。**
+> 開発用（tabikoe-dev）は 0 件だったので、実データでは確かめられていない。
