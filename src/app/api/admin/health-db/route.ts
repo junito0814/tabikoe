@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { unstable_rethrow } from "next/navigation";
 
 /**
  * GET /api/admin/health-db — Supabase に到達できるかの簡易ヘルスチェック（運営だけ）
@@ -43,6 +44,8 @@ export async function GET() {
 
     return NextResponse.json({ status: "ok" });
   } catch (error) {
+    // #895: Next.js の内部的な合図（redirect / notFound など）は握りつぶさずに投げ直す
+    unstable_rethrow(error);
     console.error("[health-db] Supabase に到達できません:", error instanceof Error ? error.message : error);
     return NextResponse.json({ status: "error" }, { status: 503 });
   }
