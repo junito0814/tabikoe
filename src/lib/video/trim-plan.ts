@@ -170,8 +170,16 @@ export function estimateTrimmedBytes(sourceBytes: number, durationSeconds: numbe
   return Math.round((sourceBytes * Math.min(windowSeconds, durationSeconds)) / durationSeconds);
 }
 
-/** 始める前に分かる断り方 */
-export type TrimRefusal = "source_too_large" | "estimated_too_large";
+/**
+ * 始める前に分かる断り方。
+ *
+ * #974（2026-10-17）: ~~`source_too_large`~~ を**ここから外した**。
+ * 大きさの門は「丸ごと読む」直前（`loadVideoForTrim` の保険の手前）へ移した。
+ * 理由は、切り取りは**ファイルを丸ごと読んでいない**こと ── 目次は 1MB ずつ覗いて探し、
+ * 切り取りは選んだ範囲のぶんだけ開く。**危ないのは目次が見つからなかったときの保険だけ**で、
+ * 入り口で厚さを測って索引を見せずに追い返していた。
+ */
+export type TrimRefusal = "estimated_too_large";
 /** 切り取ったあとに分かる断り方 */
 export type TrimOutputRefusal = "unreadable" | "too_long" | "too_short" | "too_large";
 
@@ -182,7 +190,7 @@ export type TrimFeasibility = { ok: true } | { ok: false; reason: TrimRefusal; e
  */
 export function checkTrimFeasible(input: { sourceBytes: number; durationSeconds: number }): TrimFeasibility {
   const estimatedBytes = estimateTrimmedBytes(input.sourceBytes, input.durationSeconds);
-  if (input.sourceBytes > MAX_TRIM_SOURCE_BYTES) return { ok: false, reason: "source_too_large", estimatedBytes };
+  // #974: 大きさでは断らない。大きくても目次が見つかれば切り取れるので、まず試す
   if (estimatedBytes > MAX_VIDEO_SIZE_BYTES * TRIM_ESTIMATE_MARGIN) return { ok: false, reason: "estimated_too_large", estimatedBytes };
   return { ok: true };
 }
@@ -296,6 +304,11 @@ export function formatMegabytes(bytes: number): string {
  * なお **iPhone は写真アプリの動画をそのまま渡しません**（HEVC を H.264 に変換して渡す）。
  * 写真アプリに出ている数字とここの数字は**ずれます**。だからこそ、
  * **ブラウザが受け取った実際の大きさ**を出す意味があります。
+ *
+ * #974（2026-10-17）: この文が出る**場面が狭まりました**。以前は読み込む前に大きさだけで
+ * 出していたので、300MB を 0.1% 超えただけの動画も門前払いでした。いまは
+ * **目次探し（1MB ずつ）と切り取り（選んだ範囲だけ）を先に試し**、目次が見つからず
+ * 「丸ごと読む」しかないときだけ出ます ── つまり**本当に読めない動画だけ**です。
  */
 export function trimSourceTooLargeMessage(sourceBytes: number): string {
   return `この動画は ${formatMegabytes(sourceBytes)} で、この画面では開けません（上限 ${MAX_TRIM_SOURCE_BYTES / 1024 / 1024}MB）。写真アプリで短く切ってから選び直してください`;
@@ -305,11 +318,12 @@ export function trimSourceTooLargeMessage(sourceBytes: number): string {
  * 切り取りがうまくいかなかったときに出す文。**「できません」で終わらせない**（要件 4.5.11）。
  * 大きすぎるときだけは原因が違うので、別の文にする（短くしても直らない）。
  *
- * #970: **`source_too_large` はここでは扱えません**（型で弾いています）。
- * 理由が「開けない」なので、言うべきことが違います → `trimSourceTooLargeMessage`。
- * 型で弾いておくと、次に増やす人が間違った文を出せません。
+ * #970: **「大きすぎて開けない」はここでは扱いません**。理由が違うので言うべきことも違います
+ * → `trimSourceTooLargeMessage`。
+ * #974: その断り方は `TrimRefusal`（始める前に分かるもの）から外れ、`TrimError("source_too_large")`
+ * （丸ごと読む直前で投げるもの）になったので、**型で弾くための `Exclude` は要らなくなりました**。
  */
-export function trimFailureMessage(reason: Exclude<TrimRefusal, "source_too_large"> | TrimOutputRefusal, bytes?: number): string {
+export function trimFailureMessage(reason: TrimRefusal | TrimOutputRefusal, bytes?: number): string {
   if (reason === "estimated_too_large" || reason === "too_large") {
     const size = bytes === undefined ? "" : `（${formatMegabytes(bytes)}）`;
     return `この動画は画質が高く、${TRIM_WINDOW_SECONDS} 秒に切り取っても ${MAX_VIDEO_SIZE_BYTES / 1024 / 1024}MB を超えます${size}。写真アプリで短く編集してから選び直してください`;

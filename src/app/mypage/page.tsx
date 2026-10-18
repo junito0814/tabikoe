@@ -37,7 +37,7 @@ export default async function MyPage() {
 
   return (
     <ContentEnter>
-      {/* #682: 投稿一覧と下書きは「投稿履歴」（/mymap）へ移した */}
+      {/* #682: 投稿一覧と下書きは「投稿履歴」（/post-history）へ移した */}
       <MyPageScreen
         profile={data.profile}
         summary={data.summary}

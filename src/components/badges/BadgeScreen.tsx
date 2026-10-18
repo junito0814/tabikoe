@@ -48,14 +48,19 @@ function formatAcquiredAt(iso: string): string {
   }).format(new Date(iso));
 }
 
-export function BadgeScreen({ badges }: { badges: BadgeStatus[] }) {
+export function BadgeScreen({ badges, back = null }: {
+  badges: BadgeStatus[];
+  /** #972: `?back=` で渡された戻り先（URL と画面名）。無ければマイページ（今までどおり） */
+  back?: { href: string; label: string } | null;
+}) {
   const acquiredCount = badges.filter((badge) => badge.acquiredAt !== null).length;
 
   return (
     <div className="flex min-h-screen flex-col items-center gap-6 bg-app px-6 pb-12 pt-6">
       {/* #686: ホーム画面から単独で開くとブラウザの戻るが無いので、左上に戻るを置く */}
       <div className="flex w-full max-w-[420px] items-center">
-        <BackLink />
+        {/* #972: バッジ獲得の知らせから来たときは、その画面に帰す */}
+        {back ? <BackLink href={back.href} label={back.label} /> : <BackLink />}
       </div>
       <div className="flex flex-col items-center gap-1">
         <h1 className="text-[1rem] font-bold text-ink">ステータスバッジ</h1>

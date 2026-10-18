@@ -245,27 +245,41 @@ describe("切り取りの画面（要件 4.5.17）", () => {
    * 実機では 4K60・1 分 37 秒（ブラウザが受け取ったのは 300.4MB）で、
    * 上限を 0.4MB 超えただけなのに「画質が高く…」と出ていた。
    */
-  it("300MB を超える動画は、実際の大きさと上限を言って断る", async () => {
+  /*
+   * #974（2026-10-17）: ~~300MB を超える動画は、読み込む前に断る~~ → **断らない**。
+   *
+   * 【初心者向け】切り取りは**ファイルを丸ごと読んでいません**（目次は 1MB ずつ覗いて探し、
+   * 切り取りは選んだ範囲のぶんだけ開く）。危ないのは**目次が見つからなかったときの保険**だけなので、
+   * 門はそこへ移しました。入り口で厚さだけ測っていたので、実機の動画が
+   * **300MB を 0.1% 超えただけで門前払い**になっていました。
+   */
+  it("300MB を超えていても、シートは開いて「◯ 秒まで短くすると入ります」を出す", async () => {
     const huge = new File([new Uint8Array(10)], "4k60.mp4", { type: "video/mp4" });
     Object.defineProperty(huge, "size", { value: Math.round(300.4 * 1024 * 1024) });
-    const { onGiveUp } = setup({ file: huge, durationSeconds: 97 });
+    const load = vi.fn(async () => loaded);
+    const { onGiveUp } = setup({ file: huge, durationSeconds: 97, load });
+    // 読み込みに入る（＝門前払いしない）
+    await waitFor(() => expect(load).toHaveBeenCalled());
+    // 30 秒ぶんでは入らないので、この場で「何秒なら入るか」を出す（#941）
+    expect(await screen.findByText(/秒まで短くすると入ります/)).toBeInTheDocument();
+    // 閉じない
+    expect(onGiveUp).not.toHaveBeenCalled();
+  });
+
+  it("目次が見つからず丸ごと読むしかないときだけ、実際の大きさと上限を言って閉じる", async () => {
+    const huge = new File([new Uint8Array(10)], "huge.mp4", { type: "video/mp4" });
+    Object.defineProperty(huge, "size", { value: Math.round(300.4 * 1024 * 1024) });
+    // 読み込み側（loadVideoForTrim）が「大きすぎて読めない」で投げた状態を作る
+    const load = vi.fn(async () => {
+      throw new TrimError("source_too_large");
+    });
+    const { onGiveUp } = setup({ file: huge, durationSeconds: 3600, load });
     await waitFor(() => expect(onGiveUp).toHaveBeenCalled());
     const message = onGiveUp.mock.calls[0][0] as string;
     expect(message).toContain("300.4MB");
     expect(message).toContain("上限 300MB");
-    // 中身を見ていないのに「画質が高い」とも「92.9MB」とも言わない
+    // 中身を見ていないのに「画質が高い」とも言わない（#970）
     expect(message).not.toContain("画質が高く");
-    expect(message).not.toContain("92.9MB");
-  });
-
-  it("大きすぎる動画は、読み込む前に断る（ブラウザが落ちるのを避ける）", async () => {
-    const huge = new File([new Uint8Array(10)], "huge.mp4", { type: "video/mp4" });
-    Object.defineProperty(huge, "size", { value: 400 * 1024 * 1024 });
-    const load = vi.fn(async () => loaded);
-    const { onGiveUp } = setup({ file: huge, load });
-    await waitFor(() => expect(onGiveUp).toHaveBeenCalled());
-    // 読み込みに入っていない
-    expect(load).not.toHaveBeenCalled();
   });
 
   it("「×」で閉じると、何も添付しない", async () => {

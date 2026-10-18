@@ -1,6 +1,6 @@
 # Task 1: 取得条件と切替の変更
 
-> 出典: [my-map.md](../../../user-stories/records/my-map.md)
+> 出典: [post-history.md](../../../user-stories/records/post-history.md)
 > インデックス: [my-map-v3](00-index.md)
 
 ## 依存

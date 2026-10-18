@@ -37,6 +37,7 @@ import { uploadErrorMessage } from "@/lib/posts/upload-error-message";
 import { canTrimVideo } from "@/lib/video/trim-video";
 import { TRIM_FALLBACK_MESSAGE } from "@/lib/video/trim-plan";
 import { VideoTrimSheet } from "./VideoTrimSheet";
+import { appendBackHref } from "@/lib/search/list-state";
 
 
 /** 保存済み投稿（編集・下書きの続き）の初期値 */
@@ -85,6 +86,7 @@ export function PostComposeScreen({
   searchSpots,
   postingRestrictedUntil = null,
   spotCategory = null,
+  backHref = null,
 }: {
   /**
    * #861: 動画の受付を止めているか。**既定は止めている**（docs/deployment.md の
@@ -107,6 +109,14 @@ export function PostComposeScreen({
   resolveCenter?: React.ComponentProps<typeof PostLocationMap>["resolveCenter"];
   fetchTripSuggestions?: React.ComponentProps<typeof PostFormFields>["fetchTripSuggestions"];
   searchSpots?: React.ComponentProps<typeof SpotField>["searchSpots"];
+  /**
+   * #972: この編集画面に来た元の場所（`?back=`）。
+   *
+   * 【初心者向け】「編集をやめて投稿に戻る」で帰る先は正しかったが、**帰った先の戻る**が
+   * 「スポットの一覧」になっていた。投稿詳細 → 編集 → 投稿詳細 の 3 画面で
+   * 来た場所を渡し続けないと、元の一覧まで遡れない。
+   */
+  backHref?: string | null;
 }) {
   const router = useRouter();
   const isEditingPublished = existing?.status === "published";
@@ -626,7 +636,7 @@ export function PostComposeScreen({
             )}
             {isEditingPublished && (
               <p className="mt-4 text-center text-[0.75rem] text-muted">
-                <Link href={`/posts/${existing?.postId}`} className="underline underline-offset-2">
+                <Link href={appendBackHref(`/posts/${existing?.postId}`, backHref)} className="underline underline-offset-2">
                   編集をやめて投稿に戻る
                 </Link>
               </p>

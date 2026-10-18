@@ -11,7 +11,8 @@
  *   それ以外・無し          → ホーム
  * Bug #471（全画面で直前の画面に戻る）で足したもの:
  *   /mypage → マイページ、/wishlist → 行きたい、/albums → アルバム一覧、/albums/<id> → アルバム、/albums/<id>/photos → 写真、
- *   /itineraries → しおり一覧、/notifications → 通知、/mymap → あしあと、/map → 地図、/mypage/drafts → 下書き、/badges → バッジ
+ *   /itineraries → しおり一覧、/notifications → 通知、~~/mymap → あしあと~~ → `/post-history` → **投稿履歴**（2026-10-17・#973 に改称）、
+ *   /map → 地図、/mypage/drafts → 下書き、/badges → バッジ
  */
 export type BackTarget =
   | { kind: "home" }
@@ -34,6 +35,15 @@ const NAMED_PATHS: [RegExp, string][] = [
   [/^\/mypage\/?$/, "マイページ"],
   [/^\/wishlist\/?$/, "行きたい"],
   [/^\/notifications\/?$/, "通知"],
+  [/^\/post-history\/?$/, "投稿履歴"],
+  /*
+   * #973: 古い URL も残す。
+   *
+   * 【初心者向け】`/mymap` は転送だけ残しましたが、**すでに配られた `?back=%2Fmymap`**
+   * （`sessionStorage` に残った戻り先・ブックマーク）はそのまま届きます。
+   * ここから外すと、そのリンクの戻るが「投稿履歴」ではなく**「一覧」**になってしまうので、
+   * 行き先は同じものとして表に残しておきます。
+   */
   [/^\/mymap\/?$/, "投稿履歴"],
   [/^\/badges\/?$/, "バッジ"],
   [/^\/map\/?$/, "地図"],

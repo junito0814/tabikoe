@@ -3,7 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getAuthenticatedUser } from "@/lib/auth/get-authenticated-user";
 import { parseMapBounds } from "@/lib/map/get-map-pins";
-import { getMyMapPins, parseMyMapMode } from "@/lib/map/get-my-map-pins";
+import { getPostHistoryPins, parsePostHistoryMapMode } from "@/lib/map/get-post-history-pins";
 
 /**
  * F-RC-06 Task1: マイマップ用ピンデータ取得
@@ -25,10 +25,10 @@ export async function GET(request: Request) {
   if (!bounds) {
     return NextResponse.json({ error: "invalid_bounds" }, { status: 400 });
   }
-  const mode = parseMyMapMode(searchParams.get("mode"));
+  const mode = parsePostHistoryMapMode(searchParams.get("mode"));
 
   try {
-    const pins = await getMyMapPins(createAdminClient(), user.id, mode, bounds);
+    const pins = await getPostHistoryPins(createAdminClient(), user.id, mode, bounds);
     return NextResponse.json({ mode, pins });
   } catch {
     return NextResponse.json({ error: "fetch_failed" }, { status: 500 });

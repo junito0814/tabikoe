@@ -1,6 +1,6 @@
 # Task 3: ピン操作時の遷移制御
 
-> 出典: [my-map.md](../../../user-stories/records/my-map.md)
+> 出典: [post-history.md](../../../user-stories/records/post-history.md)
 > インデックス: [my-map](00-index.md)
 
 ## 依存

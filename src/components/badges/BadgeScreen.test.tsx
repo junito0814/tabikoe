@@ -82,3 +82,20 @@ describe("都道府県バッジの絵（#977）", () => {
     expect(section.querySelectorAll("li svg")).toHaveLength(47);
   });
 });
+
+/**
+ * #972 Bug 2: バッジ獲得の知らせから来たとき、戻るが決め打ちの「マイページ」になっていた。
+ */
+describe("戻るの行き先（#972）", () => {
+  it("back を渡すと、その画面名とリンクになる", () => {
+    render(<BadgeScreen badges={mergeBadgeStatus([])} back={{ href: "/posts/p1?back=%2Fsearch", label: "投稿" }} />);
+    const link = screen.getByRole("link", { name: "投稿" });
+    expect(link.getAttribute("href")).toBe("/posts/p1?back=%2Fsearch");
+    expect(screen.queryByRole("link", { name: "マイページ" })).toBeNull();
+  });
+
+  it("渡さなければ今までどおりマイページに戻る", () => {
+    render(<BadgeScreen badges={mergeBadgeStatus([])} />);
+    expect(screen.getByRole("link", { name: "マイページ" }).getAttribute("href")).toBe("/mypage");
+  });
+});

@@ -98,8 +98,9 @@ export function ItineraryListScreen({
                           {item.spotCount > 0 && ` ・ ${item.checkedCount}/${item.spotCount} 済`}
                         </span>
                       </Link>
+                      {/* #972: 戻り先に「計画」を渡す。渡さないとアルバム一覧に帰ってしまう */}
                       {group === "past" && item.hasAlbumPosts && (
-                        <Link href={`/albums/${item.tripId}`} className="mt-2 inline-flex h-8 items-center gap-1 rounded-full border border-line bg-surface px-3 text-[0.75rem] font-semibold text-ink">
+                        <Link href={`/albums/${item.tripId}?back=%2Fitineraries`} className="mt-2 inline-flex h-8 items-center gap-1 rounded-full border border-line bg-surface px-3 text-[0.75rem] font-semibold text-ink">
                           アルバムを見る
                         </Link>
                       )}

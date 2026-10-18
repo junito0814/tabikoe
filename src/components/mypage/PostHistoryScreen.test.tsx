@@ -82,13 +82,13 @@ describe("PostHistoryScreen（SC-12 投稿履歴）", () => {
   it("地図に切り替えると URL が変わる", () => {
     render(<PostHistoryScreen {...base} view="list" />);
     fireEvent.click(screen.getByRole("radio", { name: "地図" }));
-    expect(replace).toHaveBeenCalledWith("/mymap?view=map");
+    expect(replace).toHaveBeenCalledWith("/post-history?view=map");
   });
 
   it("一覧に戻すと URL から view が消える", () => {
     render(<PostHistoryScreen {...base} view="map" />);
     fireEvent.click(screen.getByRole("radio", { name: "一覧" }));
-    expect(replace).toHaveBeenCalledWith("/mymap");
+    expect(replace).toHaveBeenCalledWith("/post-history");
   });
 
   it("アルバムで絞り込むと trip_id 付きで取り直す", async () => {
@@ -109,7 +109,7 @@ describe("PostHistoryScreen（SC-12 投稿履歴）", () => {
 
 /**
  * #747（2026-10-06）: 地図タブで戻るボタンが 2 つ出ていた。
- * `MyMapScreen` が「あしあと」1 枚だったころの戻る（地図の上に浮かぶピル）を持っていたため。
+ * `PostHistoryMap`（当時は `MyMapScreen`）が「あしあと」1 枚だったころの戻る（地図の上に浮かぶピル）を持っていたため。
  */
 describe("戻るは 1 つだけ（#747）", () => {
   it("地図タブでも「マイページ」へ戻る導線は 1 つ", () => {
@@ -120,5 +120,35 @@ describe("戻るは 1 つだけ（#747）", () => {
   it("地図の上にはピンの切り替えだけが残る", () => {
     render(<PostHistoryScreen {...base} view="map" />);
     expect(screen.getByRole("radiogroup", { name: "表示するピン" })).toBeInTheDocument();
+  });
+});
+
+/**
+ * #972 Bug 2: 戻るの行き先が、来た画面ではなく決め打ちになっていた。
+ *
+ * 【初心者向け】#682 で自分の投稿と下書きがマイページから投稿履歴（/post-history）へ移ったのに、
+ * `?back=%2Fmypage` と `href="/mypage"` が**決め打ちで残っていた**。
+ * 直したのは送り出す側だけで、戻るの仕組み（back-label.ts）は元から正しかった。
+ * ここで押さえるのは「投稿履歴が自分の URL を渡していること」。
+ */
+describe("戻りの行き先を決め打ちしない（#972）", () => {
+  it("自分の投稿のリンクが、戻り先に投稿履歴（/post-history）を渡す", () => {
+    render(<PostHistoryScreen {...base} view="list" initialPosts={{ posts: [post("a", "冬旅")], nextOffset: null }} fetchPosts={vi.fn()} />);
+    const link = document.querySelector("[data-my-post='a']") as HTMLAnchorElement | null;
+    expect(link).not.toBeNull();
+    expect(link!.getAttribute("href")).toBe("/posts/a?back=%2Fpost-history");
+  });
+
+  it("下書きの「すべて見る」も、戻り先に投稿履歴を渡す", () => {
+    render(
+      <PostHistoryScreen
+        {...base}
+        view="list"
+        drafts={{ drafts: [draft("d1"), draft("d2"), draft("d3"), draft("d4")], total: 4 }}
+        fetchPosts={vi.fn()}
+      />
+    );
+    const link = screen.getByRole("link", { name: /すべて見る/ });
+    expect(link.getAttribute("href")).toBe("/mypage/drafts?back=%2Fpost-history");
   });
 });

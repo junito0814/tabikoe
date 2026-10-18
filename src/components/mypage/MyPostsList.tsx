@@ -11,6 +11,7 @@ import { fetchWithAuthRedirect, UnauthorizedError } from "@/lib/api/fetch-with-a
 import type { MyPost, MyPostsPage } from "@/lib/users/my-page";
 import { useInfiniteScroll } from "@/components/posts/use-infinite-scroll";
 import { formatDateTime } from "@/lib/format/date-time";
+import { appendBackHref } from "@/lib/search/list-state";
 import { EmptyState } from "@/components/ui/EmptyState";
 
 export type FetchMyPosts = (tripId: string | null, offset: number) => Promise<MyPostsPage>;
@@ -29,11 +30,21 @@ export function MyPostsList({
   initialPage,
   tripOptions,
   fetchPosts = defaultFetchPosts,
+  backHref,
 }: {
   initialPage: MyPostsPage;
   tripOptions: { id: string; title: string }[];
   /** 差し替え口（単体テスト用） */
   fetchPosts?: FetchMyPosts;
+  /**
+   * #972: この一覧を出している画面の URL。投稿を開いたときの戻り先になる。
+   *
+   * 【初心者向け】ここは `?back=%2Fmypage` と**決め打ち**されていた。#682 で一覧が
+   * マイページから投稿履歴（/post-history）へ移ったのに、戻り先だけマイページに残り、
+   * 「投稿履歴から開いたのにマイページへ帰る」状態になっていた。
+   * **置いてある画面に渡してもらう**ことで、置き場所が変わっても壊れない。
+   */
+  backHref?: string;
 }) {
   const [tripId, setTripId] = useState<string | null>(null);
   const [posts, setPosts] = useState<MyPost[]>(initialPage.posts);
@@ -110,8 +121,7 @@ export function MyPostsList({
           {posts.map((post) => (
             <li key={post.id}>
               <Link
-                href={`/posts/${post.id}?back=%2Fmypage`}
-               
+                href={appendBackHref(`/posts/${post.id}`, backHref)}
                 className="flex gap-3 rounded-[12px] border border-line bg-surface p-2.5"
                 data-my-post={post.id}
               >
