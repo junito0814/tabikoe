@@ -5,7 +5,7 @@ import { join } from "node:path";
 import { promisify } from "node:util";
 import { beforeAll, describe, expect, it } from "vitest";
 import { checkVideo, parseVideoInfo } from "./process-video";
-import { checkTrimmedOutput, moveEnd, planTrim, trimLengthSeconds, TRIM_WINDOW_SECONDS } from "./trim-plan";
+import { checkTrimmedOutput, MAX_TRIM_SOURCE_BYTES, moveEnd, planTrim, trimLengthSeconds, TRIM_WINDOW_SECONDS } from "./trim-plan";
 import { loadVideoForTrim, trimVideo, TrimError } from "./trim-video";
 
 /**
@@ -217,6 +217,42 @@ describe("loadVideoForTrim", () => {
   it("MP4 でないものは「この端末では切り取れない」として扱う", async () => {
     const notVideo = new File([new Uint8Array([1, 2, 3, 4, 5, 6, 7, 8])], "a.mp4", { type: "video/mp4" });
     await expect(loadVideoForTrim(notVideo)).rejects.toBeInstanceOf(TrimError);
+  });
+
+  /*
+   * #974（2026-10-17）: **丸ごと読む経路が 300MB を超えて走らない**ことを押さえる（受入条件）。
+   *
+   * 【初心者向け】目次が 1MB ずつの覗き見で見つからなかったときだけ、保険として
+   * `file.arrayBuffer()` で丸ごと読みます。そこが唯一の危ない場所なので、門はそこに置きました。
+   * ここでは **`arrayBuffer` が呼ばれないこと**を数えて確かめます
+   * （大きさを偽って見せるので、実際に 300MB のファイルは作りません）。
+   */
+  it("目次が見つからず丸ごと読むしかないとき、300MB を超えていれば読まずに断る", async () => {
+    const notVideo = new File([new Uint8Array([1, 2, 3, 4, 5, 6, 7, 8])], "big.mp4", { type: "video/mp4" });
+    Object.defineProperty(notVideo, "size", { value: MAX_TRIM_SOURCE_BYTES + 1 });
+    let reads = 0;
+    const original = notVideo.arrayBuffer.bind(notVideo);
+    notVideo.arrayBuffer = async () => {
+      reads += 1;
+      return original();
+    };
+
+    await expect(loadVideoForTrim(notVideo)).rejects.toMatchObject({ code: "source_too_large" });
+    expect(reads).toBe(0);
+  });
+
+  it("300MB 以下なら、目次が見つからなくても丸ごと読んで試す", async () => {
+    const notVideo = new File([new Uint8Array([1, 2, 3, 4, 5, 6, 7, 8])], "small.mp4", { type: "video/mp4" });
+    let reads = 0;
+    const original = notVideo.arrayBuffer.bind(notVideo);
+    notVideo.arrayBuffer = async () => {
+      reads += 1;
+      return original();
+    };
+
+    // 中身は MP4 ではないので最後は断られるが、**読もうとはする**
+    await expect(loadVideoForTrim(notVideo)).rejects.toMatchObject({ code: "unsupported" });
+    expect(reads).toBe(1);
   });
 });
 

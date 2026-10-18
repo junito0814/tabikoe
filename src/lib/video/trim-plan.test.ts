@@ -102,10 +102,23 @@ describe("checkTrimFeasible", () => {
     expect(checkTrimFeasible({ sourceBytes: 110 * 1024 * 1024, durationSeconds: 60 })).toEqual({ ok: true });
   });
 
-  it("読み込むだけでブラウザが落ちる大きさは断る", () => {
-    // 1 時間・400MB → 30 秒ぶんは 3MB で入るが、読み込みが重すぎる
-    const result = checkTrimFeasible({ sourceBytes: MAX_TRIM_SOURCE_BYTES + 1, durationSeconds: 3600 });
-    expect(result.ok === false && result.reason).toBe("source_too_large");
+  /*
+   * #974（2026-10-17）: ~~読み込むだけでブラウザが落ちる大きさは断る~~ → **ここでは断らない**。
+   *
+   * 【初心者向け】切り取りは**ファイルを丸ごと読んでいません**。目次は 1MB ずつ覗いて探し、
+   * 切り取りは選んだ範囲のぶんだけ開きます。危ないのは**目次が見つからなかったときの保険**
+   * （丸ごと読む）だけなので、門はそこへ移しました（`loadVideoForTrim`）。
+   * 入り口で厚さだけ測って追い返すと、300MB を 0.1% 超えた動画も門前払いになります。
+   */
+  it("大きくても、30 秒ぶんが入るなら通す（門は「丸ごと読む」直前に移した）", () => {
+    // 1 時間・400MB → 30 秒ぶんは約 3MB なので入る。大きさでは断らない
+    expect(checkTrimFeasible({ sourceBytes: MAX_TRIM_SOURCE_BYTES + 1, durationSeconds: 3600 })).toEqual({ ok: true });
+  });
+
+  it("大きくても、30 秒ぶんが入らなければ「見込みが大きすぎる」で断る", () => {
+    // 97 秒・300.1MB → 30 秒ぶんは約 93MB で入らない。理由は大きさではなく見込み
+    const result = checkTrimFeasible({ sourceBytes: MAX_TRIM_SOURCE_BYTES + 100 * 1024, durationSeconds: 97 });
+    expect(result.ok === false && result.reason).toBe("estimated_too_large");
   });
 });
 

@@ -70,7 +70,7 @@ describe("Task 5: 足した受け皿", () => {
     const placed = [
       ["src/app", "ホーム（SC-00）"],
       ["src/app/map", "地図（SC-02）"],
-      ["src/app/mymap", "あしあと"],
+      ["src/app/post-history", "投稿履歴"],
       ["src/app/report", "通報"],
       ["src/app/login", "ログイン"],
       ["src/app/terms", "利用規約"],

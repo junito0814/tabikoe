@@ -16,9 +16,9 @@ import type { PostCategory } from "@/lib/posts/constants";
  * v3.0（my-map-v3 Task1）: 「行きたい」の切替を「保存済み」（saved）に広げ、下書きを加えた。
  */
 /** 切替: posted＝自分の投稿のみ、saved＝保存済みのみ、both＝両方。下書きは切替に関わらず常に出す（v3.0） */
-export type MyMapMode = "posted" | "saved" | "both";
+export type PostHistoryMapMode = "posted" | "saved" | "both";
 
-export function parseMyMapMode(value: string | null): MyMapMode {
+export function parsePostHistoryMapMode(value: string | null): PostHistoryMapMode {
   // v1 の "wishlist" は "saved" として読む（古いリンク対策）
   if (value === "wishlist") return "saved";
   return value === "posted" || value === "saved" ? value : "both";
@@ -65,7 +65,7 @@ export interface MyMapDraft {
 export function mergeMyMapPins(
   posted: { spot: SpotRow; latestPostId: string }[],
   saved: { spot: SpotRow }[],
-  mode: MyMapMode,
+  mode: PostHistoryMapMode,
   drafts: MyMapDraft[] = [],
   limit: number = MAX_MAP_PINS,
   /** スポット ID → カテゴリ（pin-categories Task2。無ければ灰色のピンになる） */
@@ -130,10 +130,10 @@ export function mergeMyMapPins(
 }
 
 /** 範囲内の、本人の投稿があるスポット（非公開含む）・保存済み（行きたい＋しおり）・下書き */
-export async function getMyMapPins(
+export async function getPostHistoryPins(
   admin: SupabaseClient,
   userId: string,
-  mode: MyMapMode,
+  mode: PostHistoryMapMode,
   bounds: MapBounds
 ): Promise<MyMapPin[]> {
   const inBounds = <Q>(query: Q, prefix: string): Q => {
@@ -188,7 +188,7 @@ export async function getMyMapPins(
   }));
 
   // pin-categories Task2: ピンの色を SC-02 と揃えるため、集めたスポットの「公開投稿のカテゴリ」を取る。
-  // あしあとの取得は「自分の投稿」「保存済み」から引いているので、公開投稿の情報はここにしか無い（1 本だけ足す）
+  // 投稿履歴の取得は「自分の投稿」「保存済み」から引いているので、公開投稿の情報はここにしか無い（1 本だけ足す）
   const spotIds = Array.from(new Set([...posted.map((row) => row.spot.id), ...saved.map((row) => row.spot.id)]));
   const categoryBySpot = await findSpotCategories(admin, spotIds);
 

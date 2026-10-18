@@ -20,6 +20,7 @@ vi.mock("@/components/map/GoogleMap", () => ({
 
 import { PostComposeScreen, type ComposeApi } from "./PostComposeScreen";
 import { buildComposeInitialState } from "@/lib/posts/compose-initial-state";
+import { EMPTY_POST_FORM_VALUES } from "./PostFormFields";
 
 function jsonResponse(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), { status, headers: { "Content-Type": "application/json" } });
@@ -54,7 +55,16 @@ async function fillRequired() {
 beforeEach(() => {
   vi.useFakeTimers({ shouldAdvanceTime: true });
   push.mockReset();
-  vi.stubGlobal("URL", { ...URL, createObjectURL: () => "blob:x", revokeObjectURL: () => {} });
+  /*
+   * #972: ここは `{ ...URL, createObjectURL }` と**素のオブジェクト**に差し替えていたため、
+   * `new URL()` を使うコード（`appendBackHref`）が「URL is not a constructor」で落ちた。
+   * **本物の URL を継承したクラス**にして、足したいのは静的メソッド 2 つだけにする。
+   */
+  class TestURL extends URL {
+    static createObjectURL = () => "blob:x";
+    static revokeObjectURL = () => {};
+  }
+  vi.stubGlobal("URL", TestURL);
 });
 afterEach(() => {
   vi.useRealTimers();
@@ -257,5 +267,33 @@ describe("カテゴリのおすすめ（#794）", () => {
       const suggestion = document.querySelector("[data-suggested-category]");
       expect(suggestion?.textContent).toContain("観光スポット");
     });
+  });
+});
+
+/**
+ * #972 Bug 2: 「編集をやめて投稿に戻る」で帰ったあと、戻るが「スポットの一覧」になっていた。
+ *
+ * 【初心者向け】着く先（その投稿の詳細）は正しく、惜しいのは**着いたあとの戻る**。
+ * 投稿詳細 → 編集 → 投稿詳細 の 3 画面で来た場所を渡し続ける必要がある。
+ */
+describe("編集をやめて投稿に戻る（#972）", () => {
+  const published = {
+    postId: "p1",
+    status: "published" as const,
+    values: { ...EMPTY_POST_FORM_VALUES, spotName: "東京駅", category: "グルメ" as const, comment: "よかった" },
+    spot: null,
+    position: null,
+    photos: [],
+  };
+
+  it("backHref を渡すと、戻る先の投稿に ?back= が付く", () => {
+    render(<PostComposeScreen initial={currentLocation} api={makeApi()} existing={published} backHref="/search?pref=東京都" />);
+    const link = screen.getByRole("link", { name: "編集をやめて投稿に戻る" });
+    expect(link.getAttribute("href")).toBe("/posts/p1?back=%2Fsearch%3Fpref%3D%E6%9D%B1%E4%BA%AC%E9%83%BD");
+  });
+
+  it("渡さなければ今までどおり /posts/<id> のまま", () => {
+    render(<PostComposeScreen initial={currentLocation} api={makeApi()} existing={published} />);
+    expect(screen.getByRole("link", { name: "編集をやめて投稿に戻る" }).getAttribute("href")).toBe("/posts/p1");
   });
 });

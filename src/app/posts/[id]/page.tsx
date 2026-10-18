@@ -6,7 +6,7 @@ import { GuestBand } from "@/components/layout/GuestBand";
 import { ErrorNotice } from "@/components/notices/ErrorNotice";
 import { ERROR_MESSAGES } from "@/components/notices/error-messages";
 import { PostDetailScreen } from "@/components/posts/PostDetailScreen";
-import { resolveListBack } from "@/lib/search/list-state";
+import { appendBackHref, resolveListBack } from "@/lib/search/list-state";
 import { BadgeToast } from "@/components/badges/BadgeToast";
 import { parseBadgeToastParam } from "@/components/badges/badge-toast-params";
 import { FlashNotice, resolveFlashKey } from "@/components/notices/FlashNotice";
@@ -84,6 +84,19 @@ export default async function PostDetailPage({
     );
   }
 
+  /*
+   * #964（2026-10-17）: **この `notFound()` は HTTP 404 を返しません**（本文は正しく
+   * 「見つかりません」が出ますが、ステータスは 200 です）。要件定義書 9 章 No 19。
+   *
+   * 【初心者向け】`loading.tsx` の骨組みを送り始めた時点で応答のヘッダが出てしまうので、
+   * **あとからステータスは変えられません**（Next のドキュメント
+   * `node_modules/next/dist/docs/01-app/03-api-reference/03-file-conventions/loading.md`
+   * の「Status Codes」）。`generateMetadata` に移す案は**本番ビルドで実測して駄目でした** ──
+   * `notFound()` を待ちなしで呼べば 404 になりますが、**DB を `await` してから呼ぶと 200 のまま**です。
+   * 直すには `proxy` で判定するしかなく、在る投稿のほうが圧倒的に多いのに
+   * 全アクセスに問い合わせが 1 回増えるので、いまは採っていません。
+   * 検索エンジンには影響しません（`notFound()` が noindex を入れ、この画面は `robots: { index: false }` も付けている）。
+   */
   if (!post) {
     notFound();
   }
@@ -97,7 +110,10 @@ export default async function PostDetailPage({
   return (
     <ContentEnter>
       <>
-        {newBadgeTypes.length > 0 && <BadgeToast badgeTypes={newBadgeTypes} />}
+        {/* #972: バッジ画面から帰る先はこの投稿。元の一覧まで遡れるよう `?back=` も引き継ぐ */}
+        {newBadgeTypes.length > 0 && (
+          <BadgeToast badgeTypes={newBadgeTypes} backHref={appendBackHref(`/posts/${post.id}`, resolveListBack(query.back)?.href)} />
+        )}
         <PostDetailScreen
           post={post}
           initialComments={comments}

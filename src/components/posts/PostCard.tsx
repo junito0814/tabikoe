@@ -196,6 +196,8 @@ export function PostCard({
         isGuest={isGuest}
         {...(commentApi ? { api: commentApi } : {})}
         returnTo={backHref ?? `/posts/${post.id}`}
+        // #972: カードは一覧の中にあるので、プロフィールの戻り先はその一覧
+        pageHref={backHref}
         open={commentsOpen}
         onOpenChange={setCommentsOpen}
         onSummaryChange={(summary) => {

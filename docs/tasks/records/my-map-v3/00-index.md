@@ -1,6 +1,6 @@
 # F-RC-06 マイマップ（下書き・しおり） — タスク分割
 
-> 出典: [my-map.md](../../../user-stories/records/my-map.md)
+> 出典: [post-history.md](../../../user-stories/records/post-history.md)
 
 v1 の `MyMapScreen`・`get-my-map-pins.ts`・`/api/users/me/map-spots` を土台にする。Task 1 のみ。
 

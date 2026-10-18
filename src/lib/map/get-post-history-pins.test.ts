@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { mergeMyMapPins, parseMyMapMode } from "./get-my-map-pins";
+import { mergeMyMapPins, parsePostHistoryMapMode } from "./get-post-history-pins";
 
 /**
  * 出典: docs/tasks/records/my-map/01-my-map-pin-data-handler.md 単体テスト
@@ -39,13 +39,13 @@ describe("mergeMyMapPins", () => {
   });
 });
 
-describe("parseMyMapMode", () => {
+describe("parsePostHistoryMapMode", () => {
   it("既定は both", () => {
-    expect(parseMyMapMode(null)).toBe("both");
-    expect(parseMyMapMode("x")).toBe("both");
-    expect(parseMyMapMode("posted")).toBe("posted");
-    expect(parseMyMapMode("saved")).toBe("saved");
+    expect(parsePostHistoryMapMode(null)).toBe("both");
+    expect(parsePostHistoryMapMode("x")).toBe("both");
+    expect(parsePostHistoryMapMode("posted")).toBe("posted");
+    expect(parsePostHistoryMapMode("saved")).toBe("saved");
     // v1 の値は saved として読む
-    expect(parseMyMapMode("wishlist")).toBe("saved");
+    expect(parsePostHistoryMapMode("wishlist")).toBe("saved");
   });
 });

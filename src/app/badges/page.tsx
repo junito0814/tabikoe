@@ -5,6 +5,7 @@ import { ERROR_MESSAGES } from "@/components/notices/error-messages";
 import { BadgeScreen } from "@/components/badges/BadgeScreen";
 import { getBadgeStatuses, type BadgeStatus } from "@/lib/badges/badge-status";
 import { ContentEnter } from "@/components/transitions/Reveal";
+import { resolveListBack } from "@/lib/search/list-state";
 
 // #785: ブラウザのタブ名（「バッジ | タビコエ」）
 export const metadata = { title: "バッジ" };
@@ -15,7 +16,11 @@ export const metadata = { title: "バッジ" };
  *
  * ログイン必須（4.1）。マイページ（SC-06, Phase 7）からの導線は my-page Task4 で置く。
  */
-export default async function BadgesPage() {
+export default async function BadgesPage({ searchParams }: PageProps<"/badges">) {
+  const query = await searchParams;
+  // #972: バッジ獲得の知らせから来たときは、その画面に帰す（無ければマイページ）
+  const back = resolveListBack(typeof query.back === "string" ? query.back : null);
+
   const supabase = await createClient();
   const user = await requireUserOrRedirect(supabase, "/badges");
 
@@ -36,7 +41,7 @@ export default async function BadgesPage() {
 
   return (
     <ContentEnter>
-      <BadgeScreen badges={badges} />
+      <BadgeScreen badges={badges} back={back} />
     </ContentEnter>
   );
 }

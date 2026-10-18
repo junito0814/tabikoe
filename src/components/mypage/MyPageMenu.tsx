@@ -1,7 +1,7 @@
 import Link from "next/link";
 
 /**
- * F-RC-01 Task4 / my-page-v3 Task1（v3.0）: 遷移メニュー（行きたい／アルバム／あしあと／バッジ）
+ * F-RC-01 Task4 / my-page-v3 Task1（v3.0）: 遷移メニュー（行きたい／アルバム／投稿履歴／バッジ）
  * 出典: docs/tasks/records/my-page/04-navigation-menu-links.md
  *       docs/tasks/records/my-page-v3/01-drafts-section-and-menu.md
  *       要件定義書 v3.0 3.6.1・4.2
@@ -13,8 +13,8 @@ import Link from "next/link";
 export const MY_PAGE_MENU = [
   { key: "wishlist", label: "行きたい", href: "/wishlist" },
   { key: "albums", label: "アルバム", href: "/albums" },
-  // #682: 「あしあと」→「投稿履歴」に改称（URL は変えない）
-  { key: "mymap", label: "投稿履歴", href: "/mymap" },
+  // #682: 「あしあと」→「投稿履歴」に改称。~~URL は変えない~~ → **#973 で /post-history に移した**
+  { key: "post-history", label: "投稿履歴", href: "/post-history" },
 ] as const;
 
 export function MyPageMenu({ wishlistCount }: { wishlistCount?: number }) {

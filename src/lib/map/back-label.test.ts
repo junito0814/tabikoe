@@ -31,6 +31,8 @@ describe("classifyBackHref / backLabelFor", () => {
     expect(label("/albums/t1/photos")).toBe("写真");
     expect(label("/itineraries")).toBe("計画");
     expect(label("/notifications")).toBe("通知");
+    expect(label("/post-history?mode=saved")).toBe("投稿履歴");
+    // #973: 古い URL（転送だけ残した）でも「投稿履歴」と出す。すでに配られた ?back= を切らないため
     expect(label("/mymap?mode=saved")).toBe("投稿履歴");
     expect(label("/badges")).toBe("バッジ");
     expect(label("/map?mode=explore&lat=35&lng=139")).toBe("地図");

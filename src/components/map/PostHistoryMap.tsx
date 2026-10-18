@@ -6,14 +6,14 @@ import { ErrorNotice } from "@/components/notices/ErrorNotice";
 import { ERROR_MESSAGES } from "@/components/notices/error-messages";
 import { fetchWithAuthRedirect, UnauthorizedError } from "@/lib/api/fetch-with-auth-redirect";
 import { isSameBounds, type MapBounds } from "@/lib/map/get-map-pins";
-import type { MyMapMode, MyMapPin } from "@/lib/map/get-my-map-pins";
+import type { PostHistoryMapMode, MyMapPin } from "@/lib/map/get-post-history-pins";
 import { GoogleMap, type GoogleMapPin } from "./GoogleMap";
 import { resolveInitialCenter, type InitialCenter } from "./initial-center";
-import { myMapPinHref } from "./my-map-navigation";
+import { postHistoryPinHref } from "./post-history-map-navigation";
 import { MapLegend } from "./MapLegend";
 import { TERMS } from "@/lib/terms";
 
-const MODES: { mode: MyMapMode; label: string }[] = [
+const MODES: { mode: PostHistoryMapMode; label: string }[] = [
   { mode: "both", label: "両方" },
   { mode: "posted", label: "投稿のみ" },
   { mode: "saved", label: `${TERMS.wishlist}のみ` },
@@ -21,10 +21,12 @@ const MODES: { mode: MyMapMode; label: string }[] = [
 
 const FETCH_DEBOUNCE_MS = 300;
 
-export type FetchMyMapPins = (mode: MyMapMode, bounds: MapBounds) => Promise<MyMapPin[]>;
+export type FetchMyMapPins = (mode: PostHistoryMapMode, bounds: MapBounds) => Promise<MyMapPin[]>;
 
 /**
- * F-RC-06 Task2・Task3: あしあと画面（SC-12。v3.1 で「マイマップ」から改称）
+ * F-RC-06 Task2・Task3: 投稿履歴の地図（SC-12）
+ * ~~あしあと画面~~（v3.1 で「マイマップ」→「あしあと」、#682 で「投稿履歴」に改称）。
+ * 部品名は #973（2026-10-17）で `MyMapScreen` → `PostHistoryMap` に改めた
  * 出典: docs/tasks/records/my-map/02-map-component-reuse-integration.md
  *       docs/tasks/records/my-map/03-pin-tap-navigation.md
  *
@@ -36,20 +38,20 @@ export type FetchMyMapPins = (mode: MyMapMode, bounds: MapBounds) => Promise<MyM
  * ③地図が動くたび `onBoundsChange` で表示範囲（北南東西の緯度経度）を受け取る → ④300ms 待ってから範囲内のピンを API で取る。
  * 300ms 待つのは、ドラッグ中に何十回も API を呼ばないため。`requestIdRef` は古い応答を捨てるための番号。
  */
-export function MyMapScreen({
+export function PostHistoryMap({
   initialMode = "both",
   fetchPins = defaultFetchPins,
   resolveCenter = () =>
     resolveInitialCenter(typeof navigator === "undefined" ? undefined : navigator.geolocation),
 }: {
-  initialMode?: MyMapMode;
+  initialMode?: PostHistoryMapMode;
   /** 差し替え口（単体テスト用） */
   fetchPins?: FetchMyMapPins;
   /** 差し替え口（単体テスト用） */
   resolveCenter?: () => Promise<InitialCenter>;
 }) {
   const router = useRouter();
-  const [mode, setMode] = useState<MyMapMode>(initialMode);
+  const [mode, setMode] = useState<PostHistoryMapMode>(initialMode);
   const [initial, setInitial] = useState<InitialCenter | null>(null);
   const [pins, setPins] = useState<MyMapPin[]>([]);
   const [bounds, setBounds] = useState<MapBounds | null>(null);
@@ -57,7 +59,7 @@ export function MyMapScreen({
   // loading-feedback Task 2（2026-09-30）: 「どの条件で取り終えたか」を覚えておく。
   // これが無いと「取得中もピンは 0 件」なので、記録があるのに「ありません」と出ていた（要件 4.5.11）。
   // 取得中かどうかは state を足さず、これと今の条件を見比べて求める（描画のたびに計算するだけ）
-  const [loadedFor, setLoadedFor] = useState<{ mode: MyMapMode; bounds: MapBounds } | null>(null);
+  const [loadedFor, setLoadedFor] = useState<{ mode: PostHistoryMapMode; bounds: MapBounds } | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -104,7 +106,7 @@ export function MyMapScreen({
   const handlePinClick = useCallback(
     (pinId: string) => {
       const pin = pinById.get(pinId);
-      if (pin) router.push(myMapPinHref(pin, mode === "both" ? "/mymap" : `/mymap?mode=${mode}`));
+      if (pin) router.push(postHistoryPinHref(pin, mode === "both" ? "/post-history" : `/post-history?mode=${mode}`));
     },
     // pins が変わるたびに Map を作り直すため、pins を依存にする
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -149,7 +151,7 @@ export function MyMapScreen({
             })}
           </div>
         </div>
-        <MapLegend mode="mymap" className="pointer-events-auto mx-auto w-fit" />
+        <MapLegend mode="post-history" className="pointer-events-auto mx-auto w-fit" />
         {fetchFailed && (
           <ErrorNotice
             message={ERROR_MESSAGES.dbLoadFailure}
@@ -184,7 +186,7 @@ export function MyMapScreen({
   );
 }
 
-async function defaultFetchPins(mode: MyMapMode, bounds: MapBounds): Promise<MyMapPin[]> {
+async function defaultFetchPins(mode: PostHistoryMapMode, bounds: MapBounds): Promise<MyMapPin[]> {
   const params = new URLSearchParams({
     mode,
     north: String(bounds.north),
