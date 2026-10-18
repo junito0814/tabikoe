@@ -15,9 +15,14 @@ describe("アップロードが断られた理由の文（#861）", () => {
     expect(uploadErrorMessage({ error: "x" })).toBe(DEFAULT_UPLOAD_ERROR_MESSAGE);
   });
 
-  it("HEVC のときは、カメラ設定の直し方を伝える", () => {
+  /*
+   * #904 の調査（2026-10-17）: ~~形式を問わずカメラ設定を案内する~~ →
+   * **HEVC と分かったときだけ**案内する（下の describe で見ている）。
+   * ここでは「形式が分からなくても、既定の文で終わらせない」ことだけを押さえる。
+   */
+  it("形式が分からなくても、直し方を伝える（既定の文で終わらせない）", () => {
     const message = uploadErrorMessage("unsupported_codec");
-    expect(message).toContain("互換性優先");
+    expect(message).toContain("H.264");
     expect(message).not.toBe(DEFAULT_UPLOAD_ERROR_MESSAGE);
   });
 
@@ -39,3 +44,40 @@ describe("アップロードが断られた理由の文（#861）", () => {
     }
   });
 });
+
+/**
+ * #904 の調査（2026-10-17）: 形式が分かるときは、その形式に合った直し方を出す。
+ *
+ * 【初心者向け】いままでは `unsupported_codec` のとき**どんな形式でも**
+ * 「iPhone のカメラ設定を『互換性優先』に」と出していました。
+ * **Android から VP9 を上げた人には的外れ**です（iPhone を持っていないかもしれません）。
+ */
+describe("形式に合わせた直し方（#904 の調査）", () => {
+  it("HEVC のときだけ iPhone の設定を案内する", () => {
+    for (const codec of ["hevc", "hvc1", "hev1", "h265", "HEVC"]) {
+      const message = uploadErrorMessage("unsupported_codec", codec);
+      expect(message, codec).toContain("HEVC");
+      expect(message, codec).toContain("互換性優先");
+    }
+  });
+
+  it("HEVC 以外は iPhone の設定を案内しない（形式の名前だけ添える）", () => {
+    for (const codec of ["vp9", "av1", "mpeg4"]) {
+      const message = uploadErrorMessage("unsupported_codec", codec);
+      expect(message, codec).toContain(codec);
+      expect(message, codec).not.toContain("iPhone");
+      expect(message, codec).toContain("H.264");
+    }
+  });
+
+  it("形式が分からないときは、iPhone と言わずに H.264 を案内する", () => {
+    const message = uploadErrorMessage("unsupported_codec");
+    expect(message).not.toContain("iPhone");
+    expect(message).toContain("H.264");
+  });
+
+  it("ほかの理由では形式を使わない", () => {
+    expect(uploadErrorMessage("video_too_long", "hevc")).toBe(UPLOAD_ERROR_MESSAGES.video_too_long);
+  });
+});
+
