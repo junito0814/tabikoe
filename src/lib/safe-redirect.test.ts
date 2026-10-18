@@ -37,3 +37,70 @@ describe("safeRedirectPath", () => {
     expect(safeRedirectPath("javascript:alert(1)")).toBe("/");
   });
 });
+
+/**
+ * #997（2026-10-18）: 判定を「ブラウザが読む形にそろえてから見る」形に直した。
+ *
+ * 【初心者向け】ここでは**書き方を 1 つずつ数え上げる**のではなく、
+ * 「**返ってきた値をブラウザと同じやり方で読んだとき、行き先が自分のサイトであること**」を見ます。
+ * 数え上げだと、知らない書き方が出てきたときに見落とします。
+ * `new URL(行き先, 自分のサイト)` は、ブラウザが使うのと同じ規則で URL を読む仕組みです。
+ */
+describe("safeRedirectPath: 読んだあとの行き先（#997）", () => {
+  const SITE = "https://tabikoe.example";
+
+  /** ブラウザと同じ規則で読んだときの行き先（オリジン）を返す */
+  function destinationOrigin(value: string): string {
+    return new URL(value, `${SITE}/consent/renew`).origin;
+  }
+
+  const OUTSIDE_ATTEMPTS = [
+    "//evil.example.com",
+    "https://evil.example.com/",
+    "http://evil.example.com",
+    "/\\evil.example.com",
+    "/\\/evil.example.com",
+    "/\\\\evil.example.com",
+    "/\t/evil.example.com",
+    "/\n/evil.example.com",
+    "/\r/evil.example.com",
+    "\\/evil.example.com",
+    "/\t\\evil.example.com",
+    "java\nscript:alert(1)",
+  ];
+
+  it("外に出ようとする書き方は、どれも自分のサイトに留まる", () => {
+    for (const attempt of OUTSIDE_ATTEMPTS) {
+      const result = safeRedirectPath(attempt);
+      expect(destinationOrigin(result), `${JSON.stringify(attempt)} の行き先`).toBe(SITE);
+    }
+  });
+
+  it("外に出ようとする書き方は、トップページに落とす", () => {
+    for (const attempt of OUTSIDE_ATTEMPTS) {
+      expect(safeRedirectPath(attempt), JSON.stringify(attempt)).toBe("/");
+    }
+  });
+
+  it("アプリ内のパスは、いままでどおりそのまま通る", () => {
+    for (const path of [
+      "/",
+      "/account",
+      "/posts/abc/edit",
+      "/posts/new?tab=1",
+      "/search?q=%E6%9C%AD%E5%B9%8C",
+      "/mypage#tab",
+      "/post-history?back=/mypage",
+      "/..//evil.example.com",
+      "/@evil.example.com",
+    ]) {
+      expect(safeRedirectPath(path), path).toBe(path);
+      expect(destinationOrigin(safeRedirectPath(path)), path).toBe(SITE);
+    }
+  });
+
+  it("目に見えない文字は取り除いてから返す（ブラウザが捨てるのと同じ）", () => {
+    expect(safeRedirectPath("/acc\tount")).toBe("/account");
+    expect(safeRedirectPath("/acc\nount")).toBe("/account");
+  });
+});
