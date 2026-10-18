@@ -45,6 +45,45 @@ describe("BadgeScreen", () => {
 });
 
 /**
+ * #977: 都道府県だけ 🏅 を絵に替えた（要件 4.5.20・8 章 101）。
+ *
+ * 【初心者向け】ほかの 3 種類（投稿数・いいね数・スポット登録）は 🏅 のままです
+ * （要件 4.5.14 で「残す」と決めたもの）。**替え忘れ・替えすぎ**の両方を押さえます。
+ */
+describe("都道府県バッジの絵（#977）", () => {
+  it("都道府県の節には 🏅 が 1 つも出ない", () => {
+    render(<BadgeScreen badges={mergeBadgeStatus([])} />);
+    const tile = screen.getByLabelText("北海道（未獲得）");
+    expect(tile.textContent).not.toContain("🏅");
+    expect(tile.querySelector("svg")).not.toBeNull();
+  });
+
+  it("ほかの 3 種類には 🏅 が出る（絵に替えていない）", () => {
+    render(<BadgeScreen badges={mergeBadgeStatus([])} />);
+    for (const name of ["投稿1 件（未獲得）", "いいね1 件（未獲得）", "スポット登録1 件（未獲得）"]) {
+      const tile = screen.getByLabelText(name);
+      expect(tile.textContent, name).toContain("🏅");
+      expect(tile.querySelector("svg"), name).toBeNull();
+    }
+  });
+
+  it("未獲得は灰色にして薄める（絵でも 🏅 でも同じ見せ方）", () => {
+    render(<BadgeScreen badges={mergeBadgeStatus([{ badge_type: "prefecture:北海道", acquired_at: "2026-10-14T00:00:00Z" }])} />);
+    const acquired = screen.getByLabelText("北海道（獲得済み）");
+    const notAcquired = screen.getByLabelText("青森県（未獲得）");
+    expect(notAcquired.querySelector("[class*='grayscale']")).not.toBeNull();
+    expect(acquired.querySelector("[class*='grayscale']")).toBeNull();
+  });
+
+  it("47 県すべてに絵が出る（1 県でも 🏅 に落ちていない）", () => {
+    render(<BadgeScreen badges={mergeBadgeStatus([])} />);
+    const section = screen.getByText("都道府県バッジ").closest("section")!;
+    expect(section.querySelectorAll("li")).toHaveLength(47);
+    expect(section.querySelectorAll("li svg")).toHaveLength(47);
+  });
+});
+
+/**
  * #972 Bug 2: バッジ獲得の知らせから来たとき、戻るが決め打ちの「マイページ」になっていた。
  */
 describe("戻るの行き先（#972）", () => {

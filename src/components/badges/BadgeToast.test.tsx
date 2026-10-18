@@ -59,6 +59,35 @@ describe("バッジの受け渡し（URLクエリ）", () => {
 });
 
 /**
+ * #977: 都道府県バッジを 1 つだけ取ったときは、その県の絵を出す（要件 4.5.20）。
+ *
+ * 【初心者向け】複数まとめて取ったときは 🏅 のままにします ── どれか 1 つの絵を選ぶ
+ * 理由が無く、「東京都のバッジだけ取った」と読み違えられるためです。
+ */
+describe("知らせに出す絵（#977）", () => {
+  it("都道府県バッジ 1 つだけなら、その県の絵を出す", () => {
+    const { container } = render(<BadgeToast badgeTypes={["prefecture:北海道"]} autoDismissMs={0} />);
+    // 「閉じる」の × も SVG なので、絵の置き場所（data-badge-icon）だけを見る
+    expect(container.querySelector("[data-badge-icon] svg")).not.toBeNull();
+    expect(screen.getByRole("status").textContent).not.toContain("🏅");
+  });
+
+  it("複数まとめて取ったときは 🏅 のまま", () => {
+    const { container } = render(
+      <BadgeToast badgeTypes={["prefecture:北海道", "post_count:1"]} autoDismissMs={0} />
+    );
+    expect(screen.getByRole("status").textContent).toContain("🏅");
+    expect(container.querySelector("[data-badge-icon] svg")).toBeNull();
+  });
+
+  it("都道府県でないバッジは 🏅 のまま", () => {
+    const { container } = render(<BadgeToast badgeTypes={["post_count:10"]} autoDismissMs={0} />);
+    expect(screen.getByRole("status").textContent).toContain("🏅");
+    expect(container.querySelector("[data-badge-icon] svg")).toBeNull();
+  });
+});
+
+/**
  * #972 Bug 2: バッジ獲得の知らせ → バッジ画面 → 戻る で、知らせが出ていた画面に帰れなかった。
  *
  * 【初心者向け】起きるのはバッジを取った直後だけだが、**そこが見せ場**。
