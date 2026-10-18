@@ -180,6 +180,63 @@ node scripts/seed/clean-seed.mjs --apply --production   # ★ 本番。担当の
 > **これは「正しいやり方」ではなく「いまのやり方」である。** ファイル名が記録を兼ねているので、
 > **貼り忘れ・二重貼りに気づけない**。#944 を入れるまでは、当てた日付を自分で控えること。
 
+### CI から当てる形に移す途中（#944）
+
+**いちばん先に済ませること: 記録表を追いつかせる。**
+
+Supabase CLI（`supabase db push`）は、どこまで当てたかを `supabase_migrations.schema_migrations` で覚えている。
+**その表がいまどの DB にも無い**ので、この状態で `db push` を走らせると **52 本すべてが最初から流れる**
+（既にある表を作ろうとして止まるか、`drop` を含むものがあればデータが消える）。
+
+```bash
+# ① CLI に表を作らせる（中身は空のまま）
+npx supabase migration list --db-url "<接続文字列>"
+
+# ② 「この 52 本はもう当たっている」と書き込む SQL を作る（ファイル名から機械で作る）
+node scripts/migrations/build-repair-sql.mjs > /tmp/repair.sql
+node scripts/migrations/build-repair-sql.mjs --list | wc -l    # 本数の確認
+
+# ③ /tmp/repair.sql を SQL エディタに貼って実行する（開発用 → 本番の順）
+
+# ④ 空振りすることを確かめる（Local と Remote が揃う）
+npx supabase migration list --db-url "<接続文字列>"
+```
+
+**手で並べないこと。** 1 本でも抜けると、その 1 本だけが後から流れて止まる。
+
+**順番に入れる。** 一度に全部は入れない。
+
+| 段 | 中身 | 状態 |
+|---|---|---|
+| ① | **PR で、何が増えるかを出すだけ**（当てない） | **入れた**（`.github/workflows/migrate.yml`） |
+| ② | main に push したら**開発用に当てる** | まだ |
+| ③ | **本番は承認を押してから**当てる | まだ |
+
+① を当てずに検査だけにしているのは、**マージされなかった PR の表が開発用に残る**のを避けるため。
+開発用は確認作業で共用しているので、壊れると確認が全部止まる。
+
+**要るもの（GitHub の設定。値はここにも PR にも書かない）**
+
+| | どこ | 名前 |
+|---|---|---|
+| Secret | Settings → Secrets and variables → Actions | **`DEV_SUPABASE_DB_URL`** |
+| Secret | 同上 | **`PROD_SUPABASE_DB_URL`**（③ で使う） |
+| 承認 | Settings → Environments → `production` | **Required reviewers に自分を入れる**（③ で使う） |
+
+Secret が未設定でも ① の検査は通る（「とばしました」と出るだけ）。
+
+**戻せない変更の運用（expand / contract）**
+
+1 本のマイグレーションに「足す」と「消す」を混ぜない。
+
+| 段 | 中身 | いつ |
+|---|---|---|
+| **expand** | 列・表を**足すだけ** | コードを変える前 |
+| **移行** | 新旧どちらでも動くコードを出す | 次の PR |
+| **contract** | 古い列・表を**消す** | 新しいコードが本番で動いてから、**別の PR で** |
+
+`drop` を含むマイグレーションは、**ファイル名に `_contract` を付ける**（レビューで目に付く）。
+
 当てるときの手順。
 
 1. `supabase/migrations/` の**まだ当てていないファイル**を、古い順に 1 つのファイルへ写す
