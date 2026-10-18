@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildUserListParams, escapeLike, parseUserListQuery, userStatusOf } from "./users";
+import { buildUserListParams, buildUserSearchFilter, escapeLike, parseUserListQuery, quoteFilterValue, userStatusOf } from "./users";
 
 /** 出典: docs/tasks/admin/user-management/01-user-list.md 単体テスト */
 const now = new Date("2026-09-27T00:00:00Z");
@@ -34,5 +34,46 @@ describe("parseUserListQuery / buildUserListParams", () => {
 
   it("ilike の特殊文字をエスケープする", () => {
     expect(escapeLike("50%_off\\")).toBe("50\\%\\_off\\\\");
+  });
+});
+
+/**
+ * #999（2026-10-18）: 記号を含む検索語が、条件文の区切りとして読まれないこと。
+ *
+ * 【初心者向け】絞り込みは `display_name.ilike.<値>,email.ilike.<値>` という **1 本の文字列**で
+ * 送ります。`,` と `.` はその文字列の中で意味を持つので、値に入ったときに
+ * **値の一部として読まれる形**（引用符でくくる）になっているかを見ます。
+ */
+describe("利用者検索の条件文（#999）", () => {
+  it("値を引用符でくくる", () => {
+    expect(quoteFilterValue("abc")).toBe('"abc"');
+  });
+
+  it("引用符と打ち消しには、打ち消しを付けてからくくる", () => {
+    // くくりが値の途中で終わってしまわないようにする
+    expect(quoteFilterValue('a"b')).toBe('"a\\"b"');
+    expect(quoteFilterValue("a\\b")).toBe('"a\\\\b"');
+  });
+
+  it("メールアドレス（. を含む）がそのまま値になる", () => {
+    expect(buildUserSearchFilter("a@b.example")).toBe(
+      'display_name.ilike."%a@b.example%",email.ilike."%a@b.example%"',
+    );
+  });
+
+  it("区切りに使われる記号を含んでも、条件は 2 つのまま", () => {
+    for (const keyword of [",", ".", "(", ")", 'a,b.c(d)', '"', "\\"]) {
+      const filter = buildUserSearchFilter(keyword);
+      // 引用符の外にある `,` が条件の区切り。くくった中の `,` は数に入らない
+      const outsideCommas = filter.replace(/"(?:[^"\\]|\\.)*"/g, "").split(",").length - 1;
+      expect(outsideCommas, JSON.stringify(keyword)).toBe(1);
+    }
+  });
+
+  it("ワイルドカードの打ち消しは残したまま、くくる（順番を間違えない）", () => {
+    // `%` は「文字そのもの」として探したいので `\%`。その `\` は引用符の中で `\\` になる
+    expect(buildUserSearchFilter("100%")).toBe(
+      'display_name.ilike."%100\\\\%%",email.ilike."%100\\\\%%"',
+    );
   });
 });
