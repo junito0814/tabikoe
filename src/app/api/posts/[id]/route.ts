@@ -5,6 +5,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { getAuthenticatedUser } from "@/lib/auth/get-authenticated-user";
 import { resolveTripId, TripTitleValidationError } from "@/lib/trips/resolve-trip";
 import { validatePostInput } from "@/lib/posts/validate-post-input";
+import { unknownPostFields } from "@/lib/posts/post-request-body";
 import { finalizeSpotForPost } from "@/lib/spots/finalize-spot";
 import { afterPostPublished } from "@/lib/posts/publish-post";
 import { getPostingRestrictionUntil, postingRestrictedResponse } from "@/lib/moderation/posting-restriction";
@@ -77,6 +78,19 @@ export async function PATCH(
     body = await request.json();
   } catch {
     return NextResponse.json({ error: "invalid_body" }, { status: 400 });
+  }
+
+  /*
+   * #993: 画面に無いキーを足して送る形を断る（要件定義書 7.2「入力の検証」の 5 番）。
+   *
+   * 【初心者向け】返すのは合言葉だけで、**どのキーが弾かれたかは返しません**。
+   * 「この名前は通る／通らない」を外から試せると、総当たりの手がかりになるためです。
+   * 開発者が気づけるよう、サーバーのログにだけ残します。
+   */
+  const unknownFields = unknownPostFields(body);
+  if (unknownFields) {
+    console.warn("[posts] 知らないキーを含む送信を断りました:", unknownFields.join(", "));
+    return NextResponse.json({ error: "unknown_field" }, { status: 400 });
   }
 
   const admin = createAdminClient();

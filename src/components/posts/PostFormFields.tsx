@@ -21,6 +21,7 @@ import {
   autoDurationForCategory,
 } from "@/lib/posts/constants";
 import { mediaLabel } from "@/lib/posts/media-label";
+import { validatePostInputOn } from "@/lib/posts/validate-post-input";
 import { VisitFindingsField } from "./VisitFindingsField";
 import type { VisitFinding } from "@/lib/spots/visit-findings";
 
@@ -360,23 +361,39 @@ export function PostFormFields({
 export function isPostFormComplete(
   values: PostFormValues,
   mediaCount: number,
+  today: string = todayInJst(),
 ): boolean {
-  const costNumber = values.cost === "" ? null : Number(values.cost);
-  const isCostInvalid =
-    costNumber !== null &&
-    (!Number.isInteger(costNumber) ||
-      costNumber < MIN_POST_COST ||
-      costNumber > MAX_POST_COST);
-  return (
-    // #590: アルバム名は任意（空なら「日常」アルバムに入る。要件 3.3.1・3.3.4）。ここで必須にしていたため、
-    // 入力欄に「空なら『日常』に入ります」と出ているのに「投稿する」が押せなかった
-    values.category !== "" &&
-    values.duration !== "" &&
-    values.visitDate.length > 0 &&
-    values.rating > 0 &&
-    mediaCount > 0 &&
-    graphemeLength(values.comment) <= MAX_POST_COMMENT_LENGTH &&
-    !isCostInvalid
+  /*
+   * #993: 項目の規則は **サーバーと同じスキーマ**（post-input-schema.ts）に聞く。
+   *
+   * 【初心者向け】以前はここに「カテゴリが空でない」「費用が整数」などを**書き写して**いました。
+   * 片方だけ直すとずれます（#590 がその例で、アルバム名を必須と判定していたため、
+   * 「空なら『日常』に入ります」と案内しているのに投稿ボタンが押せませんでした）。
+   * いまは画面の値を API に送る形に直して、同じスキーマにかけています。
+   *
+   * ここで見ないもの:
+   *   - **写真・動画が 1 つ以上**（投稿の列ではないので、スキーマの外。下の 1 行で見る）
+   *   - **位置**（PostComposeScreen が `position !== null` で見ている）
+   *   - **アルバム名**（任意。空なら「日常」に入る。#590）
+   */
+  if (mediaCount < 1) return false;
+  const validation = validatePostInputOn(
+    {
+      status: "published",
+      category: values.category || null,
+      duration: values.duration || null,
+      // 日付は「空でも押せる」にはしない（サーバーは空なら今日を入れるが、画面では選ばせる）
+      visitDate: values.visitDate.length > 0 ? values.visitDate : null,
+      cost: values.cost === "" ? null : Number(values.cost),
+      rating: values.rating > 0 ? values.rating : null,
+      comment: values.comment,
+      visibility: values.visibility,
+      // 位置はここでは見ないので、必ず通る値を入れておく
+      lat: 0,
+      lng: 0,
+    },
+    today,
   );
+  return validation.ok && values.visitDate.length > 0;
 }
 
