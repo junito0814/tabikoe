@@ -1,12 +1,17 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useMemo, useState } from "react";
+import { useForm, useWatch } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { ErrorNotice } from "@/components/notices/ErrorNotice";
 import { fetchWithAuthRedirect, UnauthorizedError } from "@/lib/api/fetch-with-auth-redirect";
 import {
+  announcementSchema,
   MAX_ANNOUNCEMENT_BODY_LENGTH,
   MAX_ANNOUNCEMENT_TITLE_LENGTH,
-} from "@/lib/announcements/validate-announcement";
+  type AnnouncementFields,
+  type AnnouncementFormValues,
+} from "@/lib/announcements/announcement-schema";
 import { graphemeLength } from "@/lib/text/grapheme-length";
 import { useConfirm } from "@/components/ui/ConfirmSheet";
 import { formatDateTime } from "@/lib/format/date-time";
@@ -58,47 +63,66 @@ export function AnnouncementManager({
   const [editingId, setEditingId] = useState<string | null>(null);
   // #778: 確認はブラウザ標準の箱ではなく、アプリ共通のシートで聞く
   const { confirm, confirmSheet } = useConfirm();
-  const [title, setTitle] = useState("");
-  const [body, setBody] = useState("");
-  const [publishedAt, setPublishedAt] = useState(() => toLocalInputValue(new Date().toISOString()));
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  const titleLength = graphemeLength(title);
-  const bodyLength = graphemeLength(body);
-  const titleTooLong = titleLength > MAX_ANNOUNCEMENT_TITLE_LENGTH;
-  const bodyTooLong = bodyLength > MAX_ANNOUNCEMENT_BODY_LENGTH;
-  const canSubmit = title.trim().length > 0 && body.trim().length > 0 && !titleTooLong && !bodyTooLong && !isSubmitting;
+  /*
+   * #1005: フォームは react-hook-form が持つ。規則はサーバーと同じスキーマに聞く。
+   *
+   * 【初心者向け】`useForm` に渡しているものが 3 つあります。
+   *   - `resolver` … 「この入力は規則どおりか」を確かめる人。スキーマをそのまま渡す
+   *   - `defaultValues` … 最初に入っている値
+   *   - 型の 3 つ目（AnnouncementFields）… **規則を通ったあとの形**。
+   *     送信時にはタイトルの前後の空白が落ち、公開日時が ISO 形式になった値が渡ってくる
+   *
+   * 以前はここに「空でないか」「100 文字以内か」をもう一度書いていました（サーバーと同じ規則の写し）。
+   * 写しがあると片方だけ直してずれます（AGENTS.md 14）。
+   */
+  const [nowIso] = useState(() => new Date().toISOString());
+  const resolver = useMemo(() => zodResolver(announcementSchema(nowIso)), [nowIso]);
+  const {
+    register,
+    handleSubmit,
+    reset,
+    control,
+    formState: { errors, isSubmitting },
+  } = useForm<AnnouncementFormValues, unknown, AnnouncementFields>({
+    resolver,
+    defaultValues: { title: "", body: "", publishedAt: toLocalInputValue(new Date().toISOString()) },
+  });
+
+  /*
+   * 残り文字数の表示用。数え方はスキーマと同じ `graphemeLength`（見た目の 1 文字）。
+   *
+   * 【初心者向け】`useWatch` は「この欄の値が変わったら、ここだけ描き直して」という申し込みです。
+   * `watch()` でも値は取れますが、**フォーム全体の変化で描き直し**になるうえ、
+   * React Compiler が「この部品は最適化できない」と判断します（eslint の
+   * react-hooks/incompatible-library が出る）。
+   */
+  const titleLength = graphemeLength(useWatch({ control, name: "title" }) ?? "");
+  const bodyLength = graphemeLength(useWatch({ control, name: "body" }) ?? "");
 
   const resetForm = () => {
     setEditingId(null);
-    setTitle("");
-    setBody("");
-    setPublishedAt(toLocalInputValue(new Date().toISOString()));
+    setErrorMessage(null);
+    reset({ title: "", body: "", publishedAt: toLocalInputValue(new Date().toISOString()) });
   };
 
   const startEdit = (announcement: Announcement) => {
     setEditingId(announcement.id);
-    setTitle(announcement.title);
-    setBody(announcement.body);
-    setPublishedAt(toLocalInputValue(announcement.published_at));
     setErrorMessage(null);
+    reset({
+      title: announcement.title,
+      body: announcement.body,
+      publishedAt: toLocalInputValue(announcement.published_at),
+    });
   };
 
-  const handleSubmit = async (event: FormEvent) => {
-    event.preventDefault();
-    if (titleTooLong || bodyTooLong) {
-      setErrorMessage(
-        titleTooLong
-          ? `タイトルは${MAX_ANNOUNCEMENT_TITLE_LENGTH}文字までです`
-          : `本文は${MAX_ANNOUNCEMENT_BODY_LENGTH.toLocaleString("ja-JP")}文字までです`
-      );
-      return;
-    }
-    if (!canSubmit) return;
-    setIsSubmitting(true);
+  /*
+   * 規則を通ったときだけ呼ばれる（通らなければ `errors` に理由が入り、ここには来ない）。
+   * 受け取る `input` は**整えられたあと**の値なので、ここで trim や日時の変換はしない。
+   */
+  const save = async (input: AnnouncementFields) => {
     setErrorMessage(null);
-    const input = { title: title.trim(), body: body.trim(), publishedAt: new Date(publishedAt).toISOString() };
     try {
       const response = editingId ? await api.update(editingId, input) : await api.create(input);
       if (!response.ok) {
@@ -115,8 +139,6 @@ export function AnnouncementManager({
     } catch (error) {
       if (error instanceof UnauthorizedError) return;
       setErrorMessage("お知らせを保存できませんでした");
-    } finally {
-      setIsSubmitting(false);
     }
   };
 
@@ -142,43 +164,52 @@ export function AnnouncementManager({
     <div className="flex w-full flex-col">
       {confirmSheet}
       <div className="flex w-full flex-col gap-5">
-        <form onSubmit={handleSubmit} className="flex flex-col gap-3 rounded-[12px] border border-line bg-surface p-4">
+        <form onSubmit={handleSubmit(save)} className="flex flex-col gap-3 rounded-[12px] border border-line bg-surface p-4">
           <h2 className="text-[0.8125rem] font-bold text-ink">{editingId ? "お知らせを編集" : "新しいお知らせ"}</h2>
           <label className="text-[0.75rem] font-medium text-muted">
             タイトル
+            {/*
+              * 【初心者向け】`{...register("title")}` は「この入力欄を title として見てください」という
+              * 申し込みです。値の持ち方（value と onChange）は react-hook-form 側が受け持つので、
+              * **1 文字打つたびに画面全体を描き直さなくなります**。
+              */}
             <input
-              value={title}
-              onChange={(event) => setTitle(event.target.value)}
-              aria-invalid={titleTooLong}
+              {...register("title")}
+              aria-invalid={Boolean(errors.title)}
               className="mt-1 h-10 w-full rounded-[8px] border border-line px-3 text-[0.875rem] text-ink"
             />
-            <span className={`mt-0.5 block text-[0.6875rem] ${titleTooLong ? "text-accent" : "text-muted"}`}>
+            <span className={`mt-0.5 block text-[0.6875rem] ${errors.title ? "text-accent" : "text-muted"}`}>
               {titleLength}/{MAX_ANNOUNCEMENT_TITLE_LENGTH}
             </span>
+            {errors.title && <span className="mt-0.5 block text-[0.6875rem] text-accent">{errors.title.message}</span>}
           </label>
           <label className="text-[0.75rem] font-medium text-muted">
             本文
             <textarea
-              value={body}
-              onChange={(event) => setBody(event.target.value)}
+              {...register("body")}
               rows={6}
-              aria-invalid={bodyTooLong}
+              aria-invalid={Boolean(errors.body)}
               className="mt-1 w-full rounded-[8px] border border-line px-3 py-2 text-[0.875rem] text-ink"
             />
-            <span className={`mt-0.5 block text-[0.6875rem] ${bodyTooLong ? "text-accent" : "text-muted"}`}>
+            <span className={`mt-0.5 block text-[0.6875rem] ${errors.body ? "text-accent" : "text-muted"}`}>
               {bodyLength.toLocaleString("ja-JP")}/{MAX_ANNOUNCEMENT_BODY_LENGTH.toLocaleString("ja-JP")}
             </span>
+            {errors.body && <span className="mt-0.5 block text-[0.6875rem] text-accent">{errors.body.message}</span>}
           </label>
           <label className="text-[0.75rem] font-medium text-muted">
             公開日時
             <input
               type="datetime-local"
-              value={publishedAt}
-              onChange={(event) => setPublishedAt(event.target.value)}
+              {...register("publishedAt")}
+              aria-invalid={Boolean(errors.publishedAt)}
               className="mt-1 h-10 w-full rounded-[8px] border border-line px-3 text-[0.875rem] text-ink"
             />
+            {errors.publishedAt && (
+              <span className="mt-0.5 block text-[0.6875rem] text-accent">{errors.publishedAt.message}</span>
+            )}
           </label>
 
+          {/* 保存そのものが失敗したとき（通信・権限）の知らせ。入力の不備は欄ごとに出す */}
           {errorMessage && <ErrorNotice message={errorMessage} />}
 
           <div className="flex gap-2">
