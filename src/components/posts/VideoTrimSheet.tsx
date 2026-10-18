@@ -151,10 +151,6 @@ export function VideoTrimSheet({
          * **短くしても画質は変わらない**ので的外れでしたし、92.9MB は**中身を見ずに出した見込み**でした。
          * いまは**ブラウザが受け取った実際の大きさ**と上限を言います。
          */
-        if (feasible.reason === "source_too_large") {
-          onGiveUp(trimSourceTooLargeMessage(file.size));
-          return;
-        }
         const advice = adviseTrimFit({ bytes: file.size, seconds: durationSeconds });
         if (advice.kind === "shorten") setTooLargeNotice(trimTooLargeMessage(advice, feasible.estimatedBytes));
         else {
@@ -168,8 +164,20 @@ export function VideoTrimSheet({
         setLoaded(result);
         setRange(planTrim({ keyframeTimes: result.keyframeTimes, durationSeconds: result.durationSeconds, wantStartSeconds: 0 }));
         setPhase({ kind: "ready" });
-      } catch {
+      } catch (error) {
         if (!alive) return;
+        /*
+         * #974（2026-10-17）: **大きすぎて読めなかった**ときだけ、別の案内を出す。
+         *
+         * 【初心者向け】以前はこの判定を**読み込む前**にしていたので、300MB を 0.1% 超えた
+         * だけでシートが開きませんでした。いまは**目次探しと切り取りを先に試し**、
+         * 目次が見つからず「丸ごと読む」しかないときだけここに来ます。
+         * つまり**本当に読めない動画だけ**が断られます。
+         */
+        if (error instanceof TrimError && error.code === "source_too_large") {
+          onGiveUp(trimSourceTooLargeMessage(file.size));
+          return;
+        }
         // 読めない理由（対応していない・壊れている・途中で落ちた）はどれも案内は同じ
         onGiveUp(trimFailureMessage("unreadable"));
       }
