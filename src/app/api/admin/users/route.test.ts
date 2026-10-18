@@ -57,7 +57,8 @@ describe("GET /api/admin/users", () => {
   it("検索と状態の絞り込みが問い合わせに乗り、投稿数・通報された回数・有効なストライクを付けて返す", async () => {
     const res = await GET(new Request("http://localhost/api/admin/users?q=はな&status=provisional"));
     expect(res.status).toBe(200);
-    expect(applied.some((a) => a.startsWith("or:display_name.ilike.%はな%,email.ilike.%はな%"))).toBe(true);
+    // #999: 値は引用符でくくって渡す（`,` を含む検索語が条件の区切りとして読まれないようにするため）
+    expect(applied.some((a) => a.startsWith('or:display_name.ilike."%はな%",email.ilike."%はな%"'))).toBe(true);
     expect(applied).toContain("eq:suspension_kind,provisional");
     const body = await res.json();
     expect(body.users[0]).toMatchObject({ id: "u1", displayName: "はなこ", postCount: 1, reportedCount: 3, activeStrikes: 1, status: "normal" });
