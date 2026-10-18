@@ -11,7 +11,6 @@ import { ContentEnter } from "@/components/transitions/Reveal";
 // #785: ブラウザのタブ名（「同意 | タビコエ」）
 export const metadata = { title: "同意" };
 
-export const dynamic = "force-dynamic";
 
 /**
  * legal-documents Task 3: 規約の再同意（SC-30）

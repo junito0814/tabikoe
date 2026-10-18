@@ -4,7 +4,6 @@ import { LegalDocumentScreen } from "@/components/legal/LegalDocumentScreen";
 import { getLegalDocument, listLegalVersions } from "@/lib/legal/legal-documents";
 import { resolveListBack } from "@/lib/search/list-state";
 
-export const dynamic = "force-dynamic";
 
 /**
  * legal-documents Task 1: 個人情報保護方針の公開ページ（/privacy）

@@ -5,8 +5,15 @@ import { ReportListScreen } from "@/components/admin/ReportListScreen";
 import { listReports, parseReportFilters } from "@/lib/admin/report-filters";
 import { buildReportListParams, reportListStateFromParams } from "@/components/admin/report-list-query";
 
-// 管理データは毎リクエスト取得する（ビルド時に固定しない）
-export const dynamic = "force-dynamic";
+/*
+ * #901: 器を静的に作る対象から外す（instant = false）。
+ *
+ * 【初心者向け】管理画面は**パソコン前提・ログイン必須**で、開くのは運営だけです。
+ * 器を先に配ってもうれしい人がいないうえ、ダッシュボードは `new Date()` など
+ * **毎回変わるもの**を素で読んでいます。利用者向けの画面を先に進めるため、ここは外します。
+ * 外しても動きは今までどおりです（毎回サーバーで描く）。
+ */
+export const instant = false;
 
 /**
  * SC-18 通報一覧画面
