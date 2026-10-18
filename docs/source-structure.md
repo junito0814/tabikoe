@@ -76,8 +76,7 @@ app/
     ├── invitations/ · invitation-responses/ · itinerary-invitations/   招待の発行・受諾・辞退
     ├── legal/                規約の本文と同意の記録
     ├── geocode/              地名の候補と座標化（Google を経由して呼ぶ）
-    ├── health-db/            DB の疎通確認
-    └── admin/                管理者だけが呼ぶ API（通報対応・利用者・非公開の復元・規約・操作の記録）
+    └── admin/                管理者だけが呼ぶ API（通報対応・利用者・非公開の復元・規約・操作の記録・DB の疎通確認）
 ```
 
 ## components/ — 画面の部品
