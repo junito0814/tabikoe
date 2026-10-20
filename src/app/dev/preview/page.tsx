@@ -1,3 +1,4 @@
+import { notFound } from "next/navigation";
 import { MapPin } from "@/components/pins/MapPin";
 import { MediaGrid, type MediaItem } from "@/components/media/MediaGrid";
 import { ErrorNotice } from "@/components/notices/ErrorNotice";
@@ -10,6 +11,20 @@ import GoogleMapPreview from "./google-map-preview";
  * 【一時的な開発用ページ】Phase 0（共通UIコンポーネント）の目視確認用。
  * 組み込み先の実画面（地図・投稿一覧・投稿作成/編集）が実装され、
  * 各コンポーネントが本番画面に組み込まれた時点でこのページ自体は削除すること。
+ *
+ * **2026-10-18: 本番のビルドでは出さないようにした。**
+ *
+ * 【初心者向け】このページは上のコメントどおり「あとで消す」前提のものでしたが、
+ * 消し忘れたまま**本番で誰でも開ける状態**になっていました（実際に 200 が返りました）。
+ *
+ * 困るのは中身が見えることではなく、**この画面が地図を読み込むこと**です。
+ * Google マップの読み込みは**使った回数で枠を消費する**ので、ログインの要らない
+ * この画面を外から何度も開かれると、**こちらの枠が削られます**。
+ * API キーには「このドメインからのみ」という制限を掛けていますが、
+ * **この画面はそのドメインの上にある**ので、制限では止まりません。
+ *
+ * 開発中は今までどおり使えます（`npm run dev` のときだけ出ます）。
+ * 本来は削除すべきものなので、使わなくなったら消してください。
  */
 
 const SAMPLE_PHOTO =
@@ -35,6 +50,9 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 }
 
 export default function ComponentPreviewPage() {
+  // 本番のビルドでは存在しない扱いにする（`NODE_ENV` はビルド時に決まるので、分岐はビルド後に消える）
+  if (process.env.NODE_ENV === "production") notFound();
+
   return (
     <div className="flex min-h-screen flex-col items-center gap-10 bg-app px-6 py-12">
       <p className="w-full max-w-[420px] rounded-lg bg-ink px-3 py-2 text-[0.6875rem] text-on-ink">
