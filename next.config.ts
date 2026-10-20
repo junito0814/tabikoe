@@ -140,11 +140,17 @@ const SECURITY_HEADERS = [
    */
   { key: "Permissions-Policy", value: "camera=(), microphone=(), payment=(), usb=(), geolocation=(self)" },
   /*
-   * **止めない形（Report-Only）で始めます。** 地図は内部で読み込み先を増やすので、
-   * 許可先を推測で書くと必ず漏れ、漏れると地図が白くなります。
-   * 実際に触って違反を集め、**2026-11-01 までに止める形へ切り替えます**（要件 7.2）。
+   * ~~**止めない形（Report-Only）で始めます。**~~ → **2026-10-20 に止める形へ切り替えました**（要件 7.2）。
+   *
+   * 【初心者向け】ここが `-Report-Only` 付きだった間、ブラウザは**違反を報告するだけで何も止めません**でした。
+   * その間に実際に触って漏れを 2 つ見つけ（地図が読むフォント。#1011 で許可）、
+   * もう一度触って**`vercel.live` 以外の違反が出ないこと**を確かめてから、この名前にしています。
+   *
+   * ここから先は、一覧に無い出どころは**実際に読み込まれません**。
+   * 許可先を増やすときは、**先に Report-Only で確かめてから**にしてください
+   * （いきなり足すと、足りないまま本番に出て地図が白くなります）。
    */
-  { key: "Content-Security-Policy-Report-Only", value: contentSecurityPolicy() },
+  { key: "Content-Security-Policy", value: contentSecurityPolicy() },
 ];
 
 export default nextConfig;
