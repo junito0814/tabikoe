@@ -75,6 +75,17 @@ function supabaseOrigin(): string {
 
 /** 地図が読み込むもの。地図は内部で読み込み先を増やすので、Report-Only で実測してから絞る */
 const GOOGLE_MAPS = ["https://maps.googleapis.com", "https://maps.gstatic.com"];
+/*
+ * 地図が **自分用に読むフォント**（2026-10-20 に Report-Only で実測して判明。要件 7.2）。
+ *
+ * 【初心者向け】地図は矢印の記号や操作ボタンの字に Google のフォント（Google Sans・Roboto）を使います。
+ * 読み込みは 2 段階で、**別の指示に書かないと止まります**。
+ *   1. `fonts.googleapis.com` … 「どのフォントを使うか」を書いた CSS   → style-src
+ *   2. `fonts.gstatic.com`    … フォントの実体（.woff2）              → font-src
+ * ここを入れ忘れると、**有効化した時点で地図の中の文字が崩れます**。
+ */
+const GOOGLE_FONT_CSS = "https://fonts.googleapis.com";
+const GOOGLE_FONT_FILES = "https://fonts.gstatic.com";
 /** 地図が出す画像（写真・ストリートビュー） */
 const GOOGLE_IMAGES = ["https://maps.gstatic.com", "https://*.googleapis.com", "https://*.ggpht.com"];
 
@@ -90,8 +101,8 @@ function contentSecurityPolicy(): string {
      * **持ち出しを止める側**（connect-src / img-src）で守ります。
      */
     `script-src 'self' 'unsafe-inline' ${GOOGLE_MAPS.join(" ")}`,
-    // 地図が自分で style を差し込むため
-    "style-src 'self' 'unsafe-inline'",
+    // 地図が自分で style を差し込むため（`'unsafe-inline'`）と、地図のフォント指定の CSS
+    `style-src 'self' 'unsafe-inline' ${GOOGLE_FONT_CSS}`,
     /*
      * `lh3.googleusercontent.com` は **Google ログインのアイコン**。
      * `users.avatar_url` にその URL をそのまま保存しているので、
@@ -100,8 +111,8 @@ function contentSecurityPolicy(): string {
     `img-src 'self' data: blob: ${supabase} https://lh3.googleusercontent.com ${GOOGLE_IMAGES.join(" ")}`,
     // 動画の再生（署名付き URL）と、切り取り中の blob
     `media-src 'self' blob: ${supabase}`,
-    // フォントは .woff2 をリポジトリに持っている（next/font/local）ので自分だけ
-    "font-src 'self'",
+    // アプリのフォントは .woff2 をリポジトリに持っている（next/font/local）。追加分は地図が読む実体
+    `font-src 'self' ${GOOGLE_FONT_FILES}`,
     // Realtime は使っていないので wss は入れない
     `connect-src 'self' ${supabase} ${GOOGLE_MAPS.join(" ")}`,
     "worker-src 'self' blob:",
