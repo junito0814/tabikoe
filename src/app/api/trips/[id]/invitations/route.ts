@@ -5,6 +5,8 @@ import { getAuthenticatedUser } from "@/lib/auth/get-authenticated-user";
 import { getAlbumRole, isInvitableRole } from "@/lib/albums/membership";
 import { isDailyTrip } from "@/lib/trips/daily-album";
 import { sendInAppInvitation } from "@/lib/invitations/in-app";
+import { RATE_LIMIT_ACTIONS } from "@/lib/rate-limit/actions";
+import { isWithinRateLimit } from "@/lib/rate-limit/check-rate-limit";
 import {
   buildInvitationPath,
   computeInvitationExpiry,
@@ -23,6 +25,9 @@ import {
  * 404 と 403 を分けるのは、メンバー以外にはアルバムの存在自体を教えないため。
  * トークンは推測できない乱数（generateInvitationToken）で、URL に含めて相手に渡す。
  * しおりの招待（v3.0、itinerary-sharing）はこのファイルと同じ形で作る。
+ *
+ * #996（2026-10-18）: 発行の回数を数える（1 ユーザーにつき 1 時間 10 件。要件 7.3）。
+ *   リンクの発行とアプリ内招待の送信を同じ枠で数える。超えたら 429、数えられなければ 503。
  */
 export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -54,6 +59,27 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   // v3.1（mentoring-7 Task2）: 「日常」には招待できない
   if (await isDailyTrip(admin, id)) {
     return NextResponse.json({ error: "daily_album" }, { status: 400 });
+  }
+
+  /*
+   * #996: 発行の回数を数える（要件 7.3「1 ユーザーにつき 1 時間に 10 件」）。
+   *
+   * 【初心者向け】ここに置くのは、**権限の判定を通ったあと・何かを作る前**だからです。
+   *   - 前に置くと、他人のアルバムへの試行まで自分の枠を消費する（権限が無い人に教える必要はない）
+   *   - 後に置くと、断る前に招待の行やトークンができてしまう
+   * リンクの発行とアプリ内招待の送信は**同じ枠**で数える（要件の「アプリ内招待の送信を含む」）。
+   * 数えられなかったとき（DB に届かない等）は招待を作らず 503 を返す。
+   *   ── 数えられないまま通すと、上限が無いのと同じになるため。
+   */
+  const limit = RATE_LIMIT_ACTIONS.albumInvite;
+  let allowed: boolean;
+  try {
+    allowed = await isWithinRateLimit(admin, user.id, limit.actionType, limit.windowSeconds, limit.limit);
+  } catch {
+    return NextResponse.json({ error: "rate_limit_unavailable" }, { status: 503 });
+  }
+  if (!allowed) {
+    return NextResponse.json({ error: "rate_limited" }, { status: 429 });
   }
 
   // v3.2（feedback-0919 Task6）: inviteeUserId があればアプリ内招待（宛先に通知）

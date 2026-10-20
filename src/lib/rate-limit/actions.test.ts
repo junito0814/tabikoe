@@ -6,6 +6,10 @@ import { describe, expect, it } from "vitest";
 import { RATE_LIMIT_ACTIONS } from "./actions";
 
 describe("RATE_LIMIT_ACTIONS", () => {
+  // #996: 要件 7.3 の「アルバム招待リンクの発行」。しおりと同じ枠・同じ数
+  it("アルバム招待は 1 時間 10 件", () => {
+    expect(RATE_LIMIT_ACTIONS.albumInvite).toEqual({ actionType: "album_invite", windowSeconds: 3600, limit: 10 });
+  });
   it("しおり招待は 1 時間 10 件", () => {
     expect(RATE_LIMIT_ACTIONS.itineraryInvite).toEqual({ actionType: "itinerary_invite", windowSeconds: 3600, limit: 10 });
   });

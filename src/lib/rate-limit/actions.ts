@@ -8,6 +8,13 @@
  * 既存の "login"・"post_creation"・"comment"・"report" は各機能側の定数のまま。
  */
 export const RATE_LIMIT_ACTIONS = {
+  /**
+   * アルバムの招待リンク発行：1 ユーザーにつき 1 時間 10 件（#996）
+   *
+   * 【初心者向け】要件（7.3）には最初から書かれていたが、しおりの招待より先に作られたため、
+   * 後からできたこの表に乗っていなかった。しおりと同じ枠・同じ数にそろえる。
+   */
+  albumInvite: { actionType: "album_invite", windowSeconds: 3600, limit: 10 },
   /** しおりの招待リンク発行：1 ユーザーにつき 1 時間 10 件 */
   itineraryInvite: { actionType: "itinerary_invite", windowSeconds: 3600, limit: 10 },
   /** 下書きの保存（自動保存を含む）：1 ユーザーにつき 1 時間 60 件 */
