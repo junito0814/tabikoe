@@ -85,9 +85,41 @@ export interface AdminUserRow {
   postingRestrictedUntil: string | null;
 }
 
-/** ilike 用のエスケープ（% _ \ をそのまま文字として探す） */
+/**
+ * `ilike` のワイルドカード（`%` `_`）と、その打ち消し（`\`）を、**文字そのもの**として探す形に直す。
+ *
+ * 【初心者向け】`%` は「何文字でも」、`_` は「どれか 1 文字」という**特別な意味**を持ちます。
+ * 利用者が `100%` を探したいときに、そのまま渡すと「100 で始まる全部」になってしまうので、
+ * 前に `\` を付けて「これは記号そのもの」と伝えます。
+ */
 export function escapeLike(value: string): string {
   return value.replace(/[\\%_]/g, (char) => `\\${char}`);
+}
+
+/**
+ * 絞り込みの条件文に埋め込む値を、引用符でくくる（#999）。
+ *
+ * 【初心者向け】絞り込みの条件は `display_name.ilike.<値>,email.ilike.<値>` という
+ * **1 本の文字列**で送ります。この文では
+ *   - `,` が「条件の区切り」
+ *   - `.` が「列名・条件・値の区切り」
+ * という意味を持つため、値にそれらが入ると**別の条件として読まれてしまいます**
+ * （メールアドレスには `.` が必ず入るので、普通の検索でも起きます）。
+ *
+ * 値を `"…"` でくくると、中の記号は**文字そのもの**として扱われます。
+ * くくる前に、値の中の `"` と `\` には `\` を付けます（くくりが途中で終わらないように）。
+ *
+ * `escapeLike` とは役割が違います。あちらは **探し方**（ワイルドカード）の話、
+ * こちらは **条件文の組み立て**の話。順番は「`escapeLike` → `quoteFilterValue`」。
+ */
+export function quoteFilterValue(value: string): string {
+  return `"${value.replace(/["\\]/g, (char) => `\\${char}`)}"`;
+}
+
+/** 利用者一覧の検索（名前・メールアドレスの部分一致）の条件文を組み立てる */
+export function buildUserSearchFilter(keyword: string): string {
+  const pattern = quoteFilterValue(`%${escapeLike(keyword)}%`);
+  return `display_name.ilike.${pattern},email.ilike.${pattern}`;
 }
 
 export async function listAdminUsers(
@@ -101,8 +133,7 @@ export async function listAdminUsers(
     .eq("is_deleted", false);
 
   if (query.q) {
-    const like = `%${escapeLike(query.q)}%`;
-    request = request.or(`display_name.ilike.${like},email.ilike.${like}`);
+    request = request.or(buildUserSearchFilter(query.q));
   }
   const nowIso = now.toISOString();
   switch (query.status) {
