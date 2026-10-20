@@ -1,11 +1,14 @@
 "use client";
 
 import { useState } from "react";
+import { useForm, useWatch } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { BackLink } from "@/components/layout/BackLink";
 import Link from "next/link";
 import { ErrorNotice } from "@/components/notices/ErrorNotice";
 import { fetchWithAuthRedirect, UnauthorizedError } from "@/lib/api/fetch-with-auth-redirect";
 import { graphemeLength } from "@/lib/text/grapheme-length";
+import { reportSchema, type ReportFormValues } from "@/lib/reports/report-schema";
 import {
   MAX_REPORT_DETAIL_LENGTH,
   REPORT_REASON_LABELS,
@@ -46,23 +49,44 @@ export function ReportForm({
   /** 差し替え口（単体テスト用） */
   submitReport?: (input: ReportSubmission) => Promise<Response>;
 }) {
-  const [reason, setReason] = useState<ReportReason | null>(null);
-  const [detail, setDetail] = useState("");
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const [isDone, setIsDone] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  const detailLength = graphemeLength(detail);
-  const isDetailTooLong = detailLength > MAX_REPORT_DETAIL_LENGTH;
-  const canSubmit = reason !== null && !isDetailTooLong && !isSubmitting;
+  /*
+   * #1007: フォームは react-hook-form が持ち、規則はサーバーと同じスキーマに聞く。
+   *
+   * 【初心者向け】`raw: true` を渡しているのは、**送信時に「打たれたそのままの値」**を
+   * 受け取るためです（既定では、スキーマが整えたあとの値になります）。
+   * 通報 API に送るのは画面の入力そのままで、空欄を「無し」に直すのはサーバーの仕事です。
+   */
+  const {
+    register,
+    handleSubmit,
+    control,
+    formState: { isSubmitting },
+  } = useForm<ReportFormValues>({
+    resolver: zodResolver(reportSchema, undefined, { raw: true }),
+    defaultValues: { targetType, targetId, detail: "" },
+  });
 
-  const handleSubmit = async () => {
-    if (!canSubmit || reason === null) return;
-    setIsSubmitting(true);
+  /*
+   * 送信ボタンを押せるかは、**同じスキーマに通るかどうか**で決める。
+   *
+   * 【初心者向け】以前はここに「理由が選ばれている」「詳細が 1,000 文字以内」と
+   * もう一度書いていました（サーバーと同じ規則の写し）。いまは入力中の値を
+   * そのままスキーマにかけているので、規則が増えても画面側を直す必要がありません。
+   */
+  const values = useWatch({ control });
+  const canSubmit = reportSchema.safeParse(values).success && !isSubmitting;
+  const detailLength = graphemeLength(values.detail ?? "");
+  const isDetailTooLong = detailLength > MAX_REPORT_DETAIL_LENGTH;
+  const reason = values.reason ?? null;
+
+  const save = async (input: ReportFormValues) => {
     setErrorMessage(null);
 
     try {
-      const response = await submitReport({ targetType, targetId, reason, detail });
+      const response = await submitReport(input);
 
       if (response.ok) {
         setIsDone(true);
@@ -80,8 +104,6 @@ export function ReportForm({
     } catch (error) {
       if (error instanceof UnauthorizedError) return;
       setErrorMessage("通報を送信できませんでした。もう一度お試しください");
-    } finally {
-      setIsSubmitting(false);
     }
   };
 
@@ -129,14 +151,7 @@ export function ReportForm({
                   reason === item ? "border-accent" : "border-line"
                 }`}
               >
-                <input
-                  type="radio"
-                  name="reason"
-                  value={item}
-                  checked={reason === item}
-                  onChange={() => setReason(item)}
-                  className="accent-accent"
-                />
+                <input type="radio" value={item} {...register("reason")} className="accent-accent" />
                 {REPORT_REASON_LABELS[item]}
               </label>
             ))}
@@ -152,8 +167,7 @@ export function ReportForm({
           </label>
           <textarea
             id="report-detail"
-            value={detail}
-            onChange={(event) => setDetail(event.target.value)}
+            {...register("detail")}
             rows={5}
             className="w-full rounded-[10px] border border-line bg-surface px-3 py-2.5 text-[0.875rem] leading-[1.7] text-ink focus:outline-none focus:ring-1 focus:ring-accent"
           />
@@ -168,7 +182,7 @@ export function ReportForm({
 
         <button
           type="button"
-          onClick={handleSubmit}
+          onClick={handleSubmit(save)}
           disabled={!canSubmit}
           className="h-12 w-full rounded-[10px] bg-accent text-[0.9375rem] font-semibold text-white disabled:cursor-not-allowed disabled:opacity-45"
         >
