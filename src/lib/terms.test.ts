@@ -42,7 +42,7 @@ describe("古い言葉が画面に残っていない（#810）", () => {
       .replace(/\/\*[\s\S]*?\*\//g, "")
       .replace(/\/\/.*$/gm, "");
 
-  it.each([["ここを投稿"], ["自分も投稿する"], ["保存済み"], ["無効化"]])("「%s」が残っていない", (word) => {
+  it.each([["ここを投稿"], ["ここに投稿"], ["自分も投稿する"], ["保存済み"], ["無効化"]])("「%s」が残っていない", (word) => {
     const offenders = files.filter((path) => body(path).includes(word));
     expect(offenders).toEqual([]);
   });
@@ -53,7 +53,8 @@ describe("古い言葉が画面に残っていない（#810）", () => {
   });
 
   it("言葉は 1 か所（terms.ts）にある", () => {
-    expect(TERMS.postHere).toContain("ここに投稿");
+    // #1016（2026-10-24）: 「ここに投稿」→「投稿」。＋ はアイコンなので言葉に含めない
+    expect(TERMS.postHere).toBe("投稿");
     expect(TERMS.seePosts).toBe("投稿を見る");
     expect(TERMS.wishlist).toBe("行きたい");
     expect(TERMS.revoke).toBe("取り消し");

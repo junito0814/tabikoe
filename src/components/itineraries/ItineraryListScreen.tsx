@@ -41,7 +41,7 @@ export function ItineraryListScreen({
 
   return (
     <PullToRefresh>
-      {/* #807: 右下の「＋ ここに投稿」に最後の行が隠れないよう、下に 80px の余白（pb-24） */}
+      {/* #807: 右下の「＋ 投稿」に最後の行が隠れないよう、下に 80px の余白（pb-24） */}
       <div className="flex min-h-screen flex-col items-center bg-app px-4 pt-6 pb-24">
         <div className="w-full max-w-[520px]">
           {/* #693: 画面名は「計画」。中の区切りの見出しが「しおり」になる（決定事項 75） */}

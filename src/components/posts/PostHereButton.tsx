@@ -1,8 +1,10 @@
 import Link from "next/link";
 
 /**
- * #807: 「＋ ここに投稿」ボタンの見た目
- * 出典: 要件定義書 3.3.8（投稿の起点）・4.5.15（言葉の統一: 「ここに投稿」）
+ * #807: 「＋ 投稿」ボタンの見た目
+ * 出典: 要件定義書 3.3.8（投稿の起点）・4.5.15（言葉の統一: 「投稿」）
+ *
+ * #1016（2026-10-24）: 文字を ~~「ここに投稿」~~ → **「投稿」**にした。＋ はアイコンなので残す。
  *
  * 【初心者向け】同じ青い丸ボタンが、地図画面（右下）と、ホーム・計画・マイページの右下（PostFab）に出る。
  * 形を 2 か所に書くとズレるので、ここ 1 つにまとめた（約束 14）。
@@ -16,7 +18,7 @@ export function PostHereButton({ href, onClick, disabled = false, className }: {
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden>
         <path d="M12 5v14M5 12h14" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" />
       </svg>
-      ここに投稿
+      投稿
     </>
   );
   if (href) {

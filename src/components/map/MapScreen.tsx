@@ -48,10 +48,10 @@ export type FetchMapPins = (bounds: MapBounds, filters: SpotFilters) => Promise<
  * 【初心者向け】v1 のタブ（全体／行きたい）と地名検索バーは無くなり、置くのは 4 つだけ:
  *   1. 左上の戻る（戻り先の画面名: 大阪府／大阪駅／スポット名／しおり／ホーム。map-navigation.ts・lib/map/back-label.ts。v3.1）
  *   2. 凡例（青＝みんなの投稿、赤＝保存済み、灰の破線＝下書き）
- *   3. 右下の「現在地」と「＋ ここに投稿」（現在地が取れていなければ地図の中心で投稿画面を開く）
+ *   3. 右下の「現在地」と「＋ 投稿」（現在地が取れていなければ地図の中心で投稿画面を開く）
  *   4. 探すモード（?mode=explore）のときだけ下 1/3 に「近くの声」
  * ピンは 1 回の API（/api/spots）で 3 種別まとめて取る。ピンをタップすると吹き出し（PinCallout）、
- * 長押しすると一時ピン＋「ここに投稿」。地図をタップ／ドラッグすると吹き出しと一時ピンは消える。
+ * 長押しすると一時ピン＋「投稿」。地図をタップ／ドラッグすると吹き出しと一時ピンは消える。
  * 吹き出しは「地図をそのピンの位置へ寄せてから、画面中央の少し上」に出す（マーカーに追従させるより単純で壊れにくい）。
  */
 /**
@@ -610,7 +610,7 @@ export function MapScreen({
           </div>
         )}
 
-        {/* 右下：現在地・ここに投稿。#763: カードが出ている間はその上に逃がす */}
+        {/* 右下：現在地・投稿。#763: カードが出ている間はその上に逃がす */}
         <div className={`pointer-events-none absolute right-3 z-10 flex flex-col items-end gap-2 ${isItinerary && activeItinerarySpotId ? "bottom-[132px]" : "bottom-4"}`}>
           <button
             type="button"
