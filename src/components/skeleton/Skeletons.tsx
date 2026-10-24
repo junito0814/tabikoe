@@ -721,7 +721,7 @@ export function SearchTopSkeleton() {
           <SkeletonBlock className="h-16 w-16 rounded-full" />
           <SkeletonBlock className="h-6 w-28" />
         </div>
-        {/* 検索窓と、「近くのスポットを探す」「ここを投稿」。どれも本物と同じ 52px・全角丸 */}
+        {/* 検索窓と、「近くのスポットを探す」「投稿」。どれも本物と同じ 52px・全角丸 */}
         <div className="flex w-full max-w-[360px] flex-col gap-3">
           <SkeletonBlock className="h-[52px] w-full rounded-full" />
           <SkeletonBlock className="h-[52px] w-full rounded-full" />
@@ -733,7 +733,7 @@ export function SearchTopSkeleton() {
 }
 
 /**
- * SC-02 マップ。画面いっぱいの地図に、戻る・凡例・現在地・「ここに投稿」が重なる。
+ * SC-02 マップ。画面いっぱいの地図に、戻る・凡例・現在地・「投稿」が重なる。
  *
  * 【初心者向け】重ねる部品は `bg-surface`（白い面）にする。`SkeletonBlock` の既定は
  * `bg-tint`（淡い面）で、地図の下地（`--map-placeholder`）と明るさが近く、**見えなかった**。
@@ -749,10 +749,15 @@ export function MapScreenSkeleton() {
           <SkeletonBlock className="h-8 w-24 rounded-full bg-surface" />
           <SkeletonBlock className="ml-auto h-8 w-32 rounded-full bg-surface" />
         </div>
-        {/* 右下: 現在地（40px の丸）と「ここに投稿」。本物は right-3 / bottom-4 で縦に並ぶ */}
+        {/*
+          * 右下: 現在地（40px の丸）と「投稿」。本物は right-3 / bottom-4 で縦に並ぶ。
+          *
+          * #1016（2026-10-24）: 文字が「ここに投稿」→「投稿」に短くなったので、幅も `w-32` → `w-20` に縮めた。
+          * 骨組みが本物より広いと、**読み込み後にボタンの大きさが変わって見えます**（要件 4.5.11）。
+          */}
         <div className="absolute bottom-4 right-3 flex flex-col items-end gap-2">
           <SkeletonBlock className="h-10 w-10 rounded-full bg-surface" />
-          <SkeletonBlock className="h-10 w-32 rounded-full bg-surface" />
+          <SkeletonBlock className="h-10 w-20 rounded-full bg-surface" />
         </div>
       </div>
     </SkeletonExit>
