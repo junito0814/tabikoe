@@ -288,7 +288,7 @@ function SaveSheetBody({
               <input
                 value={newTitle}
                 onChange={(event) => setNewTitle(event.target.value)}
-                maxLength={MAX_TRIP_TITLE_LENGTH}
+                maxLength={MAX_TRIP_TITLE_LENGTH * 2}
                 placeholder="アルバム名（例: 大阪旅行）"
                 aria-label="アルバム名"
                 autoFocus

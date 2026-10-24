@@ -327,7 +327,7 @@ export function ItineraryDetailScreen({
               <input
                 value={draftTitle}
                 onChange={(event) => setDraftTitle(event.target.value)}
-                maxLength={MAX_TRIP_TITLE_LENGTH}
+                maxLength={MAX_TRIP_TITLE_LENGTH * 2}
                 aria-label="しおりの名前"
                 autoFocus
                 className="h-10 min-w-0 flex-1 rounded-[8px] border border-line bg-surface px-3 text-[0.875rem] text-ink focus:outline-none focus:ring-1 focus:ring-accent"

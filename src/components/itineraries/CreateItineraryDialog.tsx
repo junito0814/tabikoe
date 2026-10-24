@@ -81,12 +81,20 @@ export function CreateItineraryDialog({
           * **何を入れる欄なのか分からなかった**（タイトルと欄の名前が食い違っていた）。
           * 入れるものの名前をそのまま書く。アルバムとつながる説明は下の一文に任せる。
           */}
+        {/*
+          * #994（2026-10-24）: `maxLength` は上限ぴったり（200）ではなく **2 倍**にする。
+          *
+          * 【初心者向け】`maxLength` は **UTF-16 の単位**で数えるので、上限と同じ数字を入れると
+          * **絵文字を含む名前だけが早く切られます**（サーバーは見た目の 1 文字で数えるため）。
+          * ここは「際限なく貼り付けられるのを止める安全弁」として 2 倍を入れ、実際の上限は
+          * サーバー側（`assertValidTripTitle`）で見ます（要件 7.2「画面側の入力欄の上限」）。
+          */}
         <label className="flex flex-col gap-1 text-[0.75rem] font-medium text-muted">
           しおりの名前
           <input
             value={title}
             onChange={(event) => setTitle(event.target.value)}
-            maxLength={MAX_TRIP_TITLE_LENGTH}
+            maxLength={MAX_TRIP_TITLE_LENGTH * 2}
             placeholder="例: 大阪旅行"
             required
             className="h-11 rounded-[10px] border border-line bg-surface px-3 text-[0.875rem] text-ink focus:outline-none focus:ring-1 focus:ring-accent"
