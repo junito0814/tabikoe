@@ -89,6 +89,20 @@ const GOOGLE_FONT_FILES = "https://fonts.gstatic.com";
 /** 地図が出す画像（写真・ストリートビュー） */
 const GOOGLE_IMAGES = ["https://maps.gstatic.com", "https://*.googleapis.com", "https://*.ggpht.com"];
 
+/**
+ * #1025（2026-10-24）: 開発サーバーのときだけ `'unsafe-eval'` を足す。
+ *
+ * 【初心者向け】React は**開発モードのときだけ** `eval` を使います。サーバー側で起きた
+ * エラーの行番号をブラウザ側で復元する、といった**開発用の機能**のためです。
+ * ここで止めていたせいで、`next dev` のたびにコンソールに
+ * 「eval() is not supported in this environment」が出て、**エラーを追えなくなっていました**。
+ *
+ * **本番には足しません。** React も Next.js も本番では `eval` を使いません
+ * （同梱ドキュメント 01-app/02-guides/content-security-policy.md:
+ * 「`unsafe-eval` is not required for production」）。書き方もそのドキュメントに合わせています。
+ */
+const DEV_ONLY_EVAL = process.env.NODE_ENV === "development" ? " 'unsafe-eval'" : "";
+
 function contentSecurityPolicy(): string {
   const supabase = supabaseOrigin();
   return [
@@ -100,7 +114,7 @@ function contentSecurityPolicy(): string {
      * 「器を関数抜きで配る」が無効になるため、ここは緩いままにして
      * **持ち出しを止める側**（connect-src / img-src）で守ります。
      */
-    `script-src 'self' 'unsafe-inline' ${GOOGLE_MAPS.join(" ")}`,
+    `script-src 'self' 'unsafe-inline'${DEV_ONLY_EVAL} ${GOOGLE_MAPS.join(" ")}`,
     // 地図が自分で style を差し込むため（`'unsafe-inline'`）と、地図のフォント指定の CSS
     `style-src 'self' 'unsafe-inline' ${GOOGLE_FONT_CSS}`,
     /*
