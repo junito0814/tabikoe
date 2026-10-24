@@ -2,6 +2,8 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { requireUserOrRedirect } from "@/lib/auth/require-user-or-redirect";
 import { MapScreen } from "@/components/map/MapScreen";
+import { ClientOnly } from "@/components/ui/ClientOnly";
+import { MapScreenSkeleton } from "@/components/skeleton/Skeletons";
 import { resolveMapOpen } from "@/components/map/map-navigation";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { classifyBackHref } from "@/lib/map/back-label";
@@ -62,7 +64,21 @@ export default async function MapPage({
     <>
       {/* #972: バッジ画面から帰る先はこの地図。`?badges=` は外す（戻って知らせが再び出ないように） */}
       {newBadgeTypes.length > 0 && <BadgeToast badgeTypes={newBadgeTypes} backHref="/map" />}
-      <MapScreen open={open} notice={flashKey ? <FlashNotice flashKey={flashKey} /> : undefined} />
+      {/*
+        * #1014（2026-10-24）: 地図は**ブラウザ側だけで描く**。
+        *
+        * 【初心者向け】この画面は `sessionStorage` に覚えた直前の位置で開きます。
+        * サーバーからは `sessionStorage` が見えないので、**サーバーは「復元なし」・
+        * ブラウザは「復元あり」**で組み立ててしまい、食い違い（React #418）になっていました。
+        *
+        * 1 回目は骨組み（`MapScreenSkeleton`）だけを出し、本物はマウント後に出します。
+        * サーバーもブラウザも 1 回目は骨組みなので食い違いません。
+        * 地図は JavaScript が動かないと見えないので、サーバーで HTML を作る利点もありません。
+        * 骨組みは画面を移るときに出るもの（`loading.tsx`）と同じ形です（要件 4.5.11）。
+        */}
+      <ClientOnly fallback={<MapScreenSkeleton />}>
+        <MapScreen open={open} notice={flashKey ? <FlashNotice flashKey={flashKey} /> : undefined} />
+      </ClientOnly>
     </>
   );
 }
