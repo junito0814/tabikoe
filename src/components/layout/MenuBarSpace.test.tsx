@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it } from "vitest";
 import { render } from "@testing-library/react";
 import { MenuBarSpace } from "./MenuBarSpace";
 
@@ -10,11 +10,9 @@ import { MenuBarSpace } from "./MenuBarSpace";
  * 余白そのもの（60px）は `layout.tsx` の CSS の仕事なので、ここでは
  * 「`data-menu-bar` を名乗る印があるかどうか」だけを見ます。
  */
-let pathname = "/";
-
-vi.mock("next/navigation", () => ({
-  usePathname: () => pathname,
-}));
+function visit(path: string) {
+  window.history.pushState({}, "", path);
+}
 
 function markerCount(container: HTMLElement) {
   return container.querySelectorAll("[data-menu-bar]").length;
@@ -24,7 +22,7 @@ describe("MenuBarSpace（#1024）", () => {
   it.each(["/", "/search", "/itineraries", "/mypage", "/map", "/notifications", "/posts/abc", "/spots/abc"])(
     "メニューバーが出る画面（%s）では場所を取る",
     (path) => {
-      pathname = path;
+      visit(path);
       const { container } = render(<MenuBarSpace />);
       expect(markerCount(container)).toBe(1);
     }
@@ -33,14 +31,14 @@ describe("MenuBarSpace（#1024）", () => {
   it.each(["/login", "/signup", "/consent/renew", "/terms", "/privacy", "/admin", "/admin/reports", "/dev/pins"])(
     "メニューバーが出ない画面（%s）では場所を取らない",
     (path) => {
-      pathname = path;
+      visit(path);
       const { container } = render(<MenuBarSpace />);
       expect(markerCount(container)).toBe(0);
     }
   );
 
   it("印そのものは見た目を持たない（hidden）", () => {
-    pathname = "/mypage";
+    visit("/mypage");
     const { container } = render(<MenuBarSpace />);
     expect(container.querySelector("[data-menu-bar]")).toHaveProperty("hidden", true);
   });
