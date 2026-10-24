@@ -21,3 +21,30 @@ describe("reportListStateFromParams（admin-shell-dashboard Task 2）", () => {
     expect(params.toString()).toBe("status=open&target_id=abc&sort=oldest");
   });
 });
+
+/**
+ * #1013（2026-10-24）: 「新しい順」が効かなかったバグ。
+ *
+ * 【初心者向け】原因は「既定と同じ値はクエリに入れない」という書き方でした。
+ * #892 で**既定が newest から urgency に変わった**ので、newest を省くと urgency に
+ * なってしまいます。3 つの並びすべてが**状態 → クエリ → 状態**で往復することを見張ります。
+ */
+describe("並びの往復（#1013）", () => {
+  it("3 つの並びすべてがクエリに乗り、読み戻せる", () => {
+    for (const sort of ["newest", "oldest"] as const) {
+      const params = buildReportListParams({ ...EMPTY_REPORT_LIST_STATE, sort }, 0);
+      expect(params.get("sort"), sort).toBe(sort);
+      expect(reportListStateFromParams(params).sort, sort).toBe(sort);
+    }
+  });
+
+  it("urgency は既定なのでクエリに入れない（入っていれば読める）", () => {
+    expect(buildReportListParams({ ...EMPTY_REPORT_LIST_STATE, sort: "urgency" }, 0).get("sort")).toBeNull();
+    expect(reportListStateFromParams(new URLSearchParams({ sort: "urgency" })).sort).toBe("urgency");
+  });
+
+  it("知らない値は「指定なし」にする", () => {
+    expect(reportListStateFromParams(new URLSearchParams({ sort: "random" })).sort).toBeUndefined();
+    expect(reportListStateFromParams(new URLSearchParams()).sort).toBeUndefined();
+  });
+});

@@ -4,6 +4,8 @@ import { REPORT_STATUSES, type ReportStatus } from "@/lib/admin/report-filters";
 const REPORT_STATUS_VALUES = new Set<string>(REPORT_STATUSES);
 const REASON_VALUES = new Set<string>(REPORT_REASONS);
 const TARGET_VALUES = new Set<string>(REPORT_TARGET_TYPES);
+/** #1013: 並びに使える値。サーバー側の parseSort と同じ 3 つ */
+const SORT_VALUES = new Set<string>(["urgency", "newest", "oldest"]);
 
 /**
  * F-AD-04 Task2: 絞り込みUIの状態 → GET /api/admin/reports のクエリ
@@ -14,7 +16,15 @@ export interface ReportListState {
   status: ReportStatus | "open" | "";
   /** ダッシュボードから来たときだけ入る（画面には出さない） */
   targetId?: string;
-  sort?: "newest" | "oldest";
+  /**
+   * 並び。省略は「指定なし」＝サーバー側の既定（urgency）。
+   *
+   * #1013（2026-10-24）: ~~`"newest" | "oldest"`~~ に `"urgency"` を足した。
+   * #892 で**省略時の既定が newest から urgency に変わった**のに、ここが追いついて
+   * いなかったため、「新しい順」を選んでも `sort` がクエリに乗らず、既定（urgency）に
+   * 落ちていた（＝新しい順が効かない）。
+   */
+  sort?: "urgency" | "newest" | "oldest";
   reason: ReportReason | "";
   targetType: ReportTargetType | "";
   /** YYYY-MM-DD */
@@ -30,7 +40,13 @@ export function buildReportListParams(state: ReportListState, offset: number): U
   if (state.reason) params.set("reason", state.reason);
   if (state.targetType) params.set("target_type", state.targetType);
   if (state.targetId) params.set("target_id", state.targetId);
-  if (state.sort === "oldest") params.set("sort", "oldest");
+  /*
+   * #1013: urgency 以外は必ずクエリに入れる。
+   *
+   * 【初心者向け】省略＝既定（urgency）なので、**newest を省略すると urgency になります**。
+   * 「既定と同じものは省く」という書き方は、既定が変わった瞬間に壊れます。
+   */
+  if (state.sort === "oldest" || state.sort === "newest") params.set("sort", state.sort);
   // 日付のみの入力は、from は当日0時、to は当日の終わり（翌日0時の直前）として送る
   if (state.from) params.set("from", `${state.from}T00:00:00`);
   if (state.to) params.set("to", `${state.to}T23:59:59.999`);
@@ -52,7 +68,8 @@ export function reportListStateFromParams(params: URLSearchParams): ReportListSt
     reason: REASON_VALUES.has(reason) ? (reason as ReportReason) : "",
     targetType: TARGET_VALUES.has(targetType) ? (targetType as ReportTargetType) : "",
     targetId: /^[0-9a-f-]{36}$/i.test(targetId) ? targetId : undefined,
-    sort: params.get("sort") === "oldest" ? "oldest" : undefined,
+    // #1013: oldest だけでなく newest・urgency も読む（知らない値は「指定なし」）
+    sort: SORT_VALUES.has(params.get("sort") ?? "") ? (params.get("sort") as ReportListState["sort"]) : undefined,
     from: (params.get("from") ?? "").slice(0, 10),
     to: (params.get("to") ?? "").slice(0, 10),
   };
