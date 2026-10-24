@@ -17,7 +17,7 @@ import { appendBackHref } from "@/lib/search/list-state";
  * 【初心者向け】ピンの種別で中身が変わる。
  *   - post / saved: スポット名・星平均・投稿件数・最新の「まだあった」（本体のタップで一覧へ）・「＋」「投稿する」
  *   - draft       : 「下書き: 〈スポット名または名前のない場所〉 [続きを書く]」→ /posts/new?draft=<id>
- *   - 長押しの一時ピン（temp）: 「この地点 [ここに投稿]」→ /posts/new?lat&lng
+ *   - 長押しの一時ピン（temp）: 「この地点 [投稿]」→ /posts/new?lat&lng
  * 吹き出しの位置決め（地図のどこに出すか）は MapScreen が担当し、ここは中身だけ。
  */
 export type CalloutTarget =
@@ -92,7 +92,7 @@ function SpotBody({ pin, backHref }: { pin: MapPinData; backHref: string | null 
         {/* wishlist-v3 Task1: 吹き出しにも「＋」（保存先シート）。赤ピン＝保存済みなので ✓ で出す */}
         {pin.spotId && <SaveButton spotId={pin.spotId} initialSaved={pin.kind === "saved"} size="sm" />}
         {/* map-restore Task2（2026-09-25）: 「投稿する」→「投稿を見る」。本体タップだけでは一覧へ行けると
-            分からないため、文言のあるボタンに置き換えた。投稿は右下の「ここに投稿」と長押しから（要件 3.4.4） */}
+            分からないため、文言のあるボタンに置き換えた。投稿は右下の「投稿」と長押しから（要件 3.4.4） */}
         {pin.spotId && (
           <Link href={listHref} className="inline-flex h-8 flex-1 items-center justify-center rounded-full bg-accent text-[0.75rem] font-bold text-white">
             投稿を見る
@@ -128,7 +128,7 @@ function TempBody({ lat, lng }: { lat: number; lng: number }) {
         href={composeHref({ kind: "location", lat, lng })}
         className="inline-flex h-8 items-center justify-center rounded-full bg-accent text-[0.75rem] font-bold text-white"
       >
-        ここに投稿
+        投稿
       </Link>
     </div>
   );

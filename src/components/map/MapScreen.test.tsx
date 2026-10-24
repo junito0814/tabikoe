@@ -128,7 +128,7 @@ describe("MapScreen（SC-02 v3.0）", () => {
     );
     expect(screen.getByRole("link", { name: "ホーム" })).toHaveAttribute("href", "/");
     expect(screen.getByRole("list", { name: "ピンの凡例" })).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "ここに投稿" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "投稿" })).toBeInTheDocument();
   });
 
   it("ピンをタップすると吹き出しが出て、本体・「投稿を見る」のどちらでも投稿一覧へ（「一覧」「投稿する」は無い。v3.1／2026-09-25）", async () => {
@@ -163,7 +163,7 @@ describe("MapScreen（SC-02 v3.0）", () => {
     expect(screen.getByRole("link", { name: "続きを書く" })).toHaveAttribute("href", "/posts/new?draft=d1");
   });
 
-  it("長押しで一時ピンと「ここに投稿」の吹き出しが出る", async () => {
+  it("長押しで一時ピンと「投稿」の吹き出しが出る", async () => {
     render(<MapScreen open={resolveMapOpen({})} fetchPins={async () => []} resolveCenter={resolveCenter} />);
     await screen.findByTestId("map-stub");
     act(() => triggerLongPress?.({ lat: 35.66, lng: 139.76 }));

@@ -38,7 +38,7 @@ export interface ComposeQuery {
   itinerary?: string | null;
   day?: string | null;
   draft?: string | null;
-  /** 現在地から開いたことを示す印（SC-00「いまいる場所に投稿する」・地図の「ここに投稿」が付ける） */
+  /** 現在地から開いたことを示す印（SC-00「いまいる場所に投稿する」・地図の「投稿」が付ける） */
   from?: string | null;
 }
 
