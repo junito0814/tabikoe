@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { geistSans, geistMono } from "./fonts";
 import { Suspense } from "react";
 import { MenuBarSlot } from "@/components/layout/MenuBarSlot";
+import { MenuBarSpace } from "@/components/layout/MenuBarSpace";
 import { siteUrl } from "@/lib/metadata/site-url";
 import { LAUNCH_GROUND } from "@/lib/theme/colors";
 import "./globals.css";
@@ -138,8 +139,12 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       {/* #951: 未ログインの共有リンクではメニューバーの代わりに帯（`GuestBand`）が出る。同じ 60px を空ける */}
       <body className="min-h-full flex flex-col has-[[data-menu-bar]]:pb-[60px] has-[[data-guest-band]]:pb-[60px] md:has-[[data-menu-bar]]:pb-0 md:has-[[data-menu-bar]]:pl-[200px]">
         <LaunchCover />
-        {/* #901: Cookie を読むのはこの中だけにする（器を静的に作れるようにするため） */}
-        <Suspense fallback={null}>
+        {/*
+          #901: Cookie を読むのはこの中だけにする（器を静的に作れるようにするため）
+          #1024: 届くまでのあいだは `MenuBarSpace` が 60px を名乗って場所を取る
+          （~~`fallback={null}`~~ だと、届いた瞬間に画面が 60px 動いていた）
+        */}
+        <Suspense fallback={<MenuBarSpace />}>
           <MenuBarSlot />
         </Suspense>
         {children}
