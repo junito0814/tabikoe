@@ -43,3 +43,25 @@ describe("PostFab（#807）", () => {
     expect(screen.getByRole("button", { name: "ここに投稿" })).toBeInTheDocument();
   });
 });
+
+/**
+ * #1015（2026-10-24）: メニューバーが遅れて届くので、位置の追随をやめた。
+ *
+ * 【初心者向け】`[body:has([data-menu-bar])]` が残っていると、**最初の描画では
+ * バーが無いので低い位置に置かれ、バーが届いた瞬間に跳ねます**。
+ * class にその書き方が入っていないことを、ここで見張ります。
+ */
+describe("位置が読み込み後に動かない（#1015）", () => {
+  it("メニューバーの有無に追随しない", () => {
+    const { container } = render(<PostFab geolocation={granted} />);
+    const fab = container.querySelector("[data-post-fab]");
+    expect(fab?.className).not.toContain("data-menu-bar");
+  });
+
+  it("最初からバーの上（76px）に置く。パソコン幅では下 16px", () => {
+    const { container } = render(<PostFab geolocation={granted} />);
+    const fab = container.querySelector("[data-post-fab]");
+    expect(fab).toHaveClass("bottom-[76px]");
+    expect(fab).toHaveClass("md:bottom-4");
+  });
+});

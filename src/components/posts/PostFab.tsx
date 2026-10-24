@@ -17,8 +17,15 @@ import { PostHereButton } from "./PostHereButton";
  * 拒否されたら位置なしで開く（投稿画面が東京駅周辺を出し、地図を動かす案内を出す。3.3.5）。
  * これは以前ホームにあった「ここを投稿」とまったく同じ動き。
  *
- * 位置は右 16px・メニューバーの 16px 上。バーが無い画面（パソコン幅など）では画面の下から 16px。
- * `[body:has([data-menu-bar])]` で追随するやり方は Sheet と同じ。
+ * 位置は右 16px・メニューバーの 16px 上（60 + 16 = 76px）。パソコン幅ではバーが左の縦並びになるので下 16px。
+ *
+ * #1015（2026-10-24）: ~~`[body:has([data-menu-bar])]` でバーの有無に追随する~~ のをやめた。
+ *
+ * 【初心者向け】#901 でメニューバーは **Cookie を読んでから届く**ようになりました（`<Suspense>` の中）。
+ * 「バーがあれば 76px」という書き方だと、**最初の描画ではバーが無いので 16px に置かれ、
+ * バーが届いた瞬間に 76px へ跳ねます**（本番で「右下から動いて出る」と見えていた現象）。
+ * このボタンが出るのはホーム・計画・マイページ・地図の 4 画面だけで、**どれもバーが出る画面**なので、
+ * 追随をやめて最初から 76px に置けば跳ねません。
  */
 export function PostFab({ geolocation }: { /** 差し替え口（単体テスト用） */ geolocation?: Pick<Geolocation, "getCurrentPosition"> }) {
   const router = useRouter();
@@ -34,7 +41,7 @@ export function PostFab({ geolocation }: { /** 差し替え口（単体テスト
   };
 
   return (
-    <div className="fixed bottom-4 right-4 z-30 [body:has([data-menu-bar])_&]:bottom-[76px] md:[body:has([data-menu-bar])_&]:bottom-4" data-post-fab>
+    <div className="fixed bottom-[76px] right-4 z-30 md:bottom-4" data-post-fab>
       <PostHereButton onClick={() => void postHere()} disabled={isLocating} />
     </div>
   );
