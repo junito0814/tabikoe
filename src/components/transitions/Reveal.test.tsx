@@ -183,8 +183,9 @@ describe("#1032: 本物が下から上がる", () => {
    * 【初心者向け】上がる時間に `--vt-move` を使い回すと、**写真が繋がって育つ動き**
    * （`.morph`）まで一緒に変わってしまいます。別の変数に分けてあることも、ここで止めます。
    */
-  it("値はドキュメントのとおり（24px・160ms・ease-out、薄さも 160ms）", () => {
-    expect(css).toContain("--enter-distance: 24px");
+  it("値はドキュメントのとおり（12px・160ms・ease-out、薄さも 160ms）", () => {
+    // 12px なのは速さの都合。30fps でしか描けないので、段差を 2〜3px に抑える
+    expect(css).toContain("--enter-distance: 12px");
     expect(css).toContain("--enter-rise: 160ms");
     // 薄さは動きと同じ長さ。短いほうが先に終わると、止まったあとも色だけ変わり続ける
     expect(css).toContain("--enter-fade: 160ms");
