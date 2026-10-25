@@ -173,8 +173,27 @@ describe("#1032: 本物が下から上がる", () => {
 
   it("動かしているのは top（transform ではない）", () => {
     expect(enter).toContain("position: relative");
-    expect(rise).toContain("top: 10px");
+    expect(rise).toContain("top: var(--enter-distance)");
     expect(rise).toContain("top: 0");
+  });
+
+  /*
+   * #1036（2026-10-25）: 実寸の枠で見比べて決めた値（要件 4.5.11「場面 5 の決着・その 2」）。
+   *
+   * 【初心者向け】上がる時間に `--vt-move` を使い回すと、**写真が繋がって育つ動き**
+   * （`.morph`）まで一緒に変わってしまいます。別の変数に分けてあることも、ここで止めます。
+   */
+  it("値はドキュメントのとおり（24px・300ms・ease-out、薄さ 210ms）", () => {
+    expect(css).toContain("--enter-distance: 24px");
+    expect(css).toContain("--enter-rise: 300ms");
+    expect(css).toContain("--enter-fade: 210ms");
+    expect(enter).toContain("var(--enter-fade) ease-out");
+    expect(enter).toContain("var(--enter-rise) ease-out");
+  });
+
+  it("写真が繋がって育つ動きの時間（--vt-move）を使い回していない", () => {
+    expect(enter).not.toContain("--vt-move");
+    expect(css).toContain("--vt-move: 400ms");
   });
 
   it.each(["transform", "filter", "translate", "scale", "rotate", "will-change", "perspective"])(

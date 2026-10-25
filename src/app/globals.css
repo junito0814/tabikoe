@@ -244,10 +244,19 @@ body {
  * そのまま大きくなるもので、場所が動くこと自体が目的なので、多少ずれても意味が壊れない。
  */
 :root {
-  /* 移動の時間。写真が繋がって育つ動き（.morph）と、本物が上がる動き（.content-enter）が使う */
+  /* 写真が繋がって育つ動き（.morph）の時間 */
   --vt-move: 400ms;
-  /* 薄さが戻るまでの時間（.content-enter） */
+  /*
+   * 本物が入ってくる動き（.content-enter）。
+   *
+   * 【初心者向け】#1036（2026-10-25）までは上がる時間に `--vt-move` を使い回していました。
+   * ところが `--vt-move` は**写真の動き**のものでもあるので、片方だけ変えられません。
+   * **別のものが 1 つの変数を共有していた**ので、分けました。
+   */
+  --enter-rise: 300ms;
   --enter-fade: 210ms;
+  /* 上がる距離。実寸の枠で見比べて決めた（要件 4.5.11「場面 5 の決着・その 2」） */
+  --enter-distance: 24px;
 }
 
 /*
@@ -285,9 +294,14 @@ body {
  */
 .content-enter {
   position: relative;
+  /*
+   * `ease-out` は「速く始まってゆっくり止まる」。入ってくるものは、こちらのほうが
+   * **着地した**と読める。~~`ease-in`~~ は骨組みが下に退く動きと対にするための
+   * 選び方で、その相方は #1029 で無くなった（要件 4.5.11「場面 5 の決着・その 2」）。
+   */
   animation:
-    var(--enter-fade) ease-in both content-fade,
-    var(--vt-move) ease-in both content-rise;
+    var(--enter-fade) ease-out both content-fade,
+    var(--enter-rise) ease-out both content-rise;
 }
 
 @keyframes content-fade {
@@ -301,7 +315,7 @@ body {
 
 @keyframes content-rise {
   from {
-    top: 10px;
+    top: var(--enter-distance);
   }
   to {
     top: 0;
