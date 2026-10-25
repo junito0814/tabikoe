@@ -8,7 +8,7 @@ import type { ReactNode } from "react";
  *       Next.js 同梱ドキュメント 01-app/02-guides/view-transitions.md の Step 1・2
  *
  * 【初心者向け】ここには 2 種類の動きがある。
- *   - 8-1 骨組み → 本物の受け渡し … **2026-10-25 に廃止**（下記）
+ *   - 8-1 骨組み → 本物の受け渡し … **2026-10-25 に廃止**（下記）→ 同日、**現れる側だけ別の作り方で戻した**（`ContentEnter`）
  *   - 8-2 一覧の写真 → 詳細の写真が繋がって育つ … **そのまま残っている**（`PhotoMorph`）
  */
 
@@ -76,9 +76,19 @@ export function SkeletonExit({ children }: { children: ReactNode }) {
   return <>{children}</>;
 }
 
-/** 現れる側（本物の画面の中身）。#1029 以降は素通し */
+/**
+ * 現れる側（本物の画面の中身）。
+ *
+ * #1032（2026-10-25）: **下から 10px 上がりながら現れる動きを戻した。**
+ * ただし #1029 でやめた**ビュートランジションは使わない**（写しを作るとずれるため）。
+ * ふつうの CSS アニメーションで、**本物の要素をそのまま**動かす。
+ *
+ * 【初心者向け】動きの中身は globals.css の `.content-enter` にある。
+ * そこで `transform` ではなく `position: relative` ＋ `top` を動かしている理由も、
+ * **必ずそちらを読むこと**（この包みの中には `position: fixed` のものがある）。
+ */
 export function ContentEnter({ children }: { children: ReactNode }) {
-  return <>{children}</>;
+  return <div className="content-enter">{children}</div>;
 }
 
 /**

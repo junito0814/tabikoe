@@ -82,7 +82,7 @@ describe("#1029: 受け渡しの動きは消えている", () => {
     }
   );
 
-  it("包みは素通しで、ViewTransition を使っていない", () => {
+  it("包みは ViewTransition を使っていない", () => {
     expect(reveal).not.toContain('exit="skeleton-out"');
     expect(reveal).not.toContain('enter="content-in"');
   });
@@ -143,5 +143,55 @@ describe("8-2: 同じ名前が 1 画面に 2 つ出ない", () => {
     expect(photoGrid).toContain("<MediaThumbnail");
     expect(photoGrid).not.toContain("<MediaGrid");
     expect(photoGrid).not.toContain("PhotoMorph");
+  });
+});
+
+/**
+ * #1032（2026-10-25）: 本物が下から上がる動きを、ビュートランジションを使わずに戻した。
+ * 出典: 要件定義書 4.5.11「場面 5 の決着・その 2」・8 章 95
+ *
+ * 【初心者向け】ここでいちばん大事なのは **`transform` と `filter` が入っていないこと**。
+ * どちらも**中の `position: fixed` の基準になる**ので、包みの中にある投稿ボタン
+ * （`fixed bottom-[76px] right-4`）と未ログインの帯（`fixed inset-x-0 bottom-0`）が、
+ * 動いているあいだ画面の外へ下がってしまう。**#1029 で消した症状の作り直し**になる。
+ * あとから「`translateY` のほうが速いのでは」と書き換えられないよう、ここで止める。
+ */
+describe("#1032: 本物が下から上がる", () => {
+  /** `.content-enter { ... }` と、そこから呼ばれるキーフレームの中身だけを取り出す */
+  const block = (name: string) => {
+    const m = css.match(new RegExp(`${name.replace(".", "\\.")}\\s*\\{[\\s\\S]*?\\n\\}`));
+    return m?.[0] ?? "";
+  };
+  const enter = block(".content-enter");
+  const rise = block("@keyframes content-rise");
+  const fade = block("@keyframes content-fade");
+
+  it("包みが `.content-enter` を付けて描かれる", () => {
+    expect(reveal).toContain('className="content-enter"');
+    expect(enter).not.toBe("");
+  });
+
+  it("動かしているのは top（transform ではない）", () => {
+    expect(enter).toContain("position: relative");
+    expect(rise).toContain("top: 10px");
+    expect(rise).toContain("top: 0");
+  });
+
+  it.each(["transform", "filter", "translate", "scale", "rotate", "will-change", "perspective"])(
+    "%s を使っていない（position: fixed の基準を作らないため）",
+    (forbidden) => {
+      for (const part of [enter, rise, fade]) {
+        expect(part).not.toContain(forbidden);
+      }
+    }
+  );
+
+  it("薄さだけで出す（ぼかしは入れない）", () => {
+    expect(fade).toContain("opacity: 0");
+    expect(fade).toContain("opacity: 1");
+  });
+
+  it("動きを減らす設定のときは上がる動きを止める", () => {
+    expect(css).toMatch(/@media \(prefers-reduced-motion: reduce\)[\s\S]*?\.content-enter/);
   });
 });
