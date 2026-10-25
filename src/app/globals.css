@@ -222,51 +222,30 @@ body {
  * 【初心者向け】`::view-transition-old(...)` / `::view-transition-new(...)` は
  * ブラウザが切り替わりの最中だけ作る**仮の要素**で、普段は存在しない。
  * 「退く側の写し」と「現れる側の写し」に、それぞれ動きを付けられる。
- * 名前（skeleton-out・content-in・morph）は src/components/transitions/Reveal.tsx と合わせる。
+ * 名前（morph）は src/components/transitions/Reveal.tsx と合わせる。
+ */
+
+/*
+ * #1029（2026-10-25）: **骨組み → 本物の受け渡しの動きをやめた。**
  *
- * 時間の付け方はわざと**非対称**にしている。
- *   退く: 150ms で速く消す（古いものが注意を引かないように）
- *   現れる: 210ms で、しかも**退き終わってから**始める（150ms 遅らせる）
- *   移動: 400ms（位置の変化だけはゆっくり。目で追える速さ）
+ * ~~`::view-transition-old(.skeleton-out)`（下に 10px ずれながら消える・150ms）~~
+ * ~~`::view-transition-new(.content-in)`（下から 10px 上がりながら現れる・210ms / 400ms）~~
+ * ~~`@keyframes vt-fade` / `@keyframes vt-slide-y`~~
+ * ~~`--vt-exit: 150ms` / `--vt-enter: 210ms`~~
+ * → **2026-10-25 に削除**（要件定義書 4.5.11「場面 5 の決着」）
+ *
+ * 【初心者向け】iPhone では、本物が**下からではなく右下から斜めに**出ていた。
+ * 実機の画面収録を測ると、横は 7px のまま動かず最後に一瞬で戻っていた
+ * （＝動きではなく**置かれる位置**がずれている）。こちらが指示しているのは
+ * 縦 10px だけで横は 0。Chrome とデスクトップの WebKit では指示どおりに動く。
+ * **iOS 側の置き方なので、こちらでは直せない。** 使うのをやめる。
+ *
+ * **写真が繋がって育つ動き（下の `.morph`）は残っている。** そちらは押した写真が
+ * そのまま大きくなるもので、場所が動くこと自体が目的なので、多少ずれても意味が壊れない。
  */
 :root {
-  --vt-exit: 150ms;
-  --vt-enter: 210ms;
+  /* 移動の時間。いまは写真が繋がって育つ動き（.morph）だけが使う */
   --vt-move: 400ms;
-}
-
-/* 骨組みが下にずれながら薄くなって消える */
-::view-transition-old(.skeleton-out) {
-  animation:
-    var(--vt-exit) ease-out both vt-fade reverse,
-    var(--vt-exit) ease-out both vt-slide-y reverse;
-}
-
-/* 本物が下から上がりながら現れる。退き終わるのを待ってから見えはじめる */
-::view-transition-new(.content-in) {
-  animation:
-    var(--vt-enter) ease-in var(--vt-exit) both vt-fade,
-    var(--vt-move) ease-in both vt-slide-y;
-}
-
-@keyframes vt-fade {
-  from {
-    filter: blur(3px);
-    opacity: 0;
-  }
-  to {
-    filter: blur(0);
-    opacity: 1;
-  }
-}
-
-@keyframes vt-slide-y {
-  from {
-    transform: translateY(10px);
-  }
-  to {
-    transform: translateY(0);
-  }
 }
 
 /*
@@ -292,14 +271,14 @@ body {
  * **ページ全体の写し**（`root`）も取って、古い写しと新しい写しを 250ms かけて重ね替えます。
  * これは要件 4.5.11 で決めたものではなく、**ブラウザが既定で足しているもの**です。
  *
- * ここが悪さをしていました。切り替わりの瞬間、骨組みと本物で**高さが違います**
- * （実測で 845.95px と 1199.52px）。Chrome はこの 2 つを別物として別の場所に描くので
- * 差が動きになりませんが、Safari は作りが違い、**全体の写しの大きさ**を見ている疑いがあります
- * （同梱ドキュメント view-transitions.md「Some animations may behave differently in Safari」）。
- * そうだとすると、高さの差が「拡大しながら出てくる」動きになります。
+ * ~~ここが「右下から斜めに出てくる」の原因だと見ていました~~ → **2026-10-25 に訂正**。
+ * 原因は別で、**iOS が本物の写しを 7px ずれた位置に置いていた**ことでした（#1029）。
+ * この 250ms のクロスフェードはそれとは関係ありませんが、**要件 4.5.11 で決めたものではなく、
+ * 止めたほうが設計に忠実**なので、そのまま止めておきます。
  *
- * 全体の写しを動かさなければ、その余地がなくなります。骨組み → 本物の動き
- * （下から 10px）は名前が付いているので残ります。
+ * 【初心者向け】「直したつもりの理由が外れていた」ことを消さずに残しています。
+ * 合っていた部分（これは余計な動きである）と、外れていた部分（これが原因である）を
+ * 分けて見られるようにするためです。
  *
  * 書き方は同梱ドキュメントが「動かしたくない要素」に使っている形そのままです
  * （view-transitions.md の「Anchoring the header」）。古い写しを `display: none` に

@@ -12,6 +12,7 @@ import { ContentEnter, PhotoMorph, SkeletonExit } from "./Reveal";
  * ここでは「動きそのもの」ではなく次の 2 つを確かめる。
  *   1. 無い環境でも**中身がそのまま描かれる**（落ちない・消えない）
  *   2. 包みに付ける名前と、globals.css の動きの名前が**食い違っていない**
+ *   3. #1029 で消した受け渡しの動きが**戻ってきていない**
  * 動きが実際に出るかは実機で確かめる（同梱ドキュメントに「Safari では挙動が違うことがある」）。
  */
 const reveal = readFileSync("src/components/transitions/Reveal.tsx", "utf8");
@@ -47,36 +48,52 @@ describe("包みは中身を消さない（ViewTransition が無い環境でも�
 });
 
 describe("名前が CSS と食い違っていない", () => {
-  it.each([
-    ["skeleton-out", "::view-transition-old(.skeleton-out)"],
-    ["content-in", "::view-transition-new(.content-in)"],
-    ["morph", "::view-transition-group(.morph)"],
-  ])("%s の動きが globals.css にある", (name, selector) => {
-    expect(reveal).toContain(`"${name}"`);
-    expect(css).toContain(selector);
+  it("morph の動きが globals.css にある", () => {
+    expect(reveal).toContain('"morph"');
+    expect(css).toContain("::view-transition-group(.morph)");
   });
 
-  it("時間はタスク文書のとおり（退く 150ms・現れる 210ms・移動 400ms）", () => {
-    expect(css).toContain("--vt-exit: 150ms");
-    expect(css).toContain("--vt-enter: 210ms");
+  it("移動の時間はタスク文書のとおり（400ms）", () => {
     expect(css).toContain("--vt-move: 400ms");
-  });
-
-  it("現れる側は退き終わってから始まる（遅らせている）", () => {
-    // 先に消して、あとからゆっくり出す。古いものが注意を引かないようにするため
-    expect(css).toMatch(/::view-transition-new\(\.content-in\)[\s\S]*?var\(--vt-enter\) ease-in var\(--vt-exit\)/);
   });
 });
 
-describe("どの包みにも default=\"none\" が付いている", () => {
-  it("関係のない切り替わりで毎回動かないようにする", () => {
-    // 同梱ドキュメントの注意書き。これが無いと名前付きの包みが毎回動く。
+/**
+ * #1029（2026-10-25）: 骨組み → 本物の受け渡しの動きをやめた。
+ * 出典: 要件定義書 4.5.11「場面 5 の決着」
+ *
+ * 【初心者向け】iPhone では、本物が下からではなく**右下から斜めに**出ていた。
+ * 横は 7px のまま動かず最後に一瞬で戻る（＝動きではなく置かれる位置がずれている）。
+ * 指示しているのは縦 10px だけで、Chrome とデスクトップの WebKit では指示どおりに動く。
+ * iOS 側の置き方なので直せない。**消したものが戻ってこないこと**をここで止める。
+ */
+describe("#1029: 受け渡しの動きは消えている", () => {
+  /*
+   * 【初心者向け】コメントを取り除いてから見ます。globals.css には
+   * 「やめたもの」を取り消し線つきで**コメントとして残している**ので、
+   * そのまま探すと文字だけが見つかってしまいます（約束 16）。
+   */
+  const rules = css.replace(/\/\*[\s\S]*?\*\//g, "");
+
+  it.each(["skeleton-out", "content-in", "vt-slide-y", "vt-fade", "--vt-exit", "--vt-enter"])(
+    "globals.css の規則に %s が無い",
+    (gone) => {
+      expect(rules).not.toContain(gone);
+    }
+  );
+
+  it("包みは素通しで、ViewTransition を使っていない", () => {
+    expect(reveal).not.toContain('exit="skeleton-out"');
+    expect(reveal).not.toContain('enter="content-in"');
+  });
+
+  it("写真が繋がって育つ動きだけが残っている", () => {
+    // 同梱ドキュメントの注意書き。`default="none"` が無いと関係のない切り替わりでも動く。
     // コメント中の文字も拾わないよう、`<ViewTransition` の行だけを見る
     const tags = reveal.match(/^\s*<ViewTransition .*$/gm) ?? [];
-    expect(tags).toHaveLength(3);
-    for (const tag of tags) {
-      expect(tag, tag).toContain('default="none"');
-    }
+    expect(tags).toHaveLength(1);
+    expect(tags[0]).toContain('share="morph"');
+    expect(tags[0]).toContain('default="none"');
   });
 });
 
