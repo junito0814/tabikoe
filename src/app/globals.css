@@ -244,8 +244,68 @@ body {
  * そのまま大きくなるもので、場所が動くこと自体が目的なので、多少ずれても意味が壊れない。
  */
 :root {
-  /* 移動の時間。いまは写真が繋がって育つ動き（.morph）だけが使う */
+  /* 移動の時間。写真が繋がって育つ動き（.morph）と、本物が上がる動き（.content-enter）が使う */
   --vt-move: 400ms;
+  /* 薄さが戻るまでの時間（.content-enter） */
+  --enter-fade: 210ms;
+}
+
+/*
+ * #1032（2026-10-25）: **本物が下から 10px 上がりながら現れる。**
+ * 出典: 要件定義書 4.5.11「場面 5 の決着・その 2」・8 章 95
+ *       src/components/transitions/Reveal.tsx の `ContentEnter`
+ *
+ * 【初心者向け】#1029 でいったんこの動きをやめた。ブラウザの仕組み
+ * （ビュートランジション）が **iOS で写しを 7px ずれた位置に置く**ためだった。
+ * ここでは**写しを作らず、本物の要素をそのまま**動かすので、ずれようがない。
+ *
+ * **`transform` を使っていないのは、わざとです。**
+ *
+ * `transform` と `filter` を持つ要素は、**その中の `position: fixed` の基準になります**
+ * （CSS の決まり。`translate`・`scale`・`rotate`・`perspective`・`will-change` も同じ）。
+ * この包みの中には、画面に貼り付いているものが 2 つあります。
+ *
+ *   - 投稿ボタン `PostFab`  … `fixed bottom-[76px] right-4`
+ *   - 未ログインの帯 `GuestBand` … `fixed inset-x-0 bottom-0`
+ *
+ * 包みに `transform` を付けると、この `bottom` が**画面の下**ではなく
+ * **ページの中身の下**（高さ 1,200px 程度）を指します。つまり動いている 0.4 秒のあいだ、
+ * 投稿ボタンが画面の外へ下がり、終わった瞬間に飛んで戻ってきます。
+ * **#1029 で消したばかりの症状を、自分で作ることになります。**
+ *
+ * `position: relative` は `absolute` の基準にはなりますが、**`fixed` の基準にはなりません**。
+ * だから投稿ボタンと帯は画面に貼り付いたまま、中身だけが上がります。
+ * `absolute` のほうは、コードにある 14 か所すべてが近くに `relative` の親を持っている
+ * （シート・地図・写真の中）ことを確かめてあります。
+ *
+ * **ぼかし（`filter: blur`）も入れません。** 同じ理由です。薄さ（`opacity`）だけで出します。
+ * `opacity` は重ね順のグループは作りますが、`fixed` の基準は作りません。
+ *
+ * 退く側（骨組みが下にずれて消える）は戻していません。**写しを作らないと動かせない**ためです。
+ */
+.content-enter {
+  position: relative;
+  animation:
+    var(--enter-fade) ease-in both content-fade,
+    var(--vt-move) ease-in both content-rise;
+}
+
+@keyframes content-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes content-rise {
+  from {
+    top: 10px;
+  }
+  to {
+    top: 0;
+  }
 }
 
 /*
@@ -320,6 +380,11 @@ body {
   ::view-transition-group(*) {
     animation-duration: 0s !important;
     animation-delay: 0s !important;
+  }
+
+  /* #1032: 本物が上がる動きも止める。薄さが戻るのは残す（ちらつき防止） */
+  .content-enter {
+    animation: var(--enter-fade) linear both content-fade;
   }
 }
 
