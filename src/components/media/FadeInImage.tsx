@@ -18,14 +18,35 @@ import { useCallback, useState } from "react";
  *
  * 下地の灰色（`bg-line`）と場所取り（`aspect-square` など）は呼び出し側のまま。ここでは触らない。
  */
+/*
+ * #1044（2026-10-27）: ブラウザへの指示を 3 つ足した（`decoding` / `loading` / `fetchPriority`）。
+ *
+ * 【初心者向け】いちばん効くのは `decoding="async"` で、意味は
+ * 「**デコードで本体（メインスレッド）を止めるな**」です。
+ * 写真は届いたあと、画面に出せる形に変換（デコード）してから描かれます。この指示が無いと、
+ * その変換を本体が止まって待つことがあり、**ほかの描画がつかえます**。
+ *
+ * 本番ビルドを CPU 4 倍絞りで測ったところ、**写真を止めるだけで**スタイルとレイアウトの
+ * 時間が 993ms → 586ms（4 割減）になりました。`decoding="async"` を足して測り直すと、
+ * 長いフレームの合計が 12%、最悪のフレームが 16% 減りました（3 回ずつの平均）。
+ *
+ * `loading="lazy"` は**画面の外の写真だけ**に付けます。最初に見える写真に付けると、
+ * 取りに行くのが後回しになって**かえって遅く見えます**。
+ */
 export function FadeInImage({
   src,
   alt,
   className,
+  lazy = false,
+  priority = false,
 }: {
   src: string;
   alt: string;
   className?: string;
+  /** 画面の外にある写真だけ true。**最初に見える写真に付けると、出るのが遅くなる** */
+  lazy?: boolean;
+  /** その画面でいちばん大きく出る 1 枚だけ true。先に取りに行かせる */
+  priority?: boolean;
 }) {
   const [shown, setShown] = useState(false);
 
@@ -43,6 +64,9 @@ export function FadeInImage({
       alt={alt}
       onLoad={() => setShown(true)}
       onError={() => setShown(true)}
+      decoding="async"
+      loading={lazy ? "lazy" : undefined}
+      fetchPriority={priority ? "high" : undefined}
       data-fade-in={shown ? "shown" : "hidden"}
       // 210ms は要件 4.5.11 の場面 5 で決めた「現れる」の時間。
       // motion-reduce: 動きを減らす設定の人には、すぐ出す

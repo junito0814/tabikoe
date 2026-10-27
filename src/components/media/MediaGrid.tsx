@@ -38,6 +38,8 @@ function MediaCell({
   overflowCount,
   onOpen,
   href,
+  lazy = false,
+  priority = false,
 }: {
   item: MediaItem;
   className?: string;
@@ -45,10 +47,14 @@ function MediaCell({
   onOpen: () => void;
   /** v3.1（mentoring-7 Task5）: 指定すると、タップでモーダルを開かずこのリンクへ移る（投稿カードの写真 → 投稿詳細） */
   href?: string;
+  /** #1044: 画面の外にある写真だけ true */
+  lazy?: boolean;
+  /** #1044: その画面でいちばん大きく出る 1 枚だけ true */
+  priority?: boolean;
 }) {
   const inner = (
     <>
-      <MediaThumbnail item={item} />
+      <MediaThumbnail item={item} lazy={lazy} priority={priority} />
 
       {typeof overflowCount === "number" && (
         <span className="absolute inset-0 flex items-center justify-center bg-black/50 text-[1.25rem] font-semibold text-white">
@@ -83,14 +89,20 @@ function MediaCell({
 export function MediaThumbnail({
   item,
   className,
+  lazy = false,
+  priority = false,
 }: {
   item: Pick<MediaItem, "mediaType" | "thumbnailUrl" | "alt">;
   className?: string;
+  /** #1044: 画面の外にある写真だけ true */
+  lazy?: boolean;
+  /** #1044: その画面でいちばん大きく出る 1 枚だけ true */
+  priority?: boolean;
 }) {
   return (
     <span className={`relative block h-full w-full ${className ?? ""}`}>
       {/* loading-feedback Task 7: 届いた瞬間に薄く重ねて出す（要件 4.5.11 の場面 5） */}
-      <FadeInImage src={item.thumbnailUrl} alt={item.alt} className="h-full w-full object-cover" />
+      <FadeInImage src={item.thumbnailUrl} alt={item.alt} className="h-full w-full object-cover" lazy={lazy} priority={priority} />
 
       {item.mediaType === "video" && (
         <span className="absolute inset-0 flex items-center justify-center" data-video-overlay>
@@ -109,6 +121,7 @@ export function MediaGrid({
   postHref,
   linkToPost = false,
   morphPostId,
+  priority = false,
 }: {
   items: MediaItem[];
   postHref?: string;
@@ -126,6 +139,11 @@ export function MediaGrid({
    * アルバムの格子など**同じ投稿が重なりうる場所には渡さない**。
    */
   morphPostId?: string;
+  /**
+   * #1044（2026-10-27）: **その画面でいちばん大きく出る写真**のときだけ true。
+   * 1 枚目を先に取りに行かせる（`fetchpriority="high"`）。投稿詳細だけで使う。
+   */
+  priority?: boolean;
 }) {
   // 開いているモーダルの起点。null なら閉じている
   const [openIndex, setOpenIndex] = useState<number | null>(null);
@@ -139,9 +157,25 @@ export function MediaGrid({
     openIndex !== null && !cellHref ? (
       <MediaModal items={items} startIndex={openIndex} onClose={() => setOpenIndex(null)} postHref={postHref} />
     ) : null;
+  /*
+   * #1044: 1 枚目だけ先に取りに行かせ、2 枚目以降は画面の外なら後回しにする。
+   *
+   * 【初心者向け】`loading="lazy"` は「画面の外なら後回し」という指示で、
+   * 画面の中にあるかどうかはブラウザが判断します。ただし**最初に見える 1 枚**に付けると
+   * 取りに行くのが遅れて損をするので、1 枚目には付けません。
+   */
   const cell = (index: number, className?: string, overflowCount?: number) => {
     const node = (
-      <MediaCell key={items[index].id} item={items[index]} className={className} overflowCount={overflowCount} onOpen={() => setOpenIndex(index)} href={cellHref} />
+      <MediaCell
+        key={items[index].id}
+        item={items[index]}
+        className={className}
+        overflowCount={overflowCount}
+        onOpen={() => setOpenIndex(index)}
+        href={cellHref}
+        lazy={index > 0}
+        priority={priority && index === 0}
+      />
     );
     // Task 8-2: 繋げるのは代表写真（1 枚目）だけ。2 枚目以降は詳細側に対応するものが無い
     if (index === 0 && morphPostId) {
