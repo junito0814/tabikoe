@@ -140,3 +140,37 @@ describe("MediaGrid 動画（Task3）", () => {
     expect(container.querySelector("video")).toBeNull();
   });
 });
+
+/**
+ * #1044（2026-10-27）: 画面の外の写真は後回しにする
+ * 出典: Issue #1044
+ *
+ * 【初心者向け】`loading="lazy"` は「画面の外なら後回し」という指示です。
+ * **最初に見える 1 枚に付けると、取りに行くのが遅れて損をします**。
+ * 1 枚目には付けない、という線引きをここで止めます。
+ */
+describe("#1044: 後回しにする写真の線引き", () => {
+  it("1 枚目は後回しにしない。2 枚目以降は後回しにする", () => {
+    render(<MediaGrid items={makeItems(3)} />);
+    expect(screen.getByAltText("写真1")).not.toHaveAttribute("loading");
+    expect(screen.getByAltText("写真2")).toHaveAttribute("loading", "lazy");
+    expect(screen.getByAltText("写真3")).toHaveAttribute("loading", "lazy");
+  });
+
+  it("priority を渡した画面でだけ、1 枚目を先に取りに行かせる", () => {
+    const { unmount } = render(<MediaGrid items={makeItems(2)} />);
+    expect(screen.getByAltText("写真1")).not.toHaveAttribute("fetchpriority");
+    unmount();
+
+    render(<MediaGrid items={makeItems(2)} priority />);
+    expect(screen.getByAltText("写真1")).toHaveAttribute("fetchpriority", "high");
+    expect(screen.getByAltText("写真2")).not.toHaveAttribute("fetchpriority");
+  });
+
+  it("どの写真にも decoding=async が付く", () => {
+    render(<MediaGrid items={makeItems(3)} />);
+    for (const alt of ["写真1", "写真2", "写真3"]) {
+      expect(screen.getByAltText(alt)).toHaveAttribute("decoding", "async");
+    }
+  });
+});

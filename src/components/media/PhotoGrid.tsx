@@ -106,7 +106,8 @@ export function PhotoGrid({
               <li key={item.id} className="aspect-square overflow-hidden bg-line">
                 {/* v3.2（feedback-0919 Task3）: 写真のタップでモーダル（情報バーつき） */}
                 <button type="button" onClick={() => setOpenIndex(index)} className="block h-full w-full" aria-label={item.alt}>
-                  <MediaThumbnail item={item} />
+                  {/* #1044: 最初の 1 行（列数ぶん）だけ先に取りに行き、以降は画面の外なら後回し */}
+                  <MediaThumbnail item={item} lazy={index >= columns} />
                 </button>
               </li>
             ))}

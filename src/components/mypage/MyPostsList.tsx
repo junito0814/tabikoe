@@ -118,7 +118,7 @@ export function MyPostsList({
         <EmptyState title="まだ投稿がありません" description="行った場所のコエを残しましょう" action={{ label: "投稿する", href: "/posts/new" }} />
       ) : (
         <ul className="flex flex-col gap-2">
-          {posts.map((post) => (
+          {posts.map((post, index) => (
             <li key={post.id}>
               <Link
                 href={appendBackHref(`/posts/${post.id}`, backHref)}
@@ -127,7 +127,8 @@ export function MyPostsList({
               >
                 <span className="relative block h-16 w-16 shrink-0 overflow-hidden rounded-[8px] bg-line">
                   {post.thumbnailUrl && (
-                    <FadeInImage src={post.thumbnailUrl} alt="" className="h-full w-full object-cover" />
+                    /* #1044: 画面に入るのは 6 件ほど。それ以降は後回しにする */
+                    <FadeInImage src={post.thumbnailUrl} alt="" className="h-full w-full object-cover" lazy={index >= 6} />
                   )}
                 </span>
                 <span className="flex min-w-0 flex-1 flex-col gap-0.5">

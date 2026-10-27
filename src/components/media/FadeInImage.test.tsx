@@ -65,3 +65,35 @@ describe("FadeInImage", () => {
     restore();
   });
 });
+
+/**
+ * #1044（2026-10-27）: 写真のデコードで本体（メインスレッド）を止めない
+ * 出典: Issue #1044
+ *
+ * 【初心者向け】`decoding="async"` が**消えないこと**をここで止めます。
+ * 無くても画面は正しく出るので、消えても気づけません。ところが本番ビルドで測ると、
+ * 写真はスタイルとレイアウトの時間の 4 割を占めていました。
+ */
+describe("#1044: ブラウザへの指示", () => {
+  it("いつでも decoding=async を付ける", () => {
+    render(<FadeInImage src="/a.jpg" alt="写真" />);
+    expect(screen.getByAltText("写真")).toHaveAttribute("decoding", "async");
+  });
+
+  it("既定では後回しにしない（最初に見える写真を遅らせない）", () => {
+    render(<FadeInImage src="/a.jpg" alt="写真" />);
+    const img = screen.getByAltText("写真");
+    expect(img).not.toHaveAttribute("loading");
+    expect(img).not.toHaveAttribute("fetchpriority");
+  });
+
+  it("lazy を渡したときだけ後回しにする", () => {
+    render(<FadeInImage src="/a.jpg" alt="写真" lazy />);
+    expect(screen.getByAltText("写真")).toHaveAttribute("loading", "lazy");
+  });
+
+  it("priority を渡したときだけ先に取りに行かせる", () => {
+    render(<FadeInImage src="/a.jpg" alt="写真" priority />);
+    expect(screen.getByAltText("写真")).toHaveAttribute("fetchpriority", "high");
+  });
+});

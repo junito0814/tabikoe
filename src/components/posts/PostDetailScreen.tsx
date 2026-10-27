@@ -257,7 +257,7 @@ export function PostDetailScreen({
 
           {post.media.length > 0 && (
             <div className="overflow-hidden rounded-[12px]">
-              <MediaGrid items={post.media} morphPostId={post.id} />
+              <MediaGrid items={post.media} morphPostId={post.id} priority />
             </div>
           )}
 
