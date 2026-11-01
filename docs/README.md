@@ -213,6 +213,7 @@ docs/tasks/<カテゴリ>/<スラッグ>/01-〇〇.md     ③ タスク 1 件の
 | [loading-feedback](user-stories/shared-ui/loading-feedback.md) | 読み込み中の見せ方（2026-09-30。管理画面は保留） | 3 |
 | [mentoring-7](user-stories/shared-ui/mentoring-7.md) | メンタリング 7 回目の反映（v3.1） | 11 |
 | [feedback-0919](user-stories/shared-ui/feedback-0919.md) | 画面遷移マップの見直しで出た追加要望（v3.2） | 8 |
+| [e2e-foundation](user-stories/shared-ui/e2e-foundation.md) | 受入テスト（E2E）の土台（2026-11-01。代表 4 本だけ通す） | 5 |
 
 ### データ設計の確認（data-model。5.2〜5.4）
 
