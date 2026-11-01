@@ -366,7 +366,7 @@ Phase 15 の後に着手し、**2026-09-19 に全部マージ**（PR #454〜#460
 
 ## Phase 20 — 受入テスト（E2E）の土台 ⬜
 
-出典は要件定義書 9 章 未決定事項 No.12（2026-11-01 に決着）。ストーリーは [e2e-foundation](user-stories/shared-ui/e2e-foundation.md)、タスクは [tasks/shared-ui/e2e-foundation](tasks/shared-ui/e2e-foundation/00-index.md)。
+出典は要件定義書 9 章 未決定事項 No.12（2026-11-01 に決着）。ストーリーは [e2e-foundation](user-stories/shared-ui/e2e-foundation.md)、タスクは [tasks/shared-ui/e2e-foundation](tasks/shared-ui/e2e-foundation/00-index.md)。 Issue は #1052〜#1056（Epic は作らない）。
 
 背景: 壊れたことに気づける手段が、単体テスト 2,449 件と自分の手で触ることだけだった。**Route Handler と `async` な Server Component は単体テストの対象外**なので、API 89 本の入口と、画面を描くサーバー側の処理は自動では一度も通されていない。
 
@@ -376,11 +376,11 @@ Phase 15 の後に着手し、**2026-09-19 に全部マージ**（PR #454〜#460
 
 | # | Task | Issue | 状態 | 依存 | 内容 |
 |---|---|---|---|---|---|
-| 1 | e2e-foundation Task 1: Playwright を入れ、CI で動かす | — | ⬜ | なし | 設定・煙テスト 1 本・CI のジョブ（落ちてもマージを止めない） |
-| 2 | e2e-foundation Task 2: ローカル Supabase と種データ | — | ⬜ | なし | `supabase start`・マイグレーション 53 本の適用・毎回作り直す種データ |
-| 3 | e2e-foundation Task 3: テスト専用のログイン経路 | — | ⬜ | 2 | `E2E_TEST=1` のときだけ有効。設定していなければ 404 |
-| 4 | e2e-foundation Task 4: Google マップのスタブ | — | ⬜ | 1 | ブラウザ側とサーバー側の両方。外部 API を 1 回も呼ばない |
-| 5 | e2e-foundation Task 5: 主導線の代表 4 本 | — | ⬜ | 1・2・3・4 | 入口／投稿／しおり／未ログインの共有リンク |
+| 1 | e2e-foundation Task 1: Playwright を入れ、CI で動かす | #1052 | ⬜ | なし | 設定・煙テスト 1 本・CI のジョブ（落ちてもマージを止めない） |
+| 2 | e2e-foundation Task 2: ローカル Supabase と種データ | #1053 | ⬜ | なし | `supabase start`・マイグレーション 53 本の適用・毎回作り直す種データ |
+| 3 | e2e-foundation Task 3: テスト専用のログイン経路 | #1054 | ⬜ | 2 | `E2E_TEST=1` のときだけ有効。設定していなければ 404 |
+| 4 | e2e-foundation Task 4: Google マップのスタブ | #1055 | ⬜ | 1 | ブラウザ側とサーバー側の両方。外部 API を 1 回も呼ばない |
+| 5 | e2e-foundation Task 5: 主導線の代表 4 本 | #1056 | ⬜ | 1・2・3・4 | 入口／投稿／しおり／未ログインの共有リンク |
 
 ---
 
