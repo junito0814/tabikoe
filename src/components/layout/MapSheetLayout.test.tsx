@@ -46,13 +46,37 @@ function setup({ steps, summary, scrollHeight = 3000 }: { steps?: 2 | 3; summary
   return { scrollTo, handle };
 }
 
-/** 取っ手を上下にスライドする。up なら上へ、down なら下へ閾値ぶん動かす */
+/*
+ * #1034（2026-10-31）: **時間を固定してからスライドする。**
+ *
+ * 【初心者向け】`use-sheet-drag` は、閾値に届かない動きでも「**素早く弾いた**」なら
+ * 反応します（フリック）。その判定に `performance.now()` の経過時間を使っているため、
+ * 時間を固定しないと**実行機の混み具合でテストの結果が変わります**。
+ *
+ * 実際、20px（閾値の半分）動かして「何も起きない」ことを確かめるテストが、
+ * 経過時間が 16〜40ms に入ったときだけフリックと判定されて落ちていました。
+ * 手元が速いと 16ms 未満で終わるので通り、**混んでいるときだけ落ちます**。
+ *
+ * そこで、押してから離すまでの経過時間を**引数で決める**形にしました。
+ */
 let pointerId = 0;
-function drag(handle: HTMLElement, direction: "up" | "down") {
+function slide(handle: HTMLElement, { move, elapsed }: { move: number; elapsed: number }) {
   const id = ++pointerId;
-  const move = direction === "up" ? -SHEET_DRAG_THRESHOLD_PX : SHEET_DRAG_THRESHOLD_PX;
+  const now = vi.spyOn(performance, "now");
+  now.mockReturnValue(0);
   fireEvent.pointerDown(handle, { button: 0, pointerId: id, clientY: 400 });
+  now.mockReturnValue(elapsed);
   fireEvent.pointerUp(handle, { pointerId: id, clientY: 400 + move });
+  now.mockRestore();
+}
+
+/** ゆっくり動かす長さ。これだけかければ、どの距離でもフリックにはならない */
+const SLOW_MS = 400;
+
+/** 取っ手を上下にスライドする。up なら上へ、down なら下へ閾値ぶん動かす（ゆっくり） */
+function drag(handle: HTMLElement, direction: "up" | "down") {
+  const move = direction === "up" ? -SHEET_DRAG_THRESHOLD_PX : SHEET_DRAG_THRESHOLD_PX;
+  slide(handle, { move, elapsed: SLOW_MS });
 }
 
 const step = () => document.querySelector("[data-map-sheet-layout]")?.getAttribute("data-sheet-step");
@@ -69,8 +93,8 @@ afterEach(() => {
 describe("MapSheetLayout（v3.1 Task11: スライド／map-sheet Task2: 3 段階）", () => {
   it("上に閾値以上スライドすると全画面（地図の高さまでスクロール）、小さい動きでは何もしない", () => {
     const { scrollTo, handle } = setup();
-    fireEvent.pointerDown(handle, { button: 0, pointerId: 1, clientY: 400 });
-    fireEvent.pointerUp(handle, { pointerId: 1, clientY: 400 - SHEET_DRAG_THRESHOLD_PX / 2 });
+    // 閾値の半分を、フリックにならない速さで動かす（#1034: 時間を固定しないと結果が揺れる）
+    slide(handle, { move: -SHEET_DRAG_THRESHOLD_PX / 2, elapsed: SLOW_MS });
     expect(scrollTo).not.toHaveBeenCalled();
     drag(handle, "up");
     expect(scrollTo).toHaveBeenCalledWith(expect.objectContaining({ top: 300 }));
@@ -199,5 +223,46 @@ describe("MapSheetLayout（v3.1 Task11: スライド／map-sheet Task2: 3 段階
       const { handle } = setup();
       expect(handle.className).toContain("h-8");
     });
+  });
+});
+
+/**
+ * #1034（2026-10-31）: フリック判定（素早く弾いたときの動き）
+ * 出典: src/components/layout/use-sheet-drag.ts
+ *
+ * 【初心者向け】この判定にはテストが 1 本もありませんでした。時間に依存する作りなので、
+ * **誰も守っていない状態で放置すると、速さの条件を変えても気づけません**。
+ * 「閾値に届かない小さな動きでも、素早ければ反応する」という狙いをここで止めます。
+ *
+ * 判定の条件は 3 つすべてを満たしたとき（use-sheet-drag.ts）。
+ *   1. 1 フレーム以上かけている（16ms 以上）── 誤タップを弾くため
+ *   2. 12px 以上動いている
+ *   3. 速さが基準以上（距離 ÷ 経過時間）
+ */
+describe("#1034: フリック（閾値に届かない素早い動き）", () => {
+  const SMALL = SHEET_DRAG_THRESHOLD_PX / 2; // 20px。閾値（40px）には届かない
+
+  it("素早く上へ弾くと、閾値に届かなくても全画面になる", () => {
+    const { scrollTo, handle } = setup();
+    slide(handle, { move: -SMALL, elapsed: 20 }); // 20px / 20ms = 1.0
+    expect(scrollTo).toHaveBeenCalledWith(expect.objectContaining({ top: 300 }));
+  });
+
+  it("同じ距離でも、ゆっくり動かせば何も起きない", () => {
+    const { scrollTo, handle } = setup();
+    slide(handle, { move: -SMALL, elapsed: SLOW_MS }); // 20px / 400ms = 0.05
+    expect(scrollTo).not.toHaveBeenCalled();
+  });
+
+  it("速くても、1 フレーム未満の動きは誤タップとして弾く", () => {
+    const { scrollTo, handle } = setup();
+    slide(handle, { move: -SMALL, elapsed: 10 }); // 速さは足りるが 16ms 未満
+    expect(scrollTo).not.toHaveBeenCalled();
+  });
+
+  it("速くても、動きが小さすぎる場合は弾く", () => {
+    const { scrollTo, handle } = setup();
+    slide(handle, { move: -10, elapsed: 20 }); // 12px 未満
+    expect(scrollTo).not.toHaveBeenCalled();
   });
 });
