@@ -50,7 +50,7 @@
 |---|---|---|
 | 単体テスト | 整備済み（Vitest + React Testing Library、`jsdom`） | `npm test`（`npm run test:watch`で監視） |
 | 結合テスト | 未整備。Supabaseを実際に叩くため**ローカルSupabase（CLI + Docker）**が必要 | — |
-| E2Eテスト | 未整備。Playwright等のブラウザ環境が必要。画面が揃うPhase 5〜6以降で導入を判断する | — |
+| E2Eテスト | 未整備。~~画面が揃うPhase 5〜6以降で導入を判断する~~ → **2026-11-01 に土台を作ることを決めた**（Phase 20。Playwright＋ローカル Supabase＋テスト専用のログイン経路＋Google マップのスタブ。通すのは主導線の代表 4 本だけで、閉じてある 36 件は土台の上で順に再オープンする） | — |
 
 単体テストの書き方:
 

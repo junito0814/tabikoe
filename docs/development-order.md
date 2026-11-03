@@ -364,6 +364,26 @@ Phase 15 の後に着手し、**2026-09-19 に全部マージ**（PR #454〜#460
 
 ---
 
+## Phase 20 — 受入テスト（E2E）の土台 ⬜
+
+出典は要件定義書 9 章 未決定事項 No.12（2026-11-01 に決着）。ストーリーは [e2e-foundation](user-stories/shared-ui/e2e-foundation.md)、タスクは [tasks/shared-ui/e2e-foundation](tasks/shared-ui/e2e-foundation/00-index.md)。 Issue は #1052〜#1056（Epic は作らない）。
+
+背景: 壊れたことに気づける手段が、単体テスト 2,449 件と自分の手で触ることだけだった。**Route Handler と `async` な Server Component は単体テストの対象外**なので、API 89 本の入口と、画面を描くサーバー側の処理は自動では一度も通されていない。
+
+**36 件を一度に戻さない。** 土台を作り、主導線の代表 4 本だけを通す。残りは土台の上で順に再オープンする。**CI では最初から必須チェックにしない**（E2E はゆらぎやすく、必須にしてから落ちると再実行で通す癖がつく。約束 23）。連続して緑になることを確かめてから必須に上げる。
+
+順番: **1 → 2 → 3 → 4 → 5**。1 を先に入れるのは、アプリの事情抜きで「Playwright が CI で動くか」を確かめられるため（落ちたときに原因が 1 つに絞れる）。4 を 5 の前に入れるのは、4 が無いと 5 が課金されるため。
+
+| # | Task | Issue | 状態 | 依存 | 内容 |
+|---|---|---|---|---|---|
+| 1 | e2e-foundation Task 1: Playwright を入れ、CI で動かす | #1052 | ⬜ | なし | 設定・煙テスト 1 本・CI のジョブ（落ちてもマージを止めない） |
+| 2 | e2e-foundation Task 2: ローカル Supabase と種データ | #1053 | ⬜ | なし | `supabase start`・マイグレーション 53 本の適用・毎回作り直す種データ |
+| 3 | e2e-foundation Task 3: テスト専用のログイン経路 | #1054 | ⬜ | 2 | `E2E_TEST=1` のときだけ有効。設定していなければ 404 |
+| 4 | e2e-foundation Task 4: Google マップのスタブ | #1055 | ⬜ | 1 | ブラウザ側とサーバー側の両方。外部 API を 1 回も呼ばない |
+| 5 | e2e-foundation Task 5: 主導線の代表 4 本 | #1056 | ⬜ | 1・2・3・4 | 入口／投稿／しおり／未ログインの共有リンク |
+
+---
+
 ## 計画と実際の順序が異なった理由
 
 | 差異 | 理由 |
@@ -375,7 +395,7 @@ Phase 15 の後に着手し、**2026-09-19 に全部マージ**（PR #454〜#460
 
 ## テスト基盤について
 
-単体テスト（Vitest）は PR #235 で導入し、Phase 0〜2 の既存コードの単体テスト要件をコード化した。以降のストーリーは実装と同じPRで単体テストを書いている（Route Handler も `vi.mock` で Supabase を差し替えて分岐を検証する。例: `src/app/api/wishlist/route.test.ts`）。結合テスト（ローカルSupabase）・E2E（Playwright）は未整備。**各ストーリーの「受入テスト（E2E）」タスクはすべて未着手**で、2026-09-19 に「後回し」として一旦閉じた（E2E の土台ができてから再オープン。要件定義書 9 章 #12）。画面確認用のダミーデータは `scripts/seed/seed-tokyo.mjs`（消すのは `clean-seed.mjs`）。詳細は[development-process.md](development-process.md)。
+単体テスト（Vitest）は PR #235 で導入し、Phase 0〜2 の既存コードの単体テスト要件をコード化した。以降のストーリーは実装と同じPRで単体テストを書いている（Route Handler も `vi.mock` で Supabase を差し替えて分岐を検証する。例: `src/app/api/wishlist/route.test.ts`）。結合テスト（ローカルSupabase）・E2E（Playwright）は未整備。**各ストーリーの「受入テスト（E2E）」タスクはすべて未着手**で、2026-09-19 に「後回し」として一旦閉じた（E2E の土台ができてから再オープン。要件定義書 9 章 #12）。**2026-11-01 に土台を作ることを決めた** ── Phase 20 で Playwright・ローカル Supabase・テスト専用のログイン経路・Google マップのスタブを用意し、**主導線の代表 4 本だけ**を通す（36 件は閉じたまま）。画面確認用のダミーデータは `scripts/seed/seed-tokyo.mjs`（消すのは `clean-seed.mjs`）。詳細は[development-process.md](development-process.md)。
 
 ## 補足
 
