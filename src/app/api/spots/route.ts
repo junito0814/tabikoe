@@ -3,7 +3,10 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getAuthenticatedUser } from "@/lib/auth/get-authenticated-user";
 import { graphemeLength } from "@/lib/text/grapheme-length";
-import { DUPLICATE_SPOT_RADIUS_METERS, findNearbySpots } from "@/lib/spots/nearby";
+import type { SupabaseClient } from "@supabase/supabase-js";
+import { DUPLICATE_SPOT_RADIUS_METERS, findNearbySpots, type NearbySpot } from "@/lib/spots/nearby";
+import { decideSpotRegistration } from "@/lib/spots/registration-decision";
+import { metersBetween } from "@/lib/spots/place-id-match";
 import { reverseGeocodePrefecture } from "@/lib/google/geocoding";
 import { getMapPins, parseMapBounds } from "@/lib/map/get-map-pins";
 import { parseSpotFilters } from "@/lib/map/spot-aggregate";
@@ -56,8 +59,10 @@ export async function GET(request: Request) {
  * 出典: docs/tasks/posts/spot-selection/05-manual-spot-registration-handler.md
  *
  * 手動登録（source='manual'）と、Google Places候補を選択した際の登録（source='places'）の
- * 両方を扱う。いずれも半径50m以内に既存スポットがあれば登録せず既存スポットを返し、
+ * 両方を扱う。既存スポットを使うときは登録せず 409 で既存スポットを返し、
  * クライアント側でその選択を促す（要件定義書3.3.5）。
+ * #1062（2026-11-07）: 既存を使う条件を変えた。Place ID があれば「同じ Place ID」だけ、
+ * 無ければ今までどおり「半径50m以内」（`decideSpotRegistration`）。
  * 登録したスポットは以降、全ユーザーの検索候補（Task2）に表示される。
  */
 export async function POST(request: Request) {
@@ -112,19 +117,30 @@ export async function POST(request: Request) {
   // スポットは全ユーザー共有のマスタのため、書き込みはService Role Key経由で行う
   const admin = createAdminClient();
 
-  let nearby;
+  /*
+   * #1062: 既存を使うか新しく作るかは `decideSpotRegistration`（純粋関数）が決める。
+   *
+   * 【初心者向け】Google の候補（Place ID あり）は「同じ Place ID のスポット」だけを探し、
+   * 50m 以内の検索はしない。距離で探すと、同じビルの別の店に置き換わってしまうため。
+   * 地図のピンだけで指したとき（Place ID なし）は、今までどおり 50m 以内を探す。
+   */
+  let samePlaceSpot: NearbySpot | null = null;
+  let nearby: NearbySpot[] = [];
   try {
-    nearby = await findNearbySpots(admin, lat, lng, DUPLICATE_SPOT_RADIUS_METERS);
+    if (placeId) {
+      samePlaceSpot = await findSpotByPlaceId(admin, placeId, { lat, lng });
+    } else {
+      nearby = await findNearbySpots(admin, lat, lng, DUPLICATE_SPOT_RADIUS_METERS);
+    }
   } catch {
     // 重複判定ができない状態で登録を通すと重複スポットが増えるため、ここでは中断する
     return NextResponse.json({ error: "nearby_lookup_failed" }, { status: 503 });
   }
 
-  if (nearby.length > 0) {
-    return NextResponse.json(
-      { error: "duplicate_spot", existingSpot: nearby[0] },
-      { status: 409 }
-    );
+  const decision = decideSpotRegistration({ placeId, samePlaceSpot, nearby });
+  if (decision.kind === "existing") {
+    // 画面（SpotField・SpotAutocompleteInput）は 409 を「既存に寄せる」合図として受け取る（今までと同じ形）
+    return NextResponse.json({ error: "duplicate_spot", existingSpot: decision.spot }, { status: 409 });
   }
 
   const { data: spot, error: insertError } = await admin
@@ -143,6 +159,22 @@ export async function POST(request: Request) {
     })
     .select("id, name, lat, lng, prefecture, source")
     .single();
+
+  /*
+   * #1062: 同じ Place ID の登録が**同時に** 2 本来ると、どちらも「まだ無い」と判断して作りに行く。
+   * 片方はデータベースの一意の制約（spots_place_id_unique）で断られるので、そのときは先にできた方を返す。
+   * 【初心者向け】23505 は PostgreSQL の「一意の制約に違反した」という番号。
+   */
+  if (insertError?.code === UNIQUE_VIOLATION && placeId) {
+    try {
+      const winner = await findSpotByPlaceId(admin, placeId, { lat, lng });
+      if (winner) {
+        return NextResponse.json({ error: "duplicate_spot", existingSpot: winner }, { status: 409 });
+      }
+    } catch {
+      // 下の insert_failed に落とす
+    }
+  }
 
   if (insertError || !spot) {
     return NextResponse.json({ error: "insert_failed" }, { status: 500 });
@@ -174,6 +206,28 @@ export async function POST(request: Request) {
   }
 
   return NextResponse.json({ spot }, { status: 201 });
+}
+
+/** PostgreSQL の「一意の制約に違反した」を表す番号 */
+const UNIQUE_VIOLATION = "23505";
+
+/**
+ * #1062: 同じ Place ID で登録済みのスポットを 1 件探す。無ければ null、引けなければ throw。
+ *
+ * 管理者が非公開にしたスポット（hidden_at あり）も対象にする。Place ID は一意なので、
+ * 非公開のものを避けて新しく作ろうとしても、一意の制約で断られるため。
+ * 返す形は近傍検索（NearbySpot）に揃え、距離は登録しようとした位置から測る。
+ */
+async function findSpotByPlaceId(admin: SupabaseClient, placeId: string, from: { lat: number; lng: number }): Promise<NearbySpot | null> {
+  const { data, error } = await admin
+    .from("spots")
+    .select("id, name, lat, lng, prefecture, source")
+    .eq("place_id", placeId)
+    .limit(1)
+    .maybeSingle();
+  if (error) throw error;
+  if (!data) return null;
+  return { ...data, distance_meters: metersBetween(from, data) } as NearbySpot;
 }
 
 /**
