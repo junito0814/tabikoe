@@ -2,6 +2,7 @@ import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import sharp from "sharp";
 import { requireLocalSupabase } from "./local-supabase";
 import { resetDatabase } from "./reset";
+import { E2E_SEED_USERS } from "../../src/lib/e2e/seed-users";
 
 /**
  * e2e-foundation Task 2: E2E 用の種データ（毎回同じ結果になる最小限）
@@ -21,10 +22,8 @@ import { resetDatabase } from "./reset";
  * リポジトリに画像ファイルを入れずに済む。
  */
 export const SEED = {
-  users: {
-    taro: { id: "00000000-0000-4000-8000-0000000000e1", email: "taro@e2e.invalid", displayName: "たろう", isAdmin: false },
-    admin: { id: "00000000-0000-4000-8000-0000000000e2", email: "admin@e2e.invalid", displayName: "管理者", isAdmin: true },
-  },
+  // 利用者 2 名はテスト専用のログイン経路と同じ定義を読む（ID とメールアドレスを 2 か所に書かない。約束 14）
+  users: { taro: E2E_SEED_USERS.user, admin: E2E_SEED_USERS.admin },
   trip: { id: "00000000-0000-4000-8000-0000000000f1", title: "東京旅行" },
   spots: {
     sensoji: { id: "00000000-0000-4000-8000-0000000000a1", name: "浅草寺", lat: 35.7148, lng: 139.7967, placeId: "E2E_SENSOJI" },
