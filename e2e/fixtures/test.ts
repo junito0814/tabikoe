@@ -1,6 +1,7 @@
 import { test as base } from "@playwright/test";
 import { resetAndSeed } from "./seed";
 import { loginAs } from "./auth";
+import { installGoogleBrowserStub, type GoogleBrowserStub } from "./maps-stub";
 import type { E2eLoginTarget } from "../../src/lib/e2e/seed-users";
 
 /**
@@ -13,7 +14,7 @@ import type { E2eLoginTarget } from "../../src/lib/e2e/seed-users";
  *
  * テストどうしが同じ DB を取り合わないように、設定で 1 本ずつ順に動かしています（playwright.config.ts の workers）。
  */
-export const test = base.extend<{ freshDatabase: void; loginAs: (who: E2eLoginTarget) => Promise<void> }>({
+export const test = base.extend<{ freshDatabase: void; loginAs: (who: E2eLoginTarget) => Promise<void>; google: GoogleBrowserStub }>({
   freshDatabase: [
     // Playwright の決まった書き方。ほかの fixture を使わないときも、1 つ目の引数は分割代入（{}）で受ける
     async ({}, provide) => {
@@ -26,6 +27,16 @@ export const test = base.extend<{ freshDatabase: void; loginAs: (who: E2eLoginTa
    * e2e-foundation Task 3: `await loginAs("user")` で種データの利用者としてログインする（auth.ts）。
    * DB の作り直しが先に済んでいる（上の freshDatabase は auto で先に走る）ので、ログインの相手は必ずいる。
    */
+  /*
+   * e2e-foundation Task 4: ブラウザから Google への通信を、毎回自動で差し替える（maps-stub.ts）。
+   * 地図の読み込みはスタブで答え、それ以外は失敗させて `google.blocked` に記録する。
+   */
+  google: [
+    async ({ context }, provide) => {
+      await provide(await installGoogleBrowserStub(context));
+    },
+    { auto: true },
+  ],
   // 2 つ目の引数（値をテストへ渡す関数）は、Playwright の例では `use` と書くが、React の `use` と見間違えて eslint が止めるので `provide` と呼ぶ
   loginAs: async ({ context }, provide) => {
     await provide((who) => loginAs(context, who));

@@ -7,7 +7,9 @@
  * 結果はスポット登録時に一度だけ`spots.prefecture`へ保存し、
  * ステータスバッジ（F-BG）の都道府県判定で利用する。
  */
-const GEOCODE_ENDPOINT = "https://maps.googleapis.com/maps/api/geocode/json";
+import { googleApiUrl } from "./base-url";
+// e2e-foundation Task 4: 基点は base-url.ts で決める（E2E のときだけ手元のスタブに向く）。呼ぶたびに組み立てる
+const GEOCODE_ENDPOINT = () => googleApiUrl("maps", "/maps/api/geocode/json");
 
 export class GeocodingApiError extends Error {}
 
@@ -34,7 +36,7 @@ export async function reverseGeocodePrefecture(
     throw new GeocodingApiError("GOOGLE_GEOCODING_API_KEY is not set");
   }
 
-  const url = new URL(GEOCODE_ENDPOINT);
+  const url = new URL(GEOCODE_ENDPOINT());
   url.searchParams.set("latlng", `${lat},${lng}`);
   url.searchParams.set("language", "ja");
   url.searchParams.set("result_type", "administrative_area_level_1");
@@ -114,7 +116,7 @@ export async function geocodePlace(query: string): Promise<GeocodedPlace | null>
     throw new GeocodingApiError("GOOGLE_GEOCODING_API_KEY is not set");
   }
 
-  const url = new URL(GEOCODE_ENDPOINT);
+  const url = new URL(GEOCODE_ENDPOINT());
   url.searchParams.set("address", query);
   url.searchParams.set("language", "ja");
   url.searchParams.set("region", "jp");

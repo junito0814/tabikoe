@@ -1,4 +1,5 @@
 import { PlacesApiError } from "./places";
+import { googleApiUrl } from "./base-url";
 
 /**
  * #701: Place Details（New）で**営業時間と公式サイトだけ**を引く
@@ -13,7 +14,8 @@ import { PlacesApiError } from "./places";
  * スポット別の画面でだけ、1 画面 1 回引く（一覧に出すと 1 画面 20 回で月 50 画面で尽きる）。
  * ★・価格帯・写真・クチコミは**借りない**（タビコエが自前で持っている）。
  */
-const DETAILS_ENDPOINT = "https://places.googleapis.com/v1/places";
+// e2e-foundation Task 4: 基点は base-url.ts で決める（E2E のときだけ手元のスタブに向く）。呼ぶたびに組み立てる
+const DETAILS_ENDPOINT = () => googleApiUrl("places", "/v1/places");
 
 /** 画面に出す形。取れなかった項目は null／空になる */
 export interface PlaceOfficialInfo {
@@ -46,7 +48,7 @@ export async function fetchPlaceOfficialInfo(placeId: string): Promise<PlaceOffi
 
   let response: Response;
   try {
-    response = await fetch(`${DETAILS_ENDPOINT}/${encodeURIComponent(placeId)}`, {
+    response = await fetch(`${DETAILS_ENDPOINT()}/${encodeURIComponent(placeId)}`, {
       headers: {
         "X-Goog-Api-Key": apiKey,
         // 引く項目を絞ると料金の段も下がる。余分な項目を足さない
