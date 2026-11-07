@@ -6,7 +6,9 @@
  * スポットを`spots`に登録するには緯度経度が必要なため、place_idしか返さない
  * Autocomplete APIではなくText Search（New）を使い、1回の呼び出しで座標まで取得する。
  */
-const TEXT_SEARCH_ENDPOINT = "https://places.googleapis.com/v1/places:searchText";
+import { googleApiUrl } from "./base-url";
+// e2e-foundation Task 4: 基点は base-url.ts で決める（E2E のときだけ手元のスタブに向く）。呼ぶたびに組み立てる
+const TEXT_SEARCH_ENDPOINT = () => googleApiUrl("places", "/v1/places:searchText");
 
 export interface PlaceCandidate {
   placeId: string;
@@ -34,7 +36,7 @@ export async function searchPlaces(query: string, limit: number): Promise<PlaceC
 
   let response: Response;
   try {
-    response = await fetch(TEXT_SEARCH_ENDPOINT, {
+    response = await fetch(TEXT_SEARCH_ENDPOINT(), {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -80,7 +82,8 @@ export async function searchPlaces(query: string, limit: number): Promise<PlaceC
  * `includedPrimaryTypes` で駅と市区町村に限定し、日本国内（includedRegionCodes: jp）に絞る。
  * `sessionToken` を付けると 1 回の入力セッションとしてまとめて課金される（呼び出し回数を抑える）。
  */
-const AUTOCOMPLETE_ENDPOINT = "https://places.googleapis.com/v1/places:autocomplete";
+// e2e-foundation Task 4: 基点は base-url.ts で決める（E2E のときだけ手元のスタブに向く）。呼ぶたびに組み立てる
+const AUTOCOMPLETE_ENDPOINT = () => googleApiUrl("places", "/v1/places:autocomplete");
 
 export interface RegionSuggestion {
   placeId: string;
@@ -110,7 +113,7 @@ export async function autocompleteRegions(query: string, sessionToken: string | 
 
   let response: Response;
   try {
-    response = await fetch(AUTOCOMPLETE_ENDPOINT, {
+    response = await fetch(AUTOCOMPLETE_ENDPOINT(), {
       method: "POST",
       headers: { "Content-Type": "application/json", "X-Goog-Api-Key": apiKey },
       body: JSON.stringify({
