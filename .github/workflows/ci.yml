@@ -69,7 +69,8 @@ jobs:
     timeout-minutes: 20
     continue-on-error: true
     env:
-      # playwright.config.ts が同じダミーを渡すが、ビルドの前に読まれる値もあるので揃えておく
+      # Supabase は e2e/run.mjs がローカル（Docker の中）に立ち上げ、playwright.config.ts がその繋ぎ先で上書きする（Task 2）。
+      # ここのダミーは、Google のキーと、ローカルが立ち上がる前に読まれる値の受け皿
       NEXT_PUBLIC_SUPABASE_URL: https://example.supabase.co
       NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ci-dummy-publishable-key
       SUPABASE_SECRET_KEY: ci-dummy-secret-key
@@ -109,6 +110,7 @@ jobs:
         if: steps.browser-cache.outputs.cache-hit == 'true'
         run: npx playwright install-deps chromium
 
+      # ローカルの Supabase の起動（Docker の部品のダウンロードを含む）→ ビルド → テスト → 停止 までを e2e/run.mjs が行う
       - name: E2E
         run: npm run test:e2e
 

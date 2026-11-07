@@ -50,7 +50,17 @@
 |---|---|---|
 | 単体テスト | 整備済み（Vitest + React Testing Library、`jsdom`） | `npm test`（`npm run test:watch`で監視） |
 | 結合テスト | 未整備。Supabaseを実際に叩くため**ローカルSupabase（CLI + Docker）**が必要 | — |
-| E2Eテスト | 未整備。~~画面が揃うPhase 5〜6以降で導入を判断する~~ → **2026-11-01 に土台を作ることを決めた**（Phase 20。Playwright＋ローカル Supabase＋テスト専用のログイン経路＋Google マップのスタブ。通すのは主導線の代表 4 本だけで、閉じてある 36 件は土台の上で順に再オープンする） | — |
+| E2Eテスト | ~~未整備。画面が揃うPhase 5〜6以降で導入を判断する~~ → **2026-11-01 に土台を作ることを決めた**（Phase 20。Playwright＋ローカル Supabase＋テスト専用のログイン経路＋Google マップのスタブ。通すのは主導線の代表 4 本だけで、閉じてある 36 件は土台の上で順に再オープンする）。**2026-11-08: Playwright とローカル Supabase まで入った**（Task 1・2）。下の「E2E の動かし方」 | `npm run test:e2e`（Docker が要る） |
+
+E2E の動かし方（2026-11-08 で追加。e2e-foundation Task 1・2）:
+
+- **Docker Desktop を起動してから** `npm run test:e2e` を実行する。動いていなければ、理由を出して止まる。
+- `e2e/run.mjs` が、ローカルの Supabase（Docker の中の使い捨て。`supabase/config.toml`）を起動し、Playwright を動かし、**自分で起動したときだけ**止める。残したいときは `E2E_KEEP_SUPABASE=1 npm run test:e2e`。初回は部品のダウンロードで数分かかる。
+- アプリは本番と同じビルド（`next build` → `next start`）を **`.next-e2e/`** に作って、3100 番で動かす。**開発サーバーの `.next/` は書き換えない**ので、開発サーバーを動かしたままでも走らせてよい。
+- **本番・開発用の DB には繋がらない。** Supabase はローカルを、Google のキーはダミーを、`playwright.config.ts` からアプリに渡す（手元の `.env.local` は本番を向いているので、そのままでは使わない）。ローカルの繋ぎ先が `127.0.0.1` / `localhost` でなければ止める（`e2e/fixtures/local-supabase.ts`）。
+- **DB を使うテストは `e2e/fixtures/test.ts` の `test` を使う。** 各テストの前に DB を空にし（マイグレーションが入れた `legal_documents`・`moderation_settings` は残す）、種データ（`e2e/fixtures/seed.ts`。利用者 2・旅行 1・スポット 2・公開投稿 2・下書き 1・写真 1）を入れ直す。テストは 1 本ずつ順に動く。
+- WebKit で動かすときは `npm run test:e2e -- --browser=webkit`（常用はしない。CI は Chromium だけ）。
+- CI では `e2e` ジョブで動く。**落ちてもマージを止めない**（連続して緑になることを確かめてから必須に上げる）。落ちたときの記録は成果物 `playwright-report` に 14 日残る。
 
 単体テストの書き方:
 
