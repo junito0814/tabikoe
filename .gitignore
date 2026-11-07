@@ -12,6 +12,10 @@
 
 # testing
 /coverage
+# e2e-foundation Task 1: Playwright の結果と、E2E 用のビルド（next.config.ts の distDir）
+/playwright-report/
+/test-results/
+/.next-e2e/
 
 # next.js
 /.next/

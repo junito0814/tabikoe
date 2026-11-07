@@ -1,6 +1,7 @@
 # CI: PR を開いたとき・main に push したときに、手元で毎回やっている 4 つの確認を自動で回す。
 #   1. 型チェック（tsc）  2. lint（eslint）  3. 単体テスト（vitest）  4. 本番ビルド（next build）
-# どれか 1 つでも赤なら PR 画面に ✗ が出る。E2E（Playwright）は土台ができたら別ジョブで足す。
+# どれか 1 つでも赤なら PR 画面に ✗ が出る。
+# E2E（Playwright）は別ジョブ（e2e）。2026-11-08 に足したばかりで、**落ちてもマージを止めない**（下の e2e の説明）。
 #
 # 【初心者向け】ビルドは Supabase や Google のキーを「値の中身」までは見ない（接続はしない）ので、
 # ここではダミーの値を環境変数に入れて通す。本物のキーは GitHub に置かない。
@@ -55,3 +56,69 @@ jobs:
 
       - name: Build
         run: npm run build
+
+  # e2e-foundation Task 1（2026-11-08）: 受入テスト（E2E。Playwright）
+  # 出典: docs/tasks/shared-ui/e2e-foundation/01-playwright.md、要件定義書 9 章 No.12
+  #
+  # 【初心者向け】`continue-on-error: true` で、**このジョブが落ちても CI 全体は緑のまま**にしている。
+  # E2E はゆらぎやすく、最初から必須にすると「再実行で通す癖」がつく（約束 23）。
+  # 連続して緑になることを確かめてから必須に上げる（ストーリーの決定）。落ちた記録は消さずに残す。
+  e2e:
+    name: e2e（Playwright・落ちても止めない）
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    continue-on-error: true
+    env:
+      # playwright.config.ts が同じダミーを渡すが、ビルドの前に読まれる値もあるので揃えておく
+      NEXT_PUBLIC_SUPABASE_URL: https://example.supabase.co
+      NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ci-dummy-publishable-key
+      SUPABASE_SECRET_KEY: ci-dummy-secret-key
+      NEXT_PUBLIC_GOOGLE_MAPS_API_KEY: ci-dummy-maps-key
+      GOOGLE_PLACES_API_KEY: ci-dummy-places-key
+      GOOGLE_GEOCODING_API_KEY: ci-dummy-geocoding-key
+      NEXT_TELEMETRY_DISABLED: "1"
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install
+        run: npm ci
+
+      # ブラウザ（約 100MB）を毎回取りに行かないように、Playwright の版ごとにキャッシュする
+      - name: Playwright の版
+        id: playwright
+        run: echo "version=$(node -p "require('@playwright/test/package.json').version")" >> "$GITHUB_OUTPUT"
+
+      - name: ブラウザのキャッシュ
+        id: browser-cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ steps.playwright.outputs.version }}
+
+      - name: Chromium を入れる
+        if: steps.browser-cache.outputs.cache-hit != 'true'
+        run: npx playwright install --with-deps chromium
+
+      # キャッシュがあってもブラウザが使う OS の部品は毎回入れる（キャッシュに入らないため）
+      - name: Chromium が使う OS の部品
+        if: steps.browser-cache.outputs.cache-hit == 'true'
+        run: npx playwright install-deps chromium
+
+      - name: E2E
+        run: npm run test:e2e
+
+      # 落ちたときに何が起きたかを後から見られるように、結果（画面写真・記録）を残す
+      - name: 結果を残す
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: |
+            playwright-report/
+            test-results/
+          retention-days: 14

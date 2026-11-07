@@ -31,5 +31,7 @@ export default defineConfig({
     environment: "jsdom",
     setupFiles: ["./vitest.setup.ts"],
     include: ["src/**/*.test.{ts,tsx}"],
+    // e2e-foundation Task 1: E2E（Playwright。e2e/）は単体テストで拾わない。include だけでも拾わないが、明記して固定する
+    exclude: ["e2e/**", "node_modules/**"],
   },
 });
