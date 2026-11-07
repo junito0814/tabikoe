@@ -67,6 +67,7 @@ export default defineConfig({
     reuseExistingServer: !process.env.CI,
     // ビルドから始めるので長めに待つ
     timeout: 10 * 60 * 1000,
-    env: { ...DUMMY_ENV, ...SUPABASE_ENV, NEXT_DIST_DIR: ".next-e2e", NEXT_TELEMETRY_DISABLED: "1" },
+    // E2E_TEST=1: テスト専用のログイン経路（/api/e2e/login）を開ける。E2E のアプリにだけ渡す（Task 3。Vercel には設定しない）
+    env: { ...DUMMY_ENV, ...SUPABASE_ENV, E2E_TEST: "1", NEXT_DIST_DIR: ".next-e2e", NEXT_TELEMETRY_DISABLED: "1" },
   },
 });
