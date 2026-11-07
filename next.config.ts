@@ -1,6 +1,15 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  /*
+   * e2e-foundation Task 1（2026-11-08）: ビルドの置き場所を、E2E のときだけ `.next-e2e/` に変える。
+   *
+   * 【初心者向け】`next build` は既定で `.next/` に書き出します。手元で開発サーバー（`next dev`）が
+   * 動いている間に同じ `.next/` へビルドすると、開発サーバーのキャッシュが壊れます（2026-09-22 に実際に壊した）。
+   * E2E は毎回ビルドするので、別のフォルダに出して開発サーバーと住み分けます。
+   * `NEXT_DIST_DIR` を渡すのは playwright.config.ts だけで、普段の build・Vercel は今までどおり `.next/` です。
+   */
+  distDir: process.env.NEXT_DIST_DIR || ".next",
   // post-creation-v3 Task4: ffmpeg の実行ファイル（ffmpeg-static）はバンドルせず、そのままサーバーに同梱する
   serverExternalPackages: ["ffmpeg-static"],
   /*
