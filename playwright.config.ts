@@ -1,5 +1,6 @@
 import { defineConfig } from "@playwright/test";
 import { readLocalSupabase } from "./e2e/fixtures/local-supabase";
+import { GOOGLE_STUB_PORT } from "./e2e/fixtures/google-api-stub.mts";
 
 /**
  * e2e-foundation Task 1: 受入テスト（E2E）の設定
@@ -24,6 +25,9 @@ import { readLocalSupabase } from "./e2e/fixtures/local-supabase";
  *   5. 画面の大きさは実機と同じ **390 × 844**（約束 22）
  *   6. **1 本ずつ順に動かす**（workers: 1）。どのテストも同じ DB を作り直して使うので、
  *      同時に動かすと互いのデータを消し合う
+ *   7. **Google は 1 回も呼ばない**（Task 4）。サーバーが呼ぶもの（Places・Geocoding・Routes）は
+ *      手元のスタブ（e2e/fixtures/google-api-stub.mts）に向け、ブラウザが読む地図は e2e/fixtures/maps-stub.ts が差し替える。
+ *      位置情報は東京駅に固定し、許可ダイアログを出さない
  */
 const PORT = 3100;
 
@@ -35,6 +39,8 @@ const DUMMY_ENV = {
   NEXT_PUBLIC_GOOGLE_MAPS_API_KEY: "ci-dummy-maps-key",
   GOOGLE_PLACES_API_KEY: "ci-dummy-places-key",
   GOOGLE_GEOCODING_API_KEY: "ci-dummy-geocoding-key",
+  // Task 4: 経路（車・電車・バスの所要時間）もスタブに答えさせるので、鍵の受け皿を入れる（無いと呼ばずに目安へ切り替わる）
+  GOOGLE_ROUTES_API_KEY: "ci-dummy-routes-key",
 };
 
 /** ローカルの Supabase が動いていれば、その繋ぎ先（鍵は画面に出さない） */
@@ -55,19 +61,38 @@ export default defineConfig({
   use: {
     baseURL: `http://localhost:${PORT}`,
     viewport: { width: 390, height: 844 },
+    // Task 4: 位置情報は東京駅に固定し、許可も最初から与える（許可ダイアログを出さない）
+    geolocation: { latitude: 35.681236, longitude: 139.767125 },
+    permissions: ["geolocation"],
     locale: "ja-JP",
     // 落ちたときだけ記録を残す（成功した分まで残すと重い）
     trace: "retain-on-failure",
     screenshot: "only-on-failure",
   },
-  webServer: {
-    command: `npm run build && npm run start -- --port ${PORT}`,
-    url: `http://localhost:${PORT}`,
-    // 手元で既に立ち上げてあれば、それを使う（CI では毎回作り直す）
-    reuseExistingServer: !process.env.CI,
-    // ビルドから始めるので長めに待つ
-    timeout: 10 * 60 * 1000,
-    // E2E_TEST=1: テスト専用のログイン経路（/api/e2e/login）を開ける。E2E のアプリにだけ渡す（Task 3。Vercel には設定しない）
-    env: { ...DUMMY_ENV, ...SUPABASE_ENV, E2E_TEST: "1", NEXT_DIST_DIR: ".next-e2e", NEXT_TELEMETRY_DISABLED: "1" },
-  },
+  webServer: [
+    {
+      // Task 4: サーバーが呼ぶ Google の代わり。アプリより先に立ち上げる
+      command: "node e2e/fixtures/google-api-stub.mts",
+      url: `http://127.0.0.1:${GOOGLE_STUB_PORT}/__health`,
+      reuseExistingServer: !process.env.CI,
+    },
+    {
+      command: `npm run build && npm run start -- --port ${PORT}`,
+      url: `http://localhost:${PORT}`,
+      // 手元で既に立ち上げてあれば、それを使う（CI では毎回作り直す）
+      reuseExistingServer: !process.env.CI,
+      // ビルドから始めるので長めに待つ
+      timeout: 10 * 60 * 1000,
+      // E2E_TEST=1: テスト専用のログイン経路（/api/e2e/login）を開ける。E2E のアプリにだけ渡す（Task 3。Vercel には設定しない）
+      env: {
+        ...DUMMY_ENV,
+        ...SUPABASE_ENV,
+        E2E_TEST: "1",
+        // Task 4: サーバーから Google への問い合わせを、手元のスタブに向ける（src/lib/google/base-url.ts）
+        GOOGLE_API_BASE_URL: `http://127.0.0.1:${GOOGLE_STUB_PORT}`,
+        NEXT_DIST_DIR: ".next-e2e",
+        NEXT_TELEMETRY_DISABLED: "1",
+      },
+    },
+  ],
 });

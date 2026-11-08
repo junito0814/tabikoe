@@ -1,4 +1,5 @@
 import type { TravelMode } from "@/lib/geo/travel-time";
+import { googleApiUrl } from "./base-url";
 
 /**
  * travel-time Task1（2026-09-25）: Routes API で車・電車・バスの所要時間を実測する
@@ -10,7 +11,8 @@ import type { TravelMode } from "@/lib/geo/travel-time";
  * 徒歩・自転車はここを呼ばない（徒歩は件数が多く費用がかさむ、自転車は日本で経路が提供されない。3.4.6）。
  * 失敗しても例外にせず「取れなかった（null）」を返し、呼び出し側が直線距離の計算に切り替える。
  */
-const ENDPOINT = "https://routes.googleapis.com/distanceMatrix/v2:computeRouteMatrix";
+// e2e-foundation Task 4: 基点は base-url.ts で決める（E2E のときだけ手元のスタブに向く）。呼ぶたびに組み立てる
+const ENDPOINT = () => googleApiUrl("routes", "/distanceMatrix/v2:computeRouteMatrix");
 
 /** Routes API に渡せる移動手段（徒歩・自転車は対象外） */
 export type RoutesApiMode = Extract<TravelMode, "car" | "train" | "bus">;
@@ -79,7 +81,7 @@ export async function fetchTravelMinutes(origin: LatLng, destinations: LatLng[],
   if (!apiKey || destinations.length === 0) return fallback;
 
   try {
-    const response = await fetch(ENDPOINT, {
+    const response = await fetch(ENDPOINT(), {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
