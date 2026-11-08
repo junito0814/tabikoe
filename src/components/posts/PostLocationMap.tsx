@@ -22,6 +22,17 @@ export const LOCATION_PICK_ZOOM = 17;
  *   - `moved`（利用者が地図を動かしたか）を親に知らせる。自宅の保護の判定に使う（Task4）
  *   - 現在地ボタンで現在地へ戻せる。初回だけ案内文を出す
  */
+/**
+ * #1071（2026-11-08）: 既定の「現在地の取り方」。**部品の外で 1 度だけ作る。**
+ *
+ * 【初心者向け】前は引数の既定値（`resolveCenter = () => ...`）に直接書いていました。
+ * 既定値は**描くたびに新しい関数**として作られるので、それに頼る効果（下の useEffect）が毎回走り、
+ * 「現在地を取る → 親（投稿画面）が位置を書き換えて描き直す → また現在地を取る」が止まりませんでした
+ * （E2E で 1 秒に約 3,700 回描き直していた）。描き直しが続くと、画面の移動（急がない更新）が後回しにされ続け、
+ * **投稿に成功しても投稿詳細へ移れない**ことがありました。部品の外に置けば、関数はずっと同じものです。
+ */
+const defaultResolveCenter = () => resolveInitialCenter(typeof navigator === "undefined" ? undefined : navigator.geolocation);
+
 export function PostLocationMap({
   initialCenter,
   lockedPosition,
@@ -29,7 +40,7 @@ export function PostLocationMap({
   onCenterChange,
   onMovedChange,
   onCurrentLocationResolved,
-  resolveCenter = () => resolveInitialCenter(typeof navigator === "undefined" ? undefined : navigator.geolocation),
+  resolveCenter = defaultResolveCenter,
   className,
 }: {
   /** null なら現在地を取得する（拒否時は東京駅周辺） */
