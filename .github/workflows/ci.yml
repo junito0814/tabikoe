@@ -69,7 +69,8 @@ jobs:
     timeout-minutes: 20
     continue-on-error: true
     env:
-      # playwright.config.ts が同じダミーを渡すが、ビルドの前に読まれる値もあるので揃えておく
+      # Supabase は e2e/run.mjs がローカル（Docker の中）に立ち上げ、playwright.config.ts がその繋ぎ先で上書きする（Task 2）。
+      # ここのダミーは、Google のキーと、ローカルが立ち上がる前に読まれる値の受け皿
       NEXT_PUBLIC_SUPABASE_URL: https://example.supabase.co
       NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ci-dummy-publishable-key
       SUPABASE_SECRET_KEY: ci-dummy-secret-key
@@ -109,8 +110,31 @@ jobs:
         if: steps.browser-cache.outputs.cache-hit == 'true'
         run: npx playwright install-deps chromium
 
+      # Supabase の部品（Docker のイメージ 5 つ。展開すると約 3.5GB。キャッシュには圧縮して入る）をキャッシュする（2026-11-08 追加）。
+      # 【初心者向け】CI のマシンは毎回まっさらなので、部品を毎回配布元から取りに行く。CI のマシンは IP を共有しているため、
+      # 配布元に「回数制限を超えた」（toomanyrequests）と断られることがあった（#1066・#1067 で実際に出た。取り直しで通ったが、
+      # 取り直しも断られれば E2E が落ちる）。部品の版は CLI の版で決まるので、package-lock.json が変わらない限り同じものを使い回す
+      - name: Supabase の部品のキャッシュ
+        id: supabase-images
+        uses: actions/cache@v4
+        with:
+          path: /tmp/supabase-images.tar
+          key: supabase-images-${{ runner.os }}-${{ hashFiles('package-lock.json', 'supabase/config.toml') }}
+
+      - name: Supabase の部品を読み込む
+        if: steps.supabase-images.outputs.cache-hit == 'true'
+        run: docker load -i /tmp/supabase-images.tar
+
+      # ローカルの Supabase の起動（部品がキャッシュに無ければダウンロード）→ ビルド → テスト → 停止 までを e2e/run.mjs が行う
       - name: E2E
         run: npm run test:e2e
+
+      # キャッシュに無かったときだけ、取ってきた部品を保存する（テストが落ちても保存する。部品の取得は済んでいるため）
+      - name: Supabase の部品を保存する
+        if: always() && steps.supabase-images.outputs.cache-hit != 'true'
+        run: |
+          images=$(docker images --format '{{.Repository}}:{{.Tag}}' | grep supabase | grep -v '<none>' || true)
+          if [ -n "$images" ]; then docker save $images -o /tmp/supabase-images.tar; fi
 
       # 落ちたときに何が起きたかを後から見られるように、結果（画面写真・記録）を残す
       - name: 結果を残す
