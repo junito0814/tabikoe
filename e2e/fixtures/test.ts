@@ -1,5 +1,7 @@
 import { test as base } from "@playwright/test";
 import { resetAndSeed } from "./seed";
+import { loginAs } from "./auth";
+import type { E2eLoginTarget } from "../../src/lib/e2e/seed-users";
 
 /**
  * e2e-foundation Task 2: **データベースを使う E2E は、この `test` を使う**
@@ -11,15 +13,23 @@ import { resetAndSeed } from "./seed";
  *
  * テストどうしが同じ DB を取り合わないように、設定で 1 本ずつ順に動かしています（playwright.config.ts の workers）。
  */
-export const test = base.extend<{ freshDatabase: void }>({
+export const test = base.extend<{ freshDatabase: void; loginAs: (who: E2eLoginTarget) => Promise<void> }>({
   freshDatabase: [
     // Playwright の決まった書き方。ほかの fixture を使わないときも、1 つ目の引数は分割代入（{}）で受ける
-    async ({}, use) => {
+    async ({}, provide) => {
       await resetAndSeed();
-      await use();
+      await provide();
     },
     { auto: true },
   ],
+  /*
+   * e2e-foundation Task 3: `await loginAs("user")` で種データの利用者としてログインする（auth.ts）。
+   * DB の作り直しが先に済んでいる（上の freshDatabase は auto で先に走る）ので、ログインの相手は必ずいる。
+   */
+  // 2 つ目の引数（値をテストへ渡す関数）は、Playwright の例では `use` と書くが、React の `use` と見間違えて eslint が止めるので `provide` と呼ぶ
+  loginAs: async ({ context }, provide) => {
+    await provide((who) => loginAs(context, who));
+  },
 });
 
 export { expect } from "@playwright/test";
