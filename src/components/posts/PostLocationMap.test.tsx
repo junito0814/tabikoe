@@ -18,6 +18,17 @@ vi.mock("@/components/map/GoogleMap", () => ({
   },
 }));
 
+/*
+ * #1071: 既定の「現在地の取り方」が何回呼ばれたかを数える。
+ * 本物の resolveInitialCenter（位置情報を取る）だけを差し替え、ほかの値（拡大率など）はそのまま使う。
+ */
+const resolveInitialCenterMock = vi.fn(async () => ({ center: { lat: 35.6812, lng: 139.7671 }, zoom: 15, source: "current" as const }));
+vi.mock("@/components/map/initial-center", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/components/map/initial-center")>()),
+  resolveInitialCenter: () => resolveInitialCenterMock(),
+}));
+
+import { useState } from "react";
 import { PostLocationMap } from "./PostLocationMap";
 
 const TOKYO = { lat: 35.6812, lng: 139.7671 };
@@ -89,5 +100,41 @@ describe("panTarget（#738）", () => {
   it("寄せても中央の固定ピンは出たまま（まだ決まっていないため）", () => {
     render(<PostLocationMap initialCenter={TOKYO} lockedPosition={null} panTarget={{ lat: 34.9, lng: 135.7 }} onCenterChange={() => {}} />);
     expect(document.querySelector("[data-center-pin]")).toBeInTheDocument();
+  });
+});
+
+/**
+ * 出典: Issue #1071「投稿は作られるのに、投稿詳細へ移らず投稿画面に残ることがある」
+ *
+ * 【初心者向け】既定の resolveCenter が描くたびに新しい関数になっていたので、
+ * 「現在地を取る → 親が位置を書き換えて描き直す → また現在地を取る」が止まらなかった。
+ * 投稿画面と同じように、位置が届くたびに親が描き直す形で包み、現在地を取るのが 1 回だけであることを固定する。
+ */
+describe("現在地を取るのは 1 回だけ（#1071）", () => {
+  it("初期位置が無いとき、親が描き直しても現在地を取り直さない", async () => {
+    resolveInitialCenterMock.mockClear();
+    function Parent() {
+      const [renders, setRenders] = useState(0);
+      return (
+        <>
+          <span data-testid="renders">{renders}</span>
+          <PostLocationMap
+            initialCenter={null}
+            lockedPosition={null}
+            onCenterChange={() => {}}
+            // 投稿画面と同じく、位置が届くたびに親の状態を書き換える（＝描き直す）
+            onCurrentLocationResolved={() => setRenders((count) => count + 1)}
+          />
+        </>
+      );
+    }
+    render(<Parent />);
+    await waitFor(() => expect(screen.getByTestId("renders").textContent).toBe("1"));
+    // 少し待っても、2 回目は来ない（循環していない）
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 50));
+    });
+    expect(resolveInitialCenterMock).toHaveBeenCalledTimes(1);
+    expect(screen.getByTestId("renders").textContent).toBe("1");
   });
 });
