@@ -36,20 +36,42 @@ export function canPullFromContent(scrollTop: number): boolean {
  * 引いている間にシートをどれだけ下げるか。
  * 上に引いても動かさない（シートは上には伸びない）。「視差効果を減らす」人には動きを付けない。
  */
+/**
+ * #1069（2026-11-08）: 中身の上で押したあと、ここまで下に動いたら「引き始めた」とみなす（px）
+ */
+export const PULL_START_PX = 8;
+
+/**
+ * #1069: 中身の上で押したあとの動きが「引く動き」になったか。判断はここだけ（約束 13）。
+ *
+ * 【初心者向け】前は**押し下げた瞬間に**指やマウスを中身の枠に捕まえさせていました（setPointerCapture）。
+ * すると離したときの宛先が枠になり、ブラウザはクリックを「押した所と離した所の共通の親」＝枠に送るので、
+ * **マウスでは中のチェックボックスやボタンにクリックが届きませんでした**（指のタップはクリックを別の仕組みで
+ * 作るので動いていた）。
+ * そこで、**下へ少し動いてから**捕まえます。動かさずに離せば（＝クリック）捕まえないので、クリックは押したものに届きます。
+ */
+export function hasStartedPull(deltaY: number): boolean {
+  return deltaY >= PULL_START_PX;
+}
+
 export function pullOffset(deltaY: number, reducedMotion: boolean): number {
   if (reducedMotion) return 0;
   return Math.max(0, deltaY);
 }
 
 export function usePullToClose(onClose: () => void) {
-  const startRef = useRef<{ y: number; id: number } | null>(null);
+  /*
+   * captured: 指やマウスを捕まえたか（＝引く動きに入ったか）。
+   * 取っ手は押した瞬間に捕まえる（中に押す部品が無い）。中身は下へ少し動いてから捕まえる（#1069）
+   */
+  const startRef = useRef<{ y: number; id: number; captured: boolean } | null>(null);
   const [offset, setOffset] = useState(0);
 
   const reducedMotion = () => (typeof window === "undefined" || typeof window.matchMedia !== "function" ? true : window.matchMedia("(prefers-reduced-motion: reduce)").matches);
 
   const begin = (event: ReactPointerEvent<HTMLElement>) => {
     if (event.button !== 0) return;
-    startRef.current = { y: event.clientY, id: event.pointerId };
+    startRef.current = { y: event.clientY, id: event.pointerId, captured: true };
     event.currentTarget.setPointerCapture?.(event.pointerId);
   };
 
@@ -62,20 +84,31 @@ export function usePullToClose(onClose: () => void) {
      * 「いちばん上にいるときだけ」引き始める。
      */
     contentProps: {
+      // #1069: 押した位置を控えるだけ。ここでは捕まえない（捕まえるとクリックが中の部品に届かない）
       onPointerDown: (event: ReactPointerEvent<HTMLElement>) => {
+        if (event.button !== 0) return;
         if (!canPullFromContent(event.currentTarget.scrollTop)) return;
-        begin(event);
+        startRef.current = { y: event.clientY, id: event.pointerId, captured: false };
       },
       onPointerMove: (event: ReactPointerEvent<HTMLElement>) => {
         const start = startRef.current;
         if (!start || start.id !== event.pointerId) return;
-        setOffset(pullOffset(event.clientY - start.y, reducedMotion()));
+        const deltaY = event.clientY - start.y;
+        if (!start.captured) {
+          // まだ引き始めていない。下へ少し動いたら、そこで初めて捕まえて引く動きに入る
+          if (!hasStartedPull(deltaY)) return;
+          start.captured = true;
+          event.currentTarget.setPointerCapture?.(event.pointerId);
+        }
+        setOffset(pullOffset(deltaY, reducedMotion()));
       },
       onPointerUp: (event: ReactPointerEvent<HTMLElement>) => {
         const start = startRef.current;
         startRef.current = null;
         setOffset(0);
         if (!start || start.id !== event.pointerId) return;
+        // 引き始めていない（＝クリック・タップ）なら何もしない。クリックは押した部品にそのまま届く
+        if (!start.captured) return;
         event.currentTarget.releasePointerCapture?.(event.pointerId);
         if (shouldCloseByPull(event.clientY - start.y)) onClose();
       },
