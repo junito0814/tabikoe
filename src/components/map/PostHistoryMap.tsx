@@ -38,11 +38,22 @@ export type FetchMyMapPins = (mode: PostHistoryMapMode, bounds: MapBounds) => Pr
  * ③地図が動くたび `onBoundsChange` で表示範囲（北南東西の緯度経度）を受け取る → ④300ms 待ってから範囲内のピンを API で取る。
  * 300ms 待つのは、ドラッグ中に何十回も API を呼ばないため。`requestIdRef` は古い応答を捨てるための番号。
  */
+/**
+ * #1074（2026-11-13）: 既定の「現在地の取り方」。**部品の外で 1 度だけ作る。**
+ *
+ * 【初心者向け】前は引数の既定値（`resolveCenter = () => ...`）に直接書いていました。
+ * 既定値は**描くたびに新しい関数**として作られるので、それに頼る効果（下の 1 つ目の useEffect）が毎回走り、
+ * 「現在地を取る → 初期位置を書き換えて描き直す → また現在地を取る」が止まりませんでした。
+ * 取れる位置は毎回**新しいオブジェクト**なので、中身が同じでも React は「変わった」とみなして描き直します。
+ * 投稿画面（#1071・PostLocationMap）と同じ原因です。部品の外に置けば、関数はずっと同じものです。
+ */
+const defaultResolveCenter = () =>
+  resolveInitialCenter(typeof navigator === "undefined" ? undefined : navigator.geolocation);
+
 export function PostHistoryMap({
   initialMode = "both",
   fetchPins = defaultFetchPins,
-  resolveCenter = () =>
-    resolveInitialCenter(typeof navigator === "undefined" ? undefined : navigator.geolocation),
+  resolveCenter = defaultResolveCenter,
 }: {
   initialMode?: PostHistoryMapMode;
   /** 差し替え口（単体テスト用） */
