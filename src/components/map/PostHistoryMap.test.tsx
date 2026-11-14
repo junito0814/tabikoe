@@ -45,6 +45,21 @@ vi.mock("./GoogleMap", () => ({
   },
 }));
 
+/*
+ * #1074: 既定の「現在地の取り方」が何回呼ばれたかを数える。
+ * 本物の resolveInitialCenter（位置情報を取る）だけを差し替え、ほかの値（拡大率など）はそのまま使う。
+ * ほかのテストは resolveCenter を自分で渡しているので、この差し替えの影響を受けない。
+ */
+const resolveInitialCenterMock = vi.fn(async () => ({
+  center: { lat: 35.6812, lng: 139.7671 },
+  zoom: 13,
+  source: "current" as const,
+}));
+vi.mock("./initial-center", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("./initial-center")>()),
+  resolveInitialCenter: () => resolveInitialCenterMock(),
+}));
+
 import { PostHistoryMap } from "./PostHistoryMap";
 
 const resolveCenter = () =>
@@ -182,5 +197,27 @@ describe("loading-feedback Task 2: 読み込み中に「ありません」と言
     });
     await waitFor(() => expect(screen.queryByText(LOADING)).not.toBeInTheDocument());
     expect(screen.queryByText(EMPTY)).not.toBeInTheDocument();
+  });
+});
+
+/**
+ * 出典: Issue #1074「投稿履歴の地図が、現在地を取り直して描き直し続ける見込み」
+ *
+ * 【初心者向け】既定の resolveCenter が描くたびに新しい関数になっていたので、
+ * 「現在地を取る → 自分の状態（初期位置）を書き換えて描き直す → また現在地を取る」が止まらなかった。
+ * #1071 の投稿画面と違い、親が描き直さなくても**自分だけで回る**。
+ * resolveCenter を渡さずに（＝本番と同じ既定値で）描き、現在地を取るのが 1 回だけであることを固定する。
+ */
+describe("現在地を取るのは 1 回だけ（#1074）", () => {
+  it("既定の取り方のとき、初期位置が決まったあとに現在地を取り直さない", async () => {
+    resolveInitialCenterMock.mockClear();
+    const fetchPins = vi.fn(async () => []);
+    render(<PostHistoryMap fetchPins={fetchPins} />);
+    await screen.findByTestId("map-stub");
+    // 少し待っても、2 回目は来ない（循環していない）
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(50);
+    });
+    expect(resolveInitialCenterMock).toHaveBeenCalledTimes(1);
   });
 });
