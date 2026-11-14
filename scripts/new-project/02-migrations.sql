@@ -1,4 +1,4 @@
--- #896: 新しい Supabase プロジェクトを作るための SQL（2 / 2）
+-- #896: 新しい Supabase プロジェクトを作るための SQL（2 / 3）
 -- supabase/migrations/ を順につないだもの。**手で編集しない**（node scripts/build-new-project-sql.mjs で作り直す）
 --
 -- 【初心者向け】使い方:
@@ -6,7 +6,7 @@
 --   **順番が大事**（先に作った表に、あとから列・権限・ポリシーを足しているため）。
 --   途中でエラーが出たらそこで止めて、出た文言をそのまま伝えること。先へ進まない。
 --
--- この回に入っているもの（26 本）:
+-- この回に入っているもの（29 本）:
 --   20260917000002_itineraries.sql
 --   20260917000003_spot_status_reports.sql
 --   20260917000004_deactivate_user_itineraries.sql
@@ -33,6 +33,9 @@
 --   20261007000003_itinerary_invite_to_album.sql
 --   20261009000001_post_media_bucket_limits.sql
 --   20261009000002_avatars_bucket_limits.sql
+--   20261010000001_post_lookup_indexes.sql
+--   20261011000001_reports_jev_triage.sql
+--   20261017000001_spot_visit_findings.sql
 
 -- ======================================================================
 -- 20260917000002_itineraries.sql
@@ -1400,3 +1403,126 @@ set
   file_size_limit = null,
   allowed_mime_types = null
 where id = 'avatars';
+
+-- ======================================================================
+-- 20261010000001_post_lookup_indexes.sql
+-- ======================================================================
+-- #903: よく引く列に索引を足す（スポット別の一覧・カードの写真）
+-- 出典: Issue #903「よく引く列に索引が無い（posts.spot_id・post_photos.post_id）」
+--
+-- 【初心者向け】なぜ自動では付かないのか。
+--   PostgreSQL は、外部キー（`posts.spot_id` → `spots.id`）を張っても**索引を自動では作りません**。
+--   「その値を指している行を探す」のは毎回の全件走査になります。
+--   `post_photos` に至っては索引が 1 本もありませんでした。
+--
+-- 【初心者向け】なぜ測ってから入れるのか。
+--   「索引を足せば速くなる」は思い込みになりがちです。足せば**書き込みは少し遅くなる**ので、
+--   効かない索引を増やすのは損です。開発用の Supabase に 6 万件入れて、前後を測りました
+--   （道具: scripts/bench-index.mjs）。
+--
+--   | 問い合わせ                       | 索引なし | 索引あり |
+--   |----------------------------------|---------|---------|
+--   | スポット別の一覧                  | 52 ms   | 33 ms   |
+--   | そのスポットの件数（count）        | 189 ms  | 65 ms   |
+--   | カード 20 枚ぶんの写真             | 84 ms   | 34 ms   |
+--
+--   （中央値・7 回。通信の往復 40〜60ms を含む。6,000 件までは差が出ませんでした）
+
+/*
+ * スポット別の投稿一覧（SC-04）。`spot_id` で絞り、新着順に 20 件ずつ出す。
+ *
+ * 【初心者向け】`where` が付いた索引を「部分索引」と呼びます。公開済みの投稿しか一覧に出さないので、
+ * **非公開・下書き・非公開化されたものを索引に入れません**。索引が小さくなり、読むのも速くなります。
+ * 条件は load-search-page.ts の問い合わせとそろえてあること（ずれると索引が使われません）。
+ */
+create index if not exists posts_spot_published_idx
+  on public.posts (spot_id, published_at desc)
+  where status = 'published' and visibility = 'public' and hidden_at is null;
+
+/*
+ * 投稿カードの写真。カード 20 枚ぶんをまとめて引く（`post_id in (...)`）。
+ * `display_order` も入れてあるので、並べ替えのために読み直さずに済みます。
+ */
+create index if not exists post_photos_post_idx
+  on public.post_photos (post_id, display_order);
+
+-- ======================================================================
+-- 20261011000001_reports_jev_triage.sql
+-- ======================================================================
+-- #892: 通報に「Jev の見立て」を持たせる（要件 6.8・ワイヤーフレーム決定事項 89）
+--
+-- 【初心者向け】なぜ保存するのか。
+--   一覧を開くたびに Jev を呼ぶと、**1 画面で 20 回**呼ぶことになります。遅いし、お金もかかる。
+--   それに「緊急度が高い順に並べる」は、**保存した値が無いと並べ替えられません**。
+--   だから**通報が作られた瞬間に 1 回だけ**呼び、ここに入れておきます。
+--
+-- 【初心者向け】なぜ全部 null を許すのか。
+--   Jev が落ちていても、**通報の受付は必ず成功させる**からです（要件 3.8.2）。
+--   呼べなかった通報は null のまま残り、一覧では「―」と出ます。画面は壊れません。
+alter table public.reports
+  -- 0〜3。急いで対応すべきか（Score 型）
+  add column if not exists jev_urgency numeric(4, 2),
+  -- 通報理由の 8 択のうち、Jev が選んだもの（Choice 型）。reports.reason と同じ値の集合
+  add column if not exists jev_reason text,
+  -- 見立ての確信（0〜1）。低いときは画面に出さない
+  add column if not exists jev_confidence numeric(4, 3),
+  -- どの版のモデルが答えたか（あとで「あのときの判定」を説明できるように）
+  add column if not exists jev_model text,
+  -- 判定した時刻。null なら「まだ呼んでいない／呼べなかった」
+  add column if not exists jev_evaluated_at timestamptz;
+
+/*
+ * 緊急度が高い順に並べるための索引（#903 で測った考え方と同じ）。
+ *
+ * 【初心者向け】`nulls last` を付けてあるのは、**判定できなかった通報を先頭に出さない**ため。
+ * 未対応のものだけを見ることが多いので、状態も一緒に入れてあります。
+ */
+create index if not exists reports_jev_urgency_idx
+  on public.reports (jev_urgency desc nulls last, created_at desc);
+
+-- ======================================================================
+-- 20261017000001_spot_visit_findings.sql
+-- ======================================================================
+-- #929: 「行ってわかったこと」（spot_visit_findings）
+-- 出典: Issue #929、要件定義書 4.5.19・3.3.1・3.4.2、ワイヤーフレーム決定事項 99
+--
+-- 【初心者向け】スポットごとに「行った人にしか分からないこと」を **1 人 1 スポット** で持つ。
+-- 1 人が複数のことを選べるので、**選んだ項目ごとに 1 行**にして、主キーを (spot_id, user_id, finding) にする。
+-- こうすると
+--   ・スポット画面の「ペットと入れた 3 件」は group by で数えるだけ
+--   ・「いつの報告か」は max(reported_at) で出せる
+--   ・同じ人が 2 回選んでも 1 行にしかならない
+-- 「まだあった」報告（spot_status_reports）と同じ考え方で、投稿ではなく**スポット**に付く。
+--
+-- **項目の一覧（finding に入る値）に CHECK を付けていない。**
+-- 要件 4.5.19 の「属性を 1 つ足すのに 1 行で済む」を守るため。値の正しさは、
+-- 入れる手前（src/lib/spots/visit-findings.ts の一覧）で確かめる。ここに書くと、
+-- 項目を 1 つ足すたびにマイグレーションが要る。
+
+create table if not exists public.spot_visit_findings (
+  spot_id uuid not null references public.spots (id) on delete cascade,
+  user_id uuid not null references public.users (id) on delete cascade,
+  finding text not null,
+  reported_at timestamptz not null default now(),
+  primary key (spot_id, user_id, finding)
+);
+
+-- スポット画面で「項目ごとの件数と、いちばん新しい報告」を出すための索引
+create index if not exists spot_visit_findings_spot_finding_idx
+  on public.spot_visit_findings (spot_id, finding, reported_at desc);
+
+alter table public.spot_visit_findings enable row level security;
+
+drop policy if exists "spot_visit_findings_select_all" on public.spot_visit_findings;
+create policy "spot_visit_findings_select_all"
+  on public.spot_visit_findings for select to authenticated
+  using (true);
+
+drop policy if exists "spot_visit_findings_owner_write" on public.spot_visit_findings;
+create policy "spot_visit_findings_owner_write"
+  on public.spot_visit_findings for all to authenticated
+  using (auth.uid() = user_id)
+  with check (auth.uid() = user_id);
+
+grant all privileges on table public.spot_visit_findings to service_role;
+grant select, insert, update, delete on table public.spot_visit_findings to authenticated;

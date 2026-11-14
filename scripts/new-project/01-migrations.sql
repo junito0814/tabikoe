@@ -1,4 +1,4 @@
--- #896: 新しい Supabase プロジェクトを作るための SQL（1 / 2）
+-- #896: 新しい Supabase プロジェクトを作るための SQL（1 / 3）
 -- supabase/migrations/ を順につないだもの。**手で編集しない**（node scripts/build-new-project-sql.mjs で作り直す）
 --
 -- 【初心者向け】使い方:
