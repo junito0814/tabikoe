@@ -118,9 +118,10 @@ describe("PostHistoryMap（SC-12）", () => {
     });
     fireEvent.click(await screen.findByRole("button", { name: "s-posted:posted" }));
     // Bug #471: 「← 投稿履歴」で戻れるよう back を付ける
-    expect(push).toHaveBeenCalledWith("/posts/post-1?back=%2Fpost-history");
+    // #1076: 戻り先は地図タブ（`view=map`）。付いていないと一覧タブが開いていた
+    expect(push).toHaveBeenCalledWith("/posts/post-1?back=%2Fpost-history%3Fview%3Dmap");
     fireEvent.click(screen.getByRole("button", { name: "s-saved:saved" }));
-    expect(push).toHaveBeenCalledWith("/spots/s-saved?back=%2Fpost-history");
+    expect(push).toHaveBeenCalledWith("/spots/s-saved?back=%2Fpost-history%3Fview%3Dmap");
     fireEvent.click(screen.getByRole("button", { name: "draft:d1:draft" }));
     expect(push).toHaveBeenCalledWith("/posts/new?draft=d1");
   });

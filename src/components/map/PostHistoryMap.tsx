@@ -9,7 +9,7 @@ import { isSameBounds, type MapBounds } from "@/lib/map/get-map-pins";
 import type { PostHistoryMapMode, MyMapPin } from "@/lib/map/get-post-history-pins";
 import { GoogleMap, type GoogleMapPin } from "./GoogleMap";
 import { resolveInitialCenter, type InitialCenter } from "./initial-center";
-import { postHistoryPinHref } from "./post-history-map-navigation";
+import { postHistoryMapBackHref, postHistoryPinHref } from "./post-history-map-navigation";
 import { MapLegend } from "./MapLegend";
 import { TERMS } from "@/lib/terms";
 
@@ -117,7 +117,8 @@ export function PostHistoryMap({
   const handlePinClick = useCallback(
     (pinId: string) => {
       const pin = pinById.get(pinId);
-      if (pin) router.push(postHistoryPinHref(pin, mode === "both" ? "/post-history" : `/post-history?mode=${mode}`));
+      // #1076: 戻り先に `view=map` を付けて、戻ったときに一覧ではなく地図が開くようにする
+      if (pin) router.push(postHistoryPinHref(pin, postHistoryMapBackHref(mode)));
     },
     // pins が変わるたびに Map を作り直すため、pins を依存にする
     // eslint-disable-next-line react-hooks/exhaustive-deps
