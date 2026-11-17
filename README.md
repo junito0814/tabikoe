@@ -1,36 +1,88 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# タビコエ（tabikoe）
 
-## Getting Started
+**あなたのコエが、だれかのタビへ。**
 
-First, run the development server:
+行った人のリアルな声で、旅先を探して計画する旅行 SNS です。コンセプトは「**インスタ × Google マップ**」。
+実際に行った人の写真・感想・予算を、タイムラインと地図で探し、気になった場所を「しおり」に日ごとにまとめて出かけられます。
+**Google マップに載っていない場所にも投稿でき**、「まだ知られていない場所についての、行った人の声」を集めることを目指しています。
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+- **アプリ**: https://tabikoe.vercel.app （スマートフォン向け。Google アカウントでログインして使います）
+- **開発の記録（Qiita 連載）**: https://qiita.com/j_1210
+
+<!-- README_SCREENSHOTS -->
+
+## できること
+
+| 流れ | できること |
+|---|---|
+| 探す | 行き先（都道府県・市区町村・駅・スポット名）を入れて、その場所の投稿を予算や期間で絞り込む。現在地から近くのスポットも探せる |
+| 投稿を見る | スポットごとの投稿をタイムラインで読む。写真だけを並べて見る。コメント・いいね・「行きたい」に保存 |
+| 地図で確かめる | 投稿のある場所を地図のピンで見る。ピンの色と形はカテゴリ（食べる・見る・泊まる など）で決まる |
+| しおりにまとめる | 行きたい場所を「しおり」に集め、Day ごとに振り分けて到着予定時刻を付ける。友だちと一緒に編集できる |
+| 投稿する | 写真・動画・感想・予算・滞在時間を投稿する。Google マップに無い場所は、地図にピンを置いて登録する |
+| 振り返る | 旅行ごとのアルバム、投稿履歴の地図、訪れた都道府県のバッジ |
+
+**ログインしなくても見られるもの**：共有されたリンクの先（スポット別の投稿一覧と、投稿の詳細）だけは、ログインせずに読めます。
+
+運営者向けに、通報の確認・投稿の非表示・利用停止などを行う管理画面（二段階認証つき）もあります。
+
+## 作るときに考えたこと
+
+- **計測してから直す。** 「画面を移るたびに待たされる」という指摘を受けて本番を測り、1 画面あたり 40 回前後のデータベースとの往復と、冷えた状態からの起動にかかる 2.44 秒を見つけました。往復は、認証の確認を毎回の通信から手元での署名の検証に変えるなどして減らしました。一方、定期的に温める処理は、測り直すと設定した 5 分ごとではなく数時間おきにしか動いておらず、効いていないと分かったので、仕組みを見直しています。
+- **E2E テストで、本物のブラウザから確かめる。** Playwright・ローカルの Supabase・Google の API の偽物（スタブ）を組み合わせ、課金も外部への通信も無しに、主な流れを毎回同じ条件で通しています。この仕組みを作る途中で、「投稿したあと詳細へ移れない」「パソコンのマウスでシートの中を押せない」という不具合を 2 つ見つけて直しました。
+- **個人情報を出さない。** 写真と動画は、位置情報などのメタデータを取り除いてから保存します。現在地のまま新しい場所に投稿しようとすると、自宅を公開しないよう確認を出します。
+- **Google の規約に合わせる。** Google から取った店の名前や位置をそのまま保存せず、利用者に地図で確かめてもらった値を保存します。
+- **判断は 1 か所に。** 「どの画面に戻るか」「どのピンを出すか」のような決まりは、画面から切り出した関数にまとめ、そこを単体テストで押さえています。
+
+詳しい理由は、[ドキュメント](docs/README.md) と [Qiita の連載](https://qiita.com/j_1210) に書いています。
+
+## 技術構成
+
+| 分野 | 使っているもの |
+|---|---|
+| 画面・サーバー | Next.js 16（App Router）・React 19・TypeScript・Tailwind CSS 4 |
+| データベース・認証・ファイル | Supabase（PostgreSQL・行単位のアクセス制御・Auth・Storage） |
+| 公開 | Vercel |
+| 地図・場所 | Google Maps Platform（Maps JavaScript API・Places API・Geocoding API・Routes API） |
+| 通報の見立て | TypeSafe AI（Jev。下記「AI の利用について」） |
+| テスト | Vitest（単体テスト）・Playwright（E2E テスト）・GitHub Actions |
+
+## AI の利用について
+
+```
+使用ツール：Claude Code（Anthropic社のAIコーディングツール）
+使用範囲：アプリ全体と、その開発記録をまとめたQiita連載
+使用用途：ソースコード（TypeScript・Next.js・SQL）、テストコード（単体テスト・E2Eテスト）、設計書の作成、Qiita記事の下書き
+アプリの機能としては、通報の緊急度をAI（TypeSafe AI社のJev）に判定させる仕組みを開発環境で試作しましたが、本番では動かしていません。
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## 開発の進め方
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+1. **ドキュメントを先に直す**（要求定義書 → 要件定義書 → ユーザーストーリー → タスク → ワイヤーフレーム）
+2. **タスク 1 つを Issue 1 つにする**。不具合も、直す前に Issue にする
+3. **プルリクエストは 1 タスクずつ**。型の検査・lint・単体テスト・ビルド・E2E を CI で通してからマージする
+4. **本番に出す前に、開発用の環境で実機を使って確かめる**
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+ドキュメントの案内図は [docs/README.md](docs/README.md) です。
 
-## Learn More
+## 手元での動かし方
 
-To learn more about Next.js, take a look at the following resources:
+```bash
+npm ci
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+npm run test       # 単体テスト（Vitest）
+npm run test:e2e   # E2E テスト（Playwright）。Docker が要る。ローカルの Supabase と Google のスタブで動く
+npm run dev        # 開発サーバー（下の環境変数が要る）
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+開発サーバーには、`.env.local` に次の環境変数が要ります（値はここには書きません。名前の一覧は [.env.example](.env.example)）。
+**本番ではなく、開発用の Supabase を向けてください**（[docs/deployment.md](docs/deployment.md)）。
 
-## Deploy on Vercel
+- Supabase: `NEXT_PUBLIC_SUPABASE_URL`・`NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`・`SUPABASE_SECRET_KEY`
+- Google: `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY`・`GOOGLE_PLACES_API_KEY`・`GOOGLE_GEOCODING_API_KEY`
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+現在地を使う機能は、安全な接続（HTTPS）でしか動きません。スマートフォンで確かめるときは、Vercel のプレビュー環境を使っています。
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+---
+
+作った人: [junito0814](https://github.com/junito0814)
