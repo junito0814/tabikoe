@@ -65,3 +65,43 @@ test("Google 宛の通信をすべて失敗させた状態で、地図を含む�
   expect(calls["places:details"]).toBeGreaterThan(0);
   expect(Object.keys(calls).filter((key) => key.startsWith("unknown:"))).toEqual([]);
 });
+
+/**
+ * #1077: ピンをまとめる地図（全体マップ・投稿履歴の地図）を開いても、画面が落ちないこと
+ *
+ * 【初心者向け】この 2 つの地図は、近いピンを 1 つの丸にまとめる部品（@googlemaps/markerclusterer）を使います。
+ * その部品は Google の OverlayView を for...in で写して継承するので、スタブの機能が数えられない形だと
+ * 何も写らず、「this.setMap is not a function」で画面ごと落ちていました（本物の Google マップでは起きない）。
+ */
+test("スタブの OverlayView は、for...in で setMap などを写せる（まとめ表示の部品が継承できる）", async ({ loginAs, page }) => {
+  await loginAs("user");
+  await page.goto(`/spots/${SEED.spots.sensoji.id}`);
+  await expect(page.getByTestId("map-stub")).toBeVisible();
+
+  const copied = await page.evaluate(() => {
+    const names: string[] = [];
+    // まとめ表示の部品と同じ写し方（継承した分も含めて数える）を再現する
+    for (const name in google.maps.OverlayView.prototype) names.push(name);
+    return names;
+  });
+  expect(copied).toEqual(expect.arrayContaining(["setMap", "getMap", "getPanes", "getProjection", "addListener"]));
+});
+
+for (const { label, path } of [
+  { label: "全体マップ", path: "/map" },
+  { label: "投稿履歴の地図", path: "/post-history?view=map" },
+]) {
+  test(`ピンをまとめる地図（${label}）を開いても、画面が落ちない`, async ({ loginAs, page, google }) => {
+    const errors: string[] = [];
+    page.on("pageerror", (error) => errors.push(error.message));
+    await loginAs("user");
+
+    await page.goto(path);
+    await expect(page.getByTestId("map-stub")).toBeVisible();
+    // 範囲内のピンを取り終えるまで待つ（「読み込んでいます…」が消えるまで）
+    await expect(page.getByText("読み込んでいます…")).toHaveCount(0);
+
+    expect(errors).toEqual([]);
+    expect(google.blocked).toEqual([]);
+  });
+}

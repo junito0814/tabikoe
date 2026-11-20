@@ -17,6 +17,7 @@ import type { BrowserContext, Request } from "@playwright/test";
  *
  * 用意しているもの（src/components/map/GoogleMap.tsx と @googlemaps/markerclusterer が使う分）
  *   Map・Marker・Circle・OverlayView・LatLng・LatLngBounds・Point・Size・event・SymbolPath・importLibrary
+ * **OverlayView と MVCObject の機能は、for...in で数えられる形にしてある**（#1077）。まとめ表示の部品がそれで継承するため。
  * `google.maps.marker`（AdvancedMarkerElement）は**わざと用意しない**。まとめ表示の部品は、これがあると
  * 新しい形のピンを使おうとするため。いまの画面は古い形（Marker）を使っている（#1010 で移す予定）。
  */
@@ -182,6 +183,21 @@ const MAPS_STUB_SCRIPT = `(() => {
     static preventMapHitsAndGesturesFrom() {}
     static preventMapHitsFrom() {}
   }
+  /*
+   * #1077: OverlayView（と親の MVCObject）の機能を、for...in で数えられる形にする。
+   * まとめ表示の部品（@googlemaps/markerclusterer）は、OverlayView を継承するとき
+   * for...in で機能を 1 つずつ写す。class の書き方で作った機能は数えられない決まりなので、
+   * そのままだと何も写らず、まとめの絵を置く瞬間に「this.setMap is not a function」で画面ごと落ちる。
+   * 本物の Google マップの OverlayView は数えられる形なので、それに合わせる。
+   */
+  const makeMethodsEnumerable = (cls) => {
+    for (const name of Object.getOwnPropertyNames(cls.prototype)) {
+      if (name === "constructor") continue;
+      Object.defineProperty(cls.prototype, name, { enumerable: true });
+    }
+  };
+  makeMethodsEnumerable(MVCObject);
+  makeMethodsEnumerable(OverlayView);
   const maps = {
     Map: StubMap, Marker, Circle, OverlayView, LatLng, LatLngBounds, Point, Size, MVCObject, event,
     SymbolPath: { CIRCLE: 0 }, ControlPosition: {}, MapTypeId: { ROADMAP: "roadmap" },
