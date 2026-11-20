@@ -79,13 +79,14 @@ export function SkeletonExit({ children }: { children: ReactNode }) {
 /**
  * 現れる側（本物の画面の中身）。
  *
- * #1032（2026-10-25）: **下から 10px 上がりながら現れる動きを戻した。**
- * ただし #1029 でやめた**ビュートランジションは使わない**（写しを作るとずれるため）。
- * ふつうの CSS アニメーションで、**本物の要素をそのまま**動かす。
+ * ~~#1032（2026-10-25）: 下から 10px 上がりながら現れる動きを戻した。~~
+ * → **#1046（2026-11-17）: その場で薄さだけが戻って現れる。** 位置は動かさない。
+ * スマホでは上がる動き（`top`）が本体の仕事になって 30fps に落ち、カクついて見えたため。
+ * #1029 でやめた**ビュートランジションは、これからも使わない**（写しを作るとずれるため）。
  *
  * 【初心者向け】動きの中身は globals.css の `.content-enter` にある。
- * そこで `transform` ではなく `position: relative` ＋ `top` を動かしている理由も、
- * **必ずそちらを読むこと**（この包みの中には `position: fixed` のものがある）。
+ * `transform` と `filter` を使わない理由も、**必ずそちらを読むこと**
+ * （この包みの中には `position: fixed` のものがある）。
  */
 export function ContentEnter({ children }: { children: ReactNode }) {
   return <div className="content-enter">{children}</div>;

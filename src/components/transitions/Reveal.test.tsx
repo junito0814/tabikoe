@@ -147,23 +147,23 @@ describe("8-2: 同じ名前が 1 画面に 2 つ出ない", () => {
 });
 
 /**
- * #1032（2026-10-25）: 本物が下から上がる動きを、ビュートランジションを使わずに戻した。
- * 出典: 要件定義書 4.5.11「場面 5 の決着・その 2」・8 章 95
+ * #1046（2026-11-17）: 本物は、その場で薄さだけが戻って現れる（位置は動かさない）
+ * 出典: 要件定義書 4.5.11「場面 5 の決着・その 3」・8 章 95・ワイヤーフレーム決定事項 103
  *
- * 【初心者向け】ここでいちばん大事なのは **`transform` と `filter` が入っていないこと**。
- * どちらも**中の `position: fixed` の基準になる**ので、包みの中にある投稿ボタン
- * （`fixed bottom-[76px] right-4`）と未ログインの帯（`fixed inset-x-0 bottom-0`）が、
- * 動いているあいだ画面の外へ下がってしまう。**#1029 で消した症状の作り直し**になる。
- * あとから「`translateY` のほうが速いのでは」と書き換えられないよう、ここで止める。
+ * 【初心者向け】~~#1032 では下から 12px 上がっていた~~。上がる動き（`top`）はスマホで本体の仕事になり、
+ * 30fps に落ちてカクついたので、合成だけで描ける**薄さ（`opacity`）だけ**にした。
+ * ここで止めたいのは 2 つ。
+ *   1. **位置を動かす書き方が戻ってこないこと**（`top` も `transform` も）。戻すとまたカクつく
+ *   2. **`transform` と `filter` を使わないこと**（#1032 から変わらない）。どちらも中の `position: fixed` の基準になり、
+ *      投稿ボタン（`fixed bottom-[76px] right-4`）と未ログインの帯（`fixed inset-x-0 bottom-0`）が画面の外へ下がる
  */
-describe("#1032: 本物が下から上がる", () => {
+describe("#1046: 本物はその場で薄さだけが戻る", () => {
   /** `.content-enter { ... }` と、そこから呼ばれるキーフレームの中身だけを取り出す */
   const block = (name: string) => {
     const m = css.match(new RegExp(`${name.replace(".", "\\.")}\\s*\\{[\\s\\S]*?\\n\\}`));
     return m?.[0] ?? "";
   };
   const enter = block(".content-enter");
-  const rise = block("@keyframes content-rise");
   const fade = block("@keyframes content-fade");
 
   it("包みが `.content-enter` を付けて描かれる", () => {
@@ -171,26 +171,24 @@ describe("#1032: 本物が下から上がる", () => {
     expect(enter).not.toBe("");
   });
 
-  it("動かしているのは top（transform ではない）", () => {
-    expect(enter).toContain("position: relative");
-    expect(rise).toContain("top: var(--enter-distance)");
-    expect(rise).toContain("top: 0");
+  it("動かすのは薄さだけ（キーフレームは content-fade の 1 つ）", () => {
+    expect(enter).toContain("animation: var(--enter-fade) ease-out both content-fade;");
+    expect(fade).toContain("opacity: 0");
+    expect(fade).toContain("opacity: 1");
   });
 
-  /*
-   * #1036（2026-10-25）: 実寸の枠で見比べて決めた値（要件 4.5.11「場面 5 の決着・その 2」）。
-   *
-   * 【初心者向け】上がる時間に `--vt-move` を使い回すと、**写真が繋がって育つ動き**
-   * （`.morph`）まで一緒に変わってしまいます。別の変数に分けてあることも、ここで止めます。
-   */
-  it("値はドキュメントのとおり（12px・160ms・ease-out、薄さも 160ms）", () => {
-    // 12px なのは速さの都合。30fps でしか描けないので、段差を 2〜3px に抑える
-    expect(css).toContain("--enter-distance: 12px");
-    expect(css).toContain("--enter-rise: 160ms");
-    // 薄さは動きと同じ長さ。短いほうが先に終わると、止まったあとも色だけ変わり続ける
+  it("位置を動かす書き方が残っていない（上がる動きのキーフレームも、距離の変数も無い）", () => {
+    expect(css).not.toContain("@keyframes content-rise");
+    expect(css).not.toMatch(/^\s*--enter-distance:/m);
+    expect(css).not.toMatch(/^\s*--enter-rise:/m);
+    for (const part of [enter, fade]) {
+      expect(part).not.toMatch(/\btop\s*:/);
+      expect(part).not.toContain("position: relative");
+    }
+  });
+
+  it("時間はドキュメントのとおり（160ms・ease-out）", () => {
     expect(css).toContain("--enter-fade: 160ms");
-    expect(enter).toContain("var(--enter-fade) ease-out");
-    expect(enter).toContain("var(--enter-rise) ease-out");
   });
 
   it("写真が繋がって育つ動きの時間（--vt-move）を使い回していない", () => {
@@ -201,18 +199,9 @@ describe("#1032: 本物が下から上がる", () => {
   it.each(["transform", "filter", "translate", "scale", "rotate", "will-change", "perspective"])(
     "%s を使っていない（position: fixed の基準を作らないため）",
     (forbidden) => {
-      for (const part of [enter, rise, fade]) {
+      for (const part of [enter, fade]) {
         expect(part).not.toContain(forbidden);
       }
     }
   );
-
-  it("薄さだけで出す（ぼかしは入れない）", () => {
-    expect(fade).toContain("opacity: 0");
-    expect(fade).toContain("opacity: 1");
-  });
-
-  it("動きを減らす設定のときは上がる動きを止める", () => {
-    expect(css).toMatch(/@media \(prefers-reduced-motion: reduce\)[\s\S]*?\.content-enter/);
-  });
 });
