@@ -25,7 +25,8 @@ name: Migrate
 on:
   pull_request:
     # マイグレーションを触っていない PR では走らせない（Actions の分数を節約）
-    paths: ["supabase/migrations/**"]
+    # #944（2026-11-17）: このファイル自身を直した PR でも走らせる（直したジョブを、その PR で 1 回見られるように）
+    paths: ["supabase/migrations/**", ".github/workflows/migrate.yml"]
 
 concurrency:
   group: migrate-${{ github.ref }}
@@ -41,7 +42,9 @@ jobs:
 
       - uses: supabase/setup-cli@v1
         with:
-          version: latest
+          # #944（2026-11-17）: ~~latest~~ → package.json と同じ版に固定する。
+          # 版が上がると出力の形が変わり、下の読み取りが黙って外れるため（2026-11-17 に実際に外れていた）
+          version: 2.122.0
 
       # Secret が未設定でも PR を止めない（#944 の手順 2 を踏む前の PR でも通るように）
       - name: Secret があるか
@@ -57,16 +60,29 @@ jobs:
       # 当てずに「手元にあるもの」と「DB に記録されているもの」を並べて出すだけ
       - name: 開発用 DB との差分
         if: steps.secret.outputs.ready == 'true'
-        run: supabase migration list --db-url "${{ secrets.DEV_SUPABASE_DB_URL }}"
+        env:
+          DB_URL: ${{ secrets.DEV_SUPABASE_DB_URL }}
+        run: supabase migration list --db-url "$DB_URL" --output-format json > migration-list.json
 
-      # 記録表がまだ無い間は、上の差分が「52 本すべて未適用」に見える。
-      # そのとき db push を走らせてはいけないことを、ログに出して気づけるようにする
+      # #944（2026-11-17）: ~~表の形の出力を grep で数えていた~~ → JSON を読む。
+      # 【初心者向け】今の CLI は、画面ではない場所（CI）では JSON で出します。表の形を前提に grep すると
+      # 1 行も当たらず、**記録があっても「記録表が空です」と言い続けていました**（2026-11-17 に手元で確かめた）。
+      # JSON の 1 件は {local, remote}。local だけあるものが「この PR で増える（＝まだ当たっていない）」もの。
       - name: 記録表が追いついているか
         if: steps.secret.outputs.ready == 'true'
         run: |
-          applied=$(supabase migration list --db-url "${{ secrets.DEV_SUPABASE_DB_URL }}" | grep -cE '^\s+\|?\s*[0-9]{14}' || true)
+          json=$(sed -n '/^{/,$p' migration-list.json)
+          recorded=$(echo "$json" | jq '[.migrations[] | select(.remote != "")] | length')
+          pending=$(echo "$json" | jq -r '[.migrations[] | select(.remote == "") | .local] | join(" ")')
+          unknown=$(echo "$json" | jq -r '[.migrations[] | select(.local == "") | .remote] | join(" ")')
           files=$(ls supabase/migrations/*.sql | wc -l | tr -d ' ')
-          echo "手元のファイル: ${files} 本"
-          if [ "$applied" = "0" ]; then
+          echo "手元のファイル: ${files} 本 / 開発用 DB に記録済み: ${recorded} 本"
+          if [ "$recorded" = "0" ]; then
             echo "::warning::記録表が空です。db push を走らせると ${files} 本すべてが流れます。先に scripts/migrations/build-repair-sql.mjs の SQL を当ててください（#944 の手順 1）"
+          fi
+          if [ -n "$pending" ]; then
+            echo "::notice::開発用 DB にまだ当たっていない版: ${pending}"
+          fi
+          if [ -n "$unknown" ]; then
+            echo "::warning::DB には記録があるのに、ファイルが無い版: ${unknown}（消したファイルか、別のブランチで当てたもの）"
           fi

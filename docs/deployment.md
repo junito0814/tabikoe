@@ -193,7 +193,7 @@ node scripts/seed/clean-seed.mjs --apply --production   # ★ 本番。担当の
 | | いまどうしているか |
 |---|---|
 | 当て方 | 足したぶんを `scripts/apply_<日付>.sql` に**まとめて写し**、Supabase の **SQL エディタに貼って実行**する |
-| どこまで当てたかの記録 | **DB には無い。** `supabase_migrations.schema_migrations` の表が**そもそも作られていない**（2026-10-17 に確認）。`scripts/apply_*.sql` のファイル名が実質の記録 |
+| どこまで当てたかの記録 | ~~**DB には無い。**~~ → **2026-11-17 に開発用だけ記録を作った**（53 本。`20261107000001` は当たっていないので記録していない）。**本番にはまだ無い**。`supabase_migrations.schema_migrations` の表は、もともとどの DB にも作られていなかった（2026-10-17 に確認） |
 | 開発用と本番 | 別々に当てる。**本番は提出した版（`submission`）で止めてある**ので、未適用が溜まっている |
 | 自動化 | **#944 で設計済み・未実装。** CI から当てる形にする |
 
@@ -209,20 +209,27 @@ Supabase CLI（`supabase db push`）は、どこまで当てたかを `supabase_
 （既にある表を作ろうとして止まるか、`drop` を含むものがあればデータが消える）。
 
 ```bash
-# ① CLI に表を作らせる（中身は空のまま）
-npx supabase migration list --db-url "<接続文字列>"
+# ① 当たっていない版を探す（読むだけ）。2026-11-14 に本番で 2 本の当て漏れが見つかった（#1082）。
+#    当たっていない版を「当て済み」と書くと、CI がその版を二度と当てなくなる
+#    → 表・列・索引・関数・ポリシーなどが実際にあるかを、版ごとに確かめる SQL を SQL エディタで流す
 
-# ② 「この 52 本はもう当たっている」と書き込む SQL を作る（ファイル名から機械で作る）
-node scripts/migrations/build-repair-sql.mjs > /tmp/repair.sql
-node scripts/migrations/build-repair-sql.mjs --list | wc -l    # 本数の確認
+# ② 「この N 本はもう当たっている」と書き込む SQL を作る（ファイル名から機械で作る）
+#    ①で見つかった版は --except で除く（複数は , 区切り。ファイルに無い版を書くと止まる）
+node scripts/migrations/build-repair-sql.mjs --except 20261107000001 > /tmp/repair.sql
+node scripts/migrations/build-repair-sql.mjs --except 20261107000001 --list   # 本数の確認
 
 # ③ /tmp/repair.sql を SQL エディタに貼って実行する（開発用 → 本番の順）
+#    記録の表もこの SQL が作る（if not exists。既にあれば何もしない）
 
-# ④ 空振りすることを確かめる（Local と Remote が揃う）
+# ④ 揃ったことを確かめる（除いた版だけが「手元だけ」に残る）
 npx supabase migration list --db-url "<接続文字列>"
 ```
 
+~~① CLI に表を作らせる（`migration list` を流す）~~ → **2026-11-17 に廃止。** 今の CLI（2.122.0）は `migration list` では表を作らなかった。表は ③ の SQL が作る。
+
 **手で並べないこと。** 1 本でも抜けると、その 1 本だけが後から流れて止まる。
+
+**開発用は 2026-11-17 に済ませた。** 53 本を記録し、④ で「揃っている 53 本・手元だけ `20261107000001`」になることを確かめた（記録は SQL ではなく、同じ内容を `supabase migration repair --status applied <版...>` で書いた）。**本番はまだ**（あなたの手で ①〜④）。
 
 **順番に入れる。** 一度に全部は入れない。
 
