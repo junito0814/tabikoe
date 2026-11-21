@@ -19,6 +19,10 @@ import { getAlbumRole } from "./membership";
 /** アルバム写真一覧に出す投稿の上限（それ以上古いものは出さない） */
 export const ALBUM_PHOTOS_POST_CAP = 500;
 
+/**
+ * アルバムの写真・動画を、新着順に 1 ページぶん返す。
+ * メンバーでなければ null を返す（非公開化されたアルバムは、オーナー以外には null）
+ */
 export async function getAlbumMediaPage(
   admin: SupabaseClient,
   viewerId: string,
