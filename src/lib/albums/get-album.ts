@@ -12,6 +12,8 @@ import { getAlbumRole, type AlbumRole } from "./membership";
  *       docs/tasks/posts/post-delete/02-empty-album-hiding.md
  *       要件定義書3.6.2・3.6.3
  */
+
+/** アルバム一覧の 1 件ぶんの形（名前・自分の権限・投稿数・代表画像など） */
 export interface AlbumSummary {
   tripId: string;
   title: string;
@@ -26,6 +28,7 @@ export interface AlbumSummary {
   isDaily: boolean;
 }
 
+/** アルバムのメンバー 1 人ぶんの形（権限・表示名・アイコン・参加日時など） */
 export interface AlbumMember {
   userId: string;
   role: AlbumRole;
@@ -35,6 +38,7 @@ export interface AlbumMember {
   joinedAt: string;
 }
 
+/** アルバム詳細の画面に渡す形（メンバー・投稿・しおりの有無など） */
 export interface AlbumDetail {
   tripId: string;
   title: string;
@@ -49,6 +53,7 @@ export interface AlbumDetail {
   isDaily: boolean;
 }
 
+/** アルバム一覧を作るときに、データベースから届く 1 行の形 */
 interface AlbumListRow {
   role: string;
   trips:
@@ -73,12 +78,14 @@ export function filterAlbumsWithPosts<T extends { postCount: number; isDaily?: b
 }
 
 /**
+ * アルバム一覧の並び順の種類（新着順・古い順）
  * v3.1: 「日常」を先頭に固定し、残りは最新投稿順（純粋関数）
  * #715（2026-10-05）: 並び順を選べるようにした（「新着順」「古い順」。既定は新着順）。
  * 投稿が無いアルバムは `updatedAt` が null なので、どちらの並びでも末尾に来る。
  */
 export type AlbumSort = "newest" | "oldest";
 
+/** アルバム一覧を並べ替えて返す。「日常」を先頭に固定し、残りは新着順か古い順。投稿が無いアルバムは末尾 */
 export function sortAlbumsDailyFirst<T extends { isDaily: boolean; updatedAt: string | null }>(
   albums: T[],
   sort: AlbumSort = "newest"
@@ -165,6 +172,7 @@ export async function getAlbumList(admin: SupabaseClient, userId: string, sort: 
   );
 }
 
+/** メンバー一覧を作るときに、データベースから届く 1 行の形 */
 interface MemberRow {
   user_id: string;
   role: string;
@@ -194,6 +202,7 @@ export function toAlbumMembers(rows: MemberRow[]): AlbumMember[] {
     .sort((a, b) => (order[a.role] ?? 9) - (order[b.role] ?? 9) || a.joinedAt.localeCompare(b.joinedAt));
 }
 
+/** アルバムのメンバー一覧を、データベースから取って返す（権限の順、同じ権限なら参加の早い順） */
 export async function getAlbumMembers(admin: SupabaseClient, tripId: string): Promise<AlbumMember[]> {
   const { data, error } = await admin
     .from("album_members")
